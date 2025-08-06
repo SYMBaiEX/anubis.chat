@@ -21,13 +21,19 @@ export async function registerServiceWorker(config: ServiceWorkerConfig = {}) {
 
   try {
     // Unregister any existing service workers to prevent conflicts
-    const existingRegistrations = await navigator.serviceWorker.getRegistrations();
-    
+    const existingRegistrations =
+      await navigator.serviceWorker.getRegistrations();
+
     for (const registration of existingRegistrations) {
       // Only unregister if it's not our current service worker
-      if (registration.scope !== `${window.location.origin}/` || 
-          !registration.active?.scriptURL.includes('/sw.js')) {
-        console.log('Unregistering conflicting service worker:', registration.scope);
+      if (
+        registration.scope !== `${window.location.origin}/` ||
+        !registration.active?.scriptURL.includes('/sw.js')
+      ) {
+        console.log(
+          'Unregistering conflicting service worker:',
+          registration.scope
+        );
         await registration.unregister();
       }
     }
@@ -35,15 +41,18 @@ export async function registerServiceWorker(config: ServiceWorkerConfig = {}) {
     // Register our service worker
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/',
-      updateViaCache: 'imports'
+      updateViaCache: 'imports',
     });
 
-    console.log('ISIS Chat Service Worker registered successfully:', registration);
+    console.log(
+      'ISIS Chat Service Worker registered successfully:',
+      registration
+    );
 
     // Handle updates
     registration.addEventListener('updatefound', () => {
       const installingWorker = registration.installing;
-      
+
       if (installingWorker) {
         installingWorker.addEventListener('statechange', () => {
           if (installingWorker.state === 'installed') {
@@ -63,7 +72,6 @@ export async function registerServiceWorker(config: ServiceWorkerConfig = {}) {
 
     config.onSuccess?.(registration);
     return registration;
-
   } catch (error) {
     console.error('Service Worker registration failed:', error);
     config.onError?.(error as Error);
@@ -81,12 +89,12 @@ export async function unregisterServiceWorkers() {
 
   try {
     const registrations = await navigator.serviceWorker.getRegistrations();
-    
+
     for (const registration of registrations) {
       console.log('Unregistering service worker:', registration.scope);
       await registration.unregister();
     }
-    
+
     console.log('All service workers unregistered');
   } catch (error) {
     console.error('Failed to unregister service workers:', error);
@@ -103,12 +111,12 @@ export async function clearCaches() {
 
   try {
     const cacheNames = await caches.keys();
-    
+
     for (const cacheName of cacheNames) {
       console.log('Clearing cache:', cacheName);
       await caches.delete(cacheName);
     }
-    
+
     console.log('All caches cleared');
   } catch (error) {
     console.error('Failed to clear caches:', error);
@@ -134,13 +142,10 @@ export async function resetPWAState() {
   }
 
   try {
-    await Promise.all([
-      unregisterServiceWorkers(),
-      clearCaches()
-    ]);
-    
+    await Promise.all([unregisterServiceWorkers(), clearCaches()]);
+
     console.log('PWA state reset complete - refreshing page...');
-    
+
     // Reload the page to ensure clean state
     window.location.reload();
   } catch (error) {

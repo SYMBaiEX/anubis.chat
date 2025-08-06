@@ -172,7 +172,10 @@ export async function POST(request: NextRequest) {
           ownerId: walletAddress,
           metadata: {
             ...metadata,
-            wordCount: content.trim().split(/\s+/).filter(word => word.length > 0).length,
+            wordCount: content
+              .trim()
+              .split(/\s+/)
+              .filter((word) => word.length > 0).length,
             characterCount: content.length,
           },
           createdAt: now,

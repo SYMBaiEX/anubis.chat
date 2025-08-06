@@ -1,5 +1,10 @@
-import { Connection, clusterApiUrl, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import {
+  Connection,
+  clusterApiUrl,
+  LAMPORTS_PER_SOL,
+  type PublicKey,
+} from '@solana/web3.js';
 
 // Configure the network to use
 export const NETWORK = WalletAdapterNetwork.Devnet;
@@ -21,7 +26,8 @@ export const solToLamports = (sol: number): number => {
 
 // Create a sign-in message for wallet authentication
 export const createSignInMessage = (publicKey: string): string => {
-  const domain = typeof window !== 'undefined' ? window.location.host : 'isis.chat';
+  const domain =
+    typeof window !== 'undefined' ? window.location.host : 'isis.chat';
   const now = new Date();
   const message = `ISIS Chat wants you to sign in with your Solana account:
 ${publicKey}
@@ -29,7 +35,7 @@ ${publicKey}
 Domain: ${domain}
 Issued At: ${now.toISOString()}
 Chain ID: ${NETWORK}`;
-  
+
   return message;
 };
 

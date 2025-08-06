@@ -24,12 +24,6 @@
       "convex/*": ["./convex/*"]
     }
   },
-  "include": [
-    "convex/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    ".next",
-    "_generated"
-  ]
+  "include": ["convex/**/*"],
+  "exclude": ["node_modules", ".next", "_generated"]
 }

@@ -10,18 +10,20 @@ const convexEnvSchema = z.object({
   // OpenAI Configuration
   OPENAI_API_KEY: z.string().startsWith('sk-').optional(),
   OPENAI_ORG_ID: z.string().startsWith('org-').optional(),
-  
+
   // Storage Configuration
   STORAGE_TYPE: z.enum(['convex', 'supabase', 'memory']).default('convex'),
-  
+
   // External Services (Optional)
   QDRANT_URL: z.string().url().optional(),
   QDRANT_API_KEY: z.string().optional(),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),
-  
+
   // Application Settings
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z
+    .enum(['development', 'production', 'test'])
+    .default('development'),
   DEBUG: z.string().optional(),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
 });
@@ -47,7 +49,9 @@ function parseConvexEnv() {
     return convexEnvSchema.parse(env);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.issues.map((err: z.ZodIssue) => `${err.path.join('.')}: ${err.message}`);
+      const missingVars = error.issues.map(
+        (err: z.ZodIssue) => `${err.path.join('.')}: ${err.message}`
+      );
       throw new Error(
         `Convex environment validation failed:\n${missingVars.join('\n')}\n\nPlease check your environment variables.`
       );
@@ -97,7 +101,10 @@ export function requireEnv(key: keyof ConvexEnv): string {
   return value as string;
 }
 
-export function getEnv(key: keyof ConvexEnv, defaultValue?: string): string | undefined {
+export function getEnv(
+  key: keyof ConvexEnv,
+  defaultValue?: string
+): string | undefined {
   return (convexEnv[key] as string) || defaultValue;
 }
 

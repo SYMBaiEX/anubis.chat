@@ -7,10 +7,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
 import type { UserProfile } from '@/lib/types/api';
-import { 
-  addSecurityHeaders, 
-  successResponse, 
-  internalErrorResponse 
+import {
+  addSecurityHeaders,
+  internalErrorResponse,
+  successResponse,
 } from '@/lib/utils/api-response';
 
 // =============================================================================

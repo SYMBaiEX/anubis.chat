@@ -8,7 +8,9 @@ export default function ServiceWorkerManager() {
     // Register service worker on mount
     registerServiceWorker({
       onUpdate: (registration) => {
-        console.log('New version available! Consider prompting user to reload.');
+        console.log(
+          'New version available! Consider prompting user to reload.'
+        );
         // Optionally show update notification to user
       },
       onSuccess: (registration) => {
@@ -16,7 +18,7 @@ export default function ServiceWorkerManager() {
       },
       onError: (error) => {
         console.error('Service Worker registration failed:', error);
-      }
+      },
     });
 
     // Development helper - expose reset function globally

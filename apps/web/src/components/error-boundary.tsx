@@ -18,11 +18,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public static getDerivedStateFromError(error: Error): State {
     // Filter out known Solana extension errors that don't affect functionality
-    const isSolanaExtensionError = 
+    const isSolanaExtensionError =
       error.message?.includes('MutationObserver') ||
       error.message?.includes('solanaActionsContentScript') ||
       error.stack?.includes('solanaActionsContentScript');
-    
+
     if (isSolanaExtensionError) {
       // Log but don't trigger error boundary for Solana extension issues
       console.warn('Solana extension error (non-critical):', error);
@@ -34,10 +34,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Filter out Solana extension errors
-    const isSolanaExtensionError = 
+    const isSolanaExtensionError =
       error.message?.includes('MutationObserver') ||
       error.message?.includes('solanaActionsContentScript');
-    
+
     if (!isSolanaExtensionError) {
       console.error('Uncaught error:', error, errorInfo);
     }
@@ -48,9 +48,12 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-red-600">Something went wrong</h2>
+            <h2 className="font-bold text-2xl text-red-600">
+              Something went wrong
+            </h2>
             <p className="mt-2 text-gray-600">
-              Please refresh the page or contact support if the problem persists.
+              Please refresh the page or contact support if the problem
+              persists.
             </p>
             <button
               className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
@@ -72,7 +75,7 @@ if (typeof window !== 'undefined') {
   // Handle unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
-    
+
     // Filter out Solana extension errors
     if (
       error?.message?.includes('MutationObserver') ||
@@ -83,14 +86,14 @@ if (typeof window !== 'undefined') {
       event.preventDefault(); // Prevent logging to console
       return;
     }
-    
+
     console.error('Unhandled promise rejection:', error);
   });
 
   // Handle general errors
   window.addEventListener('error', (event) => {
     const error = event.error;
-    
+
     // Filter out Solana extension errors
     if (
       error?.message?.includes('MutationObserver') ||
