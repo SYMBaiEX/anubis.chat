@@ -1,308 +1,234 @@
 ---
-category: documentation
-subcategory: overview
-tags: [documentation, developer-experience, maintenance]
-cursor:
-  context_window: 8192
-  temperature: 0.6
-  max_tokens: 4096
-  model_preference: ["claude-3.5-sonnet", "gpt-4-turbo"]
-relations:
-  imports: ["../architecture/index.mdc", "../testing/index.mdc"]
-  exports: ["documentation-standards", "api-docs"]
-  references: ["../frontend/accessibility.mdc", "../security/audit-checklist.mdc"]
+description: documentation overview and navigation
+globs: []
+alwaysApply: false
 ---
 
-# Documentation Standards
+# Documentation Guidelines
 
-::alert{type="info"}
-Comprehensive documentation guidelines ensuring isis.chat remains maintainable and accessible to all team members.
-::
+Comprehensive documentation standards and practices for ISIS Chat.
 
-## Documentation Philosophy
+## Documentation Structure
 
-ISIS.chat follows a **docs-as-code** approach where documentation lives alongside the code and is treated with the same rigor as production code.
+### Core Documentation Files
+- **README.md**: Project overview and quick start guide
+- **CLAUDE.md**: AI assistant context and development guidance
+- **CHANGELOG.md**: Version history and release notes
+- **CONTRIBUTING.md**: Contribution guidelines and code of conduct
 
-## Documentation Types
+### Technical Documentation
+- **API Documentation**: OpenAPI/Swagger specs for all endpoints
+- **Architecture Diagrams**: System design and data flow visualizations
+- **Database Schema**: Entity relationships and migration guides
+- **Component Library**: Storybook documentation for UI components
 
-### Code Documentation
+## Documentation Standards
 
-::tabs
-::tab{label="TypeScript/JSDoc"}
+### Writing Style
+- **Clear and Concise**: Use simple language, avoid jargon
+- **Action-Oriented**: Start with verbs for instructions
+- **Consistent Voice**: Use active voice and present tense
+- **Structured Format**: Use headings, lists, and code blocks
+
+### Code Examples
 ```typescript
-/**
- * Processes a chat message with RAG context injection
- * @param message - User's input message
- * @param wallet - User's wallet address for context isolation
- * @param options - Processing options
- * @returns Streaming AI response with injected context
- * @throws {RateLimitError} When user exceeds message quota
- * @example
- * ```typescript
- * const response = await processMessage(
- *   "What is Solana?",
- *   "7xKXt...addresses",
- *   { includeRAG: true }
- * );
- * ```
- */
-export async function processMessage(
-  message: string,
-  wallet: string,
-  options?: MessageOptions
-): Promise<StreamingResponse> {
-  // Implementation
+// Always include complete, runnable examples
+import { ChatClient } from '@isis/client'
+
+const client = new ChatClient({
+  apiKey: process.env.ISIS_API_KEY,
+  model: 'claude-3.5-sonnet'
+})
+
+// Show both success and error handling
+try {
+  const response = await client.chat({
+    message: 'Hello, ISIS!',
+    context: previousMessages
+  })
+  console.log(response)
+} catch (error) {
+  console.error('Chat failed:', error)
 }
 ```
-::
-
-::tab{label="Component Documentation"}
-```tsx
-/**
- * WalletButton Component
- * 
- * Renders a multi-wallet connection button with automatic provider detection.
- * Supports Phantom, Backpack, Solflare, and other Solana wallets.
- * 
- * @component
- * @example
- * <WalletButton
- *   onConnect={(wallet) => console.log('Connected:', wallet)}
- *   variant="primary"
- *   showBalance
- * />
- */
-export const WalletButton: FC<WalletButtonProps> = ({
-  onConnect,
-  variant = 'primary',
-  showBalance = false,
-}) => {
-  // Component implementation
-};
-```
-::
-
-::tab{label="API Documentation"}
-```typescript
-/**
- * @api {post} /api/chat Send Message
- * @apiName SendMessage
- * @apiGroup Chat
- * @apiVersion 1.0.0
- * 
- * @apiHeader {String} Authorization Bearer JWT token
- * @apiHeader {String} X-Wallet-Address User's Solana wallet
- * 
- * @apiParam {String} message User's chat message
- * @apiParam {Boolean} [includeRAG=true] Include RAG context
- * @apiParam {String} [model="claude-3.5"] AI model selection
- * 
- * @apiSuccess {String} id Message ID
- * @apiSuccess {Stream} content Streaming response
- * 
- * @apiError {401} Unauthorized Invalid or expired token
- * @apiError {429} RateLimited Exceeded message quota
- */
-```
-::
-::
-
-### Architecture Documentation
-
-::card
-**System Design Docs**
-- High-level architecture diagrams
-- Component interaction flows
-- Data flow documentation
-- Security architecture
-- Deployment topology
-::
-
-::card
-**Decision Records (ADRs)**
-```markdown
-# ADR-001: Use Convex for Real-time Database
-
-## Status
-Accepted
-
-## Context
-We need a real-time database that supports WebSocket connections,
-automatic syncing, and TypeScript-first development.
-
-## Decision
-We will use Convex as our primary database.
-
-## Consequences
-- ✅ Real-time subscriptions out of the box
-- ✅ TypeScript type safety
-- ✅ Automatic conflict resolution
-- ⚠️ Vendor lock-in risk
-- ⚠️ Learning curve for team
-```
-::
 
 ## API Documentation
 
 ### OpenAPI Specification
+- **Version**: OpenAPI 3.1.0
+- **Format**: YAML with JSON Schema
+- **Validation**: Automated with spectral
+- **Generation**: Auto-generated from TypeScript types
 
-```yaml
-openapi: 3.1.0
-info:
-  title: ISIS Chat API
-  version: 1.0.0
-  description: Solana-native AI chat platform API
+### Documentation Requirements
+- Every endpoint must have description and examples
+- Request/response schemas with validation rules
+- Error responses with status codes and messages
+- Authentication and rate limiting details
 
-paths:
-  /api/chat:
-    post:
-      summary: Send chat message
-      operationId: sendMessage
-      security:
-        - bearerAuth: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: User's chat message
-                includeRAG:
-                  type: boolean
-                  default: true
-                model:
-                  type: string
-                  enum: [claude-3.5, gpt-4o, deepseek]
-      responses:
-        '200':
-          description: Streaming response
-          content:
-            text/event-stream:
-              schema:
-                type: string
-```
+## Component Documentation
 
-## User Documentation
+### Storybook Integration
+```typescript
+// Component stories with all variations
+export default {
+  title: 'Components/ChatMessage',
+  component: ChatMessage,
+  parameters: {
+    docs: {
+      description: {
+        component: 'Chat message display with AI responses'
+      }
+    }
+  }
+}
 
-### README Structure
-
-```markdown
-# ISIS Chat
-
-> Solana-native AI chat platform with RAG capabilities
-
-## Features
-- 🔐 Wallet-based authentication
-- 💬 Multi-model AI chat
-- 📚 Document upload and RAG
-- ⚡ Real-time streaming responses
-- 💰 SOL subscription payments
-
-## Quick Start
-\`\`\`bash
-# Install dependencies
-bun install
-
-# Set up environment
-cp .env.example .env.local
-
-# Run development server
-bun dev
-\`\`\`
-
-## Documentation
-- [Architecture](./docs/architecture.md)
-- [API Reference](./docs/api.md)
-- [Deployment Guide](./docs/deployment.md)
+// Document all props and variations
+export const Default = {
+  args: {
+    message: 'Hello, how can I help you?',
+    role: 'assistant',
+    timestamp: new Date()
+  }
+}
 ```
 
 ## Inline Documentation
 
-### Comment Standards
-
+### JSDoc Standards
 ```typescript
-// ============================================
-// SECTION: Authentication Middleware
-// ============================================
-
 /**
- * TODO: Implement rate limiting per wallet
- * @priority high
- * @assignee team-backend
- * @deadline 2025-09-01
+ * Processes user chat message with AI model
+ * @param {ChatRequest} request - User message and context
+ * @param {ChatOptions} options - Model and streaming configuration
+ * @returns {Promise<ChatResponse>} AI response with metadata
+ * @throws {RateLimitError} When user exceeds rate limits
+ * @throws {ModelError} When AI model fails to respond
+ * @example
+ * const response = await processChat(
+ *   { message: 'Hello', userId: '123' },
+ *   { model: 'claude-3.5', stream: true }
+ * )
  */
-
-// HACK: Temporary workaround for Phantom wallet bug
-// Remove after phantom-wallet v2.1.0 release
-if (wallet.name === 'Phantom' && !wallet.isConnected) {
-  await delay(100);
+export async function processChat(
+  request: ChatRequest,
+  options: ChatOptions = {}
+): Promise<ChatResponse> {
+  // Implementation
 }
-
-// NOTE: Critical security check - do not remove
-validateWalletSignature(signature, message, publicKey);
-
-// OPTIMIZE: Consider caching user sessions
-// Current implementation queries DB on every request
 ```
 
-## Documentation Automation
+## Markdown Documentation
 
-### Generate TypeScript Types
+### File Structure
+```markdown
+# Feature Name
 
+## Overview
+Brief description of the feature
+
+## Installation
 ```bash
-# Generate types from Convex schema
-npx convex codegen
-
-# Generate API types from OpenAPI
-npx openapi-typescript api.yaml -o types/api.d.ts
-
-# Generate component documentation
-npx typedoc --out docs/api src
+bun add @isis/feature
 ```
 
-### Documentation Testing
-
+## Usage
+### Basic Example
 ```typescript
-// Test documentation examples
-import { testDocs } from '@utils/test-docs';
-
-describe('Documentation Examples', () => {
-  it('should execute all code examples without errors', async () => {
-    const results = await testDocs('./docs/**/*.md');
-    expect(results.failed).toBe(0);
-  });
-});
+// Code example
 ```
 
-## Maintenance Guidelines
+## API Reference
+### Methods
+- `methodName(params)`: Description
 
-::alert{type="warning"}
-Documentation must be updated with every PR that changes functionality.
-::
+## Configuration
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| option1 | string | 'default' | Description |
 
-### Documentation Checklist
+## Troubleshooting
+Common issues and solutions
+```
 
-- [ ] Code comments updated
-- [ ] JSDoc/TSDoc complete
-- [ ] README updated if needed
-- [ ] API docs regenerated
-- [ ] Examples tested
-- [ ] Changelog updated
-- [ ] Migration guide (if breaking changes)
+## Documentation Generation
 
-## Documentation Tools
+### Automated Tools
+- **TypeDoc**: Generate API docs from TypeScript
+- **Docusaurus**: Build documentation website
+- **Swagger UI**: Interactive API documentation
+- **Compodoc**: Angular-style documentation
 
-- **TypeDoc**: TypeScript API documentation
-- **Swagger/OpenAPI**: REST API documentation
-- **Docusaurus**: User-facing documentation site
-- **Mermaid**: Diagrams and flowcharts
-- **Storybook**: Component documentation
+### CI/CD Integration
+```yaml
+# GitHub Actions workflow
+name: Documentation
+on:
+  push:
+    branches: [main]
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install
+      - run: bun run docs:generate
+      - run: bun run docs:deploy
+```
 
-## Related Documentation
+## Documentation Review Process
 
-- [Architecture Overview](../architecture/index.mdc)
-- [Testing Strategy](../testing/index.mdc)
-- [API Design](../backend/api-design.mdc)
-- [Component Patterns](../frontend/components.mdc)
+### Review Checklist
+- [ ] Technical accuracy verified
+- [ ] Code examples tested and working
+- [ ] Links and references validated
+- [ ] Grammar and spelling checked
+- [ ] Formatting consistent with style guide
+- [ ] Accessibility considerations met
+
+## Version Documentation
+
+### Changelog Format
+```markdown
+## [1.2.0] - 2025-08-06
+
+### Added
+- New feature description
+- Enhancement details
+
+### Changed
+- Breaking change explanation
+- Migration instructions
+
+### Fixed
+- Bug fix description
+- Issue reference (#123)
+
+### Deprecated
+- Feature deprecation notice
+- Removal timeline
+```
+
+## Accessibility in Documentation
+
+### Requirements
+- Alt text for all images and diagrams
+- Proper heading hierarchy (h1 → h2 → h3)
+- Descriptive link text (not "click here")
+- Code blocks with language specification
+- Tables with headers and captions
+
+## Localization
+
+### Supported Languages
+- English (primary)
+- Spanish (planned)
+- French (planned)
+- Japanese (planned)
+
+### Translation Process
+- Use i18n keys for all user-facing text
+- Maintain separate docs folders per language
+- Automated translation validation
+- Native speaker review required
