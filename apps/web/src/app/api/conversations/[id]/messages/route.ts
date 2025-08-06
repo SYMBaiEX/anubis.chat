@@ -35,13 +35,13 @@ const addMessageSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const conversationId = params.id;
+        const { id: conversationId } = await params;
 
         const conversation = memoryStore.getConversation(conversationId);
         if (!conversation) {
@@ -81,13 +81,13 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const conversationId = params.id;
+        const { id: conversationId } = await params;
 
         const conversation = memoryStore.getConversation(conversationId);
         if (!conversation) {

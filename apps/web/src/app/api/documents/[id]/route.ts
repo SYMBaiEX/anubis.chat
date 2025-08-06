@@ -51,13 +51,13 @@ const updateDocumentSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const { id: documentId } = params;
+        const { id: documentId } = await params;
 
         // Check if document exists and user can access it
         const storage = getStorage();
@@ -91,13 +91,13 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const { id: documentId } = params;
+        const { id: documentId } = await params;
 
         // Check if document exists and user can access it
         const storage = getStorage();
@@ -170,13 +170,13 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const { id: documentId } = params;
+        const { id: documentId } = await params;
 
         // Check if document exists and user can access it
         const storage = getStorage();

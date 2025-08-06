@@ -113,13 +113,13 @@ async function getChatMessages(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return messageRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const { id: chatId } = params;
+        const { id: chatId } = await params;
         const { searchParams } = new URL(req.url);
 
         // Validate chat exists and user has access
@@ -170,13 +170,13 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return messageRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const { id: chatId } = params;
+        const { id: chatId } = await params;
 
         // Validate chat exists and user has access
         const chat = await getChatById(chatId, walletAddress);
