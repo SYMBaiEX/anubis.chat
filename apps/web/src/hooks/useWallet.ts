@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { useWallet as useSolanaWallet, useConnection } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
+import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
 import bs58 from 'bs58';
 import { 
   connection, 
@@ -89,8 +89,7 @@ export const useWallet = (): UseWalletReturn => {
       const errorMessage = error instanceof Error ? error.message : 'Failed to connect wallet';
       setState(prev => ({ 
         ...prev, 
-        error: errorMessage,
-        isConnecting: false 
+        error: errorMessage
       }));
       throw error;
     } finally {
@@ -154,6 +153,9 @@ export const useWallet = (): UseWalletReturn => {
       const balance = await fetchBalance(walletPublicKey);
       setState(prev => ({ ...prev, balance }));
     } catch (error) {
+      // Better error handling for production
+      const errorMessage = error instanceof Error ? error.message : 'Failed to refresh balance';
+      setState(prev => ({ ...prev, error: errorMessage }));
       console.error('Failed to refresh balance:', error);
     }
   }, [walletPublicKey, fetchBalance]);

@@ -191,3 +191,12 @@ body {
   filter: blur(2px);
   opacity: 0.4;
 }
+
+/* Accessibility: Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .hieroglyphic_version,
+  .hieroglyphic_version * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

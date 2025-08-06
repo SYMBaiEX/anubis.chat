@@ -1,11 +1,24 @@
 import { Connection, clusterApiUrl, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 
-// Configure the network to use
-export const NETWORK = WalletAdapterNetwork.Devnet;
+// Configure the network to use from environment variables
+const getNetwork = (): WalletAdapterNetwork => {
+  const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'devnet';
+  switch (network) {
+    case 'mainnet-beta':
+      return WalletAdapterNetwork.Mainnet;
+    case 'testnet':
+      return WalletAdapterNetwork.Testnet;
+    case 'devnet':
+    default:
+      return WalletAdapterNetwork.Devnet;
+  }
+};
 
-// RPC endpoint
-export const ENDPOINT = clusterApiUrl(NETWORK);
+export const NETWORK = getNetwork();
+
+// RPC endpoint - use environment variable if provided, otherwise use cluster API
+export const ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC_HOST || clusterApiUrl(NETWORK);
 
 // Create connection instance
 export const connection = new Connection(ENDPOINT, 'confirmed');
@@ -21,7 +34,9 @@ export const solToLamports = (sol: number): number => {
 
 // Create a sign-in message for wallet authentication
 export const createSignInMessage = (publicKey: string): string => {
-  const domain = typeof window !== 'undefined' ? window.location.host : 'isis.chat';
+  const domain = typeof window !== 'undefined' 
+    ? window.location.host 
+    : process.env.NEXT_PUBLIC_APP_DOMAIN || 'isis.chat';
   const now = new Date();
   const message = `ISIS Chat wants you to sign in with your Solana account:
 ${publicKey}
