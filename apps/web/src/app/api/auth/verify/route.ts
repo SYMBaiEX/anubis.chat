@@ -176,12 +176,14 @@ export async function POST(request: NextRequest) {
 
       try {
         // Using ConvexHttpClient to call the users.upsert mutation
+        const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+        if (!convexUrl) {
+          throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is required');
+        }
+        
         const convexClient = new (
           await import('convex/browser')
-        ).ConvexHttpClient(
-          process.env.NEXT_PUBLIC_CONVEX_URL ||
-            'https://veracious-capybara-763.convex.cloud'
-        );
+        ).ConvexHttpClient(convexUrl);
 
         user = await convexClient.mutation(
           (await import('@convex/_generated/api')).api.users.upsert,

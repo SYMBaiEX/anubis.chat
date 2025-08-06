@@ -86,38 +86,30 @@ export const useWallet = (): UseWalletReturn => {
       setIsHealthy(healthScore >= HEALTH_SCORE_WARNING);
       retryCountRef.current = 0;
 
-      console.log(
-        `🏥 Wallet health check: ${healthScore}% (${responseTime}ms)`
-      );
+      // Health check completed successfully
     } catch (error) {
       retryCountRef.current += 1;
       const healthScore = Math.max(20, 100 - retryCountRef.current * 20);
       setConnectionHealthScore(healthScore);
       setIsHealthy(retryCountRef.current <= 2);
 
-      console.warn(
-        `⚠️ Wallet health check failed (attempt ${retryCountRef.current}):`,
-        error
-      );
+      // Health check failed, retrying if within limits
     }
   }, [connected, walletPublicKey]);
 
-  // 2025 Security: Encrypted wallet state storage
-  const encryptWalletState = useCallback((state: any): string => {
+  // 2025 Security: Secure wallet state storage (removed insecure encryption)
+  // Note: For production, implement proper encryption using crypto-js or similar
+  const storeWalletState = useCallback((state: any): string => {
     try {
-      // Simple encryption for demonstration - in production use proper encryption
-      const jsonString = JSON.stringify(state);
-      return btoa(jsonString + WALLET_STATE_ENCRYPTION_KEY);
+      return JSON.stringify(state);
     } catch {
       return '';
     }
   }, []);
 
-  const decryptWalletState = useCallback((encrypted: string): any => {
+  const retrieveWalletState = useCallback((stored: string): any => {
     try {
-      const decoded = atob(encrypted);
-      const jsonString = decoded.replace(WALLET_STATE_ENCRYPTION_KEY, '');
-      return JSON.parse(jsonString);
+      return JSON.parse(stored);
     } catch {
       return null;
     }
@@ -193,14 +185,11 @@ export const useWallet = (): UseWalletReturn => {
         version: '2025.8',
       };
 
-      const encrypted = encryptWalletState(walletState);
-      if (encrypted) {
-        localStorage.setItem('isis-wallet-state-secure', encrypted);
-        // Keep legacy key for backward compatibility
-        localStorage.setItem('isis-wallet-state', JSON.stringify(walletState));
+      const serialized = storeWalletState(walletState);
+      if (serialized) {
+        localStorage.setItem('isis-wallet-state', serialized);
       }
     } else if (!connected) {
-      localStorage.removeItem('isis-wallet-state-secure');
       localStorage.removeItem('isis-wallet-state');
     }
   }, [
@@ -208,7 +197,7 @@ export const useWallet = (): UseWalletReturn => {
     walletPublicKey,
     wallet,
     connectionHealthScore,
-    encryptWalletState,
+    storeWalletState,
   ]);
 
   const connect = useCallback(async (): Promise<void> => {
@@ -225,13 +214,11 @@ export const useWallet = (): UseWalletReturn => {
 
       await Promise.race([connectWallet(), connectTimeout]);
 
-      console.log(
-        '✅ Wallet connected successfully with 2025 security standards'
-      );
+      // Wallet connected successfully
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to connect wallet';
-      console.error('❌ Wallet connection failed:', errorMessage);
+      // Wallet connection failed
 
       setState((prev) => ({
         ...prev,
@@ -258,11 +245,10 @@ export const useWallet = (): UseWalletReturn => {
       setConnectionHealthScore(100);
       retryCountRef.current = 0;
 
-      // Clean up all wallet state storage
-      localStorage.removeItem('isis-wallet-state-secure');
+      // Clean up wallet state storage
       localStorage.removeItem('isis-wallet-state');
 
-      console.log('🔐 Wallet disconnected and state cleared securely');
+      // Wallet disconnected and state cleared
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to disconnect wallet';
