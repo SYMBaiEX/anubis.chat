@@ -34,11 +34,10 @@ interface UseWalletReturn extends WalletConnectionState {
 const CONNECTION_TIMEOUT = 30_000; // 30 seconds
 const HEALTH_CHECK_INTERVAL = 60_000; // 1 minute
 const MAX_RETRY_ATTEMPTS = 3;
-const WALLET_STATE_ENCRYPTION_KEY = 'isis-wallet-security-2025';
 
 // Health Check Thresholds
 const HEALTH_CHECK_EXCELLENT_THRESHOLD = 1000; // < 1s = excellent (100-80 score)
-const HEALTH_CHECK_GOOD_THRESHOLD = 3000; // < 3s = good (80-60 score)  
+const HEALTH_CHECK_GOOD_THRESHOLD = 3000; // < 3s = good (80-60 score)
 const HEALTH_CHECK_WARNING_THRESHOLD = 5000; // < 5s = warning (60-40 score)
 const HEALTH_SCORE_EXCELLENT = 100;
 const HEALTH_SCORE_GOOD = 80;
@@ -60,7 +59,7 @@ export const useWallet = (): UseWalletReturn => {
     useState<WalletConnectionState>(INITIAL_WALLET_STATE);
   const [isHealthy, setIsHealthy] = useState(true);
   const [connectionHealthScore, setConnectionHealthScore] = useState(100);
-  const healthCheckRef = useRef<NodeJS.Timeout>();
+  const healthCheckRef = useRef<NodeJS.Timeout | undefined>();
   const retryCountRef = useRef(0);
 
   // 2025 Security: Connection health check function
@@ -78,15 +77,19 @@ export const useWallet = (): UseWalletReturn => {
 
       // Calculate health score based on response time using defined thresholds
       let healthScore = HEALTH_SCORE_EXCELLENT;
-      if (responseTime > HEALTH_CHECK_WARNING_THRESHOLD) healthScore = HEALTH_SCORE_CRITICAL;
-      else if (responseTime > HEALTH_CHECK_GOOD_THRESHOLD) healthScore = HEALTH_SCORE_WARNING;
-      else if (responseTime > HEALTH_CHECK_EXCELLENT_THRESHOLD) healthScore = HEALTH_SCORE_GOOD;
+      if (responseTime > HEALTH_CHECK_WARNING_THRESHOLD)
+        healthScore = HEALTH_SCORE_CRITICAL;
+      else if (responseTime > HEALTH_CHECK_GOOD_THRESHOLD)
+        healthScore = HEALTH_SCORE_WARNING;
+      else if (responseTime > HEALTH_CHECK_EXCELLENT_THRESHOLD)
+        healthScore = HEALTH_SCORE_GOOD;
 
       setConnectionHealthScore(healthScore);
       setIsHealthy(healthScore >= HEALTH_SCORE_WARNING);
       retryCountRef.current = 0;
 
       // Health check completed successfully
+      // Note: In production, send metrics to monitoring service instead of console
     } catch (error) {
       retryCountRef.current += 1;
       const healthScore = Math.max(20, 100 - retryCountRef.current * 20);
@@ -94,12 +97,13 @@ export const useWallet = (): UseWalletReturn => {
       setIsHealthy(retryCountRef.current <= 2);
 
       // Health check failed, retrying if within limits
+      // Note: In production, send error metrics to monitoring service
     }
   }, [connected, walletPublicKey]);
 
-  // 2025 Security: Secure wallet state storage (removed insecure encryption)
-  // Note: For production, implement proper encryption using crypto-js or similar
-  const storeWalletState = useCallback((state: any): string => {
+  // 2025 Security: Simple wallet state storage
+  // Note: For production, implement proper encryption using Web Crypto API or crypto-js
+  const storeWalletState = useCallback((state: unknown): string => {
     try {
       return JSON.stringify(state);
     } catch {
@@ -107,7 +111,7 @@ export const useWallet = (): UseWalletReturn => {
     }
   }, []);
 
-  const retrieveWalletState = useCallback((stored: string): any => {
+  const retrieveWalletState = useCallback((stored: string): unknown => {
     try {
       return JSON.parse(stored);
     } catch {
@@ -215,11 +219,12 @@ export const useWallet = (): UseWalletReturn => {
       await Promise.race([connectWallet(), connectTimeout]);
 
       // Wallet connected successfully
+      // Note: In production, log to monitoring service
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to connect wallet';
       // Wallet connection failed
-
+      // Note: In production, log to error tracking service instead
       setState((prev) => ({
         ...prev,
         error: `Connection failed: ${errorMessage}`,
@@ -249,6 +254,7 @@ export const useWallet = (): UseWalletReturn => {
       localStorage.removeItem('isis-wallet-state');
 
       // Wallet disconnected and state cleared
+      // Note: In production, log to monitoring service
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to disconnect wallet';

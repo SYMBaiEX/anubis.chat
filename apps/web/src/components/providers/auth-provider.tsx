@@ -1,6 +1,12 @@
 'use client';
 
-import { createContext, type ReactNode, useContext, useEffect } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+} from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import type { AuthSession, User } from '@/lib/types/api';
@@ -53,7 +59,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           await auth.login();
         } catch (error) {
-          console.error('Auto-login failed:', error);
+          // Log to error tracking service instead of console in production
+          // Error is handled by the auth hook
           // Error is handled by the auth hook, don't need to do anything here
         }
       }
@@ -79,7 +86,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           await auth.logout();
         } catch (error) {
-          console.error('Auto-logout failed:', error);
+          // Log to error tracking service instead of console in production
         }
       }
     };
@@ -89,25 +96,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => clearTimeout(timeoutId);
   }, [auth.isAuthenticated, wallet.isConnected, auth.logout]);
 
-  const contextValue: AuthContextValue = {
-    // Auth state
-    isAuthenticated: auth.isAuthenticated,
-    isLoading: auth.isLoading || wallet.isConnecting,
-    user: auth.user,
-    token: auth.token,
-    error: auth.error,
+  const contextValue: AuthContextValue = useMemo(
+    () => ({
+      // Auth state
+      isAuthenticated: auth.isAuthenticated,
+      isLoading: auth.isLoading || wallet.isConnecting,
+      user: auth.user,
+      token: auth.token,
+      error: auth.error,
 
-    // Auth methods
-    login: auth.login,
-    logout: auth.logout,
-    refreshToken: auth.refreshToken,
-    clearError: auth.clearError,
+      // Auth methods
+      login: auth.login,
+      logout: auth.logout,
+      refreshToken: auth.refreshToken,
+      clearError: auth.clearError,
 
-    // Wallet integration
-    isWalletConnected: wallet.isConnected,
-    walletAddress: wallet.publicKey?.toString() ?? null,
-    publicKey: wallet.publicKey?.toString() ?? null,
-  };
+      // Wallet integration
+      isWalletConnected: wallet.isConnected,
+      walletAddress: wallet.publicKey?.toString() ?? null,
+      publicKey: wallet.publicKey?.toString() ?? null,
+    }),
+    [
+      auth.isAuthenticated,
+      auth.isLoading,
+      auth.user,
+      auth.token,
+      auth.error,
+      auth.login,
+      auth.logout,
+      auth.refreshToken,
+      auth.clearError,
+      wallet.isConnecting,
+      wallet.isConnected,
+      wallet.publicKey,
+    ]
+  );
 
   return (
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>

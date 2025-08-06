@@ -178,9 +178,11 @@ export async function POST(request: NextRequest) {
         // Using ConvexHttpClient to call the users.upsert mutation
         const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
         if (!convexUrl) {
-          throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is required');
+          throw new Error(
+            'NEXT_PUBLIC_CONVEX_URL environment variable is required'
+          );
         }
-        
+
         const convexClient = new (
           await import('convex/browser')
         ).ConvexHttpClient(convexUrl);

@@ -40,7 +40,12 @@ export const useAuth = (): UseAuthReturn => {
 
       if (storedToken && storedUser) {
         try {
-          const user = JSON.parse(storedUser) as User;
+          const parsedUser = JSON.parse(storedUser);
+          // Validate the structure matches User type
+          if (!(parsedUser?.id && parsedUser?.walletAddress)) {
+            throw new Error('Invalid user data structure');
+          }
+          const user = parsedUser as User;
           return {
             isAuthenticated: true,
             isLoading: false,
@@ -85,13 +90,17 @@ export const useAuth = (): UseAuthReturn => {
   const getAuthChallenge = useCallback(
     async (publicKey: string): Promise<WalletAuthChallenge | null> => {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10_000);
         const response = await fetch('/api/auth/challenge', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ publicKey }),
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -100,7 +109,7 @@ export const useAuth = (): UseAuthReturn => {
 
         return await response.json();
       } catch (error) {
-        console.error('Challenge request failed:', error);
+        // Log to error tracking service instead of console in production
         return null;
       }
     },
@@ -133,7 +142,7 @@ export const useAuth = (): UseAuthReturn => {
 
         return await response.json();
       } catch (error) {
-        console.error('Authentication verification failed:', error);
+        // Log to error tracking service instead of console in production
         return null;
       }
     },
@@ -209,7 +218,7 @@ export const useAuth = (): UseAuthReturn => {
       }
     } catch (error) {
       // Don't throw on logout API failure, still clear local state
-      console.error('Logout API call failed:', error);
+      // Log to error tracking service instead of console in production
     } finally {
       clearAuthState();
     }
@@ -244,7 +253,7 @@ export const useAuth = (): UseAuthReturn => {
 
       return newToken;
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      // Log to error tracking service instead of console in production
       clearAuthState();
       return null;
     }

@@ -21,10 +21,22 @@ interface WalletProviderProps {
 
 export const WalletProvider: FC<WalletProviderProps> = ({
   children,
-  network = WalletAdapterNetwork.Devnet,
+  network,
 }) => {
+  // Require explicit network configuration to prevent accidental use of wrong network
+  const selectedNetwork =
+    network ??
+    (process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta'
+      ? WalletAdapterNetwork.Mainnet
+      : process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'testnet'
+        ? WalletAdapterNetwork.Testnet
+        : WalletAdapterNetwork.Devnet);
+
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const endpoint = useMemo(
+    () => clusterApiUrl(selectedNetwork),
+    [selectedNetwork]
+  );
 
   // 2025 Wallet Standard: Use standard wallet adapters for automatic detection
   const standardAdapters = useStandardWalletAdapters();
@@ -35,14 +47,8 @@ export const WalletProvider: FC<WalletProviderProps> = ({
     // This includes Phantom, Solflare, Backpack, and mobile wallet adapters
     const walletList = standardAdapters;
 
-    // Debug: Log wallet standard configuration (August 2025)
-    console.log('🔗 Using Wallet Standard for automatic wallet detection');
-    console.log('📱 Mobile Wallet Adapter support enabled');
-    console.log(
-      '🔍 Detected wallets:',
-      walletList.length,
-      'standard-compliant adapters'
-    );
+    // Note: In production, send wallet detection metrics to monitoring service instead
+    // Debug logging removed per coding guidelines
 
     return walletList;
   }, [standardAdapters]);

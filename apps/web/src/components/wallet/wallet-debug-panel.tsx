@@ -1,8 +1,14 @@
 'use client';
 
-import { useWallet } from '@/hooks/useWallet';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { useWallet } from '@/hooks/useWallet';
 
 export function WalletDebugPanel() {
   const {
@@ -16,7 +22,7 @@ export function WalletDebugPanel() {
     formatAddress,
   } = useWallet();
 
-  if (!isConnected && !isConnecting && !error) {
+  if (!(isConnected || isConnecting || error)) {
     return null;
   }
 
