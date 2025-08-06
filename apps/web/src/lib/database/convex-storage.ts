@@ -4,8 +4,8 @@
  */
 
 import { ConvexHttpClient } from 'convex/browser';
-import { api } from '@/../packages/backend/convex/_generated/api';
-import type { Id } from '@/../packages/backend/convex/_generated/dataModel';
+import { api } from '@convex/_generated/api';
+import type { Id, Doc } from '@convex/_generated/dataModel';
 import type {
   Document,
   DocumentSearchRequest,
@@ -34,6 +34,9 @@ export class ConvexStorage implements StorageBackend {
         metadata: document.metadata,
       });
 
+      if (!convexDoc) {
+        throw new Error('Document creation failed - no document returned');
+      }
       return this.convertFromConvexDocument(convexDoc);
     } catch (error) {
       console.error('Failed to create document in Convex:', error);
@@ -116,7 +119,7 @@ export class ConvexStorage implements StorageBackend {
         });
 
         return {
-          documents: results.map((doc) => this.convertFromConvexDocument(doc)),
+          documents: results.map((doc: Doc<'documents'>) => this.convertFromConvexDocument(doc)),
           total: results.length, // Search doesn't provide total count
         };
       }
@@ -129,7 +132,7 @@ export class ConvexStorage implements StorageBackend {
       });
 
       return {
-        documents: result.documents.map((doc) =>
+        documents: result.documents.map((doc: Doc<'documents'>) =>
           this.convertFromConvexDocument(doc)
         ),
         total: result.pagination.total,
@@ -183,7 +186,7 @@ export class ConvexStorage implements StorageBackend {
       });
 
       // Convert to DocumentSearchResult format
-      return results.map((doc) => ({
+      return results.map((doc: Doc<'documents'>) => ({
         document: this.convertFromConvexDocument(doc),
         score: this.calculateSearchScore(doc, query),
         highlights: this.extractHighlights(doc, query),
@@ -286,7 +289,7 @@ export class ConvexStorage implements StorageBackend {
   }
 
   // Helper methods
-  private convertFromConvexDocument(convexDoc: any): Document {
+  private convertFromConvexDocument(convexDoc: Doc<'documents'>): Document {
     return {
       id: convexDoc._id,
       title: convexDoc.title,
@@ -299,7 +302,7 @@ export class ConvexStorage implements StorageBackend {
     };
   }
 
-  private calculateSearchScore(doc: any, query: string): number {
+  private calculateSearchScore(doc: Doc<'documents'>, query: string): number {
     const searchTerms = query.toLowerCase().split(/\s+/);
     const titleLower = doc.title.toLowerCase();
     const contentLower = doc.content.toLowerCase();
@@ -328,7 +331,7 @@ export class ConvexStorage implements StorageBackend {
   }
 
   private extractHighlights(
-    doc: any,
+    doc: Doc<'documents'>,
     query: string
   ): { title?: string[]; content?: string[] } {
     const searchTerms = query.toLowerCase().split(/\s+/);

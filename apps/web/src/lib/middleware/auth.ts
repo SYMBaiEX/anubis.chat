@@ -8,6 +8,7 @@ import bs58 from 'bs58';
 import { sign, verify } from 'jsonwebtoken';
 import type { NextRequest } from 'next/server';
 import nacl from 'tweetnacl';
+import { jwtConfig, isProduction, corsConfig } from '../env';
 import { getStorage } from '../database/storage';
 import { APIErrorCode } from '../types/api';
 import { createErrorResponse } from '../utils/api-response';
@@ -34,13 +35,13 @@ export interface WalletSession {
 // JWT Token Management
 // =============================================================================
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || 'fallback-secret-key-for-development';
-if (
-  process.env.NODE_ENV === 'production' &&
-  JWT_SECRET === 'fallback-secret-key-for-development'
-) {
-  throw new Error('JWT_SECRET environment variable is required in production');
+// JWT configuration from environment
+const JWT_SECRET = jwtConfig.secret;
+const JWT_EXPIRES_IN = jwtConfig.expiresIn;
+
+// Validate JWT secret in production
+if (isProduction && JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be at least 32 characters in production');
 }
 
 export function createJWTToken(
@@ -325,7 +326,7 @@ export function addWeb3CorsHeaders(response: Response): Response {
 
   headers.set(
     'Access-Control-Allow-Origin',
-    process.env.ALLOWED_ORIGINS || '*'
+    corsConfig.origins.join(',')
   );
   headers.set(
     'Access-Control-Allow-Methods',

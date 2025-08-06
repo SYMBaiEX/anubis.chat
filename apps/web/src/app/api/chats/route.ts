@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
             systemPrompt: 'You are a helpful AI assistant.',
             temperature: 0.7,
             maxTokens: 2000,
-            isArchived: archived,
+            isArchived: archived ?? false,
             isPinned: i === 0,
             messageCount: Math.floor(Math.random() * 50) + 5,
             tokensUsed: Math.floor(Math.random() * 5000) + 500,

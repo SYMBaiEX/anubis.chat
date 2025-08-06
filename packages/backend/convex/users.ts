@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { Id } from './_generated/dataModel';
+import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // Get user by wallet address

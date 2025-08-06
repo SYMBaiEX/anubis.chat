@@ -8,6 +8,7 @@ import { generateText, streamText } from 'ai';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { openaiConfig } from '@/lib/env';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import {
@@ -38,6 +39,12 @@ const completionSchema = z.object({
 // =============================================================================
 
 function getOpenAIModel(modelId: string) {
+  // Check if OpenAI is enabled
+  if (!openaiConfig.enabled) {
+    console.error('OpenAI API key not configured');
+    return null;
+  }
+
   const supportedModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-4', 'gpt-3.5-turbo'];
 
   if (!supportedModels.includes(modelId)) {

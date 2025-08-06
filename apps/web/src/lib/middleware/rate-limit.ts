@@ -4,6 +4,7 @@
  */
 
 import type { NextRequest } from 'next/server';
+import { rateLimitConfig } from '../env';
 import { APIErrorCode } from '../types/api';
 import { addRateLimitHeaders, rateLimitResponse } from '../utils/api-response';
 import { extractWalletFromRequest } from './auth';
@@ -116,44 +117,44 @@ export const rateLimitConfigs = {
 
   // Message sending
   messages: {
-    windowMs: 60 * 1000, // 1 minute
-    maxRequests: 30, // 30 messages per minute
+    windowMs: rateLimitConfig.windowMs,
+    maxRequests: Math.floor(rateLimitConfig.maxRequests * 0.3), // 30% of global limit
   },
 
   // Chat operations
   chats: {
-    windowMs: 60 * 1000, // 1 minute
-    maxRequests: 60, // 60 operations per minute
+    windowMs: rateLimitConfig.windowMs,
+    maxRequests: Math.floor(rateLimitConfig.maxRequests * 0.6), // 60% of global limit
   },
 
   // AI requests
   ai: {
-    windowMs: 60 * 1000, // 1 minute
-    maxRequests: 20, // 20 AI requests per minute
+    windowMs: rateLimitConfig.windowMs,
+    maxRequests: Math.floor(rateLimitConfig.maxRequests * 0.2), // 20% of global limit
   },
 
   // Document uploads
   documents: {
-    windowMs: 60 * 1000, // 1 minute
-    maxRequests: 10, // 10 uploads per minute
+    windowMs: rateLimitConfig.windowMs,
+    maxRequests: Math.floor(rateLimitConfig.maxRequests * 0.1), // 10% of global limit
   },
 
   // Search requests
   search: {
-    windowMs: 60 * 1000, // 1 minute
-    maxRequests: 100, // 100 searches per minute
+    windowMs: rateLimitConfig.windowMs,
+    maxRequests: rateLimitConfig.maxRequests, // Full global limit
   },
 
   // General API
   general: {
-    windowMs: 60 * 1000, // 1 minute
-    maxRequests: 200, // 200 requests per minute
+    windowMs: rateLimitConfig.windowMs,
+    maxRequests: rateLimitConfig.maxRequests,
   },
 
   // Premium tier limits (higher)
   premium: {
-    windowMs: 60 * 1000, // 1 minute
-    maxRequests: 500, // 500 requests per minute
+    windowMs: rateLimitConfig.windowMs,
+    maxRequests: rateLimitConfig.maxRequests * 5, // 5x the general limit
   },
 } as const;
 

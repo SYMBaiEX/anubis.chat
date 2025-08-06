@@ -17,6 +17,7 @@ import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as chats from "../chats.js";
 import type * as documents from "../documents.js";
+import type * as env from "../env.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as messages from "../messages.js";
 import type * as users from "../users.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   chats: typeof chats;
   documents: typeof documents;
+  env: typeof env;
   healthCheck: typeof healthCheck;
   messages: typeof messages;
   users: typeof users;
