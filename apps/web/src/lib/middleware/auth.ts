@@ -3,14 +3,14 @@
  * Based on latest Solana wallet patterns and August 2025 best practices
  */
 
-import { NextRequest } from 'next/server';
-import { verify, sign } from 'jsonwebtoken';
 import { PublicKey } from '@solana/web3.js';
-import nacl from 'tweetnacl';
 import bs58 from 'bs58';
+import { sign, verify } from 'jsonwebtoken';
+import type { NextRequest } from 'next/server';
+import nacl from 'tweetnacl';
+import { getStorage } from '../database/storage';
 import { APIErrorCode } from '../types/api';
 import { createErrorResponse } from '../utils/api-response';
-import { getStorage } from '../database/storage';
 
 // =============================================================================
 // Types
@@ -34,12 +34,19 @@ export interface WalletSession {
 // JWT Token Management
 // =============================================================================
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-development';
-if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'fallback-secret-key-for-development') {
+const JWT_SECRET =
+  process.env.JWT_SECRET || 'fallback-secret-key-for-development';
+if (
+  process.env.NODE_ENV === 'production' &&
+  JWT_SECRET === 'fallback-secret-key-for-development'
+) {
   throw new Error('JWT_SECRET environment variable is required in production');
 }
 
-export function createJWTToken(walletAddress: string, publicKey: string): string {
+export function createJWTToken(
+  walletAddress: string,
+  publicKey: string
+): string {
   const payload: WalletSession & { jti: string } = {
     walletAddress,
     publicKey,
@@ -54,7 +61,9 @@ export function createJWTToken(walletAddress: string, publicKey: string): string
   });
 }
 
-export async function verifyJWTToken(token: string): Promise<WalletSession | null> {
+export async function verifyJWTToken(
+  token: string
+): Promise<WalletSession | null> {
   try {
     const decoded = verify(token, JWT_SECRET, {
       algorithms: ['HS256'],
@@ -121,7 +130,10 @@ export async function createNonce(publicKey: string): Promise<string> {
   return nonce;
 }
 
-export async function validateNonce(publicKey: string, nonce: string): Promise<boolean> {
+export async function validateNonce(
+  publicKey: string,
+  nonce: string
+): Promise<boolean> {
   const storage = getStorage();
   return await storage.validateAndRemoveNonce(publicKey, nonce);
 }
@@ -137,7 +149,7 @@ export async function withAuth<T extends NextRequest>(
   try {
     // Extract token from Authorization header
     const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!(authHeader && authHeader.startsWith('Bearer '))) {
       return createErrorResponse(
         APIErrorCode.UNAUTHORIZED,
         'Missing or invalid authorization header'
@@ -145,7 +157,7 @@ export async function withAuth<T extends NextRequest>(
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-    
+
     // Verify JWT token
     const session = await verifyJWTToken(token);
     if (!session) {
@@ -168,12 +180,11 @@ export async function withAuth<T extends NextRequest>(
       user: {
         walletAddress: session.walletAddress,
         publicKey: session.publicKey,
-      }
+      },
     }) as AuthenticatedRequest;
 
     // Call the handler with authenticated request
     return await handler(authenticatedRequest);
-
   } catch (error) {
     console.error('Authentication middleware error:', error);
     return createErrorResponse(
@@ -189,15 +200,17 @@ export async function withAuth<T extends NextRequest>(
 
 export async function withOptionalAuth<T extends NextRequest>(
   request: T,
-  handler: (req: T & { user?: { walletAddress: string; publicKey: string } }) => Promise<Response>
+  handler: (
+    req: T & { user?: { walletAddress: string; publicKey: string } }
+  ) => Promise<Response>
 ): Promise<Response> {
   try {
     const authHeader = request.headers.get('Authorization');
-    
+
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       const session = await verifyJWTToken(token);
-      
+
       if (session && isValidSolanaAddress(session.walletAddress)) {
         (request as any).user = {
           walletAddress: session.walletAddress,
@@ -206,12 +219,15 @@ export async function withOptionalAuth<T extends NextRequest>(
       }
     }
 
-    return await handler(request as T & { user?: { walletAddress: string; publicKey: string } });
-
+    return await handler(
+      request as T & { user?: { walletAddress: string; publicKey: string } }
+    );
   } catch (error) {
     // For optional auth, we continue without auth on errors
     console.error('Optional authentication error:', error);
-    return await handler(request as T & { user?: { walletAddress: string; publicKey: string } });
+    return await handler(
+      request as T & { user?: { walletAddress: string; publicKey: string } }
+    );
   }
 }
 
@@ -228,7 +244,9 @@ export function isValidSolanaAddress(address: string): boolean {
   }
 }
 
-export async function extractWalletFromRequest(request: NextRequest): Promise<string | null> {
+export async function extractWalletFromRequest(
+  request: NextRequest
+): Promise<string | null> {
   // Try Authorization header first
   const authHeader = request.headers.get('Authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -265,10 +283,10 @@ export function checkRateLimit(
   const now = Date.now();
   const windowStart = Math.floor(now / config.windowMs) * config.windowMs;
   const resetTime = windowStart + config.windowMs;
-  
+
   const key = `${walletAddress}:${windowStart}`;
   const current = rateLimits.get(key) || { count: 0, resetTime };
-  
+
   if (current.count >= config.maxRequests) {
     return {
       allowed: false,
@@ -303,10 +321,17 @@ export function checkRateLimit(
 
 export function addWeb3CorsHeaders(response: Response): Response {
   const headers = new Headers(response.headers);
-  
-  headers.set('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGINS || '*');
-  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  headers.set('Access-Control-Allow-Headers', 
+
+  headers.set(
+    'Access-Control-Allow-Origin',
+    process.env.ALLOWED_ORIGINS || '*'
+  );
+  headers.set(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, OPTIONS'
+  );
+  headers.set(
+    'Access-Control-Allow-Headers',
     'Content-Type, Authorization, X-Wallet-Signature, X-Wallet-Message, X-Wallet-Pubkey, X-Timestamp'
   );
   headers.set('Access-Control-Max-Age', '86400'); // 24 hours
