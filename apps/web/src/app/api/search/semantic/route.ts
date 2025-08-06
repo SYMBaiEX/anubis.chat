@@ -12,6 +12,7 @@ import {
   validationErrorResponse,
   addSecurityHeaders 
 } from '@/lib/utils/api-response';
+import { getStorage } from '@/lib/database/storage';
 import type { 
   Document,
   DocumentSearchResult
@@ -44,22 +45,6 @@ const semanticSearchSchema = z.object({
   }).optional(),
 });
 
-// =============================================================================
-// External Storage References
-// =============================================================================
-
-declare global {
-  var documentsStore: Map<string, Document>;
-  var userDocumentsStore: Map<string, Set<string>>;
-}
-
-if (!global.documentsStore) {
-  global.documentsStore = new Map<string, Document>();
-  global.userDocumentsStore = new Map<string, Set<string>>();
-}
-
-const documents = global.documentsStore;
-const userDocuments = global.userDocumentsStore;
 
 // =============================================================================
 // Semantic Search Implementation
@@ -99,58 +84,49 @@ interface SemanticSearchResponse {
 
 /**
  * Enhanced semantic search with context awareness
- * In production, this would use vector embeddings and similarity search
+ * Uses storage layer with additional semantic enhancements
  */
-function performSemanticSearch(
+async function performSemanticSearch(
   userWallet: string,
   options: SemanticSearchOptions
-): SemanticSearchResponse {
+): Promise<SemanticSearchResponse> {
   const startTime = Date.now();
-  const userDocIds = userDocuments.get(userWallet) || new Set();
   
   // Expand query based on context and intent
-  let expandedQuery = expandSearchQuery(options);
-  const searchTerms = expandedQuery.toLowerCase().split(/\s+/);
-  const results: DocumentSearchResult[] = [];
+  const expandedQuery = expandSearchQuery(options);
   
-  for (const docId of userDocIds) {
-    const doc = documents.get(docId);
-    if (!doc) continue;
-    
-    // Apply filters
-    if (!passesFilters(doc, options.filters)) continue;
-    
-    // Enhanced scoring with semantic awareness
-    const score = calculateSemanticScore(doc, searchTerms, options);
-    
-    if (score < 0.2) continue; // Higher threshold for semantic search
-    
-    // Extract relevant snippets
-    const snippets = extractRelevantSnippets(doc, searchTerms, options.contextLength);
-    
-    results.push({
-      document: doc,
-      score,
-      highlights: {
-        title: extractHighlights(doc.title, searchTerms),
-        content: extractHighlights(doc.content, searchTerms),
-      },
-    });
-  }
+  // Use storage layer for basic search
+  const storage = getStorage();
+  const searchOptions = {
+    query: expandedQuery,
+    limit: options.limit,
+    filters: options.filters ? {
+      type: options.filters.type as ('text' | 'markdown' | 'pdf' | 'url')[] | undefined,
+      category: options.filters.category,
+      tags: options.filters.tags,
+    } : undefined,
+    similarity: { threshold: 0.2, algorithm: 'cosine' as const }, // Higher threshold for semantic search
+  };
   
-  // Sort by score and apply limit
-  results.sort((a, b) => b.score - a.score);
-  const limitedResults = results.slice(0, options.limit);
+  const results = await storage.searchDocuments(userWallet, expandedQuery, searchOptions);
+  
+  // Enhance results with semantic context
+  const enhancedResults = results.map(result => ({
+    ...result,
+    score: enhanceSemanticScore(result.score, result.document, options),
+  })).sort((a, b) => b.score - a.score);
+  
+  const limitedResults = enhancedResults.slice(0, options.limit);
   
   // Generate context for AI
   const context = generateRAGContext(limitedResults, options);
   
-  // Prepare context sources
+  // Prepare context sources with snippets
   const contextSources = limitedResults.map(result => ({
     documentId: result.document.id,
     title: result.document.title,
     score: result.score,
-    snippets: extractRelevantSnippets(result.document, searchTerms, 200),
+    snippets: extractRelevantSnippets(result.document, expandedQuery.toLowerCase().split(/\s+/), 200),
   }));
   
   const processingTime = Date.now() - startTime;
@@ -194,68 +170,14 @@ function expandSearchQuery(options: SemanticSearchOptions): string {
 }
 
 /**
- * Check if document passes all filters
+ * Enhance search score with semantic context awareness
  */
-function passesFilters(doc: Document, filters?: SemanticSearchOptions['filters']): boolean {
-  if (!filters) return true;
-  
-  // Type filter
-  if (filters.type && !filters.type.includes(doc.type)) return false;
-  
-  // Category filter
-  if (filters.category && doc.metadata?.category) {
-    if (!filters.category.includes(doc.metadata.category)) return false;
-  }
-  
-  // Tags filter
-  if (filters.tags && doc.metadata?.tags) {
-    const hasMatchingTag = filters.tags.some(filterTag => 
-      doc.metadata?.tags?.includes(filterTag)
-    );
-    if (!hasMatchingTag) return false;
-  }
-  
-  // Date range filter
-  if (filters.dateRange) {
-    if (filters.dateRange.start && doc.createdAt < filters.dateRange.start) return false;
-    if (filters.dateRange.end && doc.createdAt > filters.dateRange.end) return false;
-  }
-  
-  return true;
-}
-
-/**
- * Calculate semantic score with enhanced weighting
- */
-function calculateSemanticScore(
-  doc: Document,
-  searchTerms: string[],
+function enhanceSemanticScore(
+  baseScore: number, 
+  doc: Document, 
   options: SemanticSearchOptions
 ): number {
-  const titleLower = doc.title.toLowerCase();
-  const contentLower = doc.content.toLowerCase();
-  let score = 0;
-  
-  for (const term of searchTerms) {
-    // Title matches (highest weight)
-    if (titleLower.includes(term)) {
-      score += 5;
-    }
-    
-    // Content frequency with diminishing returns
-    const contentMatches = (contentLower.match(new RegExp(term, 'g')) || []).length;
-    score += Math.min(contentMatches * 1.5, 10);
-    
-    // Tag matches (high weight)
-    if (doc.metadata?.tags?.some(tag => tag.toLowerCase().includes(term))) {
-      score += 3;
-    }
-    
-    // Category match (medium weight)
-    if (doc.metadata?.category?.toLowerCase().includes(term)) {
-      score += 2;
-    }
-  }
+  let score = baseScore;
   
   // Intent-based scoring adjustment
   if (options.context?.userIntent === 'research') {
@@ -274,9 +196,9 @@ function calculateSemanticScore(
     score *= 1.05;
   }
   
-  // Normalize score
-  return Math.min(1, score / (searchTerms.length * 8));
+  return Math.min(1, score);
 }
+
 
 /**
  * Extract relevant text snippets from document
@@ -387,19 +309,14 @@ export async function POST(request: NextRequest) {
         if (!validation.success) {
           return validationErrorResponse(
             'Invalid semantic search request',
-            validation.error.issues.reduce((acc, issue) => {
-              const path = issue.path.join('.');
-              if (!acc[path]) acc[path] = [];
-              acc[path].push(issue.message);
-              return acc;
-            }, {} as Record<string, string[]>)
+            validation.error.flatten().fieldErrors
           );
         }
         
         const searchOptions = validation.data;
         
         // Perform semantic search
-        const searchResponse = performSemanticSearch(walletAddress, searchOptions);
+        const searchResponse = await performSemanticSearch(walletAddress, searchOptions);
         
         console.log(`Semantic search by ${walletAddress}: "${searchOptions.query}" -> ${searchResponse.total} results (${searchResponse.processingTime}ms)`);
         

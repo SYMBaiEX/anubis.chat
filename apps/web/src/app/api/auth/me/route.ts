@@ -53,27 +53,11 @@ export async function GET(request: NextRequest) {
         
       } catch (error) {
         console.error('Get user profile error:', error);
-        
-        return successResponse({
-          walletAddress: authReq.user.walletAddress,
-          publicKey: authReq.user.publicKey,
-          displayName: undefined,
-          avatar: undefined,
-          preferences: {
-            theme: 'dark',
-            aiModel: 'gpt-4o',
-            notifications: true,
-          },
-          subscription: {
-            tier: 'free',
-            tokensUsed: 0,
-            tokensLimit: 10000,
-            features: ['basic_chat'],
-          },
-          createdAt: Date.now(),
-          lastActiveAt: Date.now(),
-          isActive: true,
-        });
+        const response = NextResponse.json(
+          { error: 'Failed to retrieve user profile' },
+          { status: 500 }
+        );
+        return addSecurityHeaders(response);
       }
     });
   });

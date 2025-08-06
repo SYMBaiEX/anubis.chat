@@ -13,6 +13,7 @@ import {
   notFoundResponse,
   addSecurityHeaders 
 } from '@/lib/utils/api-response';
+import { getStorage } from '@/lib/database/storage';
 import type { 
   Document, 
   DocumentUpdateResponse 
@@ -34,44 +35,6 @@ const updateDocumentSchema = z.object({
   }).optional(),
 });
 
-// =============================================================================
-// External Storage References (shared with main documents route)
-// =============================================================================
-
-// Note: In production, these would be database/vector store operations
-// For development, we're using in-memory storage (shared module would be ideal)
-declare global {
-  var documentsStore: Map<string, Document>;
-  var userDocumentsStore: Map<string, Set<string>>;
-}
-
-// Initialize global storage if not exists
-if (!global.documentsStore) {
-  global.documentsStore = new Map<string, Document>();
-  global.userDocumentsStore = new Map<string, Set<string>>();
-}
-
-const documents = global.documentsStore;
-const userDocuments = global.userDocumentsStore;
-
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-function canAccessDocument(walletAddress: string, documentId: string): boolean {
-  const document = documents.get(documentId);
-  return document ? document.ownerId === walletAddress : false;
-}
-
-function removeDocumentFromUser(walletAddress: string, documentId: string): void {
-  const userDocs = userDocuments.get(walletAddress);
-  if (userDocs) {
-    userDocs.delete(documentId);
-    if (userDocs.size === 0) {
-      userDocuments.delete(walletAddress);
-    }
-  }
-}
 
 // =============================================================================
 // Route Handlers
@@ -91,11 +54,15 @@ export async function GET(
         const { id: documentId } = params;
         
         // Check if document exists and user can access it
-        if (!canAccessDocument(walletAddress, documentId)) {
+        const storage = getStorage();
+        if (!(await storage.canAccessDocument(walletAddress, documentId))) {
           return notFoundResponse('Document not found');
         }
         
-        const document = documents.get(documentId)!;
+        const document = await storage.getDocument(documentId);
+        if (!document) {
+          return notFoundResponse('Document not found');
+        }
         
         console.log(`Document retrieved: ${documentId} by ${walletAddress}`);
         
@@ -128,7 +95,8 @@ export async function PUT(
         const { id: documentId } = params;
         
         // Check if document exists and user can access it
-        if (!canAccessDocument(walletAddress, documentId)) {
+        const storage = getStorage();
+        if (!(await storage.canAccessDocument(walletAddress, documentId))) {
           return notFoundResponse('Document not found');
         }
         
@@ -139,25 +107,17 @@ export async function PUT(
         if (!validation.success) {
           return validationErrorResponse(
             'Invalid document update request',
-            validation.error.issues.reduce((acc, issue) => {
-              const path = issue.path.join('.');
-              if (!acc[path]) acc[path] = [];
-              acc[path].push(issue.message);
-              return acc;
-            }, {} as Record<string, string[]>)
+            validation.error.flatten().fieldErrors
           );
         }
         
         const { title, content, metadata } = validation.data;
-        const existingDocument = documents.get(documentId)!;
         
-        // Update document
-        const updatedDocument: Document = {
-          ...existingDocument,
+        // Prepare updates
+        const updates: Partial<Document> = {
           ...(title && { title }),
           ...(content && { content }),
           metadata: {
-            ...existingDocument.metadata,
             ...metadata,
             ...(content && {
               wordCount: content.split(/\s+/).length,
@@ -167,8 +127,11 @@ export async function PUT(
           updatedAt: Date.now(),
         };
         
-        // Store updated document
-        documents.set(documentId, updatedDocument);
+        // Update document using storage layer
+        const updatedDocument = await storage.updateDocument(documentId, updates);
+        if (!updatedDocument) {
+          return notFoundResponse('Document not found');
+        }
         
         console.log(`Document updated: ${documentId} by ${walletAddress}`);
         
@@ -206,13 +169,14 @@ export async function DELETE(
         const { id: documentId } = params;
         
         // Check if document exists and user can access it
-        if (!canAccessDocument(walletAddress, documentId)) {
+        const storage = getStorage();
+        if (!(await storage.canAccessDocument(walletAddress, documentId))) {
           return notFoundResponse('Document not found');
         }
         
-        // Remove document
-        documents.delete(documentId);
-        removeDocumentFromUser(walletAddress, documentId);
+        // Remove document using storage layer
+        await storage.deleteDocument(documentId);
+        await storage.removeDocumentFromUser(walletAddress, documentId);
         
         console.log(`Document deleted: ${documentId} by ${walletAddress}`);
         

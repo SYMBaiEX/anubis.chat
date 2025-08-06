@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Validate nonce (prevent replay attacks)
-      if (!validateNonce(publicKey, parsedMessage.nonce)) {
+      if (!(await validateNonce(publicKey, parsedMessage.nonce))) {
         return unauthorizedResponse('Invalid or expired nonce');
       }
       

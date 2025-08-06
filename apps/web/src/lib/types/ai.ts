@@ -87,7 +87,7 @@ export interface CustomJSONSchema {
 }
 
 // Predefined Schema Types
-export type PredefineaSchemaType = 
+export type PredefinedSchemaType = 
   | 'tasks'
   | 'meetingSummary' 
   | 'articleSummary'
@@ -97,7 +97,7 @@ export type PredefineaSchemaType =
 export interface GenerateObjectRequest {
   prompt: string;
   model?: string;
-  schema?: PredefineaSchemaType;
+  schema?: PredefinedSchemaType;
   customSchema?: CustomJSONSchema;
   systemPrompt?: string;
   temperature?: number;

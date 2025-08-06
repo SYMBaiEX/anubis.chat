@@ -214,8 +214,8 @@ function getSchema(schemaType?: string, customSchema?: Record<string, unknown>):
       
       return z.object(shape);
     } else {
-      // Fallback for invalid custom schema - return a generic record
-      return z.record(z.string(), z.unknown());
+      // Fallback for invalid custom schema - throw an error
+      throw new Error('Invalid custom schema structure provided.');
     }
   }
   
@@ -239,12 +239,7 @@ export async function POST(request: NextRequest) {
         if (!validation.success) {
           return validationErrorResponse(
             'Invalid generate object request',
-            validation.error.issues.reduce((acc, issue) => {
-              const path = issue.path.join('.');
-              if (!acc[path]) acc[path] = [];
-              acc[path].push(issue.message);
-              return acc;
-            }, {} as Record<string, string[]>)
+            validation.error.flatten().fieldErrors
           );
         }
         

@@ -21,16 +21,18 @@ export async function POST(request: NextRequest) {
       try {
         const { walletAddress } = authReq.user;
         
-        // TODO: Invalidate token server-side
-        // In a production environment, you would:
-        // 1. Add the token to a blacklist/revocation list
-        // 2. Update user's last logout time in database
-        // 3. Clear any active sessions
+        // Invalidate token server-side by blacklisting it
+        const authHeader = authReq.headers.get('Authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.substring(7);
+          const { blacklistToken } = await import('@/lib/middleware/auth');
+          const blacklisted = await blacklistToken(token);
+          if (blacklisted) {
+            console.log(`Token blacklisted for user ${walletAddress}`);
+          }
+        }
         
         console.log(`User ${walletAddress} logged out at ${new Date().toISOString()}`);
-        
-        // TODO: Update user logout time in Convex
-        // await updateUserLogoutTime(walletAddress);
         
         // Return 204 No Content for successful logout
         const response = noContentResponse();

@@ -34,10 +34,10 @@ const challengeSchema = z.object({
 // Challenge Generation
 // =============================================================================
 
-function generateChallenge(publicKey: string): WalletAuthChallenge {
+async function generateChallenge(publicKey: string): Promise<WalletAuthChallenge> {
   const domain = process.env.NEXT_PUBLIC_DOMAIN || 'localhost:3001';
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
-  const nonce = createNonce(publicKey);
+  const nonce = await createNonce(publicKey);
   const expirationTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
   
   // Create SIWE-compatible message
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       const { publicKey } = validation.data;
       
       // Generate challenge
-      const challenge = generateChallenge(publicKey);
+      const challenge = await generateChallenge(publicKey);
       
       // Add security headers and return response
       const response = successResponse(challenge);

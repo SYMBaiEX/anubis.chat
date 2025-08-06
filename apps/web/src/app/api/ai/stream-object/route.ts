@@ -164,12 +164,7 @@ export async function POST(request: NextRequest) {
         if (!validation.success) {
           return validationErrorResponse(
             'Invalid stream object request',
-            validation.error.issues.reduce((acc, issue) => {
-              const path = issue.path.join('.');
-              if (!acc[path]) acc[path] = [];
-              acc[path].push(issue.message);
-              return acc;
-            }, {} as Record<string, string[]>)
+            validation.error.flatten().fieldErrors
           );
         }
         

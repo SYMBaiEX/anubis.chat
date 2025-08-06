@@ -12,6 +12,7 @@ import {
   validationErrorResponse,
   addSecurityHeaders 
 } from '@/lib/utils/api-response';
+import { getStorage } from '@/lib/database/storage';
 import { nanoid } from 'nanoid';
 import type { 
   Document, 
@@ -48,46 +49,6 @@ const updateDocumentSchema = z.object({
   }).optional(),
 });
 
-// =============================================================================
-// In-Memory Storage (Production would use database/vector store)
-// =============================================================================
-
-const documents = new Map<string, Document>();
-const userDocuments = new Map<string, Set<string>>(); // walletAddress -> Set<documentId>
-
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-function getUserDocuments(walletAddress: string): Document[] {
-  const documentIds = userDocuments.get(walletAddress) || new Set();
-  return Array.from(documentIds)
-    .map(id => documents.get(id))
-    .filter((doc): doc is Document => doc !== undefined)
-    .sort((a, b) => b.createdAt - a.createdAt);
-}
-
-function addDocumentToUser(walletAddress: string, documentId: string): void {
-  if (!userDocuments.has(walletAddress)) {
-    userDocuments.set(walletAddress, new Set());
-  }
-  userDocuments.get(walletAddress)!.add(documentId);
-}
-
-function removeDocumentFromUser(walletAddress: string, documentId: string): void {
-  const userDocs = userDocuments.get(walletAddress);
-  if (userDocs) {
-    userDocs.delete(documentId);
-    if (userDocs.size === 0) {
-      userDocuments.delete(walletAddress);
-    }
-  }
-}
-
-function canAccessDocument(walletAddress: string, documentId: string): boolean {
-  const document = documents.get(documentId);
-  return document ? document.ownerId === walletAddress : false;
-}
 
 // =============================================================================
 // Route Handlers
@@ -106,32 +67,19 @@ export async function GET(request: NextRequest) {
         // Parse query parameters
         const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
         const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10', 10)));
-        const category = searchParams.get('category');
-        const search = searchParams.get('search');
+        const category = searchParams.get('category') || undefined;
+        const search = searchParams.get('search') || undefined;
         
-        // Get user's documents
-        let userDocs = getUserDocuments(walletAddress);
+        // Get user's documents using storage layer
+        const storage = getStorage();
+        const { documents: paginatedDocs, total } = await storage.getUserDocuments(walletAddress, {
+          page,
+          limit,
+          category,
+          search
+        });
         
-        // Filter by category
-        if (category) {
-          userDocs = userDocs.filter(doc => doc.metadata?.category === category);
-        }
-        
-        // Filter by search term (title and content)
-        if (search) {
-          const searchTerm = search.toLowerCase();
-          userDocs = userDocs.filter(doc => 
-            doc.title.toLowerCase().includes(searchTerm) ||
-            doc.content.toLowerCase().includes(searchTerm) ||
-            doc.metadata?.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
-          );
-        }
-        
-        // Pagination
-        const total = userDocs.length;
         const totalPages = Math.ceil(total / limit);
-        const offset = (page - 1) * limit;
-        const paginatedDocs = userDocs.slice(offset, offset + limit);
         
         console.log(`Documents listed for ${walletAddress}: ${paginatedDocs.length}/${total} documents`);
         
@@ -182,12 +130,7 @@ export async function POST(request: NextRequest) {
         if (!validation.success) {
           return validationErrorResponse(
             'Invalid document upload request',
-            validation.error.issues.reduce((acc, issue) => {
-              const path = issue.path.join('.');
-              if (!acc[path]) acc[path] = [];
-              acc[path].push(issue.message);
-              return acc;
-            }, {} as Record<string, string[]>)
+            validation.error.flatten().fieldErrors
           );
         }
         
@@ -211,9 +154,10 @@ export async function POST(request: NextRequest) {
           updatedAt: now,
         };
         
-        // Store document
-        documents.set(documentId, document);
-        addDocumentToUser(walletAddress, documentId);
+        // Store document using storage layer
+        const storage = getStorage();
+        await storage.createDocument(document);
+        await storage.addDocumentToUser(walletAddress, documentId);
         
         console.log(`Document created: ${documentId} by ${walletAddress}, type: ${type}, length: ${content.length} chars`);
         

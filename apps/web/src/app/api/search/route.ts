@@ -12,6 +12,7 @@ import {
   validationErrorResponse,
   addSecurityHeaders 
 } from '@/lib/utils/api-response';
+import { getStorage } from '@/lib/database/storage';
 import type { 
   Document,
   DocumentSearchRequest,
@@ -56,117 +57,8 @@ const semanticSearchSchema = z.object({
 });
 
 // =============================================================================
-// External Storage References (shared with documents)
-// =============================================================================
-
-declare global {
-  var documentsStore: Map<string, Document>;
-  var userDocumentsStore: Map<string, Set<string>>;
-}
-
-if (!global.documentsStore) {
-  global.documentsStore = new Map<string, Document>();
-  global.userDocumentsStore = new Map<string, Set<string>>();
-}
-
-const documents = global.documentsStore;
-const userDocuments = global.userDocumentsStore;
-
-// =============================================================================
 // Helper Functions
 // =============================================================================
-
-/**
- * Simple text-based search implementation
- * In production, this would use vector search with embeddings
- */
-function searchDocuments(
-  query: string, 
-  userWallet: string, 
-  options: DocumentSearchRequest
-): DocumentSearchResult[] {
-  const userDocIds = userDocuments.get(userWallet) || new Set();
-  const searchTerms = query.toLowerCase().split(/\s+/);
-  const results: DocumentSearchResult[] = [];
-  
-  for (const docId of userDocIds) {
-    const doc = documents.get(docId);
-    if (!doc) continue;
-    
-    // Apply type filter
-    if (options.filters?.type && !options.filters.type.includes(doc.type)) {
-      continue;
-    }
-    
-    // Apply category filter
-    if (options.filters?.category && doc.metadata?.category) {
-      if (!options.filters.category.includes(doc.metadata.category)) {
-        continue;
-      }
-    }
-    
-    // Apply tags filter
-    if (options.filters?.tags && doc.metadata?.tags) {
-      const hasMatchingTag = options.filters.tags.some(filterTag => 
-        doc.metadata?.tags?.includes(filterTag)
-      );
-      if (!hasMatchingTag) {
-        continue;
-      }
-    }
-    
-    // Calculate search score
-    const titleLower = doc.title.toLowerCase();
-    const contentLower = doc.content.toLowerCase();
-    
-    let score = 0;
-    let titleHighlights: string[] = [];
-    let contentHighlights: string[] = [];
-    
-    // Score calculation (simple TF-IDF-like approach)
-    for (const term of searchTerms) {
-      // Title matches (higher weight)
-      if (titleLower.includes(term)) {
-        score += 3;
-        titleHighlights.push(term);
-      }
-      
-      // Content matches
-      const contentMatches = (contentLower.match(new RegExp(term, 'g')) || []).length;
-      score += contentMatches * 1;
-      
-      if (contentMatches > 0) {
-        contentHighlights.push(term);
-      }
-      
-      // Tag matches (medium weight)
-      if (doc.metadata?.tags?.some(tag => tag.toLowerCase().includes(term))) {
-        score += 2;
-      }
-    }
-    
-    // Apply similarity threshold
-    const normalizedScore = Math.min(1, score / (searchTerms.length * 5));
-    if (normalizedScore < (options.similarity?.threshold || 0.1)) {
-      continue;
-    }
-    
-    results.push({
-      document: doc,
-      score: normalizedScore,
-      highlights: {
-        title: titleHighlights.length > 0 ? titleHighlights : undefined,
-        content: contentHighlights.length > 0 ? contentHighlights : undefined,
-      },
-    });
-  }
-  
-  // Sort by score descending
-  results.sort((a, b) => b.score - a.score);
-  
-  // Apply limit
-  return results.slice(0, options.limit || 10);
-}
 
 /**
  * Extract relevant context from search results for RAG
@@ -203,19 +95,15 @@ export async function POST(request: NextRequest) {
         if (!validation.success) {
           return validationErrorResponse(
             'Invalid search request',
-            validation.error.issues.reduce((acc, issue) => {
-              const path = issue.path.join('.');
-              if (!acc[path]) acc[path] = [];
-              acc[path].push(issue.message);
-              return acc;
-            }, {} as Record<string, string[]>)
+            validation.error.flatten().fieldErrors
           );
         }
         
         const searchRequest = validation.data;
         
-        // Perform search
-        const results = searchDocuments(searchRequest.query, walletAddress, searchRequest);
+        // Perform search using storage layer
+        const storage = getStorage();
+        const results = await storage.searchDocuments(walletAddress, searchRequest.query, searchRequest);
         const processingTime = Date.now() - startTime;
         
         console.log(`Search performed by ${walletAddress}: "${searchRequest.query}" -> ${results.length} results (${processingTime}ms)`);
@@ -273,7 +161,8 @@ export async function GET(request: NextRequest) {
           similarity: { threshold: 0.3, algorithm: 'cosine' },
         };
         
-        const results = searchDocuments(query, walletAddress, searchOptions);
+        const storage = getStorage();
+        const results = await storage.searchDocuments(walletAddress, query, searchOptions);
         const context = extractContext(results.slice(0, 3)); // Use top 3 for context
         
         console.log(`Semantic search by ${walletAddress}: "${query}" -> ${results.length} results, context: ${context.length} chars`);

@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       const { token } = validation.data;
       
       // Verify the current token
-      const session = verifyJWTToken(token);
+      const session = await verifyJWTToken(token);
       if (!session) {
         return unauthorizedResponse('Invalid or expired token');
       }

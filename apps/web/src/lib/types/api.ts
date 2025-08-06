@@ -198,46 +198,19 @@ export interface StreamingChoice {
 }
 
 // =============================================================================
-// Document Types
+// Document Types - imported from documents.ts to avoid conflicts
 // =============================================================================
 
-export interface Document {
-  _id: string;
-  walletAddress: string;
-  filename: string;
-  originalName: string;
-  mimeType: string;
-  size: number;
-  status: 'uploaded' | 'processing' | 'processed' | 'failed';
-  metadata: DocumentMetadata;
-  chunks?: DocumentChunk[];
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface DocumentMetadata {
-  pageCount?: number;
-  wordCount?: number;
-  language?: string;
-  extractedText?: string;
-  summary?: string;
-}
-
-export interface DocumentChunk {
-  id: string;
-  documentId: string;
-  content: string;
-  embedding: number[];
-  metadata: ChunkMetadata;
-  index: number;
-}
-
-export interface ChunkMetadata {
-  page?: number;
-  section?: string;
-  tokenCount: number;
-  source: string;
-}
+// Import document types from the comprehensive documents module
+export type {
+  Document,
+  DocumentMetadata,
+  DocumentChunk,
+  DocumentType,
+  DocumentSearchRequest,
+  DocumentSearchResponse,
+  DocumentSearchResult
+} from './documents';
 
 // =============================================================================
 // Search Types

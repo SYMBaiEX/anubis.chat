@@ -10,6 +10,7 @@ import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import { APIErrorCode } from '../types/api';
 import { createErrorResponse } from '../utils/api-response';
+import { getStorage } from '../database/storage';
 
 // =============================================================================
 // Types
@@ -39,11 +40,12 @@ if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'fallback-secret-key
 }
 
 export function createJWTToken(walletAddress: string, publicKey: string): string {
-  const payload: WalletSession = {
+  const payload: WalletSession & { jti: string } = {
     walletAddress,
     publicKey,
     issuedAt: Date.now(),
     expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+    jti: bs58.encode(crypto.getRandomValues(new Uint8Array(16))), // Unique token ID for blacklisting
   };
 
   return sign(payload, JWT_SECRET, {
@@ -52,15 +54,24 @@ export function createJWTToken(walletAddress: string, publicKey: string): string
   });
 }
 
-export function verifyJWTToken(token: string): WalletSession | null {
+export async function verifyJWTToken(token: string): Promise<WalletSession | null> {
   try {
     const decoded = verify(token, JWT_SECRET, {
       algorithms: ['HS256'],
-    }) as unknown as WalletSession;
+    }) as unknown as WalletSession & { jti?: string };
 
     // Check if token is expired
     if (decoded.expiresAt < Date.now()) {
       return null;
+    }
+
+    // Check if token is blacklisted (for logout support)
+    if (decoded.jti) {
+      const storage = getStorage();
+      const isBlacklisted = await storage.isTokenBlacklisted(decoded.jti);
+      if (isBlacklisted) {
+        return null;
+      }
     }
 
     return decoded;
@@ -99,46 +110,20 @@ export function verifyWalletSignature(
 // Nonce Management
 // =============================================================================
 
-// In-memory nonce store (in production, use Redis or database)
-const nonces = new Map<string, { nonce: string; expires: number }>();
-
-export function createNonce(publicKey: string): string {
+export async function createNonce(publicKey: string): Promise<string> {
   // Generate cryptographically secure nonce
   const nonce = bs58.encode(crypto.getRandomValues(new Uint8Array(32)));
   const expires = Date.now() + 5 * 60 * 1000; // 5 minutes
 
-  nonces.set(publicKey, { nonce, expires });
-
-  // Cleanup expired nonces
-  setTimeout(() => {
-    const stored = nonces.get(publicKey);
-    if (stored && stored.expires <= Date.now()) {
-      nonces.delete(publicKey);
-    }
-  }, 5 * 60 * 1000);
+  const storage = getStorage();
+  await storage.storeNonce(publicKey, nonce, expires);
 
   return nonce;
 }
 
-export function validateNonce(publicKey: string, nonce: string): boolean {
-  const stored = nonces.get(publicKey);
-  
-  if (!stored) {
-    return false;
-  }
-
-  if (stored.expires <= Date.now()) {
-    nonces.delete(publicKey);
-    return false;
-  }
-
-  if (stored.nonce !== nonce) {
-    return false;
-  }
-
-  // Remove nonce after successful validation (prevent replay)
-  nonces.delete(publicKey);
-  return true;
+export async function validateNonce(publicKey: string, nonce: string): Promise<boolean> {
+  const storage = getStorage();
+  return await storage.validateAndRemoveNonce(publicKey, nonce);
 }
 
 // =============================================================================
@@ -162,7 +147,7 @@ export async function withAuth<T extends NextRequest>(
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     
     // Verify JWT token
-    const session = verifyJWTToken(token);
+    const session = await verifyJWTToken(token);
     if (!session) {
       return createErrorResponse(
         APIErrorCode.TOKEN_EXPIRED,
@@ -211,7 +196,7 @@ export async function withOptionalAuth<T extends NextRequest>(
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      const session = verifyJWTToken(token);
+      const session = await verifyJWTToken(token);
       
       if (session && isValidSolanaAddress(session.walletAddress)) {
         (request as any).user = {
@@ -243,12 +228,12 @@ export function isValidSolanaAddress(address: string): boolean {
   }
 }
 
-export function extractWalletFromRequest(request: NextRequest): string | null {
+export async function extractWalletFromRequest(request: NextRequest): Promise<string | null> {
   // Try Authorization header first
   const authHeader = request.headers.get('Authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
-    const session = verifyJWTToken(token);
+    const session = await verifyJWTToken(token);
     return session?.walletAddress || null;
   }
 
@@ -331,4 +316,27 @@ export function addWeb3CorsHeaders(response: Response): Response {
     statusText: response.statusText,
     headers,
   });
+}
+
+// =============================================================================
+// JWT Token Blacklisting Support
+// =============================================================================
+
+export async function blacklistToken(token: string): Promise<boolean> {
+  try {
+    const decoded = verify(token, JWT_SECRET, {
+      algorithms: ['HS256'],
+    }) as unknown as WalletSession & { jti?: string };
+
+    if (!decoded.jti) {
+      return false; // Cannot blacklist token without ID
+    }
+
+    const storage = getStorage();
+    await storage.blacklistToken(decoded.jti, decoded.expiresAt);
+    return true;
+  } catch (error) {
+    console.error('Token blacklisting failed:', error);
+    return false;
+  }
 }

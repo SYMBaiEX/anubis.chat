@@ -108,20 +108,13 @@ export async function GET(request: NextRequest) {
         const availableOnly = searchParams.get('available') === 'true';
         const tier = searchParams.get('tier') as 'free' | 'budget' | 'premium' | null;
         
-        // Filter models based on query parameters
-        let filteredModels = availableModels;
-        
-        if (provider) {
-          filteredModels = filteredModels.filter(model => model.provider === provider);
-        }
-        
-        if (availableOnly) {
-          filteredModels = filteredModels.filter(model => model.isAvailable);
-        }
-        
-        if (tier) {
-          filteredModels = filteredModels.filter(model => model.costTier === tier);
-        }
+        // Filter models based on query parameters (single pass)
+        const filteredModels = availableModels.filter(model => {
+          if (provider && model.provider !== provider) return false;
+          if (availableOnly && !model.isAvailable) return false;
+          if (tier && model.costTier !== tier) return false;
+          return true;
+        });
         
         // Apply user tier restrictions (future feature)
         // if (user.subscription.tier === 'free') {
