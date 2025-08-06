@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import { APIResponse, APIError, APIErrorCode, PaginatedResponse } from '../types/api';
+import { type APIResponse, type APIError, APIErrorCode, type PaginatedResponse } from '../types/api';
 
 // =============================================================================
 // Response Builders
@@ -269,29 +269,43 @@ export function unsafeContentResponse(
 // Response Headers
 // =============================================================================
 
-export function addSecurityHeaders(response: NextResponse): NextResponse {
+export function addSecurityHeaders(response: NextResponse | Response): NextResponse {
+  // Convert Response to NextResponse if needed
+  const nextResponse = response instanceof NextResponse ? response : new NextResponse(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers
+  });
+  
   // CORS headers for Web3 compatibility
-  response.headers.set('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGINS ?? '*');
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Wallet-Signature, X-Wallet-Message, X-Wallet-Pubkey, X-Timestamp');
+  nextResponse.headers.set('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGINS ?? '*');
+  nextResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  nextResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Wallet-Signature, X-Wallet-Message, X-Wallet-Pubkey, X-Timestamp');
   
   // Security headers
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
+  nextResponse.headers.set('X-Content-Type-Options', 'nosniff');
+  nextResponse.headers.set('X-Frame-Options', 'DENY');
+  nextResponse.headers.set('X-XSS-Protection', '1; mode=block');
   
-  return response;
+  return nextResponse;
 }
 
 export function addRateLimitHeaders(
-  response: NextResponse,
+  response: NextResponse | Response,
   limit: number,
   remaining: number,
   reset: number
 ): NextResponse {
-  response.headers.set('X-RateLimit-Limit', limit.toString());
-  response.headers.set('X-RateLimit-Remaining', remaining.toString());
-  response.headers.set('X-RateLimit-Reset', reset.toString());
+  // Convert Response to NextResponse if needed
+  const nextResponse = response instanceof NextResponse ? response : new NextResponse(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers
+  });
+
+  nextResponse.headers.set('X-RateLimit-Limit', limit.toString());
+  nextResponse.headers.set('X-RateLimit-Remaining', remaining.toString());
+  nextResponse.headers.set('X-RateLimit-Reset', reset.toString());
   
-  return response;
+  return nextResponse;
 }

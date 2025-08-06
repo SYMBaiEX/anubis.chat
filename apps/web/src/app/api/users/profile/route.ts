@@ -3,7 +3,7 @@
  * Handles user profile updates and retrieval
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withAuth, type AuthenticatedRequest } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
@@ -160,6 +160,6 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function OPTIONS(request: NextRequest) {
-  const response = new Response(null, { status: 200 });
+  const response = new NextResponse(null, { status: 200 });
   return addSecurityHeaders(response);
 }

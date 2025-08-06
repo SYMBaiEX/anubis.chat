@@ -3,7 +3,7 @@
  * Handles message creation and AI streaming responses
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { streamText, convertToModelMessages } from 'ai';
 import { openai } from '@ai-sdk/openai';
@@ -74,8 +74,8 @@ async function getChatMessages(chatId: string, walletAddress: string, options: {
       model: 'gpt-4o',
       finishReason: 'stop',
       usage: {
-        promptTokens: 50,
-        completionTokens: 75,
+        inputTokens: 50,
+        outputTokens: 75,
         totalTokens: 125,
       },
     } : undefined,
@@ -200,15 +200,17 @@ export async function POST(
         // For streaming, get chat history for AI context
         const { messages: historyMessages } = await getChatMessages(chatId, walletAddress, { limit: 20 });
         
-        // Convert to AI SDK format and add new user message
+        // Convert to AI SDK UI Message format
         const conversationHistory = [
           ...historyMessages.reverse().map(msg => ({
-            role: msg.role,
-            content: msg.content,
+            id: msg._id,
+            role: msg.role as 'user' | 'assistant' | 'system',
+            parts: [{ type: 'text' as const, text: msg.content }],
           })),
           {
-            role: userMessage.role,
-            content: userMessage.content,
+            id: userMessage._id,
+            role: userMessage.role as 'user' | 'assistant' | 'system',
+            parts: [{ type: 'text' as const, text: userMessage.content }],
           },
         ];
         
@@ -228,13 +230,13 @@ export async function POST(
                 walletAddress,
                 role: 'assistant',
                 content: text,
-                tokenCount: usage.completionTokens || Math.floor(text.length / 4),
+                tokenCount: usage.totalTokens || Math.floor(text.length / 4),
                 metadata: {
                   model: chat.model,
                   finishReason: finishReason || 'stop',
                   usage: {
-                    promptTokens: usage.promptTokens || 0,
-                    completionTokens: usage.completionTokens || 0,
+                    inputTokens: usage.inputTokens || 0,
+                    outputTokens: usage.outputTokens || 0,
                     totalTokens: usage.totalTokens || 0,
                   },
                 },
@@ -254,11 +256,9 @@ export async function POST(
         console.log(`Streaming AI response for chat ${chatId}`);
         
         // Return streaming response
-        const streamResponse = result.toUIMessageStreamResponse({
+        return result.toUIMessageStreamResponse({
           originalMessages: conversationHistory,
         });
-        
-        return addSecurityHeaders(streamResponse);
         
       } catch (error) {
         console.error('Send message error:', error);
@@ -269,7 +269,7 @@ export async function POST(
 }
 
 export async function OPTIONS() {
-  const response = new Response(null, { status: 200 });
+  const response = new NextResponse(null, { status: 200 });
   return addSecurityHeaders(response);
 }
 

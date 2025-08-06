@@ -4,7 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { verify } from 'jsonwebtoken';
+import { verify, sign } from 'jsonwebtoken';
 import { PublicKey } from '@solana/web3.js';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
@@ -33,9 +33,9 @@ export interface WalletSession {
 // JWT Token Management
 // =============================================================================
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required');
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-development';
+if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'fallback-secret-key-for-development') {
+  throw new Error('JWT_SECRET environment variable is required in production');
 }
 
 export function createJWTToken(walletAddress: string, publicKey: string): string {
@@ -46,9 +46,7 @@ export function createJWTToken(walletAddress: string, publicKey: string): string
     expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
   };
 
-  // Use sign method from jsonwebtoken (not verify)
-  const jwt = require('jsonwebtoken');
-  return jwt.sign(payload, JWT_SECRET, {
+  return sign(payload, JWT_SECRET, {
     algorithm: 'HS256',
     expiresIn: '24h',
   });
@@ -58,7 +56,7 @@ export function verifyJWTToken(token: string): WalletSession | null {
   try {
     const decoded = verify(token, JWT_SECRET, {
       algorithms: ['HS256'],
-    }) as WalletSession;
+    }) as unknown as WalletSession;
 
     // Check if token is expired
     if (decoded.expiresAt < Date.now()) {
@@ -181,11 +179,12 @@ export async function withAuth<T extends NextRequest>(
     }
 
     // Create authenticated request
-    const authenticatedRequest = request as AuthenticatedRequest;
-    authenticatedRequest.user = {
-      walletAddress: session.walletAddress,
-      publicKey: session.publicKey,
-    };
+    const authenticatedRequest = Object.assign(request, {
+      user: {
+        walletAddress: session.walletAddress,
+        publicKey: session.publicKey,
+      }
+    }) as AuthenticatedRequest;
 
     // Call the handler with authenticated request
     return await handler(authenticatedRequest);

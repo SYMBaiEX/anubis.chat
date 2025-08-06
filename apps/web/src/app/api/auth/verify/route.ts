@@ -3,7 +3,7 @@
  * Verifies wallet signature and issues JWT token
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { PublicKey } from '@solana/web3.js';
 import { 
@@ -204,6 +204,6 @@ export async function POST(request: NextRequest) {
 }
 
 export async function OPTIONS(request: NextRequest) {
-  const response = new Response(null, { status: 200 });
+  const response = new NextResponse(null, { status: 200 });
   return addSecurityHeaders(response);
 }

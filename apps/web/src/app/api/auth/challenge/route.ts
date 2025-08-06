@@ -3,7 +3,7 @@
  * Generates SIWE-compatible challenge for wallet authentication
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { PublicKey } from '@solana/web3.js';
 import { createNonce } from '@/lib/middleware/auth';
@@ -100,6 +100,6 @@ export async function POST(request: NextRequest) {
 }
 
 export async function OPTIONS(request: NextRequest) {
-  const response = new Response(null, { status: 200 });
+  const response = new NextResponse(null, { status: 200 });
   return addSecurityHeaders(response);
 }

@@ -3,7 +3,7 @@
  * Provides usage statistics and analytics for authenticated users
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withAuth, type AuthenticatedRequest } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
@@ -59,7 +59,7 @@ interface UsageStats {
 
 const usageQuerySchema = z.object({
   period: z.enum(['7d', '30d', '90d']).default('30d'),
-  includeModels: z.enum(['true', 'false']).transform(val => val === 'true').default('true'),
+  includeModels: z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
 });
 
 // =============================================================================
@@ -166,6 +166,6 @@ export async function GET(request: NextRequest) {
 }
 
 export async function OPTIONS() {
-  const response = new Response(null, { status: 200 });
+  const response = new NextResponse(null, { status: 200 });
   return addSecurityHeaders(response);
 }

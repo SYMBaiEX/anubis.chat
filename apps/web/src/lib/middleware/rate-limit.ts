@@ -9,6 +9,14 @@ import { rateLimitResponse, addRateLimitHeaders } from '../utils/api-response';
 import { extractWalletFromRequest } from './auth';
 
 // =============================================================================
+// Extended Request Interface
+// =============================================================================
+
+interface ExtendedNextRequest extends NextRequest {
+  ip?: string;
+}
+
+// =============================================================================
 // Types
 // =============================================================================
 
@@ -79,6 +87,14 @@ class MemoryStore {
         this.store.delete(key);
       }
     }
+  }
+
+  delete(key: string): void {
+    this.store.delete(key);
+  }
+
+  entries(): IterableIterator<[string, RateLimitEntry]> {
+    return this.store.entries();
   }
 }
 
@@ -359,7 +375,7 @@ export function createTierRateLimit(limitType: keyof UserTier['limits']) {
 // Utility Functions
 // =============================================================================
 
-function getClientIP(request: NextRequest): string {
+function getClientIP(request: ExtendedNextRequest): string {
   // Try various headers for client IP
   const forwarded = request.headers.get('x-forwarded-for');
   const realIP = request.headers.get('x-real-ip');
@@ -377,7 +393,7 @@ function getClientIP(request: NextRequest): string {
     return clientIP;
   }
   
-  // Fallback to connection remote address
+  // Fallback to connection remote address  
   return request.ip || 'unknown';
 }
 
@@ -400,13 +416,13 @@ export function getRateLimitStats(key: string): RateLimitInfo | null {
 }
 
 export function clearRateLimit(key: string): void {
-  store.store.delete(key);
+  store.delete(key);
 }
 
 export function getAllRateLimits(): Array<{ key: string; info: RateLimitInfo }> {
   const results: Array<{ key: string; info: RateLimitInfo }> = [];
   
-  for (const [key, entry] of store.store.entries()) {
+  for (const [key, entry] of store.entries()) {
     if (entry.resetTime >= new Date()) {
       results.push({
         key,

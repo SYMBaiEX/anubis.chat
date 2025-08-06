@@ -133,8 +133,8 @@ export interface MessageMetadata {
   model?: string;
   finishReason?: string;
   usage?: {
-    promptTokens: number;
-    completionTokens: number;
+    inputTokens: number;
+    outputTokens: number;
     totalTokens: number;
   };
   tools?: ToolCall[];
