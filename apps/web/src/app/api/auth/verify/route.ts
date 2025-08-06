@@ -99,7 +99,7 @@ function parseSignInMessage(message: string): {
       expirationTime: expirationTimeMatch[1],
     };
   } catch (error) {
-    console.error('Message parsing failed:', error);
+    // Message parsing failed
     return null;
   }
 }
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
           }
         );
       } catch (error) {
-        console.error('Failed to create/update user in database:', error);
+        // Failed to create/update user in database
         // Continue with default user data if database operation fails
         user = {
           walletAddress,
@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
       const response = successResponse(authSession);
       return addSecurityHeaders(response);
     } catch (error) {
-      console.error('Authentication verification error:', error);
+      // Authentication verification error
 
       return unauthorizedResponse('Authentication failed');
     }
