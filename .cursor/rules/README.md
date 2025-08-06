@@ -84,11 +84,9 @@ Rules automatically apply based on:
 - `New Cursor Rule` - Create new MDC file
 - `Cmd+Shift+P` - Open command palette
 
-## Migration from .cursorrules
+## Status
 
-✅ **Migration Complete**: The deprecated `.cursorrules` file has been removed and replaced with the MDC format.
-
-See [`MIGRATION-GUIDE.md`](./MIGRATION-GUIDE.md) for migration details.
+✅ **Fully Updated**: All rules use the latest MDC format with Cursor Auto Model Selection configured.
 
 ## Best Practices
 
