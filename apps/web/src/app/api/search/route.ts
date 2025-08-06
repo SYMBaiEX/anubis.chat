@@ -3,57 +3,91 @@
  * Handles document search and RAG-based semantic search
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { withAuth, type AuthenticatedRequest } from '@/lib/middleware/auth';
-import { searchRateLimit } from '@/lib/middleware/rate-limit';
-import { 
-  successResponse,
-  validationErrorResponse,
-  addSecurityHeaders 
-} from '@/lib/utils/api-response';
 import { getStorage } from '@/lib/database/storage';
-import type { 
+import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
+import { searchRateLimit } from '@/lib/middleware/rate-limit';
+import type {
   Document,
   DocumentSearchRequest,
   DocumentSearchResponse,
-  DocumentSearchResult
+  DocumentSearchResult,
 } from '@/lib/types/documents';
+import {
+  addSecurityHeaders,
+  successResponse,
+  validationErrorResponse,
+} from '@/lib/utils/api-response';
 
 // =============================================================================
 // Request Validation Schemas
 // =============================================================================
 
 const searchDocumentsSchema = z.object({
-  query: z.string().min(1, 'Query is required').max(500, 'Query must be 500 characters or less'),
+  query: z
+    .string()
+    .min(1, 'Query is required')
+    .max(500, 'Query must be 500 characters or less')
+    .refine(
+      (val) => {
+        // Prevent potential ReDoS patterns
+        const suspiciousPatterns = [
+          /(\*{2,}|\+{2,}|\?{2,}|\|{2,})/,  // Repeated quantifiers
+          /\(.*\){20,}/,                     // Excessive groups
+          /(.*\*.*){10,}/,                   // Nested quantifiers
+        ];
+        return !suspiciousPatterns.some(pattern => pattern.test(val));
+      },
+      'Query contains potentially unsafe patterns'
+    ),
   limit: z.number().min(1).max(50).default(10),
-  filters: z.object({
-    type: z.array(z.enum(['text', 'markdown', 'pdf', 'url'])).optional(),
-    category: z.array(z.string()).optional(),
-    tags: z.array(z.string()).optional(),
-    ownerId: z.string().optional(),
-  }).optional(),
-  similarity: z.object({
-    threshold: z.number().min(0).max(1).default(0.7),
-    algorithm: z.enum(['cosine', 'dot_product', 'euclidean']).default('cosine'),
-  }).optional(),
-  rerank: z.object({
-    enabled: z.boolean().default(false),
-    model: z.string().default('cross-encoder'),
-    topK: z.number().min(1).max(100).default(20),
-  }).optional(),
+  filters: z
+    .object({
+      type: z.array(z.enum(['text', 'markdown', 'pdf', 'url'])).optional(),
+      category: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      ownerId: z.string().optional(),
+    })
+    .optional(),
+  similarity: z
+    .object({
+      threshold: z.number().min(0).max(1).default(0.7),
+      algorithm: z
+        .enum(['cosine', 'dot_product', 'euclidean'])
+        .default('cosine'),
+    })
+    .optional(),
+  rerank: z
+    .object({
+      enabled: z.boolean().default(false),
+      model: z.string().default('cross-encoder'),
+      topK: z.number().min(1).max(100).default(20),
+    })
+    .optional(),
 });
 
 const semanticSearchSchema = z.object({
-  query: z.string().min(1, 'Query is required').max(500, 'Query must be 500 characters or less'),
+  query: z
+    .string()
+    .min(1, 'Query is required')
+    .max(500, 'Query must be 500 characters or less'),
   limit: z.number().min(1).max(20).default(5),
-  context: z.object({
-    conversationHistory: z.array(z.object({
-      role: z.enum(['user', 'assistant']),
-      content: z.string(),
-    })).optional(),
-    userIntent: z.enum(['question', 'summarization', 'analysis', 'generation']).optional(),
-  }).optional(),
+  context: z
+    .object({
+      conversationHistory: z
+        .array(
+          z.object({
+            role: z.enum(['user', 'assistant']),
+            content: z.string(),
+          })
+        )
+        .optional(),
+      userIntent: z
+        .enum(['question', 'summarization', 'analysis', 'generation'])
+        .optional(),
+    })
+    .optional(),
 });
 
 // =============================================================================
@@ -65,7 +99,7 @@ const semanticSearchSchema = z.object({
  */
 function extractContext(results: DocumentSearchResult[]): string {
   return results
-    .map(result => {
+    .map((result) => {
       const doc = result.document;
       // Get first 500 characters of content as context
       const contextSnippet = doc.content.slice(0, 500);
@@ -87,27 +121,33 @@ export async function POST(request: NextRequest) {
       try {
         const { walletAddress } = authReq.user;
         const startTime = Date.now();
-        
+
         // Parse and validate request body
         const body = await req.json();
         const validation = searchDocumentsSchema.safeParse(body);
-        
+
         if (!validation.success) {
           return validationErrorResponse(
             'Invalid search request',
             validation.error.flatten().fieldErrors
           );
         }
-        
+
         const searchRequest = validation.data;
-        
+
         // Perform search using storage layer
         const storage = getStorage();
-        const results = await storage.searchDocuments(walletAddress, searchRequest.query, searchRequest);
+        const results = await storage.searchDocuments(
+          walletAddress,
+          searchRequest.query,
+          searchRequest
+        );
         const processingTime = Date.now() - startTime;
-        
-        console.log(`Search performed by ${walletAddress}: "${searchRequest.query}" -> ${results.length} results (${processingTime}ms)`);
-        
+
+        console.log(
+          `Search performed by ${walletAddress}: "${searchRequest.query}" -> ${results.length} results (${processingTime}ms)`
+        );
+
         const responseData: DocumentSearchResponse = {
           results,
           query: searchRequest.query,
@@ -115,10 +155,9 @@ export async function POST(request: NextRequest) {
           processingTime,
           filters: searchRequest.filters,
         };
-        
+
         const response = successResponse(responseData);
         return addSecurityHeaders(response);
-        
       } catch (error) {
         console.error('Search documents error:', error);
         const response = NextResponse.json(
@@ -140,48 +179,54 @@ export async function GET(request: NextRequest) {
       try {
         const { walletAddress } = authReq.user;
         const { searchParams } = new URL(req.url);
-        
+
         // Handle semantic search via query parameters for GET request
         const query = searchParams.get('q');
         const limitStr = searchParams.get('limit');
-        
+
         if (!query) {
-          return validationErrorResponse(
-            'Missing query parameter',
-            { q: ['Query parameter "q" is required'] }
-          );
+          return validationErrorResponse('Missing query parameter', {
+            q: ['Query parameter "q" is required'],
+          });
         }
-        
-        const limit = limitStr ? Math.min(20, Math.max(1, parseInt(limitStr, 10))) : 5;
-        
+
+        const limit = limitStr
+          ? Math.min(20, Math.max(1, Number.parseInt(limitStr, 10)))
+          : 5;
+
         // Perform basic search (in production, this would use vector embeddings)
         const searchOptions: DocumentSearchRequest = {
           query,
           limit,
           similarity: { threshold: 0.3, algorithm: 'cosine' },
         };
-        
+
         const storage = getStorage();
-        const results = await storage.searchDocuments(walletAddress, query, searchOptions);
+        const results = await storage.searchDocuments(
+          walletAddress,
+          query,
+          searchOptions
+        );
         const context = extractContext(results.slice(0, 3)); // Use top 3 for context
-        
-        console.log(`Semantic search by ${walletAddress}: "${query}" -> ${results.length} results, context: ${context.length} chars`);
-        
+
+        console.log(
+          `Semantic search by ${walletAddress}: "${query}" -> ${results.length} results, context: ${context.length} chars`
+        );
+
         const responseData = {
           results,
           context,
           query,
           total: results.length,
-          contextSources: results.slice(0, 3).map(r => ({
+          contextSources: results.slice(0, 3).map((r) => ({
             documentId: r.document.id,
             title: r.document.title,
             score: r.score,
           })),
         };
-        
+
         const response = successResponse(responseData);
         return addSecurityHeaders(response);
-        
       } catch (error) {
         console.error('Semantic search error:', error);
         const response = NextResponse.json(

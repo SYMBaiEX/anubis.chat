@@ -87,9 +87,9 @@ export interface CustomJSONSchema {
 }
 
 // Predefined Schema Types
-export type PredefinedSchemaType = 
+export type PredefinedSchemaType =
   | 'tasks'
-  | 'meetingSummary' 
+  | 'meetingSummary'
   | 'articleSummary'
   | 'contactInfo'
   | 'jsonStructure';
@@ -118,10 +118,10 @@ export interface GenerateObjectResponse {
 // =============================================================================
 
 // Streaming Schema Types
-export type StreamingSchemaType = 
+export type StreamingSchemaType =
   | 'notifications'
   | 'taskBreakdown'
-  | 'contentAnalysis' 
+  | 'contentAnalysis'
   | 'report'
   | 'quiz';
 
@@ -224,7 +224,7 @@ export interface TaskBreakdownSchema {
   }>;
 }
 
-// Content analysis schema structure  
+// Content analysis schema structure
 export interface ContentAnalysisSchema {
   summary: string;
   keyTopics: string[];
@@ -321,7 +321,7 @@ export interface AIErrorResponse {
 // =============================================================================
 
 // Union of all predefined schema structures
-export type PredefinedSchemaStructure = 
+export type PredefinedSchemaStructure =
   | TaskSchema
   | MeetingSummarySchema
   | ArticleSummarySchema
@@ -329,7 +329,7 @@ export type PredefinedSchemaStructure =
   | JSONStructureSchema;
 
 // Union of all streaming schema structures
-export type StreamingSchemaStructure = 
+export type StreamingSchemaStructure =
   | NotificationSchema
   | TaskBreakdownSchema
   | ContentAnalysisSchema

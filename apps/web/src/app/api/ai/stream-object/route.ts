@@ -3,18 +3,18 @@
  * Streams structured object generation using AI with real-time updates
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { streamObject } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { withAuth, type AuthenticatedRequest } from '@/lib/middleware/auth';
-import { aiRateLimit } from '@/lib/middleware/rate-limit';
-import { 
-  validationErrorResponse,
-  modelUnavailableResponse,
-  addSecurityHeaders 
-} from '@/lib/utils/api-response';
+import { streamObject } from 'ai';
 import { nanoid } from 'nanoid';
+import { type NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
+import { aiRateLimit } from '@/lib/middleware/rate-limit';
+import {
+  addSecurityHeaders,
+  modelUnavailableResponse,
+  validationErrorResponse,
+} from '@/lib/utils/api-response';
 
 // =============================================================================
 // Predefined Schemas for Streaming Use Cases
@@ -30,7 +30,7 @@ const streamingSchemas = {
     timestamp: z.string(),
     read: z.boolean(),
   }),
-  
+
   // Progressive task breakdown
   taskBreakdown: z.object({
     mainTask: z.string(),
@@ -45,7 +45,7 @@ const streamingSchemas = {
       })
     ),
   }),
-  
+
   // Live content analysis
   contentAnalysis: z.object({
     summary: z.string(),
@@ -64,7 +64,7 @@ const streamingSchemas = {
     ),
     categories: z.array(z.string()),
   }),
-  
+
   // Progressive report generation
   report: z.object({
     title: z.string(),
@@ -84,7 +84,7 @@ const streamingSchemas = {
     recommendations: z.array(z.string()),
     next_steps: z.array(z.string()),
   }),
-  
+
   // Dynamic quiz generation
   quiz: z.object({
     title: z.string(),
@@ -108,9 +108,18 @@ const streamingSchemas = {
 // =============================================================================
 
 const streamObjectSchema = z.object({
-  prompt: z.string().min(1, 'Prompt is required').max(10000, 'Prompt must be 10000 characters or less'),
+  prompt: z
+    .string()
+    .min(1, 'Prompt is required')
+    .max(10_000, 'Prompt must be 10000 characters or less'),
   model: z.string().default('gpt-4o-mini'),
-  schema: z.enum(['notifications', 'taskBreakdown', 'contentAnalysis', 'report', 'quiz']),
+  schema: z.enum([
+    'notifications',
+    'taskBreakdown',
+    'contentAnalysis',
+    'report',
+    'quiz',
+  ]),
   output: z.enum(['object', 'array']).default('object'),
   systemPrompt: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
@@ -122,17 +131,12 @@ const streamObjectSchema = z.object({
 // =============================================================================
 
 function getOpenAIModel(modelId: string) {
-  const supportedModels = [
-    'gpt-4o',
-    'gpt-4o-mini',
-    'gpt-4',
-    'gpt-3.5-turbo',
-  ];
-  
+  const supportedModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-4', 'gpt-3.5-turbo'];
+
   if (!supportedModels.includes(modelId)) {
     return null;
   }
-  
+
   return openai(modelId);
 }
 
@@ -140,7 +144,7 @@ function getStreamingSchema(schemaType: string): z.ZodTypeAny {
   if (schemaType in streamingSchemas) {
     return streamingSchemas[schemaType as keyof typeof streamingSchemas];
   }
-  
+
   throw new Error(`Schema type '${schemaType}' not found`);
 }
 
@@ -156,56 +160,57 @@ export async function POST(request: NextRequest) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        
+
         // Parse and validate request body
         const body = await req.json();
         const validation = streamObjectSchema.safeParse(body);
-        
+
         if (!validation.success) {
           return validationErrorResponse(
             'Invalid stream object request',
             validation.error.flatten().fieldErrors
           );
         }
-        
-        const { 
-          prompt, 
-          model, 
-          schema: schemaType, 
+
+        const {
+          prompt,
+          model,
+          schema: schemaType,
           output,
-          systemPrompt, 
-          temperature, 
-          maxTokens 
+          systemPrompt,
+          temperature,
+          maxTokens,
         } = validation.data;
-        
+
         // Get AI model
         const aiModel = getOpenAIModel(model);
         if (!aiModel) {
           return modelUnavailableResponse(model);
         }
-        
+
         // Get schema
         let schema;
         try {
           schema = getStreamingSchema(schemaType);
         } catch (error) {
-          return validationErrorResponse(
-            'Invalid schema',
-            { schema: [(error as Error).message] }
-          );
+          return validationErrorResponse('Invalid schema', {
+            schema: [(error as Error).message],
+          });
         }
-        
+
         const streamId = nanoid(12);
-        
-        console.log(`Object streaming requested: ${streamId} by ${walletAddress} using ${model}, schema: ${schemaType}, output: ${output}`);
-        
-        // Create system prompt based on output type
-        const finalSystemPrompt = systemPrompt || (
-          output === 'array' 
-            ? `Generate an array of structured objects based on the prompt. Each object should follow the provided schema.`
-            : `Generate a structured object based on the prompt and schema provided. Build the object progressively.`
+
+        console.log(
+          `Object streaming requested: ${streamId} by ${walletAddress} using ${model}, schema: ${schemaType}, output: ${output}`
         );
-        
+
+        // Create system prompt based on output type
+        const finalSystemPrompt =
+          systemPrompt ||
+          (output === 'array'
+            ? 'Generate an array of structured objects based on the prompt. Each object should follow the provided schema.'
+            : 'Generate a structured object based on the prompt and schema provided. Build the object progressively.');
+
         // Stream structured object generation
         const result = streamObject({
           model: aiModel,
@@ -219,11 +224,13 @@ export async function POST(request: NextRequest) {
             if (error) {
               console.error(`Object stream error: ${streamId}`, error);
             } else {
-              console.log(`Object stream completed: ${streamId}, tokens: ${usage?.totalTokens || 'unknown'}`);
+              console.log(
+                `Object stream completed: ${streamId}, tokens: ${usage?.totalTokens || 'unknown'}`
+              );
             }
           },
         });
-        
+
         // Return streaming response as text stream (JSON representation)
         return result.toTextStreamResponse({
           headers: {
@@ -232,7 +239,6 @@ export async function POST(request: NextRequest) {
             'X-Output-Type': output,
           },
         });
-        
       } catch (error) {
         console.error('AI object streaming error:', error);
         const response = NextResponse.json(
@@ -249,12 +255,12 @@ export async function GET(request: NextRequest) {
   return withAuth(request, async (authReq: AuthenticatedRequest) => {
     try {
       // Return available streaming schemas
-      const schemas = Object.keys(streamingSchemas).map(key => ({
+      const schemas = Object.keys(streamingSchemas).map((key) => ({
         name: key,
         description: `Streaming schema for ${key.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
         outputTypes: ['object', 'array'],
       }));
-      
+
       const response = NextResponse.json({
         success: true,
         data: {
@@ -264,9 +270,8 @@ export async function GET(request: NextRequest) {
           maxDuration: 90,
         },
       });
-      
+
       return addSecurityHeaders(response);
-      
     } catch (error) {
       console.error('Get streaming schemas error:', error);
       const response = NextResponse.json(

@@ -3,9 +3,14 @@
  * Based on latest AI SDK patterns and August 2025 best practices
  */
 
-import { NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import { type APIResponse, type APIError, APIErrorCode, type PaginatedResponse } from '../types/api';
+import { NextResponse } from 'next/server';
+import {
+  type APIError,
+  APIErrorCode,
+  type APIResponse,
+  type PaginatedResponse,
+} from '../types/api';
 
 // =============================================================================
 // Response Builders
@@ -52,12 +57,12 @@ export function createErrorResponse(
     error,
   };
 
-  return NextResponse.json(response, { 
+  return NextResponse.json(response, {
     status: options?.status ?? getStatusFromErrorCode(code),
     headers: {
       'X-Request-ID': error.requestId,
       'Content-Type': 'application/json',
-    }
+    },
   });
 }
 
@@ -138,15 +143,17 @@ export function successResponse<T>(data: T, requestId?: string): NextResponse {
 }
 
 export function createdResponse<T>(data: T, requestId?: string): NextResponse {
-  return NextResponse.json(createAPIResponse(data, { requestId }), { status: 201 });
+  return NextResponse.json(createAPIResponse(data, { requestId }), {
+    status: 201,
+  });
 }
 
 export function noContentResponse(requestId?: string): NextResponse {
-  return new NextResponse(null, { 
+  return new NextResponse(null, {
     status: 204,
     headers: {
       'X-Request-ID': requestId ?? nanoid(12),
-    }
+    },
   });
 }
 
@@ -170,16 +177,27 @@ export function paginatedResponse<T>(
 // Error Response Helpers
 // =============================================================================
 
-export function unauthorizedResponse(message = 'Unauthorized', requestId?: string): NextResponse {
+export function unauthorizedResponse(
+  message = 'Unauthorized',
+  requestId?: string
+): NextResponse {
   return createErrorResponse(APIErrorCode.UNAUTHORIZED, message, { requestId });
 }
 
-export function forbiddenResponse(message = 'Forbidden', requestId?: string): NextResponse {
+export function forbiddenResponse(
+  message = 'Forbidden',
+  requestId?: string
+): NextResponse {
   return createErrorResponse(APIErrorCode.FORBIDDEN, message, { requestId });
 }
 
-export function notFoundResponse(message = 'Resource not found', requestId?: string): NextResponse {
-  return createErrorResponse(APIErrorCode.RESOURCE_NOT_FOUND, message, { requestId });
+export function notFoundResponse(
+  message = 'Resource not found',
+  requestId?: string
+): NextResponse {
+  return createErrorResponse(APIErrorCode.RESOURCE_NOT_FOUND, message, {
+    requestId,
+  });
 }
 
 export function validationErrorResponse(
@@ -187,9 +205,9 @@ export function validationErrorResponse(
   details?: Record<string, any>,
   requestId?: string
 ): NextResponse {
-  return createErrorResponse(APIErrorCode.VALIDATION_ERROR, message, { 
-    details, 
-    requestId 
+  return createErrorResponse(APIErrorCode.VALIDATION_ERROR, message, {
+    details,
+    requestId,
   });
 }
 
@@ -198,15 +216,19 @@ export function rateLimitResponse(
   retryAfter?: number,
   requestId?: string
 ): NextResponse {
-  const response = createErrorResponse(APIErrorCode.RATE_LIMIT_EXCEEDED, message, { 
-    requestId,
-    details: { retryAfter }
-  });
-  
+  const response = createErrorResponse(
+    APIErrorCode.RATE_LIMIT_EXCEEDED,
+    message,
+    {
+      requestId,
+      details: { retryAfter },
+    }
+  );
+
   if (retryAfter) {
     response.headers.set('Retry-After', retryAfter.toString());
   }
-  
+
   return response;
 }
 
@@ -214,14 +236,18 @@ export function internalErrorResponse(
   message = 'Internal server error',
   requestId?: string
 ): NextResponse {
-  return createErrorResponse(APIErrorCode.INTERNAL_ERROR, message, { requestId });
+  return createErrorResponse(APIErrorCode.INTERNAL_ERROR, message, {
+    requestId,
+  });
 }
 
 export function serviceUnavailableResponse(
   message = 'Service temporarily unavailable',
   requestId?: string
 ): NextResponse {
-  return createErrorResponse(APIErrorCode.SERVICE_UNAVAILABLE, message, { requestId });
+  return createErrorResponse(APIErrorCode.SERVICE_UNAVAILABLE, message, {
+    requestId,
+  });
 }
 
 // =============================================================================
@@ -246,10 +272,10 @@ export function contextTooLongResponse(
 ): NextResponse {
   return createErrorResponse(
     APIErrorCode.CONTEXT_TOO_LONG,
-    `Context exceeds maximum token limit`,
-    { 
+    'Context exceeds maximum token limit',
+    {
       requestId,
-      details: { maxTokens, actualTokens }
+      details: { maxTokens, actualTokens },
     }
   );
 }
@@ -269,24 +295,38 @@ export function unsafeContentResponse(
 // Response Headers
 // =============================================================================
 
-export function addSecurityHeaders(response: NextResponse | Response): NextResponse {
+export function addSecurityHeaders(
+  response: NextResponse | Response
+): NextResponse {
   // Convert Response to NextResponse if needed
-  const nextResponse = response instanceof NextResponse ? response : new NextResponse(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: response.headers
-  });
-  
+  const nextResponse =
+    response instanceof NextResponse
+      ? response
+      : new NextResponse(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers,
+        });
+
   // CORS headers for Web3 compatibility
-  nextResponse.headers.set('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGINS ?? '*');
-  nextResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  nextResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Wallet-Signature, X-Wallet-Message, X-Wallet-Pubkey, X-Timestamp');
-  
+  nextResponse.headers.set(
+    'Access-Control-Allow-Origin',
+    process.env.ALLOWED_ORIGINS ?? '*'
+  );
+  nextResponse.headers.set(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, OPTIONS'
+  );
+  nextResponse.headers.set(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-Wallet-Signature, X-Wallet-Message, X-Wallet-Pubkey, X-Timestamp'
+  );
+
   // Security headers
   nextResponse.headers.set('X-Content-Type-Options', 'nosniff');
   nextResponse.headers.set('X-Frame-Options', 'DENY');
   nextResponse.headers.set('X-XSS-Protection', '1; mode=block');
-  
+
   return nextResponse;
 }
 
@@ -297,15 +337,18 @@ export function addRateLimitHeaders(
   reset: number
 ): NextResponse {
   // Convert Response to NextResponse if needed
-  const nextResponse = response instanceof NextResponse ? response : new NextResponse(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: response.headers
-  });
+  const nextResponse =
+    response instanceof NextResponse
+      ? response
+      : new NextResponse(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers,
+        });
 
   nextResponse.headers.set('X-RateLimit-Limit', limit.toString());
   nextResponse.headers.set('X-RateLimit-Remaining', remaining.toString());
   nextResponse.headers.set('X-RateLimit-Reset', reset.toString());
-  
+
   return nextResponse;
 }

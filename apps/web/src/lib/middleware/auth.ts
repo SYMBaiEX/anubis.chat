@@ -276,6 +276,16 @@ export interface RateLimitConfig {
 
 const rateLimits = new Map<string, { count: number; resetTime: number }>();
 
+// Periodic cleanup for expired rate limit entries (every 5 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimits.entries()) {
+    if (entry.resetTime <= now) {
+      rateLimits.delete(key);
+    }
+  }
+}, 5 * 60 * 1000);
+
 export function checkRateLimit(
   walletAddress: string,
   config: RateLimitConfig
@@ -298,15 +308,6 @@ export function checkRateLimit(
   // Increment counter
   current.count++;
   rateLimits.set(key, current);
-
-  // Cleanup old entries
-  setTimeout(() => {
-    for (const [k, v] of rateLimits.entries()) {
-      if (v.resetTime <= now) {
-        rateLimits.delete(k);
-      }
-    }
-  }, config.windowMs);
 
   return {
     allowed: true,

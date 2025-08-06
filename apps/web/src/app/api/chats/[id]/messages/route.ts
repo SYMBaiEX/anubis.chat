@@ -3,29 +3,32 @@
  * Handles message creation and AI streaming responses
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { streamText, convertToModelMessages } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { withAuth, type AuthenticatedRequest } from '@/lib/middleware/auth';
+import { convertToModelMessages, streamText } from 'ai';
+import { nanoid } from 'nanoid';
+import { type NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { messageRateLimit } from '@/lib/middleware/rate-limit';
-import { 
-  successResponse,
+import type { ChatMessage, SendMessageRequest } from '@/lib/types/api';
+import {
+  addSecurityHeaders,
   createdResponse,
   notFoundResponse,
-  validationErrorResponse,
   paginatedResponse,
-  addSecurityHeaders 
+  successResponse,
+  validationErrorResponse,
 } from '@/lib/utils/api-response';
-import type { ChatMessage, SendMessageRequest } from '@/lib/types/api';
-import { nanoid } from 'nanoid';
 
 // =============================================================================
 // Request Validation
 // =============================================================================
 
 const sendMessageSchema = z.object({
-  content: z.string().min(1, 'Message content is required').max(10000, 'Message must be 10000 characters or less'),
+  content: z
+    .string()
+    .min(1, 'Message content is required')
+    .max(10_000, 'Message must be 10000 characters or less'),
   role: z.enum(['user']).default('user'),
   stream: z.boolean().default(true),
   temperature: z.number().min(0).max(2).optional(),
@@ -44,10 +47,10 @@ const listMessagesSchema = z.object({
 async function getChatById(chatId: string, walletAddress: string) {
   // TODO: Implement Convex query to get chat
   // return await getChat(chatId, walletAddress);
-  
+
   // Mock implementation
   if (chatId.length < 10) return null;
-  
+
   return {
     _id: chatId,
     walletAddress,
@@ -58,34 +61,48 @@ async function getChatById(chatId: string, walletAddress: string) {
   };
 }
 
-async function getChatMessages(chatId: string, walletAddress: string, options: { cursor?: string; limit: number }) {
+async function getChatMessages(
+  chatId: string,
+  walletAddress: string,
+  options: { cursor?: string; limit: number }
+) {
   // TODO: Implement Convex query to get messages
   // return await getMessages(chatId, walletAddress, options);
-  
+
   // Mock implementation
-  const mockMessages: ChatMessage[] = Array.from({ length: Math.min(options.limit, 10) }, (_, i) => ({
-    _id: nanoid(12),
-    chatId,
-    walletAddress,
-    role: i % 2 === 0 ? 'user' : 'assistant',
-    content: i % 2 === 0 ? 'User message content' : 'Assistant response content',
-    tokenCount: Math.floor(Math.random() * 100) + 20,
-    metadata: i % 2 === 1 ? {
-      model: 'gpt-4o',
-      finishReason: 'stop',
-      usage: {
-        inputTokens: 50,
-        outputTokens: 75,
-        totalTokens: 125,
-      },
-    } : undefined,
-    createdAt: Date.now() - (i * 30 * 1000), // 30 seconds apart
-  }));
-  
+  const mockMessages: ChatMessage[] = Array.from(
+    { length: Math.min(options.limit, 10) },
+    (_, i) => ({
+      _id: nanoid(12),
+      chatId,
+      walletAddress,
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content:
+        i % 2 === 0 ? 'User message content' : 'Assistant response content',
+      tokenCount: Math.floor(Math.random() * 100) + 20,
+      metadata:
+        i % 2 === 1
+          ? {
+              model: 'gpt-4o',
+              finishReason: 'stop',
+              usage: {
+                inputTokens: 50,
+                outputTokens: 75,
+                totalTokens: 125,
+              },
+            }
+          : undefined,
+      createdAt: Date.now() - i * 30 * 1000, // 30 seconds apart
+    })
+  );
+
   return {
     messages: mockMessages,
     hasMore: mockMessages.length === options.limit,
-    nextCursor: mockMessages.length === options.limit ? mockMessages[mockMessages.length - 1]._id : undefined,
+    nextCursor:
+      mockMessages.length === options.limit
+        ? mockMessages[mockMessages.length - 1]._id
+        : undefined,
   };
 }
 
@@ -103,42 +120,45 @@ export async function GET(
         const { walletAddress } = authReq.user;
         const { id: chatId } = params;
         const { searchParams } = new URL(req.url);
-        
+
         // Validate chat exists and user has access
         const chat = await getChatById(chatId, walletAddress);
         if (!chat) {
           return notFoundResponse('Chat not found');
         }
-        
+
         // Parse and validate query parameters
         const queryValidation = listMessagesSchema.safeParse({
           cursor: searchParams.get('cursor'),
           limit: searchParams.get('limit'),
         });
-        
+
         if (!queryValidation.success) {
           return validationErrorResponse(
             'Invalid query parameters',
             queryValidation.error.flatten().fieldErrors
           );
         }
-        
+
         const { cursor, limit } = queryValidation.data;
-        
+
         // Fetch messages
-        const { messages, hasMore, nextCursor } = await getChatMessages(chatId, walletAddress, { cursor, limit });
-        
+        const { messages, hasMore, nextCursor } = await getChatMessages(
+          chatId,
+          walletAddress,
+          { cursor, limit }
+        );
+
         console.log(`Retrieved ${messages.length} messages for chat ${chatId}`);
-        
+
         const response = paginatedResponse(messages, {
           cursor,
           nextCursor,
           hasMore,
           limit,
         });
-        
+
         return addSecurityHeaders(response);
-        
       } catch (error) {
         console.error('Get messages error:', error);
         return validationErrorResponse('Failed to retrieve messages');
@@ -156,26 +176,27 @@ export async function POST(
       try {
         const { walletAddress } = authReq.user;
         const { id: chatId } = params;
-        
+
         // Validate chat exists and user has access
         const chat = await getChatById(chatId, walletAddress);
         if (!chat) {
           return notFoundResponse('Chat not found');
         }
-        
+
         // Parse and validate request body
         const body = await req.json();
         const validation = sendMessageSchema.safeParse(body);
-        
+
         if (!validation.success) {
           return validationErrorResponse(
             'Invalid message data',
             validation.error.flatten().fieldErrors
           );
         }
-        
-        const { content, role, stream, temperature, maxTokens } = validation.data;
-        
+
+        const { content, role, stream, temperature, maxTokens } =
+          validation.data;
+
         // Create user message
         const userMessage: ChatMessage = {
           _id: nanoid(12),
@@ -186,23 +207,27 @@ export async function POST(
           tokenCount: Math.floor(content.length / 4), // Rough token estimate
           createdAt: Date.now(),
         };
-        
+
         // TODO: Save user message to Convex
         // await saveMessage(userMessage);
-        
+
         // If not streaming, return the saved message
         if (!stream) {
           console.log(`Message created for chat ${chatId}: ${userMessage._id}`);
           const response = createdResponse(userMessage);
           return addSecurityHeaders(response);
         }
-        
+
         // For streaming, get chat history for AI context
-        const { messages: historyMessages } = await getChatMessages(chatId, walletAddress, { limit: 20 });
-        
+        const { messages: historyMessages } = await getChatMessages(
+          chatId,
+          walletAddress,
+          { limit: 20 }
+        );
+
         // Convert to AI SDK UI Message format
         const conversationHistory = [
-          ...historyMessages.reverse().map(msg => ({
+          ...historyMessages.reverse().map((msg) => ({
             id: msg._id,
             role: msg.role as 'user' | 'assistant' | 'system',
             parts: [{ type: 'text' as const, text: msg.content }],
@@ -213,7 +238,7 @@ export async function POST(
             parts: [{ type: 'text' as const, text: userMessage.content }],
           },
         ];
-        
+
         // Stream AI response
         const result = streamText({
           model: openai(chat.model),
@@ -242,24 +267,25 @@ export async function POST(
                 },
                 createdAt: Date.now(),
               };
-              
+
               // await saveMessage(assistantMessage);
               // await updateChatLastMessage(chatId, assistantMessage);
-              
-              console.log(`AI response completed for chat ${chatId}: ${assistantMessage._id}`);
+
+              console.log(
+                `AI response completed for chat ${chatId}: ${assistantMessage._id}`
+              );
             } catch (error) {
               console.error('Failed to save AI response:', error);
             }
           },
         });
-        
+
         console.log(`Streaming AI response for chat ${chatId}`);
-        
+
         // Return streaming response
         return result.toUIMessageStreamResponse({
           originalMessages: conversationHistory,
         });
-        
       } catch (error) {
         console.error('Send message error:', error);
         return validationErrorResponse('Failed to send message');

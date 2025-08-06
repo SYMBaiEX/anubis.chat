@@ -3,9 +3,9 @@
  * Based on wallet addresses and August 2025 best practices
  */
 
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { APIErrorCode } from '../types/api';
-import { rateLimitResponse, addRateLimitHeaders } from '../utils/api-response';
+import { addRateLimitHeaders, rateLimitResponse } from '../utils/api-response';
 import { extractWalletFromRequest } from './auth';
 
 // =============================================================================
@@ -21,8 +21,8 @@ interface ExtendedNextRequest extends NextRequest {
 // =============================================================================
 
 export interface RateLimitOptions {
-  windowMs: number;           // Time window in milliseconds
-  maxRequests: number;        // Max requests per window
+  windowMs: number; // Time window in milliseconds
+  maxRequests: number; // Max requests per window
   skipSuccessfulRequests?: boolean;
   skipFailedRequests?: boolean;
   keyGenerator?: (request: NextRequest) => string;
@@ -50,13 +50,13 @@ class MemoryStore {
 
   get(key: string): RateLimitEntry | undefined {
     const entry = this.store.get(key);
-    
+
     // Remove expired entries
     if (entry && entry.resetTime < new Date()) {
       this.store.delete(key);
-      return undefined;
+      return;
     }
-    
+
     return entry;
   }
 
@@ -67,15 +67,15 @@ class MemoryStore {
   increment(key: string, windowMs: number): RateLimitEntry {
     const now = new Date();
     const resetTime = new Date(Date.now() + windowMs);
-    
+
     let entry = this.get(key);
-    
-    if (!entry) {
-      entry = { totalHits: 1, resetTime };
-    } else {
+
+    if (entry) {
       entry.totalHits++;
+    } else {
+      entry = { totalHits: 1, resetTime };
     }
-    
+
     this.set(key, entry);
     return entry;
   }
@@ -110,50 +110,50 @@ setInterval(() => store.cleanup(), 5 * 60 * 1000);
 export const rateLimitConfigs = {
   // Authentication endpoints
   auth: {
-    windowMs: 15 * 60 * 1000,  // 15 minutes
-    maxRequests: 10,           // 10 attempts per 15 minutes
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 10, // 10 attempts per 15 minutes
   },
-  
+
   // Message sending
   messages: {
-    windowMs: 60 * 1000,       // 1 minute
-    maxRequests: 30,           // 30 messages per minute
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 30, // 30 messages per minute
   },
-  
+
   // Chat operations
   chats: {
-    windowMs: 60 * 1000,       // 1 minute
-    maxRequests: 60,           // 60 operations per minute
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 60, // 60 operations per minute
   },
-  
+
   // AI requests
   ai: {
-    windowMs: 60 * 1000,       // 1 minute
-    maxRequests: 20,           // 20 AI requests per minute
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 20, // 20 AI requests per minute
   },
-  
+
   // Document uploads
   documents: {
-    windowMs: 60 * 1000,       // 1 minute
-    maxRequests: 10,           // 10 uploads per minute
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 10, // 10 uploads per minute
   },
-  
+
   // Search requests
   search: {
-    windowMs: 60 * 1000,       // 1 minute
-    maxRequests: 100,          // 100 searches per minute
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 100, // 100 searches per minute
   },
-  
+
   // General API
   general: {
-    windowMs: 60 * 1000,       // 1 minute
-    maxRequests: 200,          // 200 requests per minute
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 200, // 200 requests per minute
   },
-  
+
   // Premium tier limits (higher)
   premium: {
-    windowMs: 60 * 1000,       // 1 minute
-    maxRequests: 500,          // 500 requests per minute
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 500, // 500 requests per minute
   },
 } as const;
 
@@ -165,22 +165,26 @@ export const keyGenerators = {
   // Rate limit by wallet address
   wallet: (request: NextRequest): string => {
     const walletAddress = extractWalletFromRequest(request);
-    return walletAddress ? `wallet:${walletAddress}` : `ip:${getClientIP(request)}`;
+    return walletAddress
+      ? `wallet:${walletAddress}`
+      : `ip:${getClientIP(request)}`;
   },
-  
+
   // Rate limit by IP address
   ip: (request: NextRequest): string => {
     return `ip:${getClientIP(request)}`;
   },
-  
+
   // Combined wallet + endpoint
   walletEndpoint: (request: NextRequest): string => {
     const walletAddress = extractWalletFromRequest(request);
     const endpoint = request.nextUrl.pathname;
-    const key = walletAddress ? `wallet:${walletAddress}` : `ip:${getClientIP(request)}`;
+    const key = walletAddress
+      ? `wallet:${walletAddress}`
+      : `ip:${getClientIP(request)}`;
     return `${key}:${endpoint}`;
   },
-  
+
   // Global rate limit
   global: (_request: NextRequest): string => {
     return 'global';
@@ -207,15 +211,17 @@ export function createRateLimiter(options: RateLimitOptions) {
 
     const key = keyGenerator(request);
     const entry = store.increment(key, windowMs);
-    
+
     const totalHitsRemaining = Math.max(0, maxRequests - entry.totalHits);
     const isLimitExceeded = entry.totalHits > maxRequests;
-    
+
     const rateLimitInfo: RateLimitInfo = {
       totalHits: entry.totalHits,
       totalHitsRemaining,
       resetTime: entry.resetTime,
-      retryAfter: isLimitExceeded ? Math.ceil((entry.resetTime.getTime() - Date.now()) / 1000) : undefined,
+      retryAfter: isLimitExceeded
+        ? Math.ceil((entry.resetTime.getTime() - Date.now()) / 1000)
+        : undefined,
     };
 
     // Check if limit is exceeded
@@ -224,12 +230,14 @@ export function createRateLimiter(options: RateLimitOptions) {
         onLimitReached(key, request);
       }
 
-      const retryAfter = Math.ceil((entry.resetTime.getTime() - Date.now()) / 1000);
+      const retryAfter = Math.ceil(
+        (entry.resetTime.getTime() - Date.now()) / 1000
+      );
       const response = rateLimitResponse(
         'Too many requests, please try again later',
         retryAfter
       );
-      
+
       return addRateLimitHeaders(
         response,
         maxRequests,
@@ -248,7 +256,7 @@ export function createRateLimiter(options: RateLimitOptions) {
     }
 
     // Skip counting based on response status
-    const shouldSkip = 
+    const shouldSkip =
       (skipSuccessfulRequests && response.status < 400) ||
       (skipFailedRequests && response.status >= 400);
 
@@ -380,20 +388,20 @@ function getClientIP(request: ExtendedNextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for');
   const realIP = request.headers.get('x-real-ip');
   const clientIP = request.headers.get('x-client-ip');
-  
+
   if (forwarded) {
     return forwarded.split(',')[0].trim();
   }
-  
+
   if (realIP) {
     return realIP;
   }
-  
+
   if (clientIP) {
     return clientIP;
   }
-  
-  // Fallback to connection remote address  
+
+  // Fallback to connection remote address
   return request.ip || 'unknown';
 }
 
@@ -403,14 +411,17 @@ function getClientIP(request: ExtendedNextRequest): string {
 
 export function getRateLimitStats(key: string): RateLimitInfo | null {
   const entry = store.get(key);
-  
+
   if (!entry) {
     return null;
   }
-  
+
   return {
     totalHits: entry.totalHits,
-    totalHitsRemaining: Math.max(0, rateLimitConfigs.general.maxRequests - entry.totalHits),
+    totalHitsRemaining: Math.max(
+      0,
+      rateLimitConfigs.general.maxRequests - entry.totalHits
+    ),
     resetTime: entry.resetTime,
   };
 }
@@ -419,9 +430,12 @@ export function clearRateLimit(key: string): void {
   store.delete(key);
 }
 
-export function getAllRateLimits(): Array<{ key: string; info: RateLimitInfo }> {
+export function getAllRateLimits(): Array<{
+  key: string;
+  info: RateLimitInfo;
+}> {
   const results: Array<{ key: string; info: RateLimitInfo }> = [];
-  
+
   for (const [key, entry] of store.entries()) {
     if (entry.resetTime >= new Date()) {
       results.push({
@@ -434,6 +448,6 @@ export function getAllRateLimits(): Array<{ key: string; info: RateLimitInfo }> 
       });
     }
   }
-  
+
   return results;
 }

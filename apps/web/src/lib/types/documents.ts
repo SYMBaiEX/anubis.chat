@@ -60,13 +60,19 @@ export interface DocumentUploadRequest {
   title: string;
   content: string;
   type?: DocumentType;
-  metadata?: Omit<DocumentMetadata, 'wordCount' | 'characterCount' | 'embedding' | 'chunkIds'>;
+  metadata?: Omit<
+    DocumentMetadata,
+    'wordCount' | 'characterCount' | 'embedding' | 'chunkIds'
+  >;
 }
 
 export interface DocumentUpdateRequest {
   title?: string;
   content?: string;
-  metadata?: Omit<DocumentMetadata, 'wordCount' | 'characterCount' | 'embedding' | 'chunkIds'>;
+  metadata?: Omit<
+    DocumentMetadata,
+    'wordCount' | 'characterCount' | 'embedding' | 'chunkIds'
+  >;
 }
 
 export interface DocumentUploadResponse {

@@ -3,26 +3,29 @@
  * Handles single text completions using various AI models
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { streamText, generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { withAuth, type AuthenticatedRequest } from '@/lib/middleware/auth';
+import { generateText, streamText } from 'ai';
+import { nanoid } from 'nanoid';
+import { type NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
-import { 
+import {
+  addSecurityHeaders,
+  modelUnavailableResponse,
   successResponse,
   validationErrorResponse,
-  modelUnavailableResponse,
-  addSecurityHeaders 
 } from '@/lib/utils/api-response';
-import { nanoid } from 'nanoid';
 
 // =============================================================================
 // Request Validation
 // =============================================================================
 
 const completionSchema = z.object({
-  prompt: z.string().min(1, 'Prompt is required').max(10000, 'Prompt must be 10000 characters or less'),
+  prompt: z
+    .string()
+    .min(1, 'Prompt is required')
+    .max(10_000, 'Prompt must be 10000 characters or less'),
   model: z.string().default('gpt-4o-mini'),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().min(1).max(8000).default(2000),
@@ -35,17 +38,12 @@ const completionSchema = z.object({
 // =============================================================================
 
 function getOpenAIModel(modelId: string) {
-  const supportedModels = [
-    'gpt-4o',
-    'gpt-4o-mini',
-    'gpt-4',
-    'gpt-3.5-turbo',
-  ];
-  
+  const supportedModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-4', 'gpt-3.5-turbo'];
+
   if (!supportedModels.includes(modelId)) {
     return null;
   }
-  
+
   return openai(modelId);
 }
 
@@ -61,30 +59,33 @@ export async function POST(request: NextRequest) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        
+
         // Parse and validate request body
         const body = await req.json();
         const validation = completionSchema.safeParse(body);
-        
+
         if (!validation.success) {
           return validationErrorResponse(
             'Invalid completion request',
             validation.error.flatten().fieldErrors
           );
         }
-        
-        const { prompt, model, temperature, maxTokens, stream, systemPrompt } = validation.data;
-        
+
+        const { prompt, model, temperature, maxTokens, stream, systemPrompt } =
+          validation.data;
+
         // Get AI model
         const aiModel = getOpenAIModel(model);
         if (!aiModel) {
           return modelUnavailableResponse(model);
         }
-        
+
         const completionId = nanoid(12);
-        
-        console.log(`AI completion requested: ${completionId} by ${walletAddress} using ${model}`);
-        
+
+        console.log(
+          `AI completion requested: ${completionId} by ${walletAddress} using ${model}`
+        );
+
         // Handle streaming response
         if (stream) {
           const result = streamText({
@@ -94,11 +95,11 @@ export async function POST(request: NextRequest) {
             temperature: temperature ?? 0.7,
             maxOutputTokens: maxTokens,
           });
-          
+
           console.log(`Streaming completion: ${completionId}`);
           return result.toUIMessageStreamResponse();
         }
-        
+
         // Handle non-streaming response
         const result = await generateText({
           model: aiModel,
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
           temperature: temperature ?? 0.7,
           maxOutputTokens: maxTokens,
         });
-        
+
         const completionResult = {
           id: completionId,
           model,
@@ -124,12 +125,13 @@ export async function POST(request: NextRequest) {
             timestamp: Date.now(),
           },
         };
-        
-        console.log(`Completion generated: ${completionId}, tokens: ${result.usage.totalTokens}`);
-        
+
+        console.log(
+          `Completion generated: ${completionId}, tokens: ${result.usage.totalTokens}`
+        );
+
         const response = successResponse(completionResult);
         return addSecurityHeaders(response);
-        
       } catch (error) {
         console.error('AI completion error:', error);
         const response = NextResponse.json(

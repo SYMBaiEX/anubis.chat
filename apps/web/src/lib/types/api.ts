@@ -204,12 +204,12 @@ export interface StreamingChoice {
 // Import document types from the comprehensive documents module
 export type {
   Document,
-  DocumentMetadata,
   DocumentChunk,
-  DocumentType,
+  DocumentMetadata,
   DocumentSearchRequest,
   DocumentSearchResponse,
-  DocumentSearchResult
+  DocumentSearchResult,
+  DocumentType,
 } from './documents';
 
 // =============================================================================

@@ -3,14 +3,15 @@
  * Returns authenticated user's profile information
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, type AuthenticatedRequest } from '@/lib/middleware/auth';
+import { type NextRequest, NextResponse } from 'next/server';
+import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
-import { 
-  successResponse,
-  addSecurityHeaders 
-} from '@/lib/utils/api-response';
 import type { UserProfile } from '@/lib/types/api';
+import { 
+  addSecurityHeaders, 
+  successResponse, 
+  internalErrorResponse 
+} from '@/lib/utils/api-response';
 
 // =============================================================================
 // Route Handlers
@@ -21,11 +22,11 @@ export async function GET(request: NextRequest) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress, publicKey } = authReq.user;
-        
+
         // TODO: Fetch user profile from Convex database
         // const userProfile = await getUserProfile(walletAddress);
-        
-        // Mock user profile for now
+
+        // Mock user profile for now - in production this would come from Convex
         const userProfile: UserProfile = {
           walletAddress,
           publicKey,
@@ -39,25 +40,20 @@ export async function GET(request: NextRequest) {
           subscription: {
             tier: 'free',
             tokensUsed: 0,
-            tokensLimit: 10000,
+            tokensLimit: 10_000,
             features: ['basic_chat', 'document_upload'],
           },
-          createdAt: Date.now() - (7 * 24 * 60 * 60 * 1000), // 7 days ago
+          createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000, // 7 days ago
           lastActiveAt: Date.now(),
           isActive: true,
         };
-        
+
         // Add security headers and return response
         const response = successResponse(userProfile);
         return addSecurityHeaders(response);
-        
       } catch (error) {
         console.error('Get user profile error:', error);
-        const response = NextResponse.json(
-          { error: 'Failed to retrieve user profile' },
-          { status: 500 }
-        );
-        return addSecurityHeaders(response);
+        return internalErrorResponse('Failed to retrieve user profile');
       }
     });
   });
