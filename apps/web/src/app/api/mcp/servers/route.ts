@@ -187,43 +187,6 @@ export async function POST(request: NextRequest) {
   });
 }
 
-/**
- * DELETE /api/mcp/servers/:name - Close an MCP server connection
- */
-export async function DELETE(request: NextRequest) {
-  return aiRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        // Extract server name from URL
-        const url = new URL(req.url);
-        const pathParts = url.pathname.split('/');
-        const serverName = pathParts[pathParts.length - 1];
-
-        if (!serverName || serverName === 'servers') {
-          return validationErrorResponse('Server name is required', {});
-        }
-
-        // Close the server
-        await mcpManager.closeClient(serverName);
-
-        console.log(`✅ Closed MCP server: ${serverName}`);
-
-        const response = successResponse({
-          message: `Server ${serverName} closed successfully`,
-        });
-
-        return addSecurityHeaders(response);
-      } catch (error) {
-        console.error('Close MCP server error:', error);
-        const response = NextResponse.json(
-          { error: 'Failed to close MCP server' },
-          { status: 500 }
-        );
-        return addSecurityHeaders(response);
-      }
-    });
-  });
-}
 
 export async function OPTIONS() {
   const response = new NextResponse(null, { status: 200 });

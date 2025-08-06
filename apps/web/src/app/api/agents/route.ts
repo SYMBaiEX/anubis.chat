@@ -15,11 +15,9 @@ import {
   createAgentFromTemplate,
   validateAgentConfig,
 } from '@/lib/agentic/engine';
-import { AgentFactory, type Agent as V2Agent, type OrchestratorAgent } from '@/lib/agents/core';
 import { convex, api } from '@/lib/database/convex';
-import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
 import { getAllTools, getToolsByCategory } from '@/lib/agentic/tools';
-import { initializeDefaultMCPServers, mcpManager } from '@/lib/mcp/client';
+import { initializeDefaultMCPServers } from '@/lib/mcp/client';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import type {
@@ -29,7 +27,6 @@ import type {
   ExecuteAgentRequest,
   PaginatedAgentsResponse,
 } from '@/lib/types/agentic';
-import type { AIToolCollection } from '@/lib/types/tools';
 import {
   addSecurityHeaders,
   createdResponse,
@@ -105,10 +102,6 @@ const listAgentsSchema = z.object({
 // Production Convex Database Integration - Enhanced with v2 features
 // =============================================================================
 
-// v2 Enhanced agents storage for WorkflowEngine integration
-const v2Agents = new Map<string, V2Agent>();
-const orchestrators = new Map<string, OrchestratorAgent>();
-
 // Initialize MCP servers on first request
 let mcpInitialized = false;
 
@@ -123,18 +116,6 @@ async function ensureMCPInitialized() {
   }
 }
 
-// Helper to get language model
-function getLanguageModel(provider: string, model: string) {
-  switch (provider) {
-    case 'anthropic':
-      return anthropic(model);
-    case 'google':
-      return google(model);
-    case 'openai':
-    default:
-      return openai(model);
-  }
-}
 
 // Initialize default agents in Convex if they don't exist
 async function initializeDefaultAgents(walletAddress: string) {
@@ -240,47 +221,6 @@ export async function GET(request: NextRequest) {
           updatedAt: agent.updatedAt,
         }));
 
-        // Add v2 agents to the list (convert to v1 format for compatibility)
-        const v2AgentsList = Array.from(v2Agents.entries()).map(([id, agent]) => {
-          const config = agent.getConfig();
-          return {
-            id: config.id as Id<'agents'>,
-            name: config.name,
-            description: config.metadata?.description || `${config.role} agent`,
-            model: typeof config.model === 'string' ? config.model : 'gpt-4o-mini',
-            systemPrompt: config.systemPrompt,
-            temperature: config.temperature,
-            maxTokens: config.metadata?.maxTokens || 2000,
-            tools: config.tools ? Object.keys(config.tools) : [],
-            maxSteps: 10,
-            walletAddress,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          };
-        });
-
-        // Add orchestrators to the list
-        const orchestratorsList = Array.from(orchestrators.entries()).map(([id, orchestrator]) => {
-          const config = orchestrator.getConfig();
-          return {
-            id: config.id as Id<'agents'>,
-            name: config.name,
-            description: config.metadata?.description || 'Orchestrator Agent',
-            model: typeof config.model === 'string' ? config.model : 'gpt-4o-mini',
-            systemPrompt: config.systemPrompt,
-            temperature: config.temperature,
-            maxTokens: config.metadata?.maxTokens || 2000,
-            tools: config.tools ? Object.keys(config.tools) : [],
-            maxSteps: 10,
-            walletAddress,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          };
-        });
-
-        // Combine all agents
-        formattedAgents = [...formattedAgents, ...v2AgentsList, ...orchestratorsList];
-
         // Apply filters
         if (template) {
           formattedAgents = formattedAgents.filter((agent) =>
@@ -346,97 +286,38 @@ export async function POST(request: NextRequest) {
 
         const agentData = validation.data;
 
-        // Enhanced agent creation with v2 features
-        let newAgent: Agent | undefined;
-        let v2Agent: V2Agent | OrchestratorAgent | undefined;
-
         // Initialize MCP if requested
         if (agentData.enableMCPTools) {
           await ensureMCPInitialized();
         }
 
-        // Check if using enhanced v2 features (role, provider, MCP tools)
-        const useV2Features = agentData.role || agentData.provider !== 'openai' || agentData.enableMCPTools;
-
-        if (useV2Features && agentData.role) {
-          // Create v2 enhanced agent
-          const languageModel = getLanguageModel(agentData.provider, agentData.model);
-          const tools = agentData.enableMCPTools
-            ? (mcpManager.getAllTools() as AIToolCollection)
-            : undefined;
-
-          switch (agentData.role) {
-            case 'researcher':
-              v2Agent = AgentFactory.createResearcher(languageModel, tools);
-              break;
-            case 'coder':
-              v2Agent = AgentFactory.createCoder(languageModel, tools);
-              break;
-            case 'analyst':
-              v2Agent = AgentFactory.createAnalyst(languageModel, tools);
-              break;
-            case 'orchestrator':
-              v2Agent = AgentFactory.createOrchestrator(languageModel, tools);
-              orchestrators.set(v2Agent.getConfig().id, v2Agent as OrchestratorAgent);
-              break;
-          }
-
-          if (v2Agent) {
-            // Update config with custom settings
-            v2Agent.updateConfig({
-              name: agentData.name,
-              temperature: agentData.temperature,
-            });
-
-            const agentId = v2Agent.getConfig().id;
-            v2Agents.set(agentId, v2Agent);
-
-            // Create compatible v1 agent record
-            const config = v2Agent.getConfig();
-            newAgent = {
-              id: config.id,
-              name: config.name,
-              description: agentData.description,
-              model: agentData.model,
-              systemPrompt: config.systemPrompt || agentData.systemPrompt || 'You are a helpful AI assistant.',
-              temperature: agentData.temperature,
-              maxTokens: agentData.maxTokens,
-              tools: agentData.tools,
-              maxSteps: agentData.maxSteps,
-              walletAddress,
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-            };
-          }
-        }
-
-        // Fallback to v1 agent creation
-        if (!newAgent) {
-          if (agentData.template !== 'custom') {
-            newAgent = createAgentFromTemplate(
-              agentData.name,
-              agentData.template,
-              walletAddress,
-              agentData.systemPrompt
-            );
-          } else {
-            // Create custom agent
-            newAgent = {
-              id: nanoid(),
-              name: agentData.name,
-              description: agentData.description,
-              model: agentData.model,
-              systemPrompt:
-                agentData.systemPrompt || 'You are a helpful AI assistant.',
-              temperature: agentData.temperature,
-              maxTokens: agentData.maxTokens,
-              tools: agentData.tools,
-              maxSteps: agentData.maxSteps,
-              walletAddress,
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-            };
-          }
+        // Create agent using template or custom configuration
+        let newAgent: Agent;
+        
+        if (agentData.template !== 'custom') {
+          newAgent = createAgentFromTemplate(
+            agentData.name,
+            agentData.template,
+            walletAddress,
+            agentData.systemPrompt
+          );
+        } else {
+          // Create custom agent
+          newAgent = {
+            id: nanoid(),
+            name: agentData.name,
+            description: agentData.description,
+            model: agentData.model,
+            systemPrompt:
+              agentData.systemPrompt || 'You are a helpful AI assistant.',
+            temperature: agentData.temperature,
+            maxTokens: agentData.maxTokens,
+            tools: agentData.tools,
+            maxSteps: agentData.maxSteps,
+            walletAddress,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
         }
 
         // Override template defaults with provided values

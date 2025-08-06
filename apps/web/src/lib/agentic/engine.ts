@@ -223,19 +223,16 @@ export class AgenticEngine {
 
           step.toolResults = toolResults;
 
-          // Add tool results to messages
-          for (const toolCall of result.toolCalls as any[]) {
-            messages.push({
-              role: 'assistant',
-              content: JSON.stringify({
-                toolCall: {
-                  id: toolCall.toolCallId,
-                  name: toolCall.toolName,
-                  result: toolCall.result,
-                },
-              }),
-            });
-          }
+          // Add tool results to messages using correct Vercel AI SDK format
+          messages.push({
+            role: 'tool',
+            content: result.toolCalls.map((toolCall: any) => ({
+              type: 'tool-result',
+              toolCallId: toolCall.toolCallId,
+              toolName: toolCall.toolName,
+              result: toolCall.result,
+            })),
+          });
         }
 
         // Check if we should continue or if the task is complete

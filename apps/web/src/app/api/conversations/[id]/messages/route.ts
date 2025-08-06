@@ -5,7 +5,8 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { memoryStore } from '@/lib/memory/store';
+import { convex, api } from '@/lib/database/convex';
+import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import {
@@ -43,24 +44,29 @@ export async function GET(
         const { walletAddress } = authReq.user;
         const { id: conversationId } = await params;
 
-        const conversation = memoryStore.getConversation(conversationId);
-        if (!conversation) {
+        // Get chat from Convex
+        const chat = await convex.query(api.chats.getById, {
+          id: conversationId as Id<'chats'>,
+        });
+
+        if (!chat) {
           return notFoundResponse('Conversation not found');
         }
 
         // Check ownership
-        if (conversation.userId !== walletAddress) {
+        if (chat.ownerId !== walletAddress) {
           return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
-        // Get linked memories
-        const memories = memoryStore.getConversationMemories(conversationId);
+        // Get messages from Convex
+        const messages = await convex.query(api.messages.getByChatId, {
+          chatId: conversationId as Id<'chats'>,
+        });
 
         const response = successResponse({
           conversationId,
-          messages: conversation.messages,
-          memories,
-          metadata: conversation.metadata,
+          messages,
+          chat,
         });
 
         return addSecurityHeaders(response);
@@ -89,13 +95,17 @@ export async function POST(
         const { walletAddress } = authReq.user;
         const { id: conversationId } = await params;
 
-        const conversation = memoryStore.getConversation(conversationId);
-        if (!conversation) {
+        // Get chat from Convex to verify it exists and check ownership
+        const chat = await convex.query(api.chats.getById, {
+          id: conversationId as Id<'chats'>,
+        });
+
+        if (!chat) {
           return notFoundResponse('Conversation not found');
         }
 
         // Check ownership
-        if (conversation.userId !== walletAddress) {
+        if (chat.ownerId !== walletAddress) {
           return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -111,19 +121,30 @@ export async function POST(
 
         const { role, content, metadata } = validation.data;
 
-        const message = memoryStore.addMessage(
-          conversationId,
+        // Create message in Convex
+        const messageId = await convex.mutation(api.messages.create, {
+          chatId: conversationId as Id<'chats'>,
+          walletAddress,
           role,
           content,
-          metadata
-        );
+          metadata: metadata ? {
+            model: metadata.model as string | undefined,
+            finishReason: metadata.finishReason as string | undefined,
+            usage: metadata.usage ? {
+              inputTokens: metadata.usage.inputTokens as number,
+              outputTokens: metadata.usage.outputTokens as number,
+              totalTokens: metadata.usage.totalTokens as number,
+            } : undefined,
+            tools: metadata.tools as any,
+            reasoning: metadata.reasoning as string | undefined,
+            citations: metadata.citations as string[] | undefined,
+          } : undefined,
+        });
 
-        if (!message) {
-          return NextResponse.json(
-            { error: 'Failed to add message' },
-            { status: 500 }
-          );
-        }
+        // Get the created message to return
+        const message = await convex.query(api.messages.getById, {
+          id: messageId,
+        });
 
         console.log(`Added message to conversation ${conversationId}`);
 

@@ -5,7 +5,8 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { memoryStore } from '@/lib/memory/store';
+import { convex, api } from '@/lib/database/convex';
+import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import {
@@ -21,14 +22,14 @@ import {
 // =============================================================================
 
 const createMemorySchema = z.object({
-  type: z.enum(['conversation', 'fact', 'preference', 'context']),
+  type: z.enum(['fact', 'preference', 'skill', 'goal', 'context']),
   content: z.string().min(1).max(5000),
   metadata: z.record(z.string(), z.any()).optional(),
 });
 
 const searchMemorySchema = z.object({
   query: z.string().min(1).max(500),
-  type: z.enum(['conversation', 'fact', 'preference', 'context']).optional(),
+  type: z.enum(['fact', 'preference', 'skill', 'goal', 'context']).optional(),
   limit: z.coerce.number().min(1).max(100).default(10),
 });
 
@@ -65,11 +66,11 @@ export async function GET(request: NextRequest) {
             );
           }
 
-          const memories = memoryStore.searchMemories(
-            walletAddress,
-            validation.data.query,
-            validation.data.limit
-          );
+          const memories = await convex.query(api.memories.searchMemories, {
+            userId: walletAddress,
+            query: validation.data.query,
+            limit: validation.data.limit,
+          });
 
           const response = successResponse({
             memories,
@@ -79,10 +80,10 @@ export async function GET(request: NextRequest) {
           return addSecurityHeaders(response);
         }
         // Get all memories
-        const memories = memoryStore.getUserMemories(
-          walletAddress,
-          type as any
-        );
+        const memories = await convex.query(api.memories.getUserMemories, {
+          userId: walletAddress,
+          type: type as any,
+        });
 
         const response = successResponse({
           memories,
@@ -122,14 +123,20 @@ export async function POST(request: NextRequest) {
 
         const { type, content, metadata } = validation.data;
 
-        const memory = memoryStore.addMemory(
-          walletAddress,
-          type,
+        const memoryId = await convex.mutation(api.memories.create, {
+          userId: walletAddress,
           content,
-          metadata
-        );
+          type,
+          tags: metadata?.tags as string[] | undefined,
+          importance: metadata?.importance as number | undefined,
+        });
 
-        console.log(`Created memory ${memory.id} for user ${walletAddress}`);
+        // Get the created memory to return
+        const memory = await convex.query(api.memories.getById, {
+          id: memoryId,
+        });
+
+        console.log(`Created memory ${memoryId} for user ${walletAddress}`);
 
         const response = createdResponse(memory);
         return addSecurityHeaders(response);
@@ -171,7 +178,10 @@ export async function PATCH(request: NextRequest) {
         }
 
         // Check if memory exists and belongs to user
-        const existingMemory = memoryStore.getMemory(memoryId);
+        const existingMemory = await convex.query(api.memories.getById, {
+          id: memoryId as Id<'memories'>,
+        });
+        
         if (!existingMemory) {
           return notFoundResponse('Memory not found');
         }
@@ -180,11 +190,18 @@ export async function PATCH(request: NextRequest) {
           return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
-        const updatedMemory = memoryStore.updateMemory(
-          memoryId,
-          content || existingMemory.content,
-          metadata
-        );
+        // Update the memory
+        await convex.mutation(api.memories.update, {
+          id: memoryId as Id<'memories'>,
+          content: content || existingMemory.content,
+          tags: metadata?.tags as string[] | undefined,
+          importance: metadata?.importance as number | undefined,
+        });
+
+        // Get the updated memory to return
+        const updatedMemory = await convex.query(api.memories.getById, {
+          id: memoryId as Id<'memories'>,
+        });
 
         if (!updatedMemory) {
           return notFoundResponse('Memory not found');
@@ -225,7 +242,10 @@ export async function DELETE(request: NextRequest) {
         }
 
         // Check if memory exists and belongs to user
-        const existingMemory = memoryStore.getMemory(memoryId);
+        const existingMemory = await convex.query(api.memories.getById, {
+          id: memoryId as Id<'memories'>,
+        });
+        
         if (!existingMemory) {
           return notFoundResponse('Memory not found');
         }
@@ -234,10 +254,10 @@ export async function DELETE(request: NextRequest) {
           return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
-        const deleted = memoryStore.deleteMemory(memoryId);
-        if (!deleted) {
-          return notFoundResponse('Memory not found');
-        }
+        // Delete the memory
+        await convex.mutation(api.memories.remove, {
+          id: memoryId as Id<'memories'>,
+        });
 
         console.log(`Deleted memory ${memoryId} for user ${walletAddress}`);
 
