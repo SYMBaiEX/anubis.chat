@@ -20,14 +20,14 @@ body {
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --background: oklch(0.98 0 0);  /* Off-white */
+  --foreground: oklch(0.25 0 0);  /* Charcoal grey */
+  --card: oklch(0.99 0 0);  /* Slightly whiter for cards */
+  --card-foreground: oklch(0.25 0 0);
+  --popover: oklch(0.99 0 0);
+  --popover-foreground: oklch(0.25 0 0);
+  --primary: oklch(0.6 0.12 195);  /* Turquoise */
+  --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -132,4 +132,62 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Hieroglyphic animations */
+@keyframes fadeInOut {
+  0%, 100% {
+    opacity: 0;
+  }
+  20%, 80% {
+    opacity: 1;
+  }
+}
+
+/* Rosetta Stone hieroglyphic styles */
+.hieroglyphic_version {
+  font-family: 'Noto Sans Egyptian Hieroglyphs', 'Segoe UI Historic', serif;
+  line-height: 1.8;
+  letter-spacing: 0.1em;
+}
+
+.hieroglyphic_version .horizontal-rtl {
+  direction: rtl;
+  unicode-bidi: bidi-override;
+}
+
+.hieroglyphic_version .vert {
+  display: inline-block;
+  writing-mode: vertical-lr;
+  text-orientation: upright;
+}
+
+.hieroglyphic_version .hori {
+  writing-mode: horizontal-tb;
+  display: inline-block;
+}
+
+.hieroglyphic_version .cartouche {
+  display: inline-block;
+  border: 2px solid currentColor;
+  border-radius: 1em;
+  padding: 0.2em 0.4em;
+  margin: 0 0.2em;
+}
+
+.hieroglyphic_version .lost {
+  opacity: 0.3;
+}
+
+.hieroglyphic_version .damaged-13 {
+  opacity: 0.7;
+}
+
+.hieroglyphic_version .fade75 {
+  opacity: 0.25;
+}
+
+.hieroglyphic_version .illegible {
+  filter: blur(2px);
+  opacity: 0.4;
 }

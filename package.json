@@ -15,7 +15,10 @@
     "dev:server": "turbo -F @isis-chat/backend dev",
     "dev:setup": "turbo -F @isis-chat/backend dev:setup"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@solana/wallet-adapter-backpack": "^0.1.14",
+    "bs58": "^6.0.0"
+  },
   "devDependencies": {
     "turbo": "^2.5.4",
     "@biomejs/biome": "2.1.2",
