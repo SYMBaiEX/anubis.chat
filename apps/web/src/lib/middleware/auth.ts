@@ -80,7 +80,7 @@ export function verifyWalletSignature(
   publicKey: string
 ): boolean {
   try {
-    const messageBytes = bs58.decode(message);
+    const messageBytes = new TextEncoder().encode(message);
     const signatureBytes = bs58.decode(signature);
     const publicKeyBytes = new PublicKey(publicKey).toBytes();
 
