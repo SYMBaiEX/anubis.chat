@@ -6,7 +6,6 @@ const STATIC_CACHE = 'isis-chat-static-v1';
 
 // Install event - cache essential resources
 self.addEventListener('install', (event) => {
-  console.log('ISIS Chat SW: Installing service worker');
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       return cache.addAll([
@@ -24,7 +23,6 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean old caches
 self.addEventListener('activate', (event) => {
-  console.log('ISIS Chat SW: Activating service worker');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -33,7 +31,6 @@ self.addEventListener('activate', (event) => {
             return cacheName !== CACHE_NAME && cacheName !== STATIC_CACHE;
           })
           .map((cacheName) => {
-            console.log('ISIS Chat SW: Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           })
       );
@@ -75,7 +72,6 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/@vite-plugin-pwa/') ||
     url.pathname === '/src/main.tsx'
   ) {
-    console.warn('ISIS Chat SW: Blocking Vite request:', url.pathname);
     return;
   }
 
@@ -141,6 +137,6 @@ self.addEventListener('message', (event) => {
       });
       break;
     default:
-      console.log('ISIS Chat SW: Unknown command:', command);
+    // Unknown command - no action needed
   }
 });

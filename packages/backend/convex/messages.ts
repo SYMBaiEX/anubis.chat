@@ -52,22 +52,30 @@ export const create = mutation({
       v.object({
         model: v.optional(v.string()),
         finishReason: v.optional(v.string()),
-        usage: v.optional(v.object({
-          inputTokens: v.number(),
-          outputTokens: v.number(),
-          totalTokens: v.number(),
-        })),
-        tools: v.optional(v.array(v.object({
-          id: v.string(),
-          name: v.string(),
-          args: v.any(),
-          result: v.optional(v.object({
-            success: v.boolean(),
-            data: v.optional(v.any()),
-            error: v.optional(v.string()),
-            executionTime: v.optional(v.number()),
-          })),
-        }))),
+        usage: v.optional(
+          v.object({
+            inputTokens: v.number(),
+            outputTokens: v.number(),
+            totalTokens: v.number(),
+          })
+        ),
+        tools: v.optional(
+          v.array(
+            v.object({
+              id: v.string(),
+              name: v.string(),
+              args: v.any(),
+              result: v.optional(
+                v.object({
+                  success: v.boolean(),
+                  data: v.optional(v.any()),
+                  error: v.optional(v.string()),
+                  executionTime: v.optional(v.number()),
+                })
+              ),
+            })
+          )
+        ),
         reasoning: v.optional(v.string()),
         citations: v.optional(v.array(v.string())), // Document IDs for RAG
       })
@@ -92,7 +100,8 @@ export const create = mutation({
     });
 
     // Update chat's last message timestamp and counters
-    const tokenCount = args.tokenCount || args.metadata?.usage?.totalTokens || 0;
+    const tokenCount =
+      args.tokenCount || args.metadata?.usage?.totalTokens || 0;
     await ctx.db.patch(args.chatId, {
       lastMessageAt: now,
       updatedAt: now,
@@ -213,16 +222,15 @@ export const getStats = query({
       0
     );
 
-    const totalProcessingTime = assistantMessages.reduce(
-      (sum, msg) => {
-        // Calculate processing time from tool execution times
-        const toolExecutionTime = msg.metadata?.tools?.reduce(
-          (toolSum, tool) => toolSum + (tool.result?.executionTime || 0), 0
+    const totalProcessingTime = assistantMessages.reduce((sum, msg) => {
+      // Calculate processing time from tool execution times
+      const toolExecutionTime =
+        msg.metadata?.tools?.reduce(
+          (toolSum, tool) => toolSum + (tool.result?.executionTime || 0),
+          0
         ) || 0;
-        return sum + toolExecutionTime;
-      },
-      0
-    );
+      return sum + toolExecutionTime;
+    }, 0);
 
     const modelsUsed = new Set(
       assistantMessages

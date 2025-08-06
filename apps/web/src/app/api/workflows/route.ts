@@ -8,9 +8,9 @@ import { ConvexError } from 'convex/values';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { Agent, AgentFactory } from '@/lib/agents/core';
-import { convex, api } from '@/lib/database/convex';
 import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
+import { Agent, AgentFactory } from '@/lib/agents/core';
+import { api, convex } from '@/lib/database/convex';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import type {
@@ -85,31 +85,35 @@ const createWorkflowSchema = z.object({
     .max(50, 'Maximum 50 steps allowed'),
   triggers: z.array(workflowTriggerSchema).optional(),
   // v2 enhanced features
-  nodes: z.array(
-    z.object({
-      id: z.string(),
-      type: z.enum([
-        'start',
-        'end',
-        'task',
-        'condition',
-        'parallel',
-        'loop',
-        'subworkflow',
-      ]),
-      name: z.string(),
-      description: z.string().optional(),
-      config: z.any().optional(),
-      next: z.union([z.string(), z.array(z.string())]).optional(),
-    })
-  ).optional(),
-  edges: z.array(
-    z.object({
-      from: z.string(),
-      to: z.string(),
-      condition: z.string().optional(),
-    })
-  ).optional(),
+  nodes: z
+    .array(
+      z.object({
+        id: z.string(),
+        type: z.enum([
+          'start',
+          'end',
+          'task',
+          'condition',
+          'parallel',
+          'loop',
+          'subworkflow',
+        ]),
+        name: z.string(),
+        description: z.string().optional(),
+        config: z.any().optional(),
+        next: z.union([z.string(), z.array(z.string())]).optional(),
+      })
+    )
+    .optional(),
+  edges: z
+    .array(
+      z.object({
+        from: z.string(),
+        to: z.string(),
+        condition: z.string().optional(),
+      })
+    )
+    .optional(),
   variables: z.record(z.string(), z.any()).optional(),
   timeout: z.number().optional(),
 });
@@ -142,7 +146,7 @@ const v2Workflows = new Map<string, WorkflowDefinition>();
 let workflowInitialized = false;
 async function initializeDefaultAgents() {
   if (workflowInitialized) return;
-  
+
   const model = openai('gpt-4o-mini');
 
   // Create some default agents for the WorkflowEngine
@@ -153,7 +157,7 @@ async function initializeDefaultAgents() {
   workflowEngine.registerAgent(researcher);
   workflowEngine.registerAgent(coder);
   workflowEngine.registerAgent(analyst);
-  
+
   workflowInitialized = true;
 }
 
@@ -224,7 +228,7 @@ export async function GET(request: NextRequest) {
 
         // Simple pagination without cursor (Convex handles most of it)
         const hasMore = filteredWorkflows.length === limit;
-        const nextCursor = hasMore 
+        const nextCursor = hasMore
           ? filteredWorkflows[filteredWorkflows.length - 1]?.id
           : undefined;
 
@@ -279,7 +283,10 @@ export async function POST(request: NextRequest) {
 
         if (useV2Features) {
           // Create v2-style workflow using WorkflowBuilder
-          const builder = new WorkflowBuilder(workflowData.name, workflowData.description);
+          const builder = new WorkflowBuilder(
+            workflowData.name,
+            workflowData.description
+          );
 
           // Add nodes from v2 format
           workflowData.nodes!.forEach((node) => {
@@ -311,12 +318,19 @@ export async function POST(request: NextRequest) {
           const steps = v2Workflow.nodes.map((node, index) => ({
             stepId: node.id,
             name: node.name,
-            type: node.type === 'task' ? 'agent_task' as const : node.type as any,
+            type:
+              node.type === 'task'
+                ? ('agent_task' as const)
+                : (node.type as any),
             agentId: node.config?.agentId as Id<'agents'>,
             condition: node.config?.condition as string,
             parameters: node.config?.parameters || {},
-            nextSteps: Array.isArray(node.next) ? node.next : node.next ? [node.next] : [],
-            requiresApproval: (node.config?.requiresApproval as boolean) || false,
+            nextSteps: Array.isArray(node.next)
+              ? node.next
+              : node.next
+                ? [node.next]
+                : [],
+            requiresApproval: node.config?.requiresApproval as boolean,
             order: index,
           }));
 
@@ -367,12 +381,13 @@ export async function POST(request: NextRequest) {
               config: step.parameters,
               next: step.nextSteps,
             })),
-            triggers: triggers?.map((trigger) => ({
-              id: trigger.triggerId,
-              type: trigger.type,
-              condition: trigger.condition,
-              parameters: trigger.parameters,
-            })) || [],
+            triggers:
+              triggers?.map((trigger) => ({
+                id: trigger.triggerId,
+                type: trigger.type,
+                condition: trigger.condition,
+                parameters: trigger.parameters,
+              })) || [],
             walletAddress,
             isActive: true,
             createdAt: createdWorkflow.createdAt,
@@ -385,85 +400,85 @@ export async function POST(request: NextRequest) {
 
           const response = createdResponse(newWorkflow);
           return addSecurityHeaders(response);
-        } else {
-          // Create traditional v1 workflow
-          const steps = workflowData.steps.map((step, index) => ({
-            stepId: nanoid(),
+        }
+        // Create traditional v1 workflow
+        const steps = workflowData.steps.map((step, index) => ({
+          stepId: nanoid(),
+          name: step.name,
+          type: step.type,
+          agentId: step.agentId as Id<'agents'>,
+          condition: step.condition,
+          parameters: step.parameters || {},
+          nextSteps: step.nextSteps || [],
+          requiresApproval: step.requiresApproval,
+          order: index,
+        }));
+
+        // Validate v1 workflow structure
+        const validationErrors = validateWorkflowSteps(steps);
+        if (validationErrors.length > 0) {
+          return validationErrorResponse('Invalid workflow structure', {
+            structure: validationErrors,
+          });
+        }
+
+        const triggers = workflowData.triggers?.map((trigger) => ({
+          triggerId: nanoid(),
+          type: trigger.type,
+          condition: trigger.condition,
+          parameters: trigger.parameters || {},
+          isActive: true,
+        }));
+
+        // Create workflow in Convex
+        const createdWorkflow = await convex.mutation(api.workflows.create, {
+          name: workflowData.name,
+          description: workflowData.description,
+          walletAddress,
+          steps: steps as any, // Cast to avoid type mismatch with new step types
+          triggers,
+        });
+
+        if (!createdWorkflow) {
+          throw new Error('Failed to create workflow in database');
+        }
+
+        // Create API response
+        const newWorkflow = {
+          id: createdWorkflow._id,
+          name: createdWorkflow.name,
+          description: createdWorkflow.description,
+          steps: steps.map((step) => ({
+            id: step.stepId,
             name: step.name,
             type: step.type,
-            agentId: step.agentId as Id<'agents'>,
+            agentId: step.agentId,
             condition: step.condition,
-            parameters: step.parameters || {},
-            nextSteps: step.nextSteps || [],
-            requiresApproval: step.requiresApproval || false,
-            order: index,
-          }));
-
-          // Validate v1 workflow structure
-          const validationErrors = validateWorkflowSteps(steps);
-          if (validationErrors.length > 0) {
-            return validationErrorResponse('Invalid workflow structure', {
-              structure: validationErrors,
-            });
-          }
-
-          const triggers = workflowData.triggers?.map((trigger) => ({
-            triggerId: nanoid(),
-            type: trigger.type,
-            condition: trigger.condition,
-            parameters: trigger.parameters || {},
-            isActive: true,
-          }));
-
-          // Create workflow in Convex
-          const createdWorkflow = await convex.mutation(api.workflows.create, {
-            name: workflowData.name,
-            description: workflowData.description,
-            walletAddress,
-            steps: steps as any, // Cast to avoid type mismatch with new step types
-            triggers,
-          });
-
-          if (!createdWorkflow) {
-            throw new Error('Failed to create workflow in database');
-          }
-
-          // Create API response
-          const newWorkflow = {
-            id: createdWorkflow._id,
-            name: createdWorkflow.name,
-            description: createdWorkflow.description,
-            steps: steps.map((step) => ({
-              id: step.stepId,
-              name: step.name,
-              type: step.type,
-              agentId: step.agentId,
-              condition: step.condition,
-              parameters: step.parameters,
-              nextSteps: step.nextSteps,
-              requiresApproval: step.requiresApproval,
-              config: step.parameters,
-              next: step.nextSteps,
-            })),
-            triggers: triggers?.map((trigger) => ({
+            parameters: step.parameters,
+            nextSteps: step.nextSteps,
+            requiresApproval: step.requiresApproval,
+            config: step.parameters,
+            next: step.nextSteps,
+          })),
+          triggers:
+            triggers?.map((trigger) => ({
               id: trigger.triggerId,
               type: trigger.type,
               condition: trigger.condition,
               parameters: trigger.parameters,
             })) || [],
-            walletAddress,
-            isActive: true,
-            createdAt: createdWorkflow.createdAt,
-            updatedAt: createdWorkflow.updatedAt,
-          };
+          walletAddress,
+          isActive: true,
+          createdAt: createdWorkflow.createdAt,
+          updatedAt: createdWorkflow.updatedAt,
+        };
 
-          console.log(
-            `v1 Workflow created: ${createdWorkflow._id} for user ${walletAddress}`
-          );
+        console.log(
+          `v1 Workflow created: ${createdWorkflow._id} for user ${walletAddress}`
+        );
 
-          const response = createdResponse(newWorkflow);
-          return addSecurityHeaders(response);
-        }
+        const response = createdResponse(newWorkflow);
+        return addSecurityHeaders(response);
       } catch (error) {
         console.error('Create workflow error:', error);
         const response = NextResponse.json(
@@ -545,7 +560,10 @@ export async function PUT(request: NextRequest) {
         if (v2Workflow) {
           // Execute v2 workflow using WorkflowEngine
           try {
-            executionResult = await workflowEngine.executeWorkflow(workflowId, input);
+            executionResult = await workflowEngine.executeWorkflow(
+              workflowId,
+              input
+            );
           } catch (error) {
             console.error('v2 workflow execution error:', error);
             executionResult = {
@@ -553,7 +571,8 @@ export async function PUT(request: NextRequest) {
               status: 'failed',
               result: {
                 error: 'Workflow execution failed',
-                message: error instanceof Error ? error.message : 'Unknown error',
+                message:
+                  error instanceof Error ? error.message : 'Unknown error',
               },
               executionTime: 0,
               metadata: {
@@ -565,11 +584,14 @@ export async function PUT(request: NextRequest) {
           }
         } else {
           // Create workflow execution in Convex
-          const execution = await convex.mutation(api.workflows.createExecution, {
-            workflowId: workflowId as Id<'workflows'>,
-            walletAddress,
-            variables: input || {},
-          });
+          const execution = await convex.mutation(
+            api.workflows.createExecution,
+            {
+              workflowId: workflowId as Id<'workflows'>,
+              walletAddress,
+              variables: input || {},
+            }
+          );
 
           if (!execution) {
             throw new Error('Failed to create workflow execution');
@@ -581,7 +603,8 @@ export async function PUT(request: NextRequest) {
             id: execution._id,
             walletAddress,
             status: 'completed',
-            currentStep: workflow.steps[workflow.steps.length - 1]?.stepId || '',
+            currentStep:
+              workflow.steps[workflow.steps.length - 1]?.stepId || '',
           });
 
           executionResult = {
@@ -608,10 +631,18 @@ export async function PUT(request: NextRequest) {
         const response = successResponse({
           executionId: 'id' in executionResult ? executionResult.id : 'unknown',
           workflowId,
-          status: 'status' in executionResult ? executionResult.status : 'unknown',
-          result: 'result' in executionResult ? executionResult.result : { message: 'No result' },
-          executionTime: 'executionTime' in executionResult ? executionResult.executionTime : 0,
-          metadata: 'metadata' in executionResult ? executionResult.metadata : {},
+          status:
+            'status' in executionResult ? executionResult.status : 'unknown',
+          result:
+            'result' in executionResult
+              ? executionResult.result
+              : { message: 'No result' },
+          executionTime:
+            'executionTime' in executionResult
+              ? executionResult.executionTime
+              : 0,
+          metadata:
+            'metadata' in executionResult ? executionResult.metadata : {},
         });
 
         return addSecurityHeaders(response);

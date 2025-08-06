@@ -1,11 +1,173 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
+// =============================================================================
+// Common Schema Definitions
+// =============================================================================
+
+// JSON-like values that can be stored
+const jsonValue = v.union(
+  v.string(),
+  v.number(),
+  v.boolean(),
+  v.null(),
+  v.array(v.any()), // Arrays can contain mixed types
+  v.object({}) // Objects can have dynamic keys
+);
+
+// Tool execution arguments - commonly used parameter types
+const toolParameters = v.union(
+  v.string(),
+  v.number(),
+  v.boolean(),
+  v.null(),
+  v.object({
+    // Common tool parameter structures
+    query: v.optional(v.string()),
+    limit: v.optional(v.number()),
+    offset: v.optional(v.number()),
+    filters: v.optional(v.object({})),
+    options: v.optional(v.object({})),
+    data: v.optional(v.object({})),
+    config: v.optional(v.object({})),
+  }),
+  v.array(jsonValue)
+);
+
+// Tool execution results
+const toolResult = v.union(
+  v.string(),
+  v.number(),
+  v.boolean(),
+  v.null(),
+  v.object({
+    status: v.optional(v.string()),
+    message: v.optional(v.string()),
+    data: v.optional(jsonValue),
+    metadata: v.optional(v.object({})),
+  }),
+  v.array(jsonValue)
+);
+
+// Error details for various error contexts
+const errorDetails = v.object({
+  code: v.optional(v.string()),
+  message: v.optional(v.string()),
+  stack: v.optional(v.string()),
+  context: v.optional(v.object({})),
+  timestamp: v.optional(v.number()),
+  severity: v.optional(
+    v.union(
+      v.literal('low'),
+      v.literal('medium'),
+      v.literal('high'),
+      v.literal('critical')
+    )
+  ),
+});
+
+// Workflow/Agent execution metadata
+const executionMetadata = v.object({
+  source: v.optional(v.string()),
+  priority: v.optional(
+    v.union(
+      v.literal('low'),
+      v.literal('normal'),
+      v.literal('high'),
+      v.literal('urgent')
+    )
+  ),
+  tags: v.optional(v.array(v.string())),
+  environment: v.optional(v.string()),
+  timeout: v.optional(v.number()),
+  retryPolicy: v.optional(
+    v.object({
+      maxRetries: v.number(),
+      backoffMultiplier: v.optional(v.number()),
+      initialDelay: v.optional(v.number()),
+    })
+  ),
+  custom: v.optional(v.object({})),
+});
+
+// Workflow variables
+const workflowVariables = v.object({
+  inputs: v.optional(v.object({})),
+  outputs: v.optional(v.object({})),
+  context: v.optional(v.object({})),
+  state: v.optional(v.object({})),
+  temp: v.optional(v.object({})),
+});
+
+// Search filters
+const searchFilters = v.object({
+  dateRange: v.optional(
+    v.object({
+      start: v.number(),
+      end: v.number(),
+    })
+  ),
+  type: v.optional(v.string()),
+  tags: v.optional(v.array(v.string())),
+  owner: v.optional(v.string()),
+  status: v.optional(v.string()),
+  metadata: v.optional(v.object({})),
+});
+
+// HTTP headers for webhooks - using underscore-case for valid identifiers
+const httpHeaders = v.object({
+  content_type: v.optional(v.string()),
+  authorization: v.optional(v.string()),
+  user_agent: v.optional(v.string()),
+  accept: v.optional(v.string()),
+  x_api_key: v.optional(v.string()),
+  // Allow additional custom headers as key-value pairs
+  custom_headers: v.optional(
+    v.array(
+      v.object({
+        key: v.string(),
+        value: v.string(),
+      })
+    )
+  ),
+});
+
+// Webhook payload structure
+const webhookPayload = v.object({
+  event: v.string(),
+  timestamp: v.number(),
+  data: v.object({}),
+  metadata: v.optional(
+    v.object({
+      version: v.optional(v.string()),
+      source: v.optional(v.string()),
+      traceId: v.optional(v.string()),
+    })
+  ),
+});
+
+// Approval request data
+const approvalData = v.object({
+  action: v.string(),
+  resource: v.optional(v.string()),
+  parameters: v.optional(toolParameters),
+  context: v.optional(v.object({})),
+  metadata: v.optional(v.object({})),
+});
+
+// Approval modifications
+const approvalModifications = v.object({
+  parameters: v.optional(toolParameters),
+  conditions: v.optional(v.array(v.string())),
+  restrictions: v.optional(v.array(v.string())),
+  metadata: v.optional(v.object({})),
+});
+
 export default defineSchema({
   // =============================================================================
   // User Management
   // =============================================================================
-  
+
   // Users table for wallet-based authentication
   users: defineTable({
     walletAddress: v.string(),
@@ -33,7 +195,9 @@ export default defineSchema({
       tokensUsed: v.number(),
       tokensLimit: v.number(),
       features: v.array(v.string()),
-      billingCycle: v.optional(v.union(v.literal('monthly'), v.literal('yearly'))),
+      billingCycle: v.optional(
+        v.union(v.literal('monthly'), v.literal('yearly'))
+      ),
       autoRenew: v.optional(v.boolean()),
     }),
     createdAt: v.number(),
@@ -135,22 +299,30 @@ export default defineSchema({
       v.object({
         model: v.optional(v.string()),
         finishReason: v.optional(v.string()),
-        usage: v.optional(v.object({
-          inputTokens: v.number(),
-          outputTokens: v.number(),
-          totalTokens: v.number(),
-        })),
-        tools: v.optional(v.array(v.object({
-          id: v.string(),
-          name: v.string(),
-          args: v.any(),
-          result: v.optional(v.object({
-            success: v.boolean(),
-            data: v.optional(v.any()),
-            error: v.optional(v.string()),
-            executionTime: v.optional(v.number()),
-          })),
-        }))),
+        usage: v.optional(
+          v.object({
+            inputTokens: v.number(),
+            outputTokens: v.number(),
+            totalTokens: v.number(),
+          })
+        ),
+        tools: v.optional(
+          v.array(
+            v.object({
+              id: v.string(),
+              name: v.string(),
+              args: toolParameters,
+              result: v.optional(
+                v.object({
+                  success: v.boolean(),
+                  data: v.optional(toolResult),
+                  error: v.optional(v.string()),
+                  executionTime: v.optional(v.number()),
+                })
+              ),
+            })
+          )
+        ),
         reasoning: v.optional(v.string()),
         citations: v.optional(v.array(v.string())), // Document IDs for RAG
       })
@@ -208,6 +380,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index('by_owner', ['ownerId', 'createdAt'])
+    .index('by_owner_category', ['ownerId', 'metadata.category', 'createdAt'])
     .index('by_type', ['type'])
     .index('by_public', ['isPublic', 'createdAt'])
     .index('by_tags', ['tags'])
@@ -280,23 +453,25 @@ export default defineSchema({
       v.literal('cancelled')
     ),
     input: v.string(),
-    result: v.optional(v.object({
-      success: v.boolean(),
-      output: v.string(),
-      finalStep: v.number(),
-      totalSteps: v.number(),
-      toolsUsed: v.array(v.string()),
-      tokensUsed: v.object({
-        input: v.number(),
-        output: v.number(),
-        total: v.number(),
-      }),
-      executionTime: v.number(),
-    })),
+    result: v.optional(
+      v.object({
+        success: v.boolean(),
+        output: v.string(),
+        finalStep: v.number(),
+        totalSteps: v.number(),
+        toolsUsed: v.array(v.string()),
+        tokensUsed: v.object({
+          input: v.number(),
+          output: v.number(),
+          total: v.number(),
+        }),
+        executionTime: v.number(),
+      })
+    ),
     error: v.optional(v.string()),
     startedAt: v.number(),
     completedAt: v.optional(v.number()),
-    metadata: v.optional(v.any()),
+    metadata: v.optional(executionMetadata),
   })
     .index('by_agent', ['agentId', 'startedAt'])
     .index('by_user', ['walletAddress', 'startedAt'])
@@ -323,25 +498,35 @@ export default defineSchema({
     input: v.optional(v.string()),
     output: v.optional(v.string()),
     reasoning: v.optional(v.string()),
-    toolCalls: v.optional(v.array(v.object({
-      id: v.string(),
-      name: v.string(),
-      parameters: v.any(),
-      requiresApproval: v.boolean(),
-    }))),
-    toolResults: v.optional(v.array(v.object({
-      id: v.string(),
-      success: v.boolean(),
-      result: v.any(),
-      error: v.optional(v.object({
-        code: v.string(),
-        message: v.string(),
-        details: v.optional(v.any()),
-        retryable: v.optional(v.boolean()),
-      })),
-      executionTime: v.number(),
-      metadata: v.optional(v.any()),
-    }))),
+    toolCalls: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          name: v.string(),
+          parameters: toolParameters,
+          requiresApproval: v.boolean(),
+        })
+      )
+    ),
+    toolResults: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          success: v.boolean(),
+          result: toolResult,
+          error: v.optional(
+            v.object({
+              code: v.string(),
+              message: v.string(),
+              details: v.optional(errorDetails),
+              retryable: v.optional(v.boolean()),
+            })
+          ),
+          executionTime: v.number(),
+          metadata: v.optional(executionMetadata),
+        })
+      )
+    ),
     startedAt: v.number(),
     completedAt: v.optional(v.number()),
     error: v.optional(v.string()),
@@ -390,7 +575,7 @@ export default defineSchema({
     ),
     agentId: v.optional(v.id('agents')),
     condition: v.optional(v.string()),
-    parameters: v.optional(v.any()),
+    parameters: v.optional(toolParameters),
     nextSteps: v.optional(v.array(v.string())),
     requiresApproval: v.optional(v.boolean()),
     order: v.number(),
@@ -410,7 +595,7 @@ export default defineSchema({
       v.literal('condition')
     ),
     condition: v.string(),
-    parameters: v.optional(v.any()),
+    parameters: v.optional(toolParameters),
     isActive: v.boolean(),
   })
     .index('by_workflow', ['workflowId'])
@@ -429,13 +614,15 @@ export default defineSchema({
       v.literal('cancelled')
     ),
     currentStep: v.string(),
-    variables: v.optional(v.any()),
-    error: v.optional(v.object({
-      stepId: v.string(),
-      code: v.string(),
-      message: v.string(),
-      details: v.optional(v.any()),
-    })),
+    variables: v.optional(workflowVariables),
+    error: v.optional(
+      v.object({
+        stepId: v.string(),
+        code: v.string(),
+        message: v.string(),
+        details: v.optional(errorDetails),
+      })
+    ),
     startedAt: v.number(),
     completedAt: v.optional(v.number()),
   })
@@ -454,7 +641,7 @@ export default defineSchema({
       v.literal('failed'),
       v.literal('waiting_approval')
     ),
-    output: v.optional(v.any()),
+    output: v.optional(toolResult),
     error: v.optional(v.string()),
     startedAt: v.number(),
     completedAt: v.optional(v.number()),
@@ -481,18 +668,20 @@ export default defineSchema({
       v.literal('custom')
     ),
     message: v.string(),
-    data: v.any(),
+    data: approvalData,
     status: v.union(
       v.literal('pending'),
       v.literal('approved'),
       v.literal('rejected'),
       v.literal('expired')
     ),
-    response: v.optional(v.object({
-      approved: v.boolean(),
-      message: v.optional(v.string()),
-      modifications: v.optional(v.any()),
-    })),
+    response: v.optional(
+      v.object({
+        approved: v.boolean(),
+        message: v.optional(v.string()),
+        modifications: v.optional(approvalModifications),
+      })
+    ),
     expiresAt: v.number(),
     createdAt: v.number(),
     respondedAt: v.optional(v.number()),
@@ -552,7 +741,7 @@ export default defineSchema({
     ),
     resultsCount: v.number(),
     executionTime: v.number(),
-    filters: v.optional(v.any()),
+    filters: v.optional(searchFilters),
     createdAt: v.number(),
   })
     .index('by_user', ['userId', 'createdAt'])
@@ -581,12 +770,14 @@ export default defineSchema({
     ),
     tags: v.optional(v.array(v.string())),
     sourceId: v.optional(v.string()), // Source chat/document ID
-    sourceType: v.optional(v.union(
-      v.literal('chat'),
-      v.literal('document'),
-      v.literal('agent'),
-      v.literal('workflow')
-    )),
+    sourceType: v.optional(
+      v.union(
+        v.literal('chat'),
+        v.literal('document'),
+        v.literal('agent'),
+        v.literal('workflow')
+      )
+    ),
     accessCount: v.number(),
     lastAccessed: v.optional(v.number()),
     createdAt: v.number(),
@@ -617,12 +808,14 @@ export default defineSchema({
     events: v.array(v.string()),
     secret: v.string(),
     isActive: v.boolean(),
-    headers: v.optional(v.any()),
-    retryPolicy: v.optional(v.object({
-      maxRetries: v.number(),
-      backoffMultiplier: v.number(),
-      initialDelay: v.number(),
-    })),
+    headers: v.optional(httpHeaders),
+    retryPolicy: v.optional(
+      v.object({
+        maxRetries: v.number(),
+        backoffMultiplier: v.number(),
+        initialDelay: v.number(),
+      })
+    ),
     createdAt: v.number(),
     lastTriggered: v.optional(v.number()),
     failureCount: v.number(),
@@ -634,7 +827,7 @@ export default defineSchema({
   webhookDeliveries: defineTable({
     webhookId: v.id('webhooks'),
     eventType: v.string(),
-    payload: v.any(),
+    payload: webhookPayload,
     responseStatus: v.optional(v.number()),
     responseBody: v.optional(v.string()),
     success: v.boolean(),
@@ -681,15 +874,17 @@ export default defineSchema({
     serverId: v.string(),
     toolName: v.string(),
     userId: v.string(), // walletAddress
-    input: v.any(),
-    output: v.optional(v.any()),
+    input: toolParameters,
+    output: v.optional(toolResult),
     success: v.boolean(),
     executionTime: v.number(),
-    error: v.optional(v.object({
-      code: v.string(),
-      message: v.string(),
-      details: v.optional(v.any()),
-    })),
+    error: v.optional(
+      v.object({
+        code: v.string(),
+        message: v.string(),
+        details: v.optional(errorDetails),
+      })
+    ),
     createdAt: v.number(),
   })
     .index('by_server', ['serverId', 'createdAt'])

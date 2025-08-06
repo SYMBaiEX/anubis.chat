@@ -103,7 +103,8 @@ export const update = mutation({
     if (args.name !== undefined) updates.name = args.name;
     if (args.description !== undefined) updates.description = args.description;
     if (args.model !== undefined) updates.model = args.model;
-    if (args.systemPrompt !== undefined) updates.systemPrompt = args.systemPrompt;
+    if (args.systemPrompt !== undefined)
+      updates.systemPrompt = args.systemPrompt;
     if (args.temperature !== undefined) updates.temperature = args.temperature;
     if (args.maxTokens !== undefined) updates.maxTokens = args.maxTokens;
     if (args.tools !== undefined) updates.tools = args.tools;
@@ -132,11 +133,13 @@ export const remove = mutation({
     const activeExecutions = await ctx.db
       .query('agentExecutions')
       .withIndex('by_agent', (q) => q.eq('agentId', args.id))
-      .filter((q) => q.or(
-        q.eq(q.field('status'), 'pending'),
-        q.eq(q.field('status'), 'running'),
-        q.eq(q.field('status'), 'waiting_approval')
-      ))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field('status'), 'pending'),
+          q.eq(q.field('status'), 'running'),
+          q.eq(q.field('status'), 'waiting_approval')
+        )
+      )
       .collect();
 
     if (activeExecutions.length > 0) {
@@ -193,19 +196,21 @@ export const updateExecution = mutation({
       v.literal('failed'),
       v.literal('cancelled')
     ),
-    result: v.optional(v.object({
-      success: v.boolean(),
-      output: v.string(),
-      finalStep: v.number(),
-      totalSteps: v.number(),
-      toolsUsed: v.array(v.string()),
-      tokensUsed: v.object({
-        input: v.number(),
-        output: v.number(),
-        total: v.number(),
-      }),
-      executionTime: v.number(),
-    })),
+    result: v.optional(
+      v.object({
+        success: v.boolean(),
+        output: v.string(),
+        finalStep: v.number(),
+        totalSteps: v.number(),
+        toolsUsed: v.array(v.string()),
+        tokensUsed: v.object({
+          input: v.number(),
+          output: v.number(),
+          total: v.number(),
+        }),
+        executionTime: v.number(),
+      })
+    ),
     error: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -328,12 +333,16 @@ export const addStep = mutation({
       v.literal('workflow_step')
     ),
     input: v.optional(v.string()),
-    toolCalls: v.optional(v.array(v.object({
-      id: v.string(),
-      name: v.string(),
-      parameters: v.any(),
-      requiresApproval: v.boolean(),
-    }))),
+    toolCalls: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          name: v.string(),
+          parameters: v.any(),
+          requiresApproval: v.boolean(),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const stepId = await ctx.db.insert('agentSteps', {
@@ -363,19 +372,25 @@ export const updateStep = mutation({
     ),
     output: v.optional(v.string()),
     reasoning: v.optional(v.string()),
-    toolResults: v.optional(v.array(v.object({
-      id: v.string(),
-      success: v.boolean(),
-      result: v.any(),
-      error: v.optional(v.object({
-        code: v.string(),
-        message: v.string(),
-        details: v.optional(v.any()),
-        retryable: v.optional(v.boolean()),
-      })),
-      executionTime: v.number(),
-      metadata: v.optional(v.any()),
-    }))),
+    toolResults: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          success: v.boolean(),
+          result: v.any(),
+          error: v.optional(
+            v.object({
+              code: v.string(),
+              message: v.string(),
+              details: v.optional(v.any()),
+              retryable: v.optional(v.boolean()),
+            })
+          ),
+          executionTime: v.number(),
+          metadata: v.optional(v.any()),
+        })
+      )
+    ),
     error: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -404,11 +419,11 @@ export const getAgentStats = query({
       .withIndex('by_owner', (q) => q.eq('walletAddress', args.walletAddress))
       .collect();
 
-    const activeAgents = agents.filter(agent => agent.isActive);
+    const activeAgents = agents.filter((agent) => agent.isActive);
 
     // Get execution counts
     const allExecutions = await Promise.all(
-      agents.map(agent =>
+      agents.map((agent) =>
         ctx.db
           .query('agentExecutions')
           .withIndex('by_agent', (q) => q.eq('agentId', agent._id))
@@ -417,11 +432,15 @@ export const getAgentStats = query({
     );
 
     const executions = allExecutions.flat();
-    const completedExecutions = executions.filter(exec => exec.status === 'completed');
-    const failedExecutions = executions.filter(exec => exec.status === 'failed');
+    const completedExecutions = executions.filter(
+      (exec) => exec.status === 'completed'
+    );
+    const failedExecutions = executions.filter(
+      (exec) => exec.status === 'failed'
+    );
 
     const modelUsage = new Map<string, number>();
-    agents.forEach(agent => {
+    agents.forEach((agent) => {
       modelUsage.set(agent.model, (modelUsage.get(agent.model) || 0) + 1);
     });
 
@@ -431,13 +450,20 @@ export const getAgentStats = query({
       totalExecutions: executions.length,
       completedExecutions: completedExecutions.length,
       failedExecutions: failedExecutions.length,
-      successRate: executions.length > 0 ? completedExecutions.length / executions.length : 0,
+      successRate:
+        executions.length > 0
+          ? completedExecutions.length / executions.length
+          : 0,
       modelUsage: Object.fromEntries(modelUsage),
-      averageExecutionTime: completedExecutions.length > 0 
-        ? completedExecutions
-            .filter(exec => exec.completedAt && exec.startedAt)
-            .reduce((sum, exec) => sum + (exec.completedAt! - exec.startedAt), 0) / completedExecutions.length
-        : 0,
+      averageExecutionTime:
+        completedExecutions.length > 0
+          ? completedExecutions
+              .filter((exec) => exec.completedAt && exec.startedAt)
+              .reduce(
+                (sum, exec) => sum + (exec.completedAt! - exec.startedAt),
+                0
+              ) / completedExecutions.length
+          : 0,
     };
   },
 });

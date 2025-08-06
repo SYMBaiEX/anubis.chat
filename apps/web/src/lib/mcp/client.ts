@@ -10,8 +10,8 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 // We'll store MCP tool definitions, not AI SDK tools
 import { z } from 'zod';
-import { MCPTransportType } from '@/lib/types/mcp';
 import type { MCPTransportConfig as MCPTransportConfigType } from '@/lib/types/mcp';
+import { MCPTransportType } from '@/lib/types/mcp';
 
 // Re-export the transport config from types/mcp.ts for backwards compatibility
 export type MCPTransportConfig = MCPTransportConfigType;
@@ -233,6 +233,20 @@ export class MCPClientManager {
 
     const resource = await client.readResource({ uri });
     return resource.contents;
+  }
+
+  /**
+   * Get list of connected server names
+   */
+  getConnectedServers(): string[] {
+    return Array.from(this.clients.keys());
+  }
+
+  /**
+   * Check if a server is connected
+   */
+  isServerConnected(serverName: string): boolean {
+    return this.clients.has(serverName);
   }
 
   /**

@@ -5,9 +5,9 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { agenticEngine } from '@/lib/agentic/engine';
-import { convex, api } from '@/lib/database/convex';
 import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
+import { agenticEngine } from '@/lib/agentic/engine';
+import { api, convex } from '@/lib/database/convex';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import type { Agent, ExecuteAgentRequest } from '@/lib/types/agentic';
@@ -146,15 +146,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
             },
           });
 
+          const { getStreamingHeaders } = await import('@/lib/utils/cors');
+          const origin = req.headers.get('origin');
+
           return new NextResponse(stream, {
-            headers: {
-              'Content-Type': 'text/event-stream',
-              'Cache-Control': 'no-cache',
-              Connection: 'keep-alive',
-              'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Methods': 'POST, OPTIONS',
-              'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-            },
+            headers: getStreamingHeaders(origin, {
+              methods: ['POST', 'OPTIONS'],
+              headers: ['Content-Type', 'Authorization'],
+            }),
           });
         }
         // Execute agent synchronously

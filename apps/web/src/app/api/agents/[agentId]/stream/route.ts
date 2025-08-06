@@ -1,16 +1,21 @@
 /**
- * Agent Streaming Execution API  
+ * Agent Streaming Execution API
  * Handles real-time streaming of agent execution
  */
 
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { agenticEngine } from '@/lib/agentic/engine';
-import { convex, api } from '@/lib/database/convex';
 import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
+import { agenticEngine } from '@/lib/agentic/engine';
+import { api, convex } from '@/lib/database/convex';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import type { Agent, ExecuteAgentRequest } from '@/lib/types/agentic';
+import { convexAgentToApiFormat } from '@/lib/utils/agent-conversion';
+import {
+  createCorsPreflightResponse,
+  getStreamingHeaders,
+} from '@/lib/utils/cors';
 
 // =============================================================================
 // Request Validation
@@ -32,7 +37,7 @@ interface RouteContext {
 }
 
 // =============================================================================
-// Production Convex Integration  
+// Production Convex Integration
 // =============================================================================
 
 // =============================================================================
@@ -46,6 +51,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       const { walletAddress } = authReq.user;
       const { agentId } = await context.params;
+      const origin = req.headers.get('origin');
 
       // Get agent from Convex
       const agentDoc = await convex.query(api.agents.getById, {
@@ -60,21 +66,26 @@ export async function POST(request: NextRequest, context: RouteContext) {
         return new Response('Unauthorized', { status: 403 });
       }
 
-      // Convert to Agent format for execution engine
-      const agent: Agent = {
-        id: agentDoc._id,
-        name: agentDoc.name,
-        description: agentDoc.description,
-        model: agentDoc.model,
-        systemPrompt: agentDoc.systemPrompt,
-        temperature: agentDoc.temperature,
-        maxTokens: agentDoc.maxTokens,
-        tools: agentDoc.tools || [],
-        maxSteps: agentDoc.maxSteps || 10,
-        walletAddress: agentDoc.walletAddress,
-        createdAt: agentDoc.createdAt,
-        updatedAt: agentDoc.updatedAt,
-      };
+      // Convert to Agent format for execution engine with validation
+      let agent: Agent;
+      try {
+        agent = convexAgentToApiFormat(agentDoc);
+      } catch (conversionError) {
+        console.error('Agent conversion error:', conversionError);
+        return new Response(
+          JSON.stringify({
+            error: 'Invalid agent configuration',
+            details:
+              conversionError instanceof Error
+                ? conversionError.message
+                : 'Unknown conversion error',
+          }),
+          {
+            status: 422,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
 
       // Parse and validate request body
       const body = await req.json();
@@ -98,58 +109,129 @@ export async function POST(request: NextRequest, context: RouteContext) {
         ...validation.data,
       };
 
-      // Create a streaming response
+      // Create a streaming response with enhanced error handling
       const encoder = new TextEncoder();
+      let isClientDisconnected = false;
+      let executionAborted = false;
+      const abortController = new AbortController();
+
+      // Detect client disconnect
+      req.signal?.addEventListener('abort', () => {
+        console.log('Client disconnected from stream');
+        isClientDisconnected = true;
+        executionAborted = true;
+        abortController.abort();
+      });
+
       const stream = new ReadableStream({
         async start(controller) {
           try {
+            // Add heartbeat to detect client disconnect early
+            const heartbeatInterval = setInterval(() => {
+              if (isClientDisconnected || executionAborted) {
+                clearInterval(heartbeatInterval);
+                return;
+              }
+
+              try {
+                const heartbeat =
+                  JSON.stringify({ type: 'heartbeat', timestamp: Date.now() }) +
+                  '\n';
+                controller.enqueue(encoder.encode(`data: ${heartbeat}\n\n`));
+              } catch (heartbeatError) {
+                console.log('Client disconnected during heartbeat');
+                isClientDisconnected = true;
+                clearInterval(heartbeatInterval);
+              }
+            }, 30_000); // Send heartbeat every 30 seconds
+
             // Stream execution events
             for await (const event of agenticEngine.streamExecution(
               agent,
               executeRequest
             )) {
-              const data = JSON.stringify(event) + '\n';
-              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+              // Check if client disconnected
+              if (isClientDisconnected || executionAborted) {
+                console.log(
+                  'Stopping stream due to client disconnect or abort'
+                );
+                clearInterval(heartbeatInterval);
+                controller.close();
+                return;
+              }
+
+              try {
+                const data = JSON.stringify(event) + '\n';
+                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+              } catch (enqueueError) {
+                console.log('Client disconnected during event streaming');
+                isClientDisconnected = true;
+                clearInterval(heartbeatInterval);
+                controller.close();
+                return;
+              }
             }
 
-            // Send done event
-            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            clearInterval(heartbeatInterval);
+
+            // Send done event only if client is still connected
+            if (!(isClientDisconnected || executionAborted)) {
+              try {
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+              } catch (doneError) {
+                console.log('Client disconnected when sending done event');
+              }
+            }
+
             controller.close();
           } catch (error) {
-            const errorEvent = {
-              type: 'error',
-              data: {
-                error: error instanceof Error ? error.message : String(error),
-              },
-            };
-            const data = JSON.stringify(errorEvent) + '\n';
-            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+            console.error('Stream execution error:', error);
+
+            // Don't send error if client is disconnected
+            if (!(isClientDisconnected || executionAborted)) {
+              try {
+                const errorEvent = {
+                  type: 'error',
+                  data: {
+                    error:
+                      error instanceof Error ? error.message : String(error),
+                    code: 'EXECUTION_ERROR',
+                    timestamp: Date.now(),
+                  },
+                };
+                const data = JSON.stringify(errorEvent) + '\n';
+                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+              } catch (errorEnqueueError) {
+                console.log('Client disconnected during error sending');
+              }
+            }
+
             controller.close();
           }
+        },
+
+        cancel(reason) {
+          console.log('Stream cancelled by client:', reason);
+          isClientDisconnected = true;
+          executionAborted = true;
+          abortController.abort();
         },
       });
 
       return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-          'X-Content-Type-Options': 'nosniff',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        },
+        headers: getStreamingHeaders(origin, {
+          methods: ['POST', 'OPTIONS'],
+          headers: ['Content-Type', 'Authorization'],
+        }),
       });
     });
   });
 }
 
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return createCorsPreflightResponse(origin, {
+    methods: ['POST', 'OPTIONS'],
+    headers: ['Content-Type', 'Authorization'],
   });
 }

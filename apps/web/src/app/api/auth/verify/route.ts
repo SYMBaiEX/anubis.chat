@@ -13,7 +13,7 @@ import {
 } from '@/lib/middleware/auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import type { AuthSession } from '@/lib/types/api';
-import { Theme, SubscriptionTier, SubscriptionFeature } from '@/lib/types/api';
+import { SubscriptionFeature, SubscriptionTier, Theme } from '@/lib/types/api';
 import {
   addSecurityHeaders,
   successResponse,

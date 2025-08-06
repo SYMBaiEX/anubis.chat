@@ -10,9 +10,9 @@ import {
   ensureMCPServersInitialized,
   isMCPInitialized,
 } from '@/lib/mcp/initialize';
-import { MCPTransportType } from '@/lib/types/mcp';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
+import { MCPTransportType } from '@/lib/types/mcp';
 import {
   addSecurityHeaders,
   createdResponse,
@@ -50,7 +50,12 @@ const toolPropertySchema: z.ZodType<unknown> = z.lazy(() =>
       pattern: z.string().optional(),
       format: z.string().optional(),
       items: z.lazy(() => toolPropertySchema).optional(),
-      properties: z.record(z.string(), z.lazy(() => toolPropertySchema)).optional(),
+      properties: z
+        .record(
+          z.string(),
+          z.lazy(() => toolPropertySchema)
+        )
+        .optional(),
       required: z.array(z.string()).optional(),
       additionalProperties: z.boolean().optional(),
     }),
@@ -84,7 +89,7 @@ const initServerSchema = z.object({
     timeout: z.number().optional(),
   }),
   description: z.string().optional(),
-  toolSchemas: z.record(z.string(), z.object({}).passthrough()).optional(),
+  toolSchemas: z.record(z.string(), z.any()).optional(),
   enabled: z.boolean().optional(),
   autoConnect: z.boolean().optional(),
   priority: z.number().optional(),
@@ -155,9 +160,10 @@ export async function POST(request: NextRequest) {
 
         const serverConfig = validation.data;
 
-        // Initialize the server (temporarily remove toolSchemas to avoid type conflict)
-        const { toolSchemas, ...configWithoutSchemas } = serverConfig;
-        await mcpManager.initializeClient(configWithoutSchemas);
+        // Initialize the server (toolSchemas need to be omitted as they're JSON Schema format)
+        // The MCP client expects Zod schemas, but API receives JSON schemas
+        const { toolSchemas, ...configForClient } = serverConfig;
+        await mcpManager.initializeClient(configForClient);
 
         // Get the tools from the newly initialized server
         const tools = mcpManager.getServerTools(serverConfig.name);
@@ -186,7 +192,6 @@ export async function POST(request: NextRequest) {
     });
   });
 }
-
 
 export async function OPTIONS() {
   const response = new NextResponse(null, { status: 200 });

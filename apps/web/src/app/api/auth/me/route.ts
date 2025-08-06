@@ -7,7 +7,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
 import type { UserProfile } from '@/lib/types/api';
-import { Theme, SubscriptionTier, SubscriptionFeature } from '@/lib/types/api';
+import { SubscriptionFeature, SubscriptionTier, Theme } from '@/lib/types/api';
 import {
   addSecurityHeaders,
   internalErrorResponse,
@@ -42,7 +42,10 @@ export async function GET(request: NextRequest) {
             tier: SubscriptionTier.FREE,
             tokensUsed: 0,
             tokensLimit: 10_000,
-            features: [SubscriptionFeature.BASIC_CHAT],
+            features: [
+              SubscriptionFeature.BASIC_CHAT,
+              SubscriptionFeature.DOCUMENT_UPLOAD,
+            ],
           },
           createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000, // 7 days ago
           lastActiveAt: Date.now(),

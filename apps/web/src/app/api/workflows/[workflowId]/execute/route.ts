@@ -12,12 +12,12 @@ import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import type {
   Agent,
   ExecuteWorkflowRequest,
+  StepResult,
   Workflow,
   WorkflowExecution,
   WorkflowStep,
-  StepResult,
 } from '@/lib/types/agentic';
-import type { JsonValue, JsonObject } from '@/lib/types/mcp';
+import type { JsonObject, JsonValue } from '@/lib/types/mcp';
 import {
   addSecurityHeaders,
   notFoundResponse,
@@ -83,7 +83,7 @@ class WorkflowOrchestrator {
         stepId: 'workflow-execution',
         code: 'EXECUTION_ERROR',
         message: error instanceof Error ? error.message : String(error),
-        details: { workflowId: this.execution.workflowId }
+        details: { workflowId: this.execution.workflowId },
       };
       this.execution.completedAt = Date.now();
       throw error;
@@ -128,7 +128,7 @@ class WorkflowOrchestrator {
       status: 'completed',
       output: stepResult,
       startedAt: Date.now(),
-      completedAt: Date.now()
+      completedAt: Date.now(),
     } as StepResult;
 
     // Execute next steps if any
@@ -157,7 +157,9 @@ class WorkflowOrchestrator {
 
     // TODO: Get agent from Convex for workflow execution
     // For now, skip agent-dependent steps in workflows
-    console.warn(`Skipping agent step ${step.agentId} - agent loading from Convex not implemented yet`);
+    console.warn(
+      `Skipping agent step ${step.agentId} - agent loading from Convex not implemented yet`
+    );
     return {
       type: 'agent_execution' as const,
       agentId: step.agentId || 'unknown',
@@ -307,7 +309,10 @@ class WorkflowOrchestrator {
     delayMs: number;
     timestamp: number;
   }> {
-    const delayMs = (typeof step.parameters?.delayMs === 'number' ? step.parameters.delayMs : 1000);
+    const delayMs =
+      typeof step.parameters?.delayMs === 'number'
+        ? step.parameters.delayMs
+        : 1000;
     await new Promise((resolve) => setTimeout(resolve, delayMs));
 
     return {
@@ -328,7 +333,10 @@ class WorkflowOrchestrator {
     };
   }> {
     // Mock webhook execution
-    const webhookType = (typeof step.parameters?.webhook_type === 'string' ? step.parameters.webhook_type : 'generic');
+    const webhookType =
+      typeof step.parameters?.webhook_type === 'string'
+        ? step.parameters.webhook_type
+        : 'generic';
 
     return {
       type: 'webhook',
@@ -498,15 +506,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
             },
           });
 
+          const { getStreamingHeaders } = await import('@/lib/utils/cors');
+          const origin = req.headers.get('origin');
+
           return new NextResponse(stream, {
-            headers: {
-              'Content-Type': 'text/event-stream',
-              'Cache-Control': 'no-cache',
-              Connection: 'keep-alive',
-              'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Methods': 'POST, OPTIONS',
-              'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-            },
+            headers: getStreamingHeaders(origin, {
+              methods: ['POST', 'OPTIONS'],
+              headers: ['Content-Type', 'Authorization'],
+            }),
           });
         }
         // Execute workflow synchronously
@@ -534,7 +541,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
           },
         });
 
-        return addSecurityHeaders(response);
+        const origin = req.headers.get('origin');
+        return addSecurityHeaders(response, origin);
       } catch (error) {
         console.error('Workflow execution error:', error);
         const response = NextResponse.json(
@@ -544,13 +552,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
           },
           { status: 500 }
         );
-        return addSecurityHeaders(response);
+        const origin = req.headers.get('origin');
+        return addSecurityHeaders(response, origin);
       }
     });
   });
 }
 
-export async function OPTIONS() {
-  const response = new NextResponse(null, { status: 200 });
-  return addSecurityHeaders(response);
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  const { createCorsPreflightResponse } = await import('@/lib/utils/cors');
+
+  return createCorsPreflightResponse(origin, {
+    methods: ['POST', 'OPTIONS'],
+    headers: ['Content-Type', 'Authorization'],
+  });
 }

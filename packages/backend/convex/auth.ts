@@ -19,8 +19,10 @@ export const createChallenge = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const expiresAt = now + 5 * 60 * 1000; // 5 minutes
-    const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    
+    const nonce =
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15);
+
     const challenge = `Sign this message to authenticate with ISIS Chat:\nNonce: ${nonce}\nTimestamp: ${now}`;
 
     // Clean up any existing nonces for this public key
@@ -64,10 +66,12 @@ export const verifySignature = mutation({
     const nonceRecord = await ctx.db
       .query('nonces')
       .withIndex('by_key', (q) => q.eq('publicKey', args.publicKey))
-      .filter((q) => q.and(
-        q.gt(q.field('expiresAt'), Date.now()),
-        q.eq(q.field('used'), false)
-      ))
+      .filter((q) =>
+        q.and(
+          q.gt(q.field('expiresAt'), Date.now()),
+          q.eq(q.field('used'), false)
+        )
+      )
       .order('desc')
       .first();
 
@@ -91,7 +95,14 @@ export const verifySignature = mutation({
 
     const now = Date.now();
 
-    if (!user) {
+    if (user) {
+      // Update existing user
+      await ctx.db.patch(user._id, {
+        publicKey: args.publicKey, // Update in case it changed
+        lastActiveAt: now,
+        isActive: true,
+      });
+    } else {
       // Create new user with enhanced preferences
       const userId = await ctx.db.insert('users', {
         walletAddress,
@@ -118,21 +129,18 @@ export const verifySignature = mutation({
         isActive: true,
       });
       user = await ctx.db.get(userId);
-    } else {
-      // Update existing user
-      await ctx.db.patch(user._id, {
-        publicKey: args.publicKey, // Update in case it changed
-        lastActiveAt: now,
-        isActive: true,
-      });
     }
 
     // Mark nonce as used
     await ctx.db.patch(nonceRecord._id, { used: true });
 
     // Generate tokens
-    const tokenId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const refreshTokenId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const tokenId =
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15);
+    const refreshTokenId =
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15);
     const tokenHash = Math.random().toString(36).substring(2, 32); // In production, use proper hashing
 
     // Create refresh token record
@@ -140,7 +148,7 @@ export const verifySignature = mutation({
       tokenId: refreshTokenId,
       userId: walletAddress,
       tokenHash,
-      expiresAt: now + (30 * 24 * 60 * 60 * 1000), // 30 days
+      expiresAt: now + 30 * 24 * 60 * 60 * 1000, // 30 days
       createdAt: now,
       deviceInfo: args.deviceInfo,
       ipAddress: args.ipAddress,
@@ -154,8 +162,8 @@ export const verifySignature = mutation({
       tokens: {
         accessToken: tokenId,
         refreshToken: refreshTokenId,
-        expiresAt: now + (24 * 60 * 60 * 1000), // 24 hours for access token
-        refreshExpiresAt: now + (30 * 24 * 60 * 60 * 1000), // 30 days for refresh token
+        expiresAt: now + 24 * 60 * 60 * 1000, // 24 hours for access token
+        refreshExpiresAt: now + 30 * 24 * 60 * 60 * 1000, // 30 days for refresh token
       },
       message: 'Authentication successful',
     };
@@ -178,10 +186,12 @@ export const refreshToken = mutation({
     const tokenRecord = await ctx.db
       .query('refreshTokens')
       .withIndex('by_token', (q) => q.eq('tokenId', args.refreshToken))
-      .filter((q) => q.and(
-        q.gt(q.field('expiresAt'), Date.now()),
-        q.eq(q.field('isActive'), true)
-      ))
+      .filter((q) =>
+        q.and(
+          q.gt(q.field('expiresAt'), Date.now()),
+          q.eq(q.field('isActive'), true)
+        )
+      )
       .first();
 
     if (!tokenRecord) {
@@ -196,7 +206,9 @@ export const refreshToken = mutation({
     });
 
     // Generate new access token
-    const newTokenId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const newTokenId =
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15);
     const now = Date.now();
 
     return {
@@ -205,7 +217,7 @@ export const refreshToken = mutation({
       tokens: {
         accessToken: newTokenId,
         refreshToken: args.refreshToken, // Keep same refresh token
-        expiresAt: now + (24 * 60 * 60 * 1000), // 24 hours
+        expiresAt: now + 24 * 60 * 60 * 1000, // 24 hours
         refreshExpiresAt: tokenRecord.expiresAt,
       },
     };
@@ -262,7 +274,7 @@ export const getUserSessions = query({
       .order('desc')
       .collect();
 
-    return sessions.map(session => ({
+    return sessions.map((session) => ({
       tokenId: session.tokenId,
       createdAt: session.createdAt,
       lastUsedAt: session.lastUsedAt,

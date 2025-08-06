@@ -231,6 +231,86 @@ export class MemoryStore {
   }
 
   /**
+   * Get conversations for a user with efficient pagination
+   * @param userId - User identifier
+   * @param options - Pagination options
+   * @returns Paginated conversations with metadata
+   */
+  getUserConversationsPaginated(
+    userId: string,
+    options: {
+      limit: number;
+      offset?: number;
+      cursor?: string;
+    }
+  ): {
+    conversations: ConversationContext[];
+    pagination: {
+      total: number;
+      hasMore: boolean;
+      nextCursor?: string;
+      nextOffset: number;
+    };
+  } {
+    const conversationIds = this.userConversations.get(userId);
+    if (!conversationIds) {
+      return {
+        conversations: [],
+        pagination: {
+          total: 0,
+          hasMore: false,
+          nextOffset: 0,
+        },
+      };
+    }
+
+    // Get all conversations and sort by most recent first
+    const allConversations = Array.from(conversationIds)
+      .map((id) => this.conversations.get(id))
+      .filter((c): c is ConversationContext => c !== undefined)
+      .sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+
+    const total = allConversations.length;
+    const offset = options.offset || 0;
+    const limit = options.limit;
+
+    // Handle cursor-based pagination
+    let startIndex = offset;
+    if (options.cursor) {
+      // Find the conversation after the cursor
+      const cursorIndex = allConversations.findIndex(
+        (c) => c.id === options.cursor
+      );
+      if (cursorIndex !== -1) {
+        startIndex = cursorIndex + 1;
+      }
+    }
+
+    // Apply pagination
+    const paginatedConversations = allConversations.slice(
+      startIndex,
+      startIndex + limit
+    );
+    const hasMore = startIndex + limit < total;
+
+    // Generate next cursor (ID of last conversation in current page)
+    const nextCursor =
+      paginatedConversations.length > 0
+        ? paginatedConversations[paginatedConversations.length - 1].id
+        : undefined;
+
+    return {
+      conversations: paginatedConversations,
+      pagination: {
+        total,
+        hasMore,
+        nextCursor: hasMore ? nextCursor : undefined,
+        nextOffset: startIndex + limit,
+      },
+    };
+  }
+
+  /**
    * Add a message to a conversation
    */
   addMessage(

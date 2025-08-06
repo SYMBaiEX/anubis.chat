@@ -67,38 +67,44 @@ export const create = mutation({
     name: v.string(),
     description: v.optional(v.string()),
     walletAddress: v.string(),
-    steps: v.array(v.object({
-      stepId: v.string(),
-      name: v.string(),
-      type: v.union(
-        v.literal('agent_task'),
-        v.literal('condition'),
-        v.literal('parallel'),
-        v.literal('sequential'),
-        v.literal('human_approval'),
-        v.literal('delay'),
-        v.literal('webhook')
-      ),
-      agentId: v.optional(v.id('agents')),
-      condition: v.optional(v.string()),
-      parameters: v.optional(v.any()),
-      nextSteps: v.optional(v.array(v.string())),
-      requiresApproval: v.optional(v.boolean()),
-      order: v.number(),
-    })),
-    triggers: v.optional(v.array(v.object({
-      triggerId: v.string(),
-      type: v.union(
-        v.literal('manual'),
-        v.literal('schedule'),
-        v.literal('webhook'),
-        v.literal('completion'),
-        v.literal('condition')
-      ),
-      condition: v.string(),
-      parameters: v.optional(v.any()),
-      isActive: v.boolean(),
-    }))),
+    steps: v.array(
+      v.object({
+        stepId: v.string(),
+        name: v.string(),
+        type: v.union(
+          v.literal('agent_task'),
+          v.literal('condition'),
+          v.literal('parallel'),
+          v.literal('sequential'),
+          v.literal('human_approval'),
+          v.literal('delay'),
+          v.literal('webhook')
+        ),
+        agentId: v.optional(v.id('agents')),
+        condition: v.optional(v.string()),
+        parameters: v.optional(v.any()),
+        nextSteps: v.optional(v.array(v.string())),
+        requiresApproval: v.optional(v.boolean()),
+        order: v.number(),
+      })
+    ),
+    triggers: v.optional(
+      v.array(
+        v.object({
+          triggerId: v.string(),
+          type: v.union(
+            v.literal('manual'),
+            v.literal('schedule'),
+            v.literal('webhook'),
+            v.literal('completion'),
+            v.literal('condition')
+          ),
+          condition: v.string(),
+          parameters: v.optional(v.any()),
+          isActive: v.boolean(),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -191,11 +197,13 @@ export const remove = mutation({
     const activeExecutions = await ctx.db
       .query('workflowExecutions')
       .withIndex('by_workflow', (q) => q.eq('workflowId', args.id))
-      .filter((q) => q.or(
-        q.eq(q.field('status'), 'pending'),
-        q.eq(q.field('status'), 'running'),
-        q.eq(q.field('status'), 'waiting_approval')
-      ))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field('status'), 'pending'),
+          q.eq(q.field('status'), 'running'),
+          q.eq(q.field('status'), 'waiting_approval')
+        )
+      )
       .collect();
 
     if (activeExecutions.length > 0) {
@@ -279,12 +287,14 @@ export const updateExecution = mutation({
     ),
     currentStep: v.optional(v.string()),
     variables: v.optional(v.any()),
-    error: v.optional(v.object({
-      stepId: v.string(),
-      code: v.string(),
-      message: v.string(),
-      details: v.optional(v.any()),
-    })),
+    error: v.optional(
+      v.object({
+        stepId: v.string(),
+        code: v.string(),
+        message: v.string(),
+        details: v.optional(v.any()),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const execution = await ctx.db.get(args.id);
@@ -386,32 +396,33 @@ export const updateStepResult = mutation({
     if (existing) {
       // Update existing step result
       const updates: any = { status: args.status };
-      
+
       if (args.output !== undefined) updates.output = args.output;
       if (args.error !== undefined) updates.error = args.error;
       if (args.retryCount !== undefined) updates.retryCount = args.retryCount;
-      
+
       if (['completed', 'failed'].includes(args.status)) {
         updates.completedAt = now;
       }
 
       await ctx.db.patch(existing._id, updates);
       return await ctx.db.get(existing._id);
-    } else {
-      // Create new step result
-      const stepResultId = await ctx.db.insert('workflowStepResults', {
-        executionId: args.executionId,
-        stepId: args.stepId,
-        status: args.status,
-        output: args.output,
-        error: args.error,
-        retryCount: args.retryCount || 0,
-        startedAt: now,
-        completedAt: ['completed', 'failed'].includes(args.status) ? now : undefined,
-      });
-
-      return await ctx.db.get(stepResultId);
     }
+    // Create new step result
+    const stepResultId = await ctx.db.insert('workflowStepResults', {
+      executionId: args.executionId,
+      stepId: args.stepId,
+      status: args.status,
+      output: args.output,
+      error: args.error,
+      retryCount: args.retryCount || 0,
+      startedAt: now,
+      completedAt: ['completed', 'failed'].includes(args.status)
+        ? now
+        : undefined,
+    });
+
+    return await ctx.db.get(stepResultId);
   },
 });
 
@@ -428,11 +439,11 @@ export const getWorkflowStats = query({
       .withIndex('by_owner', (q) => q.eq('walletAddress', args.walletAddress))
       .collect();
 
-    const activeWorkflows = workflows.filter(workflow => workflow.isActive);
+    const activeWorkflows = workflows.filter((workflow) => workflow.isActive);
 
     // Get execution counts
     const allExecutions = await Promise.all(
-      workflows.map(workflow =>
+      workflows.map((workflow) =>
         ctx.db
           .query('workflowExecutions')
           .withIndex('by_workflow', (q) => q.eq('workflowId', workflow._id))
@@ -441,9 +452,13 @@ export const getWorkflowStats = query({
     );
 
     const executions = allExecutions.flat();
-    const completedExecutions = executions.filter(exec => exec.status === 'completed');
-    const failedExecutions = executions.filter(exec => exec.status === 'failed');
-    const runningExecutions = executions.filter(exec => 
+    const completedExecutions = executions.filter(
+      (exec) => exec.status === 'completed'
+    );
+    const failedExecutions = executions.filter(
+      (exec) => exec.status === 'failed'
+    );
+    const runningExecutions = executions.filter((exec) =>
       ['pending', 'running', 'waiting_approval'].includes(exec.status)
     );
 
@@ -454,12 +469,19 @@ export const getWorkflowStats = query({
       runningExecutions: runningExecutions.length,
       completedExecutions: completedExecutions.length,
       failedExecutions: failedExecutions.length,
-      successRate: executions.length > 0 ? completedExecutions.length / executions.length : 0,
-      averageExecutionTime: completedExecutions.length > 0 
-        ? completedExecutions
-            .filter(exec => exec.completedAt && exec.startedAt)
-            .reduce((sum, exec) => sum + (exec.completedAt! - exec.startedAt), 0) / completedExecutions.length
-        : 0,
+      successRate:
+        executions.length > 0
+          ? completedExecutions.length / executions.length
+          : 0,
+      averageExecutionTime:
+        completedExecutions.length > 0
+          ? completedExecutions
+              .filter((exec) => exec.completedAt && exec.startedAt)
+              .reduce(
+                (sum, exec) => sum + (exec.completedAt! - exec.startedAt),
+                0
+              ) / completedExecutions.length
+          : 0,
     };
   },
 });

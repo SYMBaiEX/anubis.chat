@@ -13,9 +13,9 @@ import type {
   Agent,
   AgentContext,
   AgentExecution,
+  AgentExecutionResult,
   AgentExecutionStatus,
   AgenticConfig,
-  AgentExecutionResult,
   AgentStep,
   AgentStepType,
   AgentTool,
@@ -131,7 +131,7 @@ export class AgenticEngine {
               agentTool,
               params,
               context,
-              request.autoApprove || false
+              request.autoApprove
             );
           },
         }),
@@ -307,9 +307,14 @@ export class AgenticEngine {
     const result = await agentTool.execute(params, context);
 
     if (!result.success) {
-      const errorMessage = (typeof result.error === 'string' ? result.error : 
-        result.error && typeof result.error === 'object' && 'message' in result.error ? result.error.message :
-        'Tool execution failed');
+      const errorMessage =
+        typeof result.error === 'string'
+          ? result.error
+          : result.error &&
+              typeof result.error === 'object' &&
+              'message' in result.error
+            ? result.error.message
+            : 'Tool execution failed';
       throw new Error(errorMessage as string);
     }
 
@@ -319,7 +324,9 @@ export class AgenticEngine {
   /**
    * Create tools map from agent tool definitions
    */
-  private createToolsMap(tools: string[] | AgentTool<unknown>[]): Map<string, AgentTool<unknown>> {
+  private createToolsMap(
+    tools: string[] | AgentTool<unknown>[]
+  ): Map<string, AgentTool<unknown>> {
     const toolsMap = new Map();
 
     for (const toolItem of tools) {

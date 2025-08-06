@@ -3,14 +3,15 @@
  * Handles operations for specific agents (get, update, delete) using Convex
  */
 
+import type { Id } from '@convex/_generated/dataModel';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { validateAgentConfig } from '@/lib/agentic/engine';
-import { convex, api } from '@/lib/database/convex';
-import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
+import { api, convex } from '@/lib/database/convex';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import type { Agent } from '@/lib/types/agentic';
+import { convexAgentToApiFormat } from '@/lib/utils/agent-conversion';
 import {
   addSecurityHeaders,
   notFoundResponse,
@@ -83,20 +84,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         console.log(`Agent retrieved: ${agentId} by user ${walletAddress}`);
 
         // Convert Convex document to API format
-        const formattedAgent = {
-          id: agent._id,
-          name: agent.name,
-          description: agent.description,
-          model: agent.model,
-          systemPrompt: agent.systemPrompt,
-          temperature: agent.temperature,
-          maxTokens: agent.maxTokens,
-          tools: agent.tools || [],
-          maxSteps: agent.maxSteps || 10,
-          walletAddress: agent.walletAddress,
-          createdAt: agent.createdAt,
-          updatedAt: agent.updatedAt,
-        };
+        const formattedAgent = convexAgentToApiFormat(agent);
 
         const response = successResponse(formattedAgent);
         return addSecurityHeaders(response);
@@ -119,21 +107,6 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         const { walletAddress } = authReq.user;
         const { agentId } = await context.params;
 
-        // Get agent from Convex first to verify ownership
-        const existingAgent = await convex.query(api.agents.getById, {
-          id: agentId as Id<'agents'>,
-        });
-        if (!existingAgent) {
-          return notFoundResponse('Agent not found');
-        }
-
-        // Check ownership
-        if (existingAgent.walletAddress !== walletAddress) {
-          return unauthorizedResponse(
-            'Access denied: You do not own this agent'
-          );
-        }
-
         // Parse and validate request body
         const body = await req.json();
         const validation = updateAgentSchema.safeParse(body);
@@ -147,7 +120,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
         const updateData = validation.data;
 
-        // Update agent in Convex
+        // Update agent in Convex (handles ownership internally)
         const updatedAgent = await convex.mutation(api.agents.update, {
           id: agentId as Id<'agents'>,
           walletAddress,
@@ -161,25 +134,26 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         console.log(`Agent updated: ${agentId} by user ${walletAddress}`);
 
         // Convert to API format
-        const formattedAgent = {
-          id: updatedAgent._id,
-          name: updatedAgent.name,
-          description: updatedAgent.description,
-          model: updatedAgent.model,
-          systemPrompt: updatedAgent.systemPrompt,
-          temperature: updatedAgent.temperature,
-          maxTokens: updatedAgent.maxTokens,
-          tools: updatedAgent.tools || [],
-          maxSteps: updatedAgent.maxSteps || 10,
-          walletAddress: updatedAgent.walletAddress,
-          createdAt: updatedAgent.createdAt,
-          updatedAt: updatedAgent.updatedAt,
-        };
+        const formattedAgent = convexAgentToApiFormat(updatedAgent);
 
         const response = successResponse(formattedAgent);
         return addSecurityHeaders(response);
       } catch (error) {
         console.error('Update agent error:', error);
+
+        // Handle Convex mutation errors (including ownership/not found)
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to update agent';
+
+        if (
+          errorMessage.includes('not found') ||
+          errorMessage.includes('access denied')
+        ) {
+          return errorMessage.includes('not found')
+            ? notFoundResponse('Agent not found')
+            : unauthorizedResponse('Access denied: You do not own this agent');
+        }
+
         const response = NextResponse.json(
           { error: 'Failed to update agent' },
           { status: 500 }
@@ -197,22 +171,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         const { walletAddress } = authReq.user;
         const { agentId } = await context.params;
 
-        // Get agent from Convex to verify ownership
-        const agent = await convex.query(api.agents.getById, {
-          id: agentId as Id<'agents'>,
-        });
-        if (!agent) {
-          return notFoundResponse('Agent not found');
-        }
-
-        // Check ownership
-        if (agent.walletAddress !== walletAddress) {
-          return unauthorizedResponse(
-            'Access denied: You do not own this agent'
-          );
-        }
-
-        // Delete agent from Convex
+        // Delete agent from Convex (handles ownership internally)
         await convex.mutation(api.agents.remove, {
           id: agentId as Id<'agents'>,
           walletAddress,
@@ -220,13 +179,35 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
         console.log(`Agent deleted: ${agentId} by user ${walletAddress}`);
 
-        const response = successResponse({ 
+        const response = successResponse({
           message: 'Agent deleted successfully',
-          agentId 
+          agentId,
         });
         return addSecurityHeaders(response);
       } catch (error) {
         console.error('Delete agent error:', error);
+
+        // Handle Convex mutation errors (including ownership/not found)
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to delete agent';
+
+        if (
+          errorMessage.includes('not found') ||
+          errorMessage.includes('access denied')
+        ) {
+          return errorMessage.includes('not found')
+            ? notFoundResponse('Agent not found')
+            : unauthorizedResponse('Access denied: You do not own this agent');
+        }
+
+        if (errorMessage.includes('active executions')) {
+          const response = NextResponse.json(
+            { error: 'Cannot delete agent with active executions' },
+            { status: 409 }
+          );
+          return addSecurityHeaders(response);
+        }
+
         const response = NextResponse.json(
           { error: 'Failed to delete agent' },
           { status: 500 }

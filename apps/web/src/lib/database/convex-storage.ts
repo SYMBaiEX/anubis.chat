@@ -19,7 +19,9 @@ export class ConvexStorage implements StorageBackend {
   constructor(convexUrl?: string) {
     const url = convexUrl || process.env.NEXT_PUBLIC_CONVEX_URL;
     if (!url) {
-      throw new Error('Convex URL is required. Set NEXT_PUBLIC_CONVEX_URL environment variable.');
+      throw new Error(
+        'Convex URL is required. Set NEXT_PUBLIC_CONVEX_URL environment variable.'
+      );
     }
     this.client = new ConvexHttpClient(url);
   }
@@ -184,7 +186,14 @@ export class ConvexStorage implements StorageBackend {
         ownerId: walletAddress,
         query,
         limit: options.limit,
-        type: options.filters?.type?.[0] as 'text' | 'pdf' | 'markdown' | 'url' | 'json' | 'csv' | undefined, // Convex function expects single type
+        type: options.filters?.type?.[0] as
+          | 'text'
+          | 'pdf'
+          | 'markdown'
+          | 'url'
+          | 'json'
+          | 'csv'
+          | undefined, // Convex function expects single type
       });
 
       // Convert to DocumentSearchResult format

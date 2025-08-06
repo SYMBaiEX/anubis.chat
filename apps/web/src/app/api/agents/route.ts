@@ -15,8 +15,8 @@ import {
   createAgentFromTemplate,
   validateAgentConfig,
 } from '@/lib/agentic/engine';
-import { convex, api } from '@/lib/database/convex';
 import { getAllTools, getToolsByCategory } from '@/lib/agentic/tools';
+import { api, convex } from '@/lib/database/convex';
 import { initializeDefaultMCPServers } from '@/lib/mcp/client';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
@@ -27,6 +27,7 @@ import type {
   ExecuteAgentRequest,
   PaginatedAgentsResponse,
 } from '@/lib/types/agentic';
+import { convexAgentsToApiFormat } from '@/lib/utils/agent-conversion';
 import {
   addSecurityHeaders,
   createdResponse,
@@ -73,7 +74,9 @@ const executeAgentSchema = z.object({
     .string()
     .min(1, 'Input is required')
     .max(10_000, 'Input must be 10000 characters or less'),
-  type: z.enum(['generate', 'stream', 'analyze', 'execute']).default('generate'),
+  type: z
+    .enum(['generate', 'stream', 'analyze', 'execute'])
+    .default('generate'),
   maxSteps: z.number().min(1).max(50).optional(),
   autoApprove: z.boolean().default(false),
   context: z
@@ -115,7 +118,6 @@ async function ensureMCPInitialized() {
     }
   }
 }
-
 
 // Initialize default agents in Convex if they don't exist
 async function initializeDefaultAgents(walletAddress: string) {
@@ -206,20 +208,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Convert Convex data to API format
-        let formattedAgents = agents.map((agent) => ({
-          id: agent._id,
-          name: agent.name,
-          description: agent.description,
-          model: agent.model,
-          systemPrompt: agent.systemPrompt,
-          temperature: agent.temperature,
-          maxTokens: agent.maxTokens,
-          tools: agent.tools || [],
-          maxSteps: agent.maxSteps || 10,
-          walletAddress: agent.walletAddress,
-          createdAt: agent.createdAt,
-          updatedAt: agent.updatedAt,
-        }));
+        let formattedAgents = convexAgentsToApiFormat(agents);
 
         // Apply filters
         if (template) {
@@ -293,7 +282,7 @@ export async function POST(request: NextRequest) {
 
         // Create agent using template or custom configuration
         let newAgent: Agent;
-        
+
         if (agentData.template !== 'custom') {
           newAgent = createAgentFromTemplate(
             agentData.name,
@@ -342,9 +331,11 @@ export async function POST(request: NextRequest) {
 
         // Convert tools to string array for Convex storage
         const toolNames = newAgent.tools
-          ? Array.isArray(newAgent.tools) && newAgent.tools.length > 0 && typeof newAgent.tools[0] === 'object'
-            ? (newAgent.tools as AgentTool[]).map(tool => tool.name)
-            : newAgent.tools as string[]
+          ? Array.isArray(newAgent.tools) &&
+            newAgent.tools.length > 0 &&
+            typeof newAgent.tools[0] === 'object'
+            ? (newAgent.tools as AgentTool[]).map((tool) => tool.name)
+            : (newAgent.tools as string[])
           : [];
 
         // Store agent in Convex

@@ -5,10 +5,11 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { convex, api } from '@/lib/database/convex';
 import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
+import { api, convex } from '@/lib/database/convex';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
+import { MessageRole } from '@/lib/types/api';
 import {
   addSecurityHeaders,
   createdResponse,
@@ -21,10 +22,48 @@ import {
 // Request Validation
 // =============================================================================
 
+const toolResultSchema = z.object({
+  success: z.boolean(),
+  data: z.unknown().optional(),
+  error: z.string().optional(),
+  executionTime: z.number().optional(),
+});
+
+const toolSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  args: z.unknown(),
+  result: toolResultSchema.optional(),
+});
+
+const usageSchema = z.object({
+  inputTokens: z.number(),
+  outputTokens: z.number(),
+  totalTokens: z.number(),
+});
+
+const messageMetadataSchema = z
+  .object({
+    model: z.string().optional(),
+    finishReason: z.string().optional(),
+    usage: usageSchema.optional(),
+    tools: z.array(toolSchema).optional(),
+    reasoning: z.string().optional(),
+    citations: z.array(z.string()).optional(),
+  })
+  .strict();
+
+// Note: Convex schema only supports 'user', 'assistant', 'system' roles
+const supportedMessageRoles = [
+  MessageRole.USER,
+  MessageRole.ASSISTANT,
+  MessageRole.SYSTEM,
+] as const;
+
 const addMessageSchema = z.object({
-  role: z.enum(['user', 'assistant', 'system']),
+  role: z.enum([MessageRole.USER, MessageRole.ASSISTANT, MessageRole.SYSTEM]),
   content: z.string().min(1).max(50_000),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: messageMetadataSchema.optional(),
 });
 
 // =============================================================================
@@ -71,7 +110,6 @@ export async function GET(
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get messages error:', error);
         const response = NextResponse.json(
           { error: 'Failed to retrieve messages' },
           { status: 500 }
@@ -121,32 +159,22 @@ export async function POST(
 
         const { role, content, metadata } = validation.data;
 
-        // Create message in Convex
-        const messageId = await convex.mutation(api.messages.create, {
+        // Create message in Convex - the mutation returns the created message
+        const message = await convex.mutation(api.messages.create, {
           chatId: conversationId as Id<'chats'>,
           walletAddress,
           role,
           content,
-          metadata: metadata ? {
-            model: metadata.model as string | undefined,
-            finishReason: metadata.finishReason as string | undefined,
-            usage: metadata.usage ? {
-              inputTokens: metadata.usage.inputTokens as number,
-              outputTokens: metadata.usage.outputTokens as number,
-              totalTokens: metadata.usage.totalTokens as number,
-            } : undefined,
-            tools: metadata.tools as any,
-            reasoning: metadata.reasoning as string | undefined,
-            citations: metadata.citations as string[] | undefined,
-          } : undefined,
+          metadata,
         });
 
-        // Get the created message to return
-        const message = await convex.query(api.messages.getById, {
-          id: messageId,
-        });
-
-        console.log(`Added message to conversation ${conversationId}`);
+        if (!message) {
+          const response = NextResponse.json(
+            { error: 'Failed to create message' },
+            { status: 500 }
+          );
+          return addSecurityHeaders(response);
+        }
 
         const response = createdResponse({
           conversationId,
@@ -155,7 +183,6 @@ export async function POST(
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Add message error:', error);
         const response = NextResponse.json(
           { error: 'Failed to add message' },
           { status: 500 }

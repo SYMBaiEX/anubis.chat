@@ -23,18 +23,24 @@ export const getByOwner = query({
     const limit = Math.min(args.limit ?? 10, 50); // Max 50 per page
     const offset = (page - 1) * limit;
 
-    let query = ctx.db
-      .query('documents')
-      .withIndex('by_owner', (q) => q.eq('ownerId', args.ownerId));
+    let query;
 
-    if (args.type) {
-      query = query.filter((q) => q.eq(q.field('type'), args.type));
+    // Use the optimized category index when category is specified
+    if (args.category) {
+      query = ctx.db
+        .query('documents')
+        .withIndex('by_owner_category', (q) =>
+          q.eq('ownerId', args.ownerId).eq('metadata.category', args.category)
+        );
+    } else {
+      query = ctx.db
+        .query('documents')
+        .withIndex('by_owner', (q) => q.eq('ownerId', args.ownerId));
     }
 
-    if (args.category) {
-      query = query.filter((q) =>
-        q.eq(q.field('metadata.category'), args.category)
-      );
+    // Only apply type filter when not using category index (to maintain efficiency)
+    if (args.type) {
+      query = query.filter((q) => q.eq(q.field('type'), args.type));
     }
 
     const allDocs = await query.order('desc').collect();
@@ -189,7 +195,7 @@ export const create = mutation({
       content: args.content,
       type: args.type,
       ownerId: args.ownerId,
-      isPublic: args.isPublic || false,
+      isPublic: args.isPublic,
       tags: args.tags,
       metadata: {
         ...args.metadata,
@@ -289,8 +295,9 @@ export const getByCategory = query({
 
     return await ctx.db
       .query('documents')
-      .withIndex('by_owner', (q) => q.eq('ownerId', args.ownerId))
-      .filter((q) => q.eq(q.field('metadata.category'), args.category))
+      .withIndex('by_owner_category', (q) =>
+        q.eq('ownerId', args.ownerId).eq('metadata.category', args.category)
+      )
       .order('desc')
       .take(limit);
   },

@@ -8,7 +8,12 @@ import { z } from 'zod';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
 import type { UserProfile } from '@/lib/types/api';
-import { Theme, Language, SubscriptionTier, SubscriptionFeature } from '@/lib/types/api';
+import {
+  Language,
+  SubscriptionFeature,
+  SubscriptionTier,
+  Theme,
+} from '@/lib/types/api';
 import {
   addSecurityHeaders,
   successResponse,
@@ -63,7 +68,10 @@ export async function GET(request: NextRequest) {
             tier: SubscriptionTier.FREE,
             tokensUsed: 150,
             tokensLimit: 10_000,
-            features: [SubscriptionFeature.BASIC_CHAT, SubscriptionFeature.DOCUMENT_UPLOAD],
+            features: [
+              SubscriptionFeature.BASIC_CHAT,
+              SubscriptionFeature.DOCUMENT_UPLOAD,
+            ],
           },
           createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000, // 30 days ago
           lastActiveAt: Date.now() - 5 * 60 * 1000, // 5 minutes ago
@@ -141,7 +149,10 @@ export async function PUT(request: NextRequest) {
             tier: SubscriptionTier.FREE,
             tokensUsed: 150,
             tokensLimit: 10_000,
-            features: [SubscriptionFeature.BASIC_CHAT, SubscriptionFeature.DOCUMENT_UPLOAD],
+            features: [
+              SubscriptionFeature.BASIC_CHAT,
+              SubscriptionFeature.DOCUMENT_UPLOAD,
+            ],
           },
           createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
           lastActiveAt: Date.now(),

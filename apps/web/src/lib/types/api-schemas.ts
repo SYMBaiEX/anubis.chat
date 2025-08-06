@@ -17,7 +17,7 @@ import {
   Theme,
   WebhookEventType,
 } from './api';
-import type { JsonValue, JsonObject } from './mcp';
+import type { JsonObject, JsonValue } from './mcp';
 
 // =============================================================================
 // Common Schemas
@@ -150,11 +150,16 @@ export const chatMessageSchema = z.object({
           z.object({
             id: z.string(),
             name: z.string(),
-            args: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
+            args: z.record(
+              z.string(),
+              z.union([z.string(), z.number(), z.boolean(), z.null()])
+            ),
             result: z
               .object({
                 success: z.boolean(),
-                data: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
+                data: z
+                  .union([z.string(), z.number(), z.boolean(), z.null()])
+                  .optional(),
                 error: z.string().optional(),
                 executionTime: z.number().optional(),
               })
@@ -175,7 +180,12 @@ export const chatMessageSchema = z.object({
 export const sendMessageRequestSchema = z.object({
   content: z.string().min(1).max(32_000),
   role: z.nativeEnum(MessageRole).optional().default(MessageRole.USER),
-  metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  metadata: z
+    .record(
+      z.string(),
+      z.union([z.string(), z.number(), z.boolean(), z.null()])
+    )
+    .optional(),
 });
 
 // =============================================================================
@@ -210,7 +220,10 @@ export const chatCompletionRequestSchema = z.object({
         description: z.string(),
         parameters: z.object({
           type: z.literal('object'),
-          properties: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
+          properties: z.record(
+            z.string(),
+            z.union([z.string(), z.number(), z.boolean(), z.null()])
+          ),
           required: z.array(z.string()).optional(),
           additionalProperties: z.boolean().optional(),
         }),
@@ -263,7 +276,12 @@ export const documentUploadSchema = z.object({
   content: z.string().min(1),
   type: z.enum(['text', 'markdown', 'pdf', 'json', 'csv']),
   tags: z.array(z.string()).optional(),
-  metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  metadata: z
+    .record(
+      z.string(),
+      z.union([z.string(), z.number(), z.boolean(), z.null()])
+    )
+    .optional(),
   isPublic: z.boolean().default(false),
 });
 
@@ -271,7 +289,12 @@ export const documentUpdateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   content: z.string().min(1).optional(),
   tags: z.array(z.string()).optional(),
-  metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  metadata: z
+    .record(
+      z.string(),
+      z.union([z.string(), z.number(), z.boolean(), z.null()])
+    )
+    .optional(),
   isPublic: z.boolean().optional(),
 });
 
@@ -286,7 +309,10 @@ export const webhookEventSchema = z.object({
     resourceId: z.string(),
     resourceType: z.enum(['chat', 'message', 'user', 'subscription']),
     action: z.enum(['created', 'updated', 'deleted', 'sent', 'received']),
-    payload: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
+    payload: z.record(
+      z.string(),
+      z.union([z.string(), z.number(), z.boolean(), z.null()])
+    ),
     userId: z.string().optional(),
     metadata: z
       .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))

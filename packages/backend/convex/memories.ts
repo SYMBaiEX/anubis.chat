@@ -19,7 +19,7 @@ export const getUserMemories = query({
     type: v.optional(
       v.union(
         v.literal('fact'),
-        v.literal('preference'), 
+        v.literal('preference'),
         v.literal('skill'),
         v.literal('goal'),
         v.literal('context')
@@ -27,9 +27,9 @@ export const getUserMemories = query({
     ),
   },
   handler: async (ctx, args) => {
-    let query = ctx.db.query('memories').withIndex('by_user', (q) =>
-      q.eq('userId', args.userId)
-    );
+    let query = ctx.db
+      .query('memories')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId));
 
     if (args.type) {
       query = query.filter((q) => q.eq(q.field('type'), args.type));
@@ -60,7 +60,7 @@ export const searchMemories = query({
   },
   handler: async (ctx, args) => {
     const limit = args.limit || 10;
-    
+
     // Use text search on content
     const results = await ctx.db
       .query('memories')
@@ -84,7 +84,7 @@ export const vectorSearch = query({
   },
   handler: async (ctx, args) => {
     const limit = args.limit || 10;
-    
+
     // Use vector search on embeddings
     const results = await ctx.db
       .query('memories')
@@ -110,7 +110,7 @@ export const create = mutation({
     type: v.union(
       v.literal('fact'),
       v.literal('preference'),
-      v.literal('skill'), 
+      v.literal('skill'),
       v.literal('goal'),
       v.literal('context')
     ),
@@ -118,16 +118,18 @@ export const create = mutation({
     embedding: v.optional(v.array(v.number())),
     tags: v.optional(v.array(v.string())),
     sourceId: v.optional(v.string()),
-    sourceType: v.optional(v.union(
-      v.literal('chat'),
-      v.literal('document'),
-      v.literal('agent'),
-      v.literal('workflow')
-    )),
+    sourceType: v.optional(
+      v.union(
+        v.literal('chat'),
+        v.literal('document'),
+        v.literal('agent'),
+        v.literal('workflow')
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    
+
     return await ctx.db.insert('memories', {
       userId: args.userId,
       content: args.content,
@@ -151,13 +153,15 @@ export const update = mutation({
   args: {
     id: v.id('memories'),
     content: v.optional(v.string()),
-    type: v.optional(v.union(
-      v.literal('fact'),
-      v.literal('preference'),
-      v.literal('skill'),
-      v.literal('goal'), 
-      v.literal('context')
-    )),
+    type: v.optional(
+      v.union(
+        v.literal('fact'),
+        v.literal('preference'),
+        v.literal('skill'),
+        v.literal('goal'),
+        v.literal('context')
+      )
+    ),
     importance: v.optional(v.number()),
     embedding: v.optional(v.array(v.number())),
     tags: v.optional(v.array(v.string())),
@@ -165,7 +169,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
     const updateData: any = { ...updates };
-    
+
     if (Object.keys(updateData).length > 0) {
       updateData.updatedAt = Date.now();
     }
@@ -200,7 +204,7 @@ export const updateAccess = mutation({
       accessCount: memory.accessCount + 1,
       lastAccessed: Date.now(),
     });
-    
+
     return { success: true };
   },
 });
@@ -210,27 +214,31 @@ export const updateAccess = mutation({
  */
 export const bulkCreate = mutation({
   args: {
-    memories: v.array(v.object({
-      userId: v.string(),
-      content: v.string(),
-      type: v.union(
-        v.literal('fact'),
-        v.literal('preference'),
-        v.literal('skill'),
-        v.literal('goal'),
-        v.literal('context')
-      ),
-      importance: v.optional(v.number()),
-      embedding: v.optional(v.array(v.number())),
-      tags: v.optional(v.array(v.string())),
-      sourceId: v.optional(v.string()),
-      sourceType: v.optional(v.union(
-        v.literal('chat'),
-        v.literal('document'),
-        v.literal('agent'),
-        v.literal('workflow')
-      )),
-    })),
+    memories: v.array(
+      v.object({
+        userId: v.string(),
+        content: v.string(),
+        type: v.union(
+          v.literal('fact'),
+          v.literal('preference'),
+          v.literal('skill'),
+          v.literal('goal'),
+          v.literal('context')
+        ),
+        importance: v.optional(v.number()),
+        embedding: v.optional(v.array(v.number())),
+        tags: v.optional(v.array(v.string())),
+        sourceId: v.optional(v.string()),
+        sourceType: v.optional(
+          v.union(
+            v.literal('chat'),
+            v.literal('document'),
+            v.literal('agent'),
+            v.literal('workflow')
+          )
+        ),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const now = Date.now();

@@ -30,7 +30,9 @@ export function getAllTools(): AgentTool<unknown>[] {
   return Array.from(TOOL_REGISTRY.values());
 }
 
-export function getToolsByCategory(category: ToolCategory): AgentTool<unknown>[] {
+export function getToolsByCategory(
+  category: ToolCategory
+): AgentTool<unknown>[] {
   return getAllTools().filter((tool) => tool.category === category);
 }
 
@@ -78,7 +80,7 @@ export const calculatorTool: AgentTool<{ expression: string }> = {
         error: {
           code: 'CALCULATION_ERROR',
           message: `Math calculation failed: ${error instanceof Error ? error.message : String(error)}`,
-          details: { expression: params.expression }
+          details: { expression: params.expression },
         },
         executionTime: Date.now() - startTime,
       };
@@ -86,7 +88,10 @@ export const calculatorTool: AgentTool<{ expression: string }> = {
   },
 };
 
-export const textAnalyzerTool: AgentTool<{ text: string; analysisTypes: string[] }> = {
+export const textAnalyzerTool: AgentTool<{
+  text: string;
+  analysisTypes: string[];
+}> = {
   name: 'text_analyzer',
   description:
     'Analyze text for various metrics including word count, sentiment, readability, and key phrases',
@@ -181,7 +186,7 @@ export const textAnalyzerTool: AgentTool<{ text: string; analysisTypes: string[]
         error: {
           code: 'ANALYSIS_ERROR',
           message: `Text analysis failed: ${error instanceof Error ? error.message : String(error)}`,
-          details: { textLength: params.text.length }
+          details: { textLength: params.text.length },
         },
         executionTime: Date.now() - startTime,
       };
@@ -218,16 +223,21 @@ export const timestampTool: AgentTool<TimestampParams> = {
       .optional()
       .describe('Target timezone (e.g., "UTC", "America/New_York")'),
   }),
-  async execute(params: TimestampParams, context: AgentContext): Promise<ToolResult> {
+  async execute(
+    params: TimestampParams,
+    context: AgentContext
+  ): Promise<ToolResult> {
     const startTime = Date.now();
 
     try {
-      let result: {
-        unix?: number;
-        iso?: string;
-        utc?: string;
-        local?: string;
-      } | string;
+      let result:
+        | {
+            unix?: number;
+            iso?: string;
+            utc?: string;
+            local?: string;
+          }
+        | string;
 
       switch (params.operation) {
         case 'current':
@@ -277,7 +287,7 @@ export const timestampTool: AgentTool<TimestampParams> = {
         error: {
           code: 'TIMESTAMP_ERROR',
           message: `Timestamp operation failed: ${error instanceof Error ? error.message : String(error)}`,
-          details: { operation: params.operation }
+          details: { operation: params.operation },
         },
         executionTime: Date.now() - startTime,
       };
@@ -289,7 +299,11 @@ export const timestampTool: AgentTool<TimestampParams> = {
 // Data Retrieval Tools
 // =============================================================================
 
-export const webSearchTool: AgentTool<{ query: string; limit: number; type: string }> = {
+export const webSearchTool: AgentTool<{
+  query: string;
+  limit: number;
+  type: string;
+}> = {
   name: 'web_search',
   description:
     'Search the web for current information, news, and general knowledge',
@@ -340,7 +354,7 @@ export const webSearchTool: AgentTool<{ query: string; limit: number; type: stri
         error: {
           code: 'SEARCH_ERROR',
           message: `Web search failed: ${error instanceof Error ? error.message : String(error)}`,
-          details: { query: params.query }
+          details: { query: params.query },
         },
         executionTime: Date.now() - startTime,
       };
@@ -375,7 +389,10 @@ export const documentRetrievalTool: AgentTool<DocumentRetrievalParams> = {
       .default(10)
       .describe('Maximum number of results'),
   }),
-  async execute(params: DocumentRetrievalParams, context: AgentContext): Promise<ToolResult> {
+  async execute(
+    params: DocumentRetrievalParams,
+    context: AgentContext
+  ): Promise<ToolResult> {
     const startTime = Date.now();
 
     try {
@@ -396,7 +413,7 @@ export const documentRetrievalTool: AgentTool<DocumentRetrievalParams> = {
         error: {
           code: 'RETRIEVAL_ERROR',
           message: `Document retrieval failed: ${error instanceof Error ? error.message : String(error)}`,
-          details: { operation: params.operation }
+          details: { operation: params.operation },
         },
         executionTime: Date.now() - startTime,
       };
@@ -435,7 +452,10 @@ export const chatCompletionTool: AgentTool<ChatCompletionParams> = {
       .default(1000)
       .describe('Maximum response length'),
   }),
-  async execute(params: ChatCompletionParams, context: AgentContext): Promise<ToolResult> {
+  async execute(
+    params: ChatCompletionParams,
+    context: AgentContext
+  ): Promise<ToolResult> {
     const startTime = Date.now();
 
     try {
@@ -461,7 +481,7 @@ export const chatCompletionTool: AgentTool<ChatCompletionParams> = {
         error: {
           code: 'COMPLETION_ERROR',
           message: `Chat completion failed: ${error instanceof Error ? error.message : String(error)}`,
-          details: { model: params.model || 'unknown' }
+          details: { model: params.model || 'unknown' },
         },
         executionTime: Date.now() - startTime,
       };
@@ -500,7 +520,10 @@ export const solanaWalletTool: AgentTool<SolanaWalletParams> = {
       .describe('Number of transactions to retrieve'),
   }),
   requiresApproval: true, // Blockchain operations require approval
-  async execute(params: SolanaWalletParams, context: AgentContext): Promise<ToolResult> {
+  async execute(
+    params: SolanaWalletParams,
+    context: AgentContext
+  ): Promise<ToolResult> {
     const startTime = Date.now();
 
     try {
@@ -525,7 +548,10 @@ export const solanaWalletTool: AgentTool<SolanaWalletParams> = {
         error: {
           code: 'BLOCKCHAIN_ERROR',
           message: `Solana wallet operation failed: ${error instanceof Error ? error.message : String(error)}`,
-          details: { operation: params.operation, wallet: (params.walletAddress || context.walletAddress) as string }
+          details: {
+            operation: params.operation,
+            wallet: (params.walletAddress || context.walletAddress) as string,
+          },
         },
         executionTime: Date.now() - startTime,
       };
@@ -743,8 +769,8 @@ interface DocumentListResult {
   total: number;
 }
 
-type DocumentOperationResult = 
-  | ({ [key: string]: unknown; query: string; results: DocumentSearchResult[] })
+type DocumentOperationResult =
+  | { [key: string]: unknown; query: string; results: DocumentSearchResult[] }
   | DocumentGetResult
   | DocumentListResult;
 
@@ -795,7 +821,9 @@ interface ChatCompletionResult {
   };
 }
 
-async function mockChatCompletion(params: ChatCompletionParams): Promise<ChatCompletionResult> {
+async function mockChatCompletion(
+  params: ChatCompletionParams
+): Promise<ChatCompletionResult> {
   // Mock AI completion - integrate with actual AI APIs
   return {
     text: `This is a mock AI response to: "${params.prompt}". In a real implementation, this would be generated by the specified AI model.`,
@@ -836,7 +864,10 @@ interface SolanaTokensResult {
   [key: string]: unknown;
 }
 
-type SolanaOperationResult = SolanaBalanceResult | SolanaTransactionsResult | SolanaTokensResult;
+type SolanaOperationResult =
+  | SolanaBalanceResult
+  | SolanaTransactionsResult
+  | SolanaTokensResult;
 
 async function mockSolanaOperation(
   operation: string,

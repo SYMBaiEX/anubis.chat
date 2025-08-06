@@ -8,10 +8,10 @@ import { convertToModelMessages, streamText } from 'ai';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { MessageRole } from '@/lib/types/api';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { messageRateLimit } from '@/lib/middleware/rate-limit';
 import type { ChatMessage, SendMessageRequest } from '@/lib/types/api';
+import { MessageRole } from '@/lib/types/api';
 import {
   addSecurityHeaders,
   createdResponse,
