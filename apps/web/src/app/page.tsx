@@ -1,45 +1,48 @@
-"use client"
+"use client";
 import { useQuery } from "convex/react";
-import { api } from "@isis-chat/backend/convex/_generated/api";
-
-const TITLE_TEXT = `
- ██████╗ ███████╗████████╗████████╗███████╗██████╗
- ██╔══██╗██╔════╝╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗
- ██████╔╝█████╗     ██║      ██║   █████╗  ██████╔╝
- ██╔══██╗██╔══╝     ██║      ██║   ██╔══╝  ██╔══██╗
- ██████╔╝███████╗   ██║      ██║   ███████╗██║  ██║
- ╚═════╝ ╚══════╝   ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝
-
- ████████╗    ███████╗████████╗ █████╗  ██████╗██╗  ██╗
- ╚══██╔══╝    ██╔════╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝
-    ██║       ███████╗   ██║   ███████║██║     █████╔╝
-    ██║       ╚════██║   ██║   ██╔══██║██║     ██╔═██╗
-    ██║       ███████║   ██║   ██║  ██║╚██████╗██║  ██╗
-    ╚═╝       ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
- `;
+// Note: Update this path once Convex is properly set up
+// import { api } from "@isis-chat/backend/convex/_generated/api";
+import { HeroSection } from "@/components/landing/hero-section";
+import { FeaturesSection } from "@/components/landing/features-section";
+import { PricingSection } from "@/components/landing/pricing-section";
+import { CTASection } from "@/components/landing/cta-section";
+import { TombBackground } from "@/components/landing/tomb-background";
+import { HieroglyphicAnimations } from "@/components/landing/hieroglyphic-animations";
+import { DustParticles } from "@/components/landing/dust-particles";
 
 export default function Home() {
-  const healthCheck = useQuery(api.healthCheck.get);
+  // TODO: Re-enable once Convex is properly configured
+  // const healthCheck = useQuery(api.healthCheck.get);
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-2">
-      <pre className="overflow-x-auto font-mono text-sm">{TITLE_TEXT}</pre>
-      <div className="grid gap-6">
-        <section className="rounded-lg border p-4">
-          <h2 className="mb-2 font-medium">API Status</h2>
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Ancient Egyptian Tomb Background */}
+      <TombBackground />
+      
+      {/* Hieroglyphic Animations */}
+      <HieroglyphicAnimations />
+      
+      {/* Dust Particle Effects */}
+      <DustParticles />
+      
+      {/* API Status Check - Theme-aware (disabled until Convex setup) */}
+      <div className="absolute top-4 right-4 z-50">
+        <div className="rounded-lg border border-border/50 bg-card/80 backdrop-blur-sm p-3 transition-all duration-300">
           <div className="flex items-center gap-2">
-            <div
-              className={`h-2 w-2 rounded-full ${healthCheck === "OK" ? "bg-green-500" : healthCheck === undefined ? "bg-orange-400" : "bg-red-500"}`}
-            />
-            <span className="text-sm text-muted-foreground">
-              {healthCheck === undefined
-                ? "Checking..."
-                : healthCheck === "OK"
-                  ? "Connected"
-                  : "Error"}
+            <div className="h-2 w-2 rounded-full bg-amber-400" />
+            <span className="text-xs text-muted-foreground">
+              Development Mode
             </span>
           </div>
-        </section>
+        </div>
+      </div>
+      
+      {/* Main Content */}
+      <div className="relative z-10">
+        <HeroSection />
+        <FeaturesSection />
+        <PricingSection />
+        <CTASection />
       </div>
     </div>
   );

@@ -4,13 +4,17 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Inter", "Geist", ui-sans-serif, system-ui, sans-serif,
+  /* PRD Typography - optimized for Bun runtime */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: "IBM Plex Mono", "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", 
+    "Fira Code", monospace;
+  --font-heading: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-background text-foreground transition-colors duration-300;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
@@ -19,71 +23,98 @@ body {
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  
+  /* ISIS.chat brand colors from PRD - Light theme */
+  --isis-primary: #14F195;
+  --isis-accent: #8247E5;
+  --isis-error: #FF5F56;
+  
+  /* Ancient Egyptian palette */
+  --egypt-gold: #FFD700;
+  --egypt-bronze: #B48751;
+  --egypt-amber: #CD853F;
+  --egypt-stone: #A0785A;
+  --egypt-dark-stone: #5C4530;
+  
+  /* Light theme colors */
+  --background: #F8F9FB;
+  --foreground: #1A1A1A;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A1A;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A1A;
+  --primary: #14F195;
+  --primary-foreground: #000000;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #1A1A1A;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #8247E5;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF5F56;
+  --destructive-foreground: #FFFFFF;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #14F195;
+  --chart-1: #14F195;
+  --chart-2: #8247E5;
+  --chart-3: #FFD700;
+  --chart-4: #FF5F56;
+  --chart-5: #CD853F;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1A1A1A;
+  --sidebar-primary: #14F195;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #1A1A1A;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #14F195;
+  
+  /* Egyptian theme colors for light mode */
+  --egypt-background-light: linear-gradient(135deg, #F5F2E8 0%, #EDE7D3 50%, #E8DCC0 100%);
+  --egypt-card-light: rgba(255, 255, 255, 0.9);
+  --egypt-border-light: rgba(205, 133, 63, 0.3);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Dark theme colors */
+  --background: #0E0E10;
+  --foreground: #F1F1F1;
+  --card: #1A1A1A;
+  --card-foreground: #F1F1F1;
+  --popover: #1A1A1A;
+  --popover-foreground: #F1F1F1;
+  --primary: #14F195;
+  --primary-foreground: #000000;
+  --secondary: #262626;
+  --secondary-foreground: #F1F1F1;
+  --muted: #262626;
+  --muted-foreground: #A1A1AA;
+  --accent: #8247E5;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF5F56;
+  --destructive-foreground: #FFFFFF;
+  --border: #333333;
+  --input: #333333;
+  --ring: #14F195;
+  --chart-1: #14F195;
+  --chart-2: #8247E5;
+  --chart-3: #FFD700;
+  --chart-4: #FF5F56;
+  --chart-5: #CD853F;
+  --sidebar: #1A1A1A;
+  --sidebar-foreground: #F1F1F1;
+  --sidebar-primary: #14F195;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #262626;
+  --sidebar-accent-foreground: #F1F1F1;
+  --sidebar-border: #333333;
+  --sidebar-ring: #14F195;
+  
+  /* Egyptian theme colors for dark mode */
+  --egypt-background-dark: linear-gradient(135deg, #2C1810 0%, #3D2415 25%, #4A2C1A 50%, #3D2415 75%, #2C1810 100%);
+  --egypt-card-dark: rgba(26, 26, 26, 0.9);
+  --egypt-border-dark: rgba(255, 215, 0, 0.2);
 }
 
 @theme inline {
@@ -122,6 +153,18 @@ body {
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Egyptian palette colors */
+  --color-egypt-gold: var(--egypt-gold);
+  --color-egypt-bronze: var(--egypt-bronze);
+  --color-egypt-amber: var(--egypt-amber);
+  --color-egypt-stone: var(--egypt-stone);
+  --color-egypt-dark-stone: var(--egypt-dark-stone);
+  
+  /* ISIS brand colors */
+  --color-isis-primary: var(--isis-primary);
+  --color-isis-accent: var(--isis-accent);
+  --color-isis-error: var(--isis-error);
 }
 
 @layer base {
@@ -129,6 +172,114 @@ body {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
   }
+  
+  /* Smooth transitions for theme changes */
+  *, *::before, *::after {
+    transition-property: background-color, border-color, color, fill, stroke, text-decoration-color, box-shadow;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+  
+  /* Enhanced focus visibility for accessibility */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+  
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    
+    .animate-bounce,
+    .animate-pulse,
+    .animate-fade-in-out,
+    .animate-sway,
+    .animate-sway-reverse,
+    .glow-text {
+      animation: none !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    :root {
+      --primary: #00FF00;
+      --accent: #FFFF00;
+      --border: #FFFFFF;
+    }
+    
+    .dark {
+      --primary: #00FF00;
+      --accent: #FFFF00;
+      --border: #FFFFFF;
+    }
+  }
+}
+
+/* Custom animations for landing page */
+@keyframes fade-in-out {
+  0%, 100% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sway {
+  0%, 100% {
+    transform: rotate(15deg) translateX(0);
+  }
+  50% {
+    transform: rotate(15deg) translateX(5px);
+  }
+}
+
+@keyframes sway-reverse {
+  0%, 100% {
+    transform: rotate(-10deg) translateX(0);
+  }
+  50% {
+    transform: rotate(-10deg) translateX(-5px);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    text-shadow: 0 0 20px rgba(20, 241, 149, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 30px rgba(20, 241, 149, 0.6), 0 0 40px rgba(20, 241, 149, 0.3);
+  }
+}
+
+.animate-fade-in-out {
+  animation: fade-in-out infinite ease-in-out;
+}
+
+.animate-sway {
+  animation: sway infinite ease-in-out;
+}
+
+.animate-sway-reverse {
+  animation: sway-reverse infinite ease-in-out;
+}
+
+.glow-text {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Hieroglyphic text effects */
+.hieroglyph-glow {
+  text-shadow: 
+    0 0 10px rgba(255, 215, 0, 0.5),
+    0 0 20px rgba(255, 215, 0, 0.3),
+    0 0 30px rgba(255, 215, 0, 0.2);
 }
