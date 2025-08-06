@@ -1,38 +1,45 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
-import { POST } from '../verify/route'
 
-// Mock Convex client
+// Mock all external dependencies first
 const mockConvexMutation = vi.fn()
-vi.mock('convex/nextjs', () => ({
+const mockNaclVerify = vi.fn()
+const mockJwtSign = vi.fn()
+const mockBs58Decode = vi.fn()
+
+vi.mock('convex/browser', () => ({
   ConvexHttpClient: vi.fn().mockImplementation(() => ({
     mutation: mockConvexMutation,
   })),
 }))
 
-// Mock crypto verification
-vi.mock('tweetnacl', () => ({
-  sign: {
-    detached: {
-      verify: vi.fn(),
+vi.mock('@convex/_generated/api', () => ({
+  api: {
+    users: {
+      upsert: 'users:upsert',
     },
   },
 }))
 
-// Mock JWT
+vi.mock('tweetnacl', () => ({
+  sign: {
+    detached: {
+      verify: mockNaclVerify,
+    },
+  },
+}))
+
 vi.mock('jsonwebtoken', () => ({
-  sign: vi.fn(),
+  sign: mockJwtSign,
   verify: vi.fn(),
 }))
 
-// Mock bs58
 vi.mock('bs58', () => ({
-  decode: vi.fn(),
+  decode: mockBs58Decode,
 }))
 
-import nacl from 'tweetnacl'
-import jwt from 'jsonwebtoken'
-import bs58 from 'bs58'
+// Now import the route after mocks are set up
+const { POST } = await import('../verify/route')
 
 describe('/api/auth/verify', () => {
   beforeEach(() => {
@@ -49,9 +56,9 @@ describe('/api/auth/verify', () => {
     const mockToken = 'jwt-token'
 
     // Mock successful signature verification
-    vi.mocked(nacl.sign.detached.verify).mockReturnValue(true)
-    vi.mocked(bs58.decode).mockReturnValue(new Uint8Array(64))
-    vi.mocked(jwt.sign).mockReturnValue(mockToken)
+    mockNaclVerify.mockReturnValue(true)
+    mockBs58Decode.mockReturnValue(new Uint8Array(64))
+    mockJwtSign.mockReturnValue(mockToken)
 
     // Mock successful user creation
     const mockUser = {
@@ -86,8 +93,8 @@ describe('/api/auth/verify', () => {
       username: mockUser.username,
       createdAt: mockUser.createdAt,
     })
-    expect(mockConvexMutation).toHaveBeenCalledWith('users.upsert', {
-      publicKey: mockPublicKey,
+    expect(mockConvexMutation).toHaveBeenCalledWith('users:upsert', {
+      walletAddress: mockPublicKey,
     })
   })
 
@@ -98,8 +105,8 @@ describe('/api/auth/verify', () => {
     const mockNonce = 'test-nonce'
 
     // Mock failed signature verification
-    vi.mocked(nacl.sign.detached.verify).mockReturnValue(false)
-    vi.mocked(bs58.decode).mockReturnValue(new Uint8Array(64))
+    mockNaclVerify.mockReturnValue(false)
+    mockBs58Decode.mockReturnValue(new Uint8Array(64))
 
     const request = new NextRequest('http://localhost:3000/api/auth/verify', {
       method: 'POST',
@@ -147,8 +154,8 @@ describe('/api/auth/verify', () => {
     const mockNonce = 'test-nonce'
 
     // Mock successful signature verification
-    vi.mocked(nacl.sign.detached.verify).mockReturnValue(true)
-    vi.mocked(bs58.decode).mockReturnValue(new Uint8Array(64))
+    mockNaclVerify.mockReturnValue(true)
+    mockBs58Decode.mockReturnValue(new Uint8Array(64))
 
     // Mock Convex error
     const convexError = new Error('Database connection failed')
@@ -208,7 +215,7 @@ describe('/api/auth/verify', () => {
     const mockNonce = 'nonce'
 
     // Mock signature decoding error
-    vi.mocked(bs58.decode).mockImplementation(() => {
+    mockBs58Decode.mockImplementation(() => {
       throw new Error('Invalid base58 encoding')
     })
 

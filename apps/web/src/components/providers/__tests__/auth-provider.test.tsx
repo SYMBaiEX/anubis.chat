@@ -99,7 +99,7 @@ describe('AuthProvider', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('authenticated')).toHaveTextContent('false')
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('isis-auth-token')
     })
   })
 
@@ -152,7 +152,7 @@ describe('AuthProvider', () => {
       const auth = useAuth()
       return (
         <div>
-          <div data-testid="has-authenticate">{typeof auth.authenticate === 'function' ? 'true' : 'false'}</div>
+          <div data-testid="has-authenticate">{typeof auth.login === 'function' ? 'true' : 'false'}</div>
           <div data-testid="has-logout">{typeof auth.logout === 'function' ? 'true' : 'false'}</div>
           <div data-testid="has-refresh">{typeof auth.refreshToken === 'function' ? 'true' : 'false'}</div>
         </div>

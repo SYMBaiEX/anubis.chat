@@ -7,13 +7,13 @@ describe('solana utilities', () => {
     it('should format valid address with default length', () => {
       const address = 'HN7cABqLq46Es1jh92dQQi5DKyXJxfogVQKMrNDK9HbB'
       const result = formatSolanaAddress(address)
-      expect(result).toBe('HN7c...HbB')
+      expect(result).toBe('HN7c...9HbB')
     })
 
     it('should format address with custom length', () => {
       const address = 'HN7cABqLq46Es1jh92dQQi5DKyXJxfogVQKMrNDK9HbB'
       const result = formatSolanaAddress(address, 6)
-      expect(result).toBe('HN7cAB...K9HbB')
+      expect(result).toBe('HN7cAB...DK9HbB')
     })
 
     it('should return original address if shorter than format length', () => {

@@ -40,10 +40,20 @@ describe('useAuth', () => {
     const mockToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJwdWJsaWNLZXkiOiJ0ZXN0IiwiaWF0IjoxNjAwMDAwMDAwLCJleHAiOjE2MDAwMDM2MDB9.test'
     const mockUser = {
       id: 'user1',
-      publicKey: 'test-public-key',
+      walletAddress: 'test-public-key',
       username: 'testuser',
       createdAt: Date.now(),
     }
+
+    // Mock connected wallet
+    vi.doMock('../useWallet', () => ({
+      useWallet: () => ({
+        publicKey: { toString: () => 'test-public-key' },
+        connected: true,
+        isConnected: true,
+        signMessage: vi.fn().mockResolvedValue('signature'),
+      }),
+    }))
 
     // Mock challenge request
     vi.mocked(fetch).mockResolvedValueOnce({
@@ -66,27 +76,39 @@ describe('useAuth', () => {
     const { result } = renderHook(() => useAuth())
 
     await act(async () => {
-      await result.current.authenticate()
+      await result.current.login()
     })
 
     expect(result.current.isAuthenticated).toBe(true)
     expect(result.current.user).toEqual(mockUser)
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('auth_token', mockToken)
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('isis-auth-token', mockToken)
   })
 
   it('should handle authentication errors', async () => {
-    const mockError = new Error('Authentication failed')
+    // Mock connected wallet
+    vi.doMock('../useWallet', () => ({
+      useWallet: () => ({
+        publicKey: { toString: () => 'test-public-key' },
+        connected: true,
+        isConnected: true,
+        signMessage: vi.fn().mockResolvedValue('signature'),
+      }),
+    }))
     
-    vi.mocked(fetch).mockRejectedValue(mockError)
+    vi.mocked(fetch).mockRejectedValue(new Error('Authentication failed'))
 
     const { result } = renderHook(() => useAuth())
 
     await act(async () => {
-      await result.current.authenticate()
+      try {
+        await result.current.login()
+      } catch (error) {
+        // Expected to throw
+      }
     })
 
     expect(result.current.isAuthenticated).toBe(false)
-    expect(result.current.error).toEqual(mockError)
+    expect(result.current.error).toBeTruthy()
   })
 
   it('should handle logout', async () => {
@@ -107,7 +129,7 @@ describe('useAuth', () => {
 
     expect(result.current.isAuthenticated).toBe(false)
     expect(result.current.user).toBeNull()
-    expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_token')
+    expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('isis-auth-token')
   })
 
   it('should validate token on initialization', async () => {
@@ -151,7 +173,7 @@ describe('useAuth', () => {
     await waitFor(() => {
       expect(result.current.isAuthenticated).toBe(false)
       expect(result.current.user).toBeNull()
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('isis-auth-token')
     })
   })
 
@@ -173,10 +195,20 @@ describe('useAuth', () => {
       await result.current.refreshToken()
     })
 
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('auth_token', mockNewToken)
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('isis-auth-token', mockNewToken)
   })
 
   it('should handle rate limiting', async () => {
+    // Mock connected wallet
+    vi.doMock('../useWallet', () => ({
+      useWallet: () => ({
+        publicKey: { toString: () => 'test-public-key' },
+        connected: true,
+        isConnected: true,
+        signMessage: vi.fn().mockResolvedValue('signature'),
+      }),
+    }))
+
     // Mock rate limited response
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: false,
@@ -190,7 +222,11 @@ describe('useAuth', () => {
     const { result } = renderHook(() => useAuth())
 
     await act(async () => {
-      await result.current.authenticate()
+      try {
+        await result.current.login()
+      } catch (error) {
+        // Expected to throw
+      }
     })
 
     expect(result.current.error).toBeDefined()

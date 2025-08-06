@@ -16,14 +16,35 @@ afterEach(() => {
   cleanup()
 })
 
-// Setup global DOM for jsdom
-Object.defineProperty(window, 'localStorage', {
+// Setup global window and localStorage for jsdom
+const mockLocalStorage = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+}
+
+Object.defineProperty(globalThis, 'window', {
   value: {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn(),
+    localStorage: mockLocalStorage,
+    location: {
+      host: 'localhost:3001',
+    },
+    crypto: {
+      getRandomValues: vi.fn((array) => {
+        for (let i = 0; i < array.length; i++) {
+          array[i] = Math.floor(Math.random() * 256)
+        }
+        return array
+      }),
+    },
   },
+  writable: true,
+})
+
+// Make sure localStorage is available globally for tests
+Object.defineProperty(globalThis, 'localStorage', {
+  value: mockLocalStorage,
   writable: true,
 })
 
