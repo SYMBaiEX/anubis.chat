@@ -1,6 +1,7 @@
 'use client';
 
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
+import { AuthProvider } from './providers/auth-provider';
 import { ThemeProvider } from './theme-provider';
 import { Toaster } from './ui/sonner';
 import { WalletProvider } from './wallet/wallet-provider';
@@ -17,7 +18,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     >
       <ConvexProvider client={convex}>
         <WalletProvider>
-          {children}
+          <AuthProvider>{children}</AuthProvider>
         </WalletProvider>
       </ConvexProvider>
       <Toaster richColors />

@@ -77,6 +77,9 @@ export interface UserProfile {
   isActive: boolean;
 }
 
+// Type alias for convenience
+export type User = UserProfile;
+
 export interface UserPreferences {
   theme: 'light' | 'dark';
   aiModel: string;

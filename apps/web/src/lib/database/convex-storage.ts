@@ -3,9 +3,9 @@
  * Implements the StorageBackend interface using Convex for production-ready storage
  */
 
-import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@convex/_generated/api';
-import type { Id, Doc } from '@convex/_generated/dataModel';
+import type { Doc, Id } from '@convex/_generated/dataModel';
+import { ConvexHttpClient } from 'convex/browser';
 import type {
   Document,
   DocumentSearchRequest,
@@ -119,7 +119,9 @@ export class ConvexStorage implements StorageBackend {
         });
 
         return {
-          documents: results.map((doc: Doc<'documents'>) => this.convertFromConvexDocument(doc)),
+          documents: results.map((doc: Doc<'documents'>) =>
+            this.convertFromConvexDocument(doc)
+          ),
           total: results.length, // Search doesn't provide total count
         };
       }
