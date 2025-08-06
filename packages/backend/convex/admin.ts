@@ -114,7 +114,7 @@ export const cleanupExpiredData = mutation({
     const oldUsageThreshold = now - 90 * 24 * 60 * 60 * 1000;
     const oldUsageRecords = await ctx.db
       .query('usage')
-      .withIndex('by_user', (q) => q.lt('createdAt', oldUsageThreshold))
+      .filter((q) => q.lt(q.field('createdAt'), oldUsageThreshold))
       .collect();
 
     let usageDeleted = 0;

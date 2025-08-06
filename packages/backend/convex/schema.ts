@@ -2,12 +2,6 @@ import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
 export default defineSchema({
-  // Legacy todos table (for existing functionality)
-  todos: defineTable({
-    text: v.string(),
-    completed: v.boolean(),
-  }),
-
   // Users table for wallet-based authentication
   users: defineTable({
     walletAddress: v.string(),

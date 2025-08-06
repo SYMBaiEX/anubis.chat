@@ -34,8 +34,8 @@ export const isTokenBlacklisted = query({
 
     // Check if token has expired
     if (blacklistedToken.expiresAt < Date.now()) {
-      // Clean up expired token
-      await ctx.db.delete(blacklistedToken._id);
+      // Token expired, consider it not blacklisted
+      // Note: Cleanup is handled by the admin.cleanupExpiredData function
       return false;
     }
 

@@ -16,8 +16,8 @@ export const getByChatId = query({
       .query('messages')
       .withIndex('by_chat', (q) => q.eq('chatId', args.chatId));
 
-    if (args.before) {
-      query = query.filter((q) => q.lt(q.field('createdAt'), args.before));
+    if (args.before !== undefined) {
+      query = query.filter((q) => q.lt(q.field('createdAt'), args.before!));
     }
 
     const messages = await query.order('desc').take(limit);

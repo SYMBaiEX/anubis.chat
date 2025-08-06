@@ -2,12 +2,12 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'isis-chat',
-    short_name: 'isis-chat',
-    description: 'my pwa app',
-    start_url: '/new',
+    name: 'ISIS Chat',
+    short_name: 'ISIS Chat',
+    description: 'Next-generation AI chat platform with Web3 integration and RAG capabilities',
+    start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
+    background_color: '#000000',
     theme_color: '#000000',
     icons: [
       {
