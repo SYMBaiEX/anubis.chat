@@ -1,7 +1,16 @@
 ---
-description: documentation overview and navigation
-globs: []
-alwaysApply: false
+category: documentation
+subcategory: overview
+tags: [documentation, technical-writing, markdown, api-docs, overview, navigation]
+cursor:
+  context_window: 16384
+  temperature: 0.2
+  max_tokens: 8192
+  model_preference: ["auto"]
+relations:
+  imports: []
+  exports: ["documentation-standards", "api-documentation", "code-documentation"]
+  references: ["../index.mdc"]
 ---
 
 # Documentation Guidelines

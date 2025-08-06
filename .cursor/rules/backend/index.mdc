@@ -1,7 +1,24 @@
 ---
-description: backend overview and navigation for ISIS Chat
-globs: []
-alwaysApply: false
+category: backend
+subcategory: overview
+tags: [backend, convex, prisma, real-time, serverless, overview, navigation]
+cursor:
+  context_window: 16384
+  temperature: 0.3
+  max_tokens: 8192
+  model_preference: ["auto"]
+relations:
+  imports: ["../architecture/index.mdc"]
+  exports: ["backend-overview", "convex-patterns", "database-architecture"]
+  references: [
+    "./api-design.mdc",
+    "./database-schema.mdc",
+    "./convex-patterns.mdc",
+    "./caching.mdc",
+    "./vector-search.mdc",
+    "./queues.mdc",
+    "./edge-functions.mdc"
+  ]
 ---
 
 # Backend Architecture - ISIS Chat

@@ -6,7 +6,7 @@ cursor:
   context_window: 16384
   temperature: 0.2
   max_tokens: 8192
-  model_preference: ["claude-3.5-sonnet", "gpt-4-turbo"]
+  model_preference: ["auto"]
 relations:
   imports: ["./vector-search.mdc"]
   exports: ["embedding-strategies", "chunking-patterns"]

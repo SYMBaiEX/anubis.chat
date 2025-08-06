@@ -1,7 +1,24 @@
 ---
-description: frontend overview and navigation
-globs: []
-alwaysApply: false
+category: frontend
+subcategory: overview
+tags: [frontend, nextjs, react, typescript, tailwind, components, overview, navigation]
+cursor:
+  context_window: 16384
+  temperature: 0.3
+  max_tokens: 8192
+  model_preference: ["auto"]
+relations:
+  imports: ["../architecture/index.mdc"]
+  exports: ["frontend-architecture", "component-patterns", "state-management"]
+  references: [
+    "./components.mdc",
+    "./styling.mdc",
+    "./state-management.mdc",
+    "./routing.mdc",
+    "./accessibility.mdc",
+    "./animations.mdc",
+    "./wallet-integration.mdc"
+  ]
 ---
 
 # Frontend Development Guidelines
