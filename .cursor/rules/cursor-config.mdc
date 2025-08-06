@@ -1,0 +1,249 @@
+---
+description: Cursor IDE configuration and best practices for August 2025
+globs: []
+alwaysApply: true
+---
+
+# Cursor IDE Configuration (August 2025)
+
+You are working with Cursor IDE, the AI-powered code editor. This file contains the latest configuration and best practices as of August 2025.
+
+## Latest Updates (August 2025)
+
+### Migration from .cursorrules to MDC Format
+**IMPORTANT**: The `.cursorrules` file format is deprecated. Use the new MDC (Markdown Components) format in `.cursor/rules/` directory.
+
+### New File Format Structure
+```yaml
+---
+description: Brief description of what this rule does
+globs: ["**/*.ts", "**/*.tsx"]  # File patterns for auto-attachment
+alwaysApply: false              # Whether to always include this rule
+---
+
+# Your rule content here
+```
+
+## Supported AI Models (August 2025)
+
+### Cursor Auto Model Selection ✨
+**ISIS Chat uses Cursor's Auto Model Selection** - Cursor automatically selects the best model based on:
+- Task complexity and requirements
+- Context size and token usage
+- Response time requirements
+- Cost optimization
+- Model availability and rate limits
+
+### Available Models in Auto Mode
+When using Auto selection, Cursor intelligently routes model selection based on the task at hand.
+
+### Auto Selection Benefits
+```yaml
+advantages:
+  - Automatic optimization: Best model for each task
+  - Cost efficiency: Uses cheaper models when appropriate
+  - Performance: Faster responses with smart routing
+  - Reliability: Automatic fallback on rate limits
+  - No manual configuration: Zero setup required
+```
+
+### How Auto Mode Works
+```typescript
+// Cursor's internal logic (simplified)
+const autoSelectModel = (context: Context) => {
+  // Cursor analyzes:
+  // - Query complexity
+  // - Code analysis requirements
+  // - Context window needs
+  // - Response time targets
+  // - Current rate limits
+  // - Cost considerations
+  
+  // Then automatically routes to optimal model
+  return cursor.intelligentRouter.selectBestModel(context)
+}
+```
+
+### Configuration for ISIS Chat
+```json
+{
+  "cursor.ai.model": "auto",  // ✅ Recommended setting
+  "cursor.ai.enableAutoMode": true,
+  "cursor.ai.optimizeForCost": true,
+  "cursor.ai.optimizeForSpeed": true
+}
+```
+
+## Cursor Features (2025)
+
+### 1. Agent Mode
+- Rules only apply in Agent mode and Inline Edit
+- Use active voice: "You are an expert..." instead of passive rules
+- Keep rules concise (<500 lines recommended)
+
+### 2. Command Palette Commands
+- `/Generate Cursor Rules` - Generate rules from chat conversation
+- `New Cursor Rule` - Create new MDC file
+- `Cmd+Shift+P` / `Ctrl+Shift+P` - Open command palette
+
+### 3. Context Management
+- **@-symbols** for referencing:
+  - `@file` - Reference specific files
+  - `@folder` - Reference directories
+  - `@web` - Reference web URLs
+  - `@codebase` - Reference entire codebase
+- Context window: 200K tokens for Claude 3.5 Sonnet
+
+### 4. Privacy Mode
+- Enable via: `Cursor Settings > General > Privacy Mode`
+- Prevents code storage except for temporary processing
+- Recommended for sensitive projects
+
+### 5. HTTP/2 Configuration
+For corporate proxies (Zscaler, etc.):
+```json
+{
+  "cursor.general.disableHttp2": true
+}
+```
+
+## Rule Organization Best Practices
+
+### Directory Structure
+```
+.cursor/
+└── rules/
+    ├── main.mdc           # Primary rules (alwaysApply: true)
+    ├── cursor-config.mdc  # This file - Cursor configuration
+    ├── ai-rag/           # AI/RAG specific rules
+    ├── frontend/         # Frontend development rules
+    ├── backend/          # Backend development rules
+    ├── testing/          # Testing strategies
+    └── security/         # Security guidelines
+```
+
+### Rule Scoping
+- **Project Rules**: `.cursor/rules/` - Version controlled, project-specific
+- **Subdirectory Rules**: Can have their own `.cursor/rules/` for folder-specific rules
+- **User Rules**: Global settings across all projects
+
+### Rule Types
+1. **Always Applied** (`alwaysApply: true`)
+   - Core project rules
+   - Configuration settings
+   - Critical guidelines
+
+2. **Auto-Attached** (`globs: ["pattern"]`)
+   - File-specific rules
+   - Language-specific patterns
+   - Framework conventions
+
+3. **Manual** (`alwaysApply: false`, no globs)
+   - Reference documentation
+   - Optional guidelines
+   - Specialized patterns
+
+## Writing Effective Rules
+
+### Do's ✅
+- **Be Specific**: "Always use Zod for input validation"
+- **Be Actionable**: "Implement error boundaries for all async components"
+- **Be Concise**: Keep rules under 500 lines
+- **Use Active Voice**: "You are a senior developer who..."
+- **Include Examples**: Show code patterns, not just descriptions
+
+### Don'ts ❌
+- **Don't be Vague**: Avoid "write good code"
+- **Don't be Passive**: Avoid "code should be clean"
+- **Don't Overload**: Split large rules into multiple files
+- **Don't Repeat**: Reference other rules instead of duplicating
+
+## Performance Optimization
+
+### Token Usage
+- Monitor token usage in status bar
+- Use concise rules to preserve context
+- Reference external documentation via `@web`
+
+### Caching
+- Cursor caches rule processing
+- Update rules incrementally
+- Clear cache if rules aren't updating: `Cmd+Shift+P` > "Clear Cache"
+
+## Troubleshooting
+
+### Rules Not Applied
+1. Check file is in `.cursor/rules/` directory
+2. Verify MDC format with proper frontmatter
+3. Ensure you're in Agent mode or Inline Edit
+4. Check glob patterns match your files
+
+### Connection Issues
+- Disable HTTP/2 for corporate proxies
+- Check firewall settings
+- Verify API keys are configured
+
+### Performance Issues
+- Reduce context window size
+- Disable unused rules
+- Use more specific glob patterns
+
+## Integration with Other Tools
+
+### Git Integration
+- `.cursor/rules/` should be version controlled
+- Use `.cursorignore` to exclude sensitive files
+- Commit rule changes with code changes
+
+### CI/CD Integration
+- Rules can be validated in CI pipeline
+- Use rules for automated code review
+- Generate documentation from rules
+
+## Future-Proofing
+
+### Upcoming Features (Roadmap)
+- Enhanced multi-file editing
+- Improved codebase understanding
+- Advanced refactoring capabilities
+- Better test generation
+
+### Best Practices for Updates
+1. Review Cursor changelog monthly
+2. Update model preferences as new models release
+3. Refine rules based on team feedback
+4. Monitor Cursor forum for community patterns
+
+## Resources
+
+### Official Documentation
+- Cursor Docs: https://docs.cursor.com
+- GitHub: https://github.com/getcursor/cursor
+- Forum: https://forum.cursor.com
+
+### Community Resources
+- Awesome Cursor Rules: https://github.com/PatrickJS/awesome-cursorrules
+- Cursor Rules Examples: Search GitHub for `.cursor/rules`
+
+## Quick Reference
+
+### Keyboard Shortcuts
+```
+Cmd/Ctrl + K      - Inline edit
+Cmd/Ctrl + L      - Open chat
+Cmd/Ctrl + I      - Open composer
+Cmd/Ctrl + Shift + L - Chat with codebase
+Tab              - Accept suggestion
+Cmd/Ctrl + →      - Accept word
+```
+
+### Model Context Windows
+```
+Claude 3.5 Sonnet: 200K tokens
+GPT-4o: 128K tokens  
+DeepSeek v3: 64K tokens
+Gemini 2.0 Flash: 1M tokens
+o1-preview: 128K tokens
+```
+
+Remember: Always use the latest MDC format and keep rules up-to-date with Cursor's evolving features!
