@@ -1,18 +1,26 @@
 ---
-description: AI model configuration and selection strategies for Claude 3.5, GPT-4o, DeepSeek v3, and Gemini 2.0 Flash
-globs: ["**/services/ai/**", "**/lib/ai/**", "**/*.ai.ts"]
-alwaysApply: false
+category: ai-rag
+subcategory: models
+tags: [ai, models, claude, gpt-4o, deepseek, vercel-ai-sdk]
+cursor:
+  context_window: 16384
+  temperature: 0.4
+  max_tokens: 8192
+  model_preference: ["claude-3.5-sonnet", "gpt-4-turbo"]
+relations:
+  imports: ["../backend/api-routes.mdc"]
+  exports: ["model-patterns", "provider-abstraction"]
+  references: ["./streaming.mdc", "./prompt-engineering.mdc"]
 ---
 
 # AI Models Configuration & Best Practices
 
-## Model Selection Strategy (August 2025)
+## Model Selection Strategy (2025)
 
 ### Primary Models for isis.chat
 - **Claude 3.5 Sonnet**: Primary reasoning, code generation, complex analysis
 - **GPT-4o**: Multimodal capabilities, image analysis, vision tasks
-- **DeepSeek v3**: Cost-effective inference for high-volume operations
-- **Gemini 2.0 Flash**: Ultra-fast responses for simple queries
+- **DeepSeek**: Cost-effective inference for high-volume operations
 
 ### Model Characteristics
 ```typescript

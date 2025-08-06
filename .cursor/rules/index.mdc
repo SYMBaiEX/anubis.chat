@@ -1,7 +1,16 @@
 ---
-description: ISIS Chat master documentation index - comprehensive navigation for all development rules
-globs: []
-alwaysApply: false
+category: overview
+subcategory: navigation
+tags: [overview, navigation, rules, cursor, ai-rag, testing]
+cursor:
+  context_window: 32768
+  temperature: 0.2
+  max_tokens: 16384
+  model_preference: ["claude-3.5-sonnet", "gpt-4-turbo"]
+relations:
+  imports: []
+  exports: ["master-navigation"]
+  references: ["./ai-rag/index.mdc", "./testing/index.mdc"]
 ---
 
 # ISIS Chat - Cursor Rules Master Index
