@@ -1,26 +1,42 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useAuth } from '../useAuth'
+import { createMockUser, createMockAuthSession, createMockResponse } from '../../test-utils/mocks'
 
 // Mock fetch for API calls
 global.fetch = vi.fn()
 
-// Get localStorage mock from global setup
-const mockLocalStorage = window.localStorage
+// Get localStorage mock from global setup - ensure window exists
+const mockLocalStorage = globalThis.window?.localStorage || {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+}
 
-// Mock wallet hook
+// Create a mock wallet that can be modified during tests
+const mockWallet = {
+  publicKey: null,
+  connected: false,
+  isConnected: false,
+  signMessage: vi.fn(),
+}
+
+// Mock wallet hook using standardized approach
 vi.mock('../useWallet', () => ({
-  useWallet: () => ({
-    publicKey: null,
-    connected: false,
-    signMessage: vi.fn(),
-  }),
+  useWallet: () => mockWallet,
 }))
 
 describe('useAuth', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockLocalStorage.getItem.mockReturnValue(null)
+    
+    // Reset wallet state
+    mockWallet.publicKey = null
+    mockWallet.connected = false
+    mockWallet.isConnected = false
+    mockWallet.signMessage = vi.fn()
   })
 
   afterEach(() => {
@@ -37,41 +53,26 @@ describe('useAuth', () => {
   })
 
   it('should handle successful authentication', async () => {
-    const mockToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJwdWJsaWNLZXkiOiJ0ZXN0IiwiaWF0IjoxNjAwMDAwMDAwLCJleHAiOjE2MDAwMDM2MDB9.test'
-    const mockUser = {
-      id: 'user1',
-      walletAddress: 'test-public-key',
-      username: 'testuser',
-      createdAt: Date.now(),
-    }
+    const mockUser = createMockUser({ id: 'user1', walletAddress: 'test-public-key' })
+    const mockAuthSession = createMockAuthSession({ user: mockUser })
 
-    // Mock connected wallet
-    vi.doMock('../useWallet', () => ({
-      useWallet: () => ({
-        publicKey: { toString: () => 'test-public-key' },
-        connected: true,
-        isConnected: true,
-        signMessage: vi.fn().mockResolvedValue('signature'),
-      }),
-    }))
+    // Set up connected wallet state
+    mockWallet.publicKey = { toString: () => 'test-public-key' } as any
+    mockWallet.connected = true
+    mockWallet.isConnected = true
+    mockWallet.signMessage = vi.fn().mockResolvedValue('signature')
 
     // Mock challenge request
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({
-        challenge: 'test-challenge',
-        nonce: 'test-nonce'
-      }),
-    } as Response)
+    vi.mocked(fetch).mockResolvedValueOnce(createMockResponse({
+      challenge: 'test-challenge',
+      nonce: 'test-nonce'
+    }) as Response)
 
     // Mock verify request
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({
-        token: mockToken,
-        user: mockUser,
-      }),
-    } as Response)
+    vi.mocked(fetch).mockResolvedValueOnce(createMockResponse({
+      token: mockAuthSession.token,
+      user: mockUser,
+    }) as Response)
 
     const { result } = renderHook(() => useAuth())
 
@@ -81,19 +82,15 @@ describe('useAuth', () => {
 
     expect(result.current.isAuthenticated).toBe(true)
     expect(result.current.user).toEqual(mockUser)
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('isis-auth-token', mockToken)
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('isis-auth-token', mockAuthSession.token)
   })
 
   it('should handle authentication errors', async () => {
-    // Mock connected wallet
-    vi.doMock('../useWallet', () => ({
-      useWallet: () => ({
-        publicKey: { toString: () => 'test-public-key' },
-        connected: true,
-        isConnected: true,
-        signMessage: vi.fn().mockResolvedValue('signature'),
-      }),
-    }))
+    // Set up connected wallet state
+    mockWallet.publicKey = { toString: () => 'test-public-key' } as any
+    mockWallet.connected = true
+    mockWallet.isConnected = true
+    mockWallet.signMessage = vi.fn().mockResolvedValue('signature')
     
     vi.mocked(fetch).mockRejectedValue(new Error('Authentication failed'))
 

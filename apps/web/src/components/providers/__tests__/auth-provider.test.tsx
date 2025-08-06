@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+
+// Mock wallet hook first (hoisted)
+vi.mock('../../../hooks/useWallet', () => ({
+  useWallet: () => ({
+    publicKey: null,
+    connected: false,
+    signMessage: vi.fn(),
+  }),
+}))
+
 import { AuthProvider } from '../auth-provider'
 import { useAuth } from '../../../hooks/useAuth'
 
@@ -20,14 +30,6 @@ const TestComponent = () => {
   }
 }
 
-// Mock wallet hook
-vi.mock('../../../hooks/useWallet', () => ({
-  useWallet: () => ({
-    publicKey: null,
-    connected: false,
-    signMessage: vi.fn(),
-  }),
-}))
 
 // Mock fetch
 global.fetch = vi.fn()

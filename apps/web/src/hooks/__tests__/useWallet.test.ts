@@ -1,22 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
 import { useWallet } from '../useWallet'
+import { createMockSolanaWallet, createMockConnection } from '../../test-utils/mocks'
+import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react'
 
 // Mock Solana wallet adapter
 vi.mock('@solana/wallet-adapter-react', () => ({
   useWallet: vi.fn(),
-  useConnection: () => ({
-    connection: {
-      getBalance: vi.fn(),
-      getAccountInfo: vi.fn(),
-    },
-  }),
 }))
 
-// Get localStorage mock from global setup
-const mockLocalStorage = window.localStorage
+// Get localStorage mock from global setup - ensure window exists
+const mockLocalStorage = globalThis.window?.localStorage || {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+}
 
 describe('useWallet', () => {
   const mockConnect = vi.fn()
@@ -146,24 +146,60 @@ describe('useWallet', () => {
   })
 
   it('should handle connection health monitoring', async () => {
-    vi.mocked(useSolanaWallet).mockReturnValue({
+    const mockConnection = createMockConnection()
+    mockConnection.getBalance.mockResolvedValue(1000000000) // 1 SOL
+    
+    // Mock with connected wallet
+    vi.mocked(useSolanaWallet).mockReturnValue(createMockSolanaWallet({
       wallet: { adapter: { name: 'Phantom' } } as any,
-      adapter: null,
       publicKey: mockPublicKey,
       connected: true,
-      connecting: false,
-      disconnecting: false,
       connect: mockConnect,
       disconnect: mockDisconnect,
       select: mockSelect,
-      wallets: [],
-      autoConnect: false,
-    })
+    }))
+
+    // Mock the connection separately since it's imported via useConnection
+    vi.doMock('@solana/wallet-adapter-react', () => ({
+      useWallet: vi.mocked(useSolanaWallet),
+      useConnection: () => ({ connection: mockConnection }),
+    }))
 
     const { result } = renderHook(() => useWallet())
 
-    // Connection health should be calculated based on wallet state
-    expect(result.current.connectionHealth).toBeDefined()
+    // Should have health monitoring properties
+    expect(result.current.isHealthy).toBe(true)
+    expect(result.current.connectionHealthScore).toBe(100)
+    
+    // When wallet is connected, health should be monitored
+    expect(result.current.connected).toBe(true)
+    expect(typeof result.current.isHealthy).toBe('boolean')
+    expect(typeof result.current.connectionHealthScore).toBe('number')
+    expect(result.current.connectionHealthScore).toBeGreaterThanOrEqual(0)
+    expect(result.current.connectionHealthScore).toBeLessThanOrEqual(100)
+  })
+
+  it('should calculate health score based on connection response time', async () => {
+    const mockConnection = createMockConnection()
+    
+    // Simulate slow response (should lower health score)
+    mockConnection.getBalance.mockImplementation(() => 
+      new Promise(resolve => setTimeout(() => resolve(1000000000), 200))
+    )
+    
+    vi.mocked(useSolanaWallet).mockReturnValue(createMockSolanaWallet({
+      wallet: { adapter: { name: 'Phantom' } } as any,
+      publicKey: mockPublicKey,
+      connected: true,
+      connect: mockConnect,
+      disconnect: mockDisconnect,
+      select: mockSelect,
+    }))
+
+    const { result } = renderHook(() => useWallet())
+
+    expect(result.current.isHealthy).toBeDefined()
+    expect(result.current.connectionHealthScore).toBeDefined()
   })
 
   it('should persist wallet selection in localStorage', async () => {

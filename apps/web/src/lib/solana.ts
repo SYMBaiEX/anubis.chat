@@ -18,10 +18,18 @@ export const connection = new Connection(ENDPOINT, 'confirmed');
 
 // Utility functions
 export const lamportsToSol = (lamports: number): number => {
+  if (!Number.isFinite(lamports) || lamports < 0) {
+    throw new Error(
+      'Invalid lamports value: must be a non-negative finite number'
+    );
+  }
   return lamports / LAMPORTS_PER_SOL;
 };
 
 export const solToLamports = (sol: number): number => {
+  if (!Number.isFinite(sol) || sol < 0) {
+    throw new Error('Invalid SOL value: must be a non-negative finite number');
+  }
   return Math.floor(sol * LAMPORTS_PER_SOL);
 };
 
@@ -29,6 +37,7 @@ export const solToLamports = (sol: number): number => {
 export const formatSolanaAddress = (address: string | null | undefined, length = 4): string => {
   if (!address) return '';
   if (address.length <= length * 2 + 3) return address;
+  if (length === 0) return '...';
   return `${address.slice(0, length)}...${address.slice(-length)}`;
 };
 

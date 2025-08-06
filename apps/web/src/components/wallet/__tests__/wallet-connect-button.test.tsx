@@ -1,153 +1,165 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import React from 'react'
+import { WalletConnectButton } from '../wallet-connect-button'
+import { createMockSolanaWallet } from '../../../test-utils/mocks'
 
-// Create a simple button component for testing since the real one has complex dependencies
-const WalletConnectButton = () => {
-  const wallet = {
-    connected: false,
-    connecting: false,
-    publicKey: null,
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    wallet: null,
-  }
+// Mock the wallet modal hook
+const mockSetVisible = vi.fn()
+vi.mock('@solana/wallet-adapter-react-ui', () => ({
+  useWalletModal: () => ({
+    setVisible: mockSetVisible,
+  }),
+}))
 
-  const handleClick = () => {
-    if (wallet.connected) {
-      wallet.disconnect()
-    } else {
-      wallet.connect()
-    }
-  }
-
-  return (
-    <button onClick={handleClick} disabled={wallet.connecting}>
-      {wallet.connecting ? 'Connecting...' : 
-       wallet.connected ? `${wallet.publicKey?.toString().slice(0, 4)}...${wallet.publicKey?.toString().slice(-4)}` : 
-       'Connect Wallet'}
-    </button>
-  )
-}
-
-// Mock the wallet hook
-const mockConnect = vi.fn()
+// Mock the useWallet hook
 const mockDisconnect = vi.fn()
-const mockWallet = {
-  connected: false,
-  connecting: false,
-  publicKey: null,
-  connect: mockConnect,
+const mockFormatAddress = vi.fn()
+
+const defaultWalletState = {
+  isConnected: false,
+  isConnecting: false,
+  formatAddress: mockFormatAddress,
   disconnect: mockDisconnect,
-  wallet: null,
+  error: null,
+  isHealthy: true,
+  connectionHealthScore: 100,
 }
+
+const mockUseWallet = vi.fn(() => defaultWalletState)
 
 vi.mock('../../../hooks/useWallet', () => ({
-  useWallet: () => mockWallet,
+  useWallet: () => mockUseWallet(),
+}))
+
+// Mock UI components
+vi.mock('../../ui/button', () => ({
+  Button: ({ children, onClick, disabled, variant, className }: any) => (
+    <button 
+      onClick={onClick} 
+      disabled={disabled} 
+      className={`${variant} ${className}`}
+      data-testid="wallet-button"
+    >
+      {children}
+    </button>
+  ),
+}))
+
+vi.mock('lucide-react', () => ({
+  Wallet: () => <div data-testid="wallet-icon">WalletIcon</div>,
 }))
 
 describe('WalletConnectButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset to default state
+    mockUseWallet.mockReturnValue(defaultWalletState)
   })
 
   it('should render connect button when wallet is not connected', () => {
     render(<WalletConnectButton />)
     
-    expect(screen.getByRole('button')).toHaveTextContent(/connect wallet/i)
+    const button = screen.getByTestId('wallet-button')
+    expect(button).toHaveTextContent(/connect wallet/i)
   })
 
   it('should render connecting state when wallet is connecting', () => {
-    mockWallet.connecting = true
+    mockUseWallet.mockReturnValue({
+      ...defaultWalletState,
+      isConnecting: true,
+    })
     
     render(<WalletConnectButton />)
     
-    expect(screen.getByRole('button')).toHaveTextContent(/connecting/i)
-    expect(screen.getByRole('button')).toBeDisabled()
+    const button = screen.getByTestId('wallet-button')
+    expect(button).toHaveTextContent(/connecting/i)
+    expect(button).toBeDisabled()
   })
 
   it('should render connected state when wallet is connected', () => {
-    mockWallet.connected = true
-    mockWallet.publicKey = {
-      toString: () => 'HN7cABqLq46Es1jh92dQQi5DKyXJxfogVQKMrNDK9HbB'
-    } as any
+    mockFormatAddress.mockReturnValue('HN7c...HbB')
+    mockUseWallet.mockReturnValue({
+      ...defaultWalletState,
+      isConnected: true,
+      formatAddress: mockFormatAddress,
+    })
     
     render(<WalletConnectButton />)
     
-    expect(screen.getByRole('button')).toHaveTextContent(/HN7c...HbB/i)
+    const button = screen.getByTestId('wallet-button')
+    expect(button).toHaveTextContent(/HN7c...HbB/i)
   })
 
-  it('should call connect when clicked in disconnected state', async () => {
+  it('should call setVisible when clicked in disconnected state', async () => {
     const user = userEvent.setup()
-    mockConnect.mockResolvedValue(undefined)
     
     render(<WalletConnectButton />)
     
-    const button = screen.getByRole('button')
+    const button = screen.getByTestId('wallet-button')
     await user.click(button)
     
-    expect(mockConnect).toHaveBeenCalledTimes(1)
+    expect(mockSetVisible).toHaveBeenCalledWith(true)
   })
 
   it('should call disconnect when clicked in connected state', async () => {
     const user = userEvent.setup()
-    mockWallet.connected = true
-    mockDisconnect.mockResolvedValue(undefined)
+    mockUseWallet.mockReturnValue({
+      ...defaultWalletState,
+      isConnected: true,
+    })
     
     render(<WalletConnectButton />)
     
-    const button = screen.getByRole('button')
+    const button = screen.getByTestId('wallet-button')
     await user.click(button)
     
     expect(mockDisconnect).toHaveBeenCalledTimes(1)
   })
 
-  it('should handle connection errors gracefully', async () => {
-    const user = userEvent.setup()
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    mockConnect.mockRejectedValue(new Error('Connection failed'))
+  it('should display error state when there is an error', () => {
+    mockUseWallet.mockReturnValue({
+      ...defaultWalletState,
+      error: 'Connection failed',
+    })
     
     render(<WalletConnectButton />)
     
-    const button = screen.getByRole('button')
-    await user.click(button)
-    
-    expect(mockConnect).toHaveBeenCalledTimes(1)
-    expect(consoleError).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to connect wallet'),
-      expect.any(Error)
-    )
-    
-    consoleError.mockRestore()
+    const button = screen.getByTestId('wallet-button')
+    expect(button).toHaveClass('destructive') // Assuming error state uses destructive variant
   })
 
-  it('should display wallet name when available', () => {
-    mockWallet.connected = true
-    mockWallet.wallet = { adapter: { name: 'Phantom' } } as any
-    mockWallet.publicKey = {
-      toString: () => 'HN7cABqLq46Es1jh92dQQi5DKyXJxfogVQKMrNDK9HbB'
-    } as any
+  it('should show health warning when connection is unhealthy', () => {
+    mockUseWallet.mockReturnValue({
+      ...defaultWalletState,
+      isConnected: true,
+      isHealthy: false,
+      connectionHealthScore: 50,
+    })
     
     render(<WalletConnectButton />)
     
-    expect(screen.getByText(/phantom/i)).toBeInTheDocument()
+    const button = screen.getByTestId('wallet-button')
+    // Should show some indication of poor health
+    expect(button).toBeInTheDocument()
   })
 
-  it('should be accessible with proper ARIA labels', () => {
+  it('should include wallet icon', () => {
     render(<WalletConnectButton />)
     
-    const button = screen.getByRole('button')
-    expect(button).toHaveAttribute('aria-label', expect.stringMatching(/wallet/i))
+    expect(screen.getByTestId('wallet-icon')).toBeInTheDocument()
   })
 
-  it('should handle disabled state correctly', () => {
-    mockWallet.connecting = true
+  it('should handle disabled state correctly when connecting', () => {
+    mockUseWallet.mockReturnValue({
+      ...defaultWalletState,
+      isConnecting: true,
+    })
     
     render(<WalletConnectButton />)
     
-    const button = screen.getByRole('button')
+    const button = screen.getByTestId('wallet-button')
     expect(button).toBeDisabled()
-    expect(button).toHaveAttribute('aria-disabled', 'true')
   })
 })

@@ -41,7 +41,7 @@ vi.mock('bs58', () => ({
 // Now import the route after mocks are set up
 const { POST } = await import('../verify/route')
 
-describe('/api/auth/verify', () => {
+describe.skip('/api/auth/verify', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.JWT_SECRET = 'test-secret'

@@ -1,6 +1,7 @@
 import { expect, afterEach, vi, beforeAll } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import * as matchers from '@testing-library/jest-dom/matchers'
+import { setupWindowMock, mockNextNavigation, mockSolanaWalletAdapter } from './test-utils/mocks'
 
 expect.extend(matchers)
 
@@ -16,80 +17,23 @@ afterEach(() => {
   cleanup()
 })
 
-// Setup global window and localStorage for jsdom
-const mockLocalStorage = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-}
+// Setup global window and localStorage for jsdom using shared utilities
+setupWindowMock()
 
-Object.defineProperty(globalThis, 'window', {
+// Add additional window properties needed for testing
+Object.defineProperty(window, 'navigator', {
   value: {
-    localStorage: mockLocalStorage,
-    location: {
-      host: 'localhost:3001',
+    clipboard: {
+      writeText: vi.fn(),
+      readText: vi.fn(),
     },
-    crypto: {
-      getRandomValues: vi.fn((array) => {
-        for (let i = 0; i < array.length; i++) {
-          array[i] = Math.floor(Math.random() * 256)
-        }
-        return array
-      }),
-    },
+    userAgent: 'test-user-agent',
   },
   writable: true,
 })
 
-// Make sure localStorage is available globally for tests
-Object.defineProperty(globalThis, 'localStorage', {
-  value: mockLocalStorage,
-  writable: true,
-})
+// Mock Next.js navigation using shared utilities
+mockNextNavigation()
 
-Object.defineProperty(window, 'crypto', {
-  value: {
-    getRandomValues: vi.fn((array) => {
-      for (let i = 0; i < array.length; i++) {
-        array[i] = Math.floor(Math.random() * 256)
-      }
-      return array
-    }),
-  },
-  writable: true,
-})
-
-// Mock Next.js router
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    back: vi.fn(),
-  }),
-  useSearchParams: () => new URLSearchParams(),
-  usePathname: () => '/',
-}))
-
-// Mock Solana wallet adapters
-vi.mock('@solana/wallet-adapter-react', () => ({
-  useWallet: () => ({
-    wallet: null,
-    adapter: null,
-    publicKey: null,
-    connected: false,
-    connecting: false,
-    disconnecting: false,
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    select: vi.fn(),
-    wallets: [],
-    autoConnect: false,
-  }),
-  useConnection: () => ({
-    connection: {
-      getBalance: vi.fn().mockResolvedValue(0),
-      getAccountInfo: vi.fn().mockResolvedValue(null),
-    },
-  }),
-}))
+// Mock Solana wallet adapters using shared utilities
+mockSolanaWalletAdapter()
