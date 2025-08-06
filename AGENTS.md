@@ -1,11 +1,418 @@
-# Project Context
-Ultracite enforces strict type safety, accessibility standards, and consistent code quality for JavaScript/TypeScript projects using Biome's lightning-fast formatter and linter.
+# AGENTS.md
 
-## Key Principles
-- Zero configuration required
-- Subsecond performance
-- Maximum type safety
-- AI-friendly code generation
+*Last updated: August 6, 2025*
+
+> **Purpose**: This file provides comprehensive guidance for AI agents (OpenAI Codex, Claude Code, Cursor, GitHub Copilot, and others) working with the ISIS Chat codebase. It encodes our coding standards, development workflows, and architectural patterns to ensure consistent, high-quality contributions.
+
+## Project Context
+
+ISIS Chat is a **Solana-native AI chat SaaS platform** combining advanced AI/RAG capabilities with Web3 blockchain integration. This monorepo uses **Turborepo** for build orchestration, **Bun** as the package manager, and follows a modular architecture with strict TypeScript and quality standards.
+
+## Quick Navigation
+
+- [Core Commands](#core-commands) - Essential development commands
+- [Project Structure](#project-structure) - Codebase organization
+- [Coding Conventions](#coding-conventions) - Standards and patterns
+- [Testing Instructions](#testing-instructions) - Test execution and coverage
+- [AI-Specific Guidelines](#ai-specific-guidelines) - RAG and model integration
+- [PR Guidelines](#pr-guidelines) - Pull request standards
+- [Common Tasks](#common-tasks) - Frequent development scenarios
+
+## Core Commands
+
+### Essential Development Commands
+
+```bash
+# Initial setup (ALWAYS run first for new clones)
+bun install
+bun dev:setup  # Configure Convex backend
+
+# Development
+bun dev         # Start all services (web on :3001, backend)
+bun dev:web     # Frontend only
+bun dev:server  # Backend only
+
+# Code Quality (MUST pass before commits)
+bun check       # Biome format and lint
+bun check-types # TypeScript validation
+
+# Build
+bun build       # Production build for all apps
+
+# Testing (when implemented)
+# bun test       # Run all tests
+# bun test:unit  # Unit tests only
+# bun test:e2e   # E2E tests
+```
+
+### Pre-commit Requirements
+
+**NEVER use `--no-verify` flag**. All commits must pass:
+1. `bun check` - Code formatting and linting
+2. `bun check-types` - TypeScript validation
+3. Commit message format validation
+
+## Project Structure
+
+```
+isis-chat/
+├── apps/
+│   └── web/                 # Next.js 15 frontend application
+│       ├── src/
+│       │   ├── app/         # App Router pages & API routes
+│       │   ├── components/  # React components
+│       │   │   └── ui/      # Shadcn UI primitives
+│       │   └── lib/         # Utilities and helpers
+│       └── public/          # Static assets and PWA config
+│
+├── packages/
+│   └── backend/             # Convex backend service
+│       └── convex/
+│           ├── schema.ts    # Database schema definitions
+│           ├── *.ts         # Query/mutation functions
+│           └── _generated/  # Auto-generated Convex code
+│
+├── .cursor/rules/           # AI assistant configuration (MDC format)
+├── turbo.json              # Turborepo configuration
+└── package.json            # Root workspace configuration
+```
+
+### Key Files to Understand
+
+- `packages/backend/convex/schema.ts` - Database schema (source of truth)
+- `apps/web/src/app/layout.tsx` - Root application layout
+- `apps/web/src/components/providers.tsx` - Global providers
+- `.cursor/rules/main.mdc` - Primary development guidelines
+
+## Coding Conventions
+
+### TypeScript Standards
+
+```typescript
+// ALWAYS use strict mode - NO 'any' types
+interface UserData {  // Prefer interfaces for object shapes
+  id: string;
+  name: string;
+  createdAt: Date;
+}
+
+// Use Result pattern for fallible operations
+type Result<T, E = Error> = 
+  | { ok: true; value: T }
+  | { ok: false; error: E };
+
+// Implement proper error handling
+async function fetchUser(id: string): Promise<Result<UserData>> {
+  try {
+    const user = await api.getUser(id);
+    return { ok: true, value: user };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+```
+
+### React Component Patterns
+
+```typescript
+// Server Components (default) - for data fetching
+export default async function UserList() {
+  const users = await getUsers(); // Direct async data fetching
+  return <UserListClient users={users} />;
+}
+
+// Client Components - ONLY for interactivity
+"use client";
+export function UserListClient({ users }: Props) {
+  const [selected, setSelected] = useState<string>();
+  // Interactive logic here
+}
+```
+
+### Convex Backend Patterns
+
+```typescript
+// In packages/backend/convex/users.ts
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+
+// Type-safe queries
+export const getUser = query({
+  args: { id: v.id("users") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
+// Type-safe mutations
+export const createUser = mutation({
+  args: { 
+    name: v.string(),
+    email: v.string() 
+  },
+  handler: async (ctx, args) => {
+    // Validation with Zod
+    const validated = userSchema.parse(args);
+    return await ctx.db.insert("users", validated);
+  },
+});
+```
+
+### Import Organization
+
+```typescript
+// 1. External packages
+import { useState } from "react";
+import { z } from "zod";
+
+// 2. Internal packages
+import { api } from "@isis-chat/backend";
+
+// 3. Local imports
+import { Button } from "@/components/ui/button";
+import { validateInput } from "@/lib/utils";
+```
+
+## Testing Instructions
+
+### Test Execution Commands
+
+```bash
+# Run all tests before submitting PR
+bun test                    # All tests
+bun test:unit              # Unit tests only
+bun test:integration       # Integration tests
+bun test:e2e               # End-to-end tests
+
+# Coverage requirements
+# - Unit: 90%+ statements, 85%+ branches
+# - Integration: All API endpoints
+# - E2E: Critical user paths
+```
+
+### Writing Tests
+
+```typescript
+// Unit test example (when implemented)
+describe("UserService", () => {
+  it("should validate user input", async () => {
+    const result = await validateUser({ name: "", email: "invalid" });
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/validation/);
+  });
+});
+```
+
+## AI-Specific Guidelines
+
+### AI/RAG Integration Patterns
+
+The project is designed for multi-model AI with RAG capabilities:
+
+```typescript
+// AI service initialization (planned implementation)
+const aiService = new AIService({
+  models: ['claude-3.5-sonnet', 'gpt-4o', 'deepseek-v3'],
+  vectorDb: qdrantClient,
+  streaming: true,
+  fallbackChain: true
+});
+
+// Vector search configuration
+const vectorSearch = new VectorSearchService({
+  collection: 'isis_knowledge_base',
+  searchType: 'hybrid', // semantic + keyword
+  retrievalStrategy: 'contextual'
+});
+```
+
+### Performance Requirements
+
+- **AI Response**: <2s time-to-first-token
+- **Vector Search**: <100ms query time
+- **Frontend Load**: <3s on 3G networks
+- **API Endpoints**: <200ms average response
+
+## PR Guidelines
+
+### Commit Message Format
+
+```bash
+# Required format (enforced by tooling)
+feat: Add user authentication
+fix: Resolve memory leak in chat component
+docs: Update API documentation
+refactor: Simplify vector search logic
+test: Add unit tests for AI service
+chore: Update dependencies
+```
+
+### PR Checklist
+
+Before submitting a PR, ensure:
+
+- [ ] All tests pass (`bun test`)
+- [ ] Code formatted (`bun check`)
+- [ ] TypeScript validates (`bun check-types`)
+- [ ] No `console.log` statements
+- [ ] No commented-out code
+- [ ] Documentation updated if needed
+- [ ] Follows existing patterns in codebase
+
+### PR Description Template
+
+```markdown
+## Summary
+Brief description of changes
+
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+
+## Testing
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Manual testing completed
+
+## Screenshots (if UI changes)
+[Add screenshots here]
+```
+
+## Common Tasks
+
+### Adding a New Feature
+
+1. **Define schema** in `packages/backend/convex/schema.ts`
+2. **Create backend functions** in `packages/backend/convex/`
+3. **Implement UI components** in `apps/web/src/components/`
+4. **Add routing** in `apps/web/src/app/`
+5. **Write tests** for all new code
+6. **Update documentation** as needed
+
+### Modifying Database Schema
+
+```bash
+# 1. Update schema in packages/backend/convex/schema.ts
+# 2. Backend will auto-reload and validate
+# 3. Update TypeScript types will be auto-generated
+# 4. Update related queries/mutations
+```
+
+### Adding a New Package
+
+```bash
+# From root directory
+bun add [package-name]           # Add to root
+cd apps/web && bun add [package] # Add to specific workspace
+```
+
+### Debugging Common Issues
+
+```bash
+# TypeScript errors
+bun check-types                  # Check all types
+cd apps/web && npx tsc --noEmit  # Check specific app
+
+# Convex connection issues
+cd packages/backend && bun dev:setup  # Reconfigure Convex
+
+# Build failures
+rm -rf node_modules bun.lockb    # Clear dependencies
+bun install                       # Reinstall
+```
+
+## Environment Variables
+
+### Required Variables
+
+```bash
+# .env.local (apps/web)
+NEXT_PUBLIC_CONVEX_URL=         # From Convex dashboard
+
+# .env (packages/backend)
+CONVEX_DEPLOYMENT=               # Convex deployment ID
+```
+
+### AI Service Variables (Future)
+
+```bash
+# When AI integration is implemented
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+QDRANT_URL=
+QDRANT_API_KEY=
+```
+
+## Security Guidelines
+
+### Input Validation
+
+```typescript
+// ALWAYS validate with Zod
+const userInputSchema = z.object({
+  message: z.string().min(1).max(10000),
+  userId: z.string().uuid()
+});
+
+// Validate before processing
+const validated = userInputSchema.parse(rawInput);
+```
+
+### API Security
+
+- Use parameterized queries (Convex handles this)
+- Implement rate limiting for all endpoints
+- Validate all inputs with Zod schemas
+- Never log sensitive information
+
+## Performance Optimization
+
+### Frontend Optimization
+
+- Use React Server Components by default
+- Implement code splitting with dynamic imports
+- Optimize images with Next.js Image component
+- Use Suspense boundaries for loading states
+
+### Backend Optimization
+
+- Index database queries appropriately
+- Implement caching where beneficial
+- Use connection pooling (Convex handles this)
+- Paginate large result sets
+
+## Directory-Specific Guidelines
+
+### `/apps/web`
+
+- Next.js 15 with App Router
+- React Server Components first
+- Tailwind CSS for styling
+- Shadcn UI for components
+
+### `/packages/backend`
+
+- Convex serverless functions
+- Type-safe schema definitions
+- Real-time subscriptions
+- Automatic scaling
+
+## Updating This File
+
+If you discover new patterns, fix issues, or establish new conventions while working on the codebase, **please update this AGENTS.md file** to keep it current and helpful for future AI agents and developers.
+
+## Additional Resources
+
+- [Cursor Rules](.cursor/rules/main.mdc) - Detailed development guidelines
+- [CLAUDE.md](CLAUDE.md) - Claude-specific configuration
+- [Convex Documentation](https://docs.convex.dev)
+- [Next.js Documentation](https://nextjs.org/docs)
+
+---
+
+**Remember**: The goal is to write code that is maintainable, performant, secure, and follows the established patterns in this codebase. When in doubt, look at existing implementations for guidance.
 
 ## Before Writing Code
 1. Analyze existing patterns in the codebase
@@ -303,9 +710,21 @@ Ultracite enforces strict type safety, accessibility standards, and consistent c
 - Don't use disabled tests.
 
 ## Common Tasks
-- `npx ultracite init` - Initialize Ultracite in your project
-- `npx ultracite format` - Format and fix code automatically
-- `npx ultracite lint` - Check for issues without fixing
+
+### Using Ultracite for Code Quality
+
+The project uses Ultracite (via Biome) for formatting and linting:
+
+```bash
+# Format and fix code automatically
+npx ultracite format
+
+# Check for issues without fixing  
+npx ultracite lint
+
+# Initialize Ultracite in new projects
+npx ultracite init
+```
 
 ## Example: Error Handling
 ```typescript

@@ -6,7 +6,7 @@ cursor:
   context_window: 8192
   temperature: 0.7
   max_tokens: 4096
-  model_preference: ["claude-3.5-sonnet", "gpt-4-turbo"]
+  model_preference: ["auto"]
 relations:
   imports: ["../infrastructure/security.mdc", "../tooling/package-management.mdc"]
   exports: ["dependency-strategies", "version-policies", "security-scanning"]

@@ -6,7 +6,7 @@ cursor:
   context_window: 8192
   temperature: 0.3
   max_tokens: 4096
-  model_preference: ["claude-3.5-sonnet", "gpt-4-turbo"]
+  model_preference: ["auto"]
 relations:
   imports: ["./authentication.mdc", "./data-isolation.mdc", "./rate-limiting.mdc", "./csp-headers.mdc"]
   exports: ["audit-procedures", "security-checklist"]

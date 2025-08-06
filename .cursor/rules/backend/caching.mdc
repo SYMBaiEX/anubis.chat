@@ -6,7 +6,7 @@ cursor:
   context_window: 8192
   temperature: 0.5
   max_tokens: 4096
-  model_preference: ["claude-3.5-sonnet", "gpt-4-turbo"]
+  model_preference: ["auto"]
 relations:
   imports: ["./convex-patterns.mdc", "./edge-functions.mdc"]
   exports: ["cache-strategies", "redis-patterns", "invalidation-rules"]
