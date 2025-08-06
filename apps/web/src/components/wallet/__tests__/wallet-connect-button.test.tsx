@@ -121,13 +121,15 @@ describe('WalletConnectButton', () => {
   it('should display error state when there is an error', () => {
     mockUseWallet.mockReturnValue({
       ...defaultWalletState,
+      isConnected: true,
       error: 'Connection failed',
+      isHealthy: false,
     })
     
     render(<WalletConnectButton />)
     
     const button = screen.getByTestId('wallet-button')
-    expect(button).toHaveClass('destructive') // Assuming error state uses destructive variant
+    expect(button).toHaveClass('destructive') // Error + unhealthy = destructive variant
   })
 
   it('should show health warning when connection is unhealthy', () => {

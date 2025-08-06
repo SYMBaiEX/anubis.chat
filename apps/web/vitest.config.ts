@@ -8,6 +8,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
     globals: true,
+    silent: false,
+    logLevel: 'warn',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
