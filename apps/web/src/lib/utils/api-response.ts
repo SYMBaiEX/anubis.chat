@@ -52,7 +52,7 @@ export function createErrorResponse(
     requestId: options?.requestId ?? nanoid(12),
   };
 
-  const response: APIResponse = {
+  const response: APIResponse<never> = {
     success: false,
     error,
   };

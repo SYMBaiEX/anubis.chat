@@ -1,5 +1,10 @@
-import { Connection, clusterApiUrl, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import {
+  Connection,
+  clusterApiUrl,
+  LAMPORTS_PER_SOL,
+  type PublicKey,
+} from '@solana/web3.js';
 
 // Configure the network to use from environment variables
 const getNetwork = (): WalletAdapterNetwork => {
@@ -18,7 +23,8 @@ const getNetwork = (): WalletAdapterNetwork => {
 export const NETWORK = getNetwork();
 
 // RPC endpoint - use environment variable if provided, otherwise use cluster API
-export const ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC_HOST || clusterApiUrl(NETWORK);
+export const ENDPOINT =
+  process.env.NEXT_PUBLIC_SOLANA_RPC_HOST || clusterApiUrl(NETWORK);
 
 // Create connection instance
 export const connection = new Connection(ENDPOINT, 'confirmed');
@@ -34,9 +40,10 @@ export const solToLamports = (sol: number): number => {
 
 // Create a sign-in message for wallet authentication
 export const createSignInMessage = (publicKey: string): string => {
-  const domain = typeof window !== 'undefined' 
-    ? window.location.host 
-    : process.env.NEXT_PUBLIC_APP_DOMAIN || 'isis.chat';
+  const domain =
+    typeof window !== 'undefined'
+      ? window.location.host
+      : process.env.NEXT_PUBLIC_APP_DOMAIN || 'isis.chat';
   const now = new Date();
   const message = `ISIS Chat wants you to sign in with your Solana account:
 ${publicKey}
@@ -44,7 +51,7 @@ ${publicKey}
 Domain: ${domain}
 Issued At: ${now.toISOString()}
 Chain ID: ${NETWORK}`;
-  
+
   return message;
 };
 

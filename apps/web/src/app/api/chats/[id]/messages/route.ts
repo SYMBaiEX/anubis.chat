@@ -8,6 +8,7 @@ import { convertToModelMessages, streamText } from 'ai';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { MessageRole } from '@/lib/types/api';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { messageRateLimit } from '@/lib/middleware/rate-limit';
 import type { ChatMessage, SendMessageRequest } from '@/lib/types/api';
@@ -29,7 +30,7 @@ const sendMessageSchema = z.object({
     .string()
     .min(1, 'Message content is required')
     .max(10_000, 'Message must be 10000 characters or less'),
-  role: z.enum(['user']).default('user'),
+  role: z.nativeEnum(MessageRole).default(MessageRole.USER),
   stream: z.boolean().default(true),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().min(1).max(8000).optional(),
@@ -76,7 +77,7 @@ async function getChatMessages(
       _id: nanoid(12),
       chatId,
       walletAddress,
-      role: i % 2 === 0 ? 'user' : 'assistant',
+      role: i % 2 === 0 ? MessageRole.USER : MessageRole.ASSISTANT,
       content:
         i % 2 === 0 ? 'User message content' : 'Assistant response content',
       tokenCount: Math.floor(Math.random() * 100) + 20,
@@ -253,7 +254,7 @@ export async function POST(
                 _id: nanoid(12),
                 chatId,
                 walletAddress,
-                role: 'assistant',
+                role: MessageRole.ASSISTANT,
                 content: text,
                 tokenCount: usage.totalTokens || Math.floor(text.length / 4),
                 metadata: {

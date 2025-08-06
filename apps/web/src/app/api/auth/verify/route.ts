@@ -13,6 +13,7 @@ import {
 } from '@/lib/middleware/auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import type { AuthSession } from '@/lib/types/api';
+import { Theme, SubscriptionTier, SubscriptionFeature } from '@/lib/types/api';
 import {
   addSecurityHeaders,
   successResponse,
@@ -185,15 +186,15 @@ export async function POST(request: NextRequest) {
           displayName: undefined,
           avatar: undefined,
           preferences: {
-            theme: 'dark',
+            theme: Theme.DARK,
             aiModel: 'gpt-4o',
             notifications: true,
           },
           subscription: {
-            tier: 'free',
+            tier: SubscriptionTier.FREE,
             tokensUsed: 0,
             tokensLimit: 10_000,
-            features: ['basic_chat', 'document_upload'],
+            features: [SubscriptionFeature.BASIC_CHAT],
           },
           createdAt: Date.now(),
           lastActiveAt: Date.now(),

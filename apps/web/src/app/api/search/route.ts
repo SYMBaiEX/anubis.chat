@@ -29,18 +29,15 @@ const searchDocumentsSchema = z.object({
     .string()
     .min(1, 'Query is required')
     .max(500, 'Query must be 500 characters or less')
-    .refine(
-      (val) => {
-        // Prevent potential ReDoS patterns
-        const suspiciousPatterns = [
-          /(\*{2,}|\+{2,}|\?{2,}|\|{2,})/,  // Repeated quantifiers
-          /\(.*\){20,}/,                     // Excessive groups
-          /(.*\*.*){10,}/,                   // Nested quantifiers
-        ];
-        return !suspiciousPatterns.some(pattern => pattern.test(val));
-      },
-      'Query contains potentially unsafe patterns'
-    ),
+    .refine((val) => {
+      // Prevent potential ReDoS patterns
+      const suspiciousPatterns = [
+        /(\*{2,}|\+{2,}|\?{2,}|\|{2,})/, // Repeated quantifiers
+        /\(.*\){20,}/, // Excessive groups
+        /(.*\*.*){10,}/, // Nested quantifiers
+      ];
+      return !suspiciousPatterns.some((pattern) => pattern.test(val));
+    }, 'Query contains potentially unsafe patterns'),
   limit: z.number().min(1).max(50).default(10),
   filters: z
     .object({

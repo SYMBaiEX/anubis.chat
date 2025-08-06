@@ -25,6 +25,12 @@ export const upsert = mutation({
         theme: v.union(v.literal('light'), v.literal('dark')),
         aiModel: v.string(),
         notifications: v.boolean(),
+        language: v.optional(v.string()),
+        temperature: v.optional(v.number()),
+        maxTokens: v.optional(v.number()),
+        streamResponses: v.optional(v.boolean()),
+        saveHistory: v.optional(v.boolean()),
+        compactMode: v.optional(v.boolean()),
       })
     ),
   },
@@ -82,6 +88,12 @@ export const updatePreferences = mutation({
       theme: v.union(v.literal('light'), v.literal('dark')),
       aiModel: v.string(),
       notifications: v.boolean(),
+      language: v.optional(v.string()),
+      temperature: v.optional(v.number()),
+      maxTokens: v.optional(v.number()),
+      streamResponses: v.optional(v.boolean()),
+      saveHistory: v.optional(v.boolean()),
+      compactMode: v.optional(v.boolean()),
     }),
   },
   handler: async (ctx, args) => {
@@ -95,7 +107,10 @@ export const updatePreferences = mutation({
     }
 
     await ctx.db.patch(user._id, {
-      preferences: args.preferences,
+      preferences: {
+        ...user.preferences,
+        ...args.preferences,
+      },
       lastActiveAt: Date.now(),
     });
 
@@ -199,18 +214,24 @@ export const trackUsage = mutation({
       v.literal('completion'),
       v.literal('object_generation'),
       v.literal('stream'),
-      v.literal('embedding')
+      v.literal('embedding'),
+      v.literal('agent_execution'),
+      v.literal('workflow_execution')
     ),
     model: v.string(),
     tokensUsed: v.number(),
     cost: v.optional(v.number()),
     duration: v.optional(v.number()),
+    success: v.boolean(),
     metadata: v.optional(
       v.object({
         chatId: v.optional(v.id('chats')),
         messageId: v.optional(v.id('messages')),
+        agentId: v.optional(v.id('agents')),
+        workflowId: v.optional(v.id('workflows')),
         requestSize: v.optional(v.number()),
         responseSize: v.optional(v.number()),
+        toolsUsed: v.optional(v.array(v.string())),
       })
     ),
   },
@@ -223,6 +244,7 @@ export const trackUsage = mutation({
       tokensUsed: args.tokensUsed,
       cost: args.cost,
       duration: args.duration,
+      success: args.success,
       createdAt: Date.now(),
       metadata: args.metadata,
     });

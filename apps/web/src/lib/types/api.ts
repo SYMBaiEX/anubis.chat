@@ -1,29 +1,48 @@
 /**
  * API Types and Interfaces for ISIS Chat
  * Forward-thinking design with extensibility and type safety
+ * Strict TypeScript - No any, unknown, or void types allowed
  */
+
+import type { z } from 'zod';
+import type { Result } from './result';
 
 // =============================================================================
 // Core API Response Types
 // =============================================================================
 
-export interface APIResponse<T = any> {
+export interface APIResponse<T> {
   success: boolean;
   data?: T;
   error?: APIError;
-  metadata?: {
-    requestId: string;
-    timestamp: number;
-    version: string;
-  };
+  metadata?: APIResponseMetadata;
+}
+
+export interface APIResponseMetadata {
+  requestId: string;
+  timestamp: number;
+  version: string;
+  correlationId?: string;
+  duration?: number;
 }
 
 export interface APIError {
-  code: string;
+  code: APIErrorCode;
   message: string;
-  details?: Record<string, any>;
+  details?: APIErrorDetails;
   timestamp: number;
   requestId: string;
+  statusCode?: number;
+  path?: string;
+  method?: string;
+}
+
+export interface APIErrorDetails {
+  field?: string;
+  value?: string | number | boolean;
+  constraint?: string;
+  context?: Record<string, string | number | boolean>;
+  stack?: string;
 }
 
 export interface PaginatedResponse<T> extends APIResponse<T[]> {
@@ -77,21 +96,67 @@ export interface UserProfile {
   isActive: boolean;
 }
 
+export enum Theme {
+  LIGHT = 'light',
+  DARK = 'dark',
+  SYSTEM = 'system',
+}
+
+export enum Language {
+  EN = 'en',
+  ES = 'es',
+  FR = 'fr',
+  DE = 'de',
+  ZH = 'zh',
+  JA = 'ja',
+  KO = 'ko',
+  PT = 'pt',
+  RU = 'ru',
+  AR = 'ar',
+}
+
 export interface UserPreferences {
-  theme: 'light' | 'dark';
+  theme: Theme;
   aiModel: string;
   notifications: boolean;
-  language?: string;
+  language?: Language;
   temperature?: number;
   maxTokens?: number;
+  streamResponses?: boolean;
+  saveHistory?: boolean;
+  compactMode?: boolean;
+}
+
+export enum SubscriptionTier {
+  FREE = 'free',
+  STARTER = 'starter',
+  PRO = 'pro',
+  TEAM = 'team',
+  ENTERPRISE = 'enterprise',
+}
+
+export enum SubscriptionFeature {
+  BASIC_CHAT = 'basic_chat',
+  DOCUMENT_UPLOAD = 'document_upload',
+  ADVANCED_MODELS = 'advanced_models',
+  UNLIMITED_TOKENS = 'unlimited_tokens',
+  PRIORITY_SUPPORT = 'priority_support',
+  CUSTOM_TOOLS = 'custom_tools',
+  TEAM_COLLABORATION = 'team_collaboration',
+  API_ACCESS = 'api_access',
+  WEBHOOK_INTEGRATION = 'webhook_integration',
+  CUSTOM_BRANDING = 'custom_branding',
+  AUDIT_LOGS = 'audit_logs',
 }
 
 export interface UserSubscription {
-  tier: 'free' | 'pro' | 'enterprise';
+  tier: SubscriptionTier;
   expiresAt?: number;
   tokensUsed: number;
   tokensLimit: number;
-  features: string[];
+  features: SubscriptionFeature[];
+  billingCycle?: 'monthly' | 'yearly';
+  autoRenew?: boolean;
 }
 
 // =============================================================================
@@ -116,17 +181,38 @@ export interface Chat {
   lastMessageAt?: number;
 }
 
+export enum MessageRole {
+  USER = 'user',
+  ASSISTANT = 'assistant',
+  SYSTEM = 'system',
+  TOOL = 'tool',
+  FUNCTION = 'function',
+}
+
+export enum MessageStatus {
+  PENDING = 'pending',
+  SENDING = 'sending',
+  SENT = 'sent',
+  DELIVERED = 'delivered',
+  READ = 'read',
+  FAILED = 'failed',
+  DELETED = 'deleted',
+}
+
 export interface ChatMessage {
   _id: string;
   chatId: string;
   walletAddress: string;
-  role: 'user' | 'assistant' | 'system';
+  role: MessageRole;
   content: string;
   tokenCount?: number;
   embedding?: number[];
   metadata?: MessageMetadata;
+  status?: MessageStatus;
+  parentMessageId?: string;
   createdAt: number;
   updatedAt?: number;
+  editedAt?: number;
 }
 
 export interface MessageMetadata {
@@ -144,23 +230,72 @@ export interface MessageMetadata {
 export interface ToolCall {
   id: string;
   name: string;
-  args: Record<string, any>;
-  result?: any;
+  args: ToolCallArguments;
+  result?: ToolCallResult;
+}
+
+export interface ToolCallArguments {
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | null
+    | ToolCallArguments
+    | ToolCallArguments[];
+}
+
+export interface ToolCallResult {
+  success: boolean;
+  data?: string | number | boolean | Record<string, unknown>;
+  error?: string;
+  executionTime?: number;
 }
 
 // =============================================================================
 // AI Integration Types
 // =============================================================================
 
+export enum AIProvider {
+  OPENAI = 'openai',
+  ANTHROPIC = 'anthropic',
+  DEEPSEEK = 'deepseek',
+  GOOGLE = 'google',
+  MISTRAL = 'mistral',
+  COHERE = 'cohere',
+  HUGGINGFACE = 'huggingface',
+}
+
+export enum AICostTier {
+  FREE = 'free',
+  BUDGET = 'budget',
+  STANDARD = 'standard',
+  PREMIUM = 'premium',
+  ENTERPRISE = 'enterprise',
+}
+
+export enum AIModelCapability {
+  TEXT_GENERATION = 'text_generation',
+  CODE_GENERATION = 'code_generation',
+  REASONING = 'reasoning',
+  VISION = 'vision',
+  FUNCTION_CALLING = 'function_calling',
+  STREAMING = 'streaming',
+  EMBEDDINGS = 'embeddings',
+}
+
 export interface AIModel {
   id: string;
   name: string;
-  provider: 'openai' | 'anthropic' | 'deepseek';
+  provider: AIProvider;
   contextWindow: number;
   maxTokens: number;
   strengths: string[];
-  costTier: 'free' | 'budget' | 'premium';
+  capabilities: AIModelCapability[];
+  costTier: AICostTier;
   isAvailable: boolean;
+  version?: string;
+  releaseDate?: number;
+  deprecatedDate?: number;
 }
 
 export interface ChatCompletionRequest {
@@ -176,7 +311,38 @@ export interface ChatCompletionRequest {
 export interface Tool {
   name: string;
   description: string;
-  parameters: Record<string, any>;
+  parameters: ToolParameters;
+  required?: string[];
+  category?: ToolCategory;
+}
+
+export interface ToolParameters {
+  type: 'object';
+  properties: Record<string, ToolParameterProperty>;
+  required?: string[];
+  additionalProperties?: boolean;
+}
+
+export interface ToolParameterProperty {
+  type: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object';
+  description?: string;
+  enum?: (string | number)[];
+  default?: string | number | boolean | null;
+  minimum?: number;
+  maximum?: number;
+  pattern?: string;
+  items?: ToolParameterProperty;
+  properties?: Record<string, ToolParameterProperty>;
+}
+
+export enum ToolCategory {
+  DATA_RETRIEVAL = 'data_retrieval',
+  COMPUTATION = 'computation',
+  COMMUNICATION = 'communication',
+  FILE_SYSTEM = 'file_system',
+  WEB_API = 'web_api',
+  BLOCKCHAIN = 'blockchain',
+  CUSTOM = 'custom',
 }
 
 export interface StreamingResponse {
@@ -216,30 +382,62 @@ export type {
 // Search Types
 // =============================================================================
 
+export enum SearchType {
+  SEMANTIC = 'semantic',
+  HYBRID = 'hybrid',
+  KEYWORD = 'keyword',
+  FUZZY = 'fuzzy',
+  VECTOR = 'vector',
+}
+
 export interface SearchRequest {
   query: string;
-  type: 'semantic' | 'hybrid' | 'keyword';
+  type: SearchType;
   filters?: SearchFilters;
   limit?: number;
+  offset?: number;
   threshold?: number;
+  sort?: SearchSort[];
+  highlight?: boolean;
+}
+
+export interface SearchSort {
+  field: string;
+  order: SortOrder;
 }
 
 export interface SearchFilters {
   chatIds?: string[];
   documentIds?: string[];
-  dateRange?: {
-    start: number;
-    end: number;
-  };
-  messageTypes?: ('user' | 'assistant' | 'system')[];
+  dateRange?: DateRange;
+  messageTypes?: MessageRole[];
+  tags?: string[];
+  walletAddresses?: string[];
+  models?: string[];
+}
+
+export interface DateRange {
+  start: number;
+  end: number;
+  timezone?: string;
+}
+
+export enum SearchResultType {
+  MESSAGE = 'message',
+  DOCUMENT = 'document',
+  CHAT = 'chat',
+  USER = 'user',
+  AGENT = 'agent',
 }
 
 export interface SearchResult {
   id: string;
-  type: 'message' | 'document';
+  type: SearchResultType;
   content: string;
   score: number;
+  highlights?: string[];
   metadata: SearchResultMetadata;
+  relevance?: number;
 }
 
 export interface SearchResultMetadata {
@@ -292,10 +490,33 @@ export interface RegenerateMessageRequest {
 
 export interface WebhookEvent {
   id: string;
-  type: string;
-  data: Record<string, any>;
+  type: WebhookEventType;
+  data: WebhookEventData;
   timestamp: number;
   signature: string;
+  version?: string;
+}
+
+export enum WebhookEventType {
+  CHAT_CREATED = 'chat.created',
+  CHAT_UPDATED = 'chat.updated',
+  CHAT_DELETED = 'chat.deleted',
+  MESSAGE_SENT = 'message.sent',
+  MESSAGE_RECEIVED = 'message.received',
+  USER_CREATED = 'user.created',
+  USER_UPDATED = 'user.updated',
+  SUBSCRIPTION_CHANGED = 'subscription.changed',
+  TOKEN_LIMIT_REACHED = 'token_limit.reached',
+  ERROR_OCCURRED = 'error.occurred',
+}
+
+export interface WebhookEventData {
+  resourceId: string;
+  resourceType: 'chat' | 'message' | 'user' | 'subscription';
+  action: 'created' | 'updated' | 'deleted' | 'sent' | 'received';
+  payload: Record<string, string | number | boolean | null>;
+  userId?: string;
+  metadata?: Record<string, string | number | boolean>;
 }
 
 // =============================================================================
@@ -307,6 +528,44 @@ export interface RateLimitInfo {
   remaining: number;
   reset: number;
   retryAfter?: number;
+}
+
+// =============================================================================
+// Result Type Integration
+// =============================================================================
+
+export type APIResult<T> = Result<T, APIError>;
+export type AsyncAPIResult<T> = Promise<APIResult<T>>;
+
+// =============================================================================
+// Common Enums
+// =============================================================================
+
+export enum SortOrder {
+  ASC = 'asc',
+  DESC = 'desc',
+}
+
+export enum FilterOperator {
+  EQUALS = 'eq',
+  NOT_EQUALS = 'ne',
+  GREATER_THAN = 'gt',
+  GREATER_THAN_OR_EQUAL = 'gte',
+  LESS_THAN = 'lt',
+  LESS_THAN_OR_EQUAL = 'lte',
+  IN = 'in',
+  NOT_IN = 'nin',
+  CONTAINS = 'contains',
+  STARTS_WITH = 'starts_with',
+  ENDS_WITH = 'ends_with',
+}
+
+export enum CacheStrategy {
+  NO_CACHE = 'no-cache',
+  NO_STORE = 'no-store',
+  RELOAD = 'reload',
+  FORCE_CACHE = 'force-cache',
+  ONLY_IF_CACHED = 'only-if-cached',
 }
 
 // =============================================================================

@@ -5,16 +5,18 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { agenticEngine } from '@/lib/agentic/engine';
+import { convex, api } from '@/lib/database/convex';
+import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import type { Agent, ExecuteAgentRequest } from '@/lib/types/agentic';
-import { agenticEngine } from '@/lib/agentic/engine';
 import {
   addSecurityHeaders,
-  successResponse,
-  validationErrorResponse,
   notFoundResponse,
-  unauthorizedResponse
+  successResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
 } from '@/lib/utils/api-response';
 
 // =============================================================================
@@ -29,14 +31,12 @@ const executeAgentSchema = z.object({
   maxSteps: z.number().min(1).max(50).optional(),
   autoApprove: z.boolean().default(false),
   stream: z.boolean().default(false),
-  metadata: z.record(z.unknown()).optional()
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 // =============================================================================
-// Mock Data Store (should be same as in other agent routes)
+// Production Convex Integration
 // =============================================================================
-
-const mockAgents = new Map<string, Agent>();
 
 // =============================================================================
 // Route Context Type
@@ -47,31 +47,48 @@ interface RouteContext {
 }
 
 // =============================================================================
-// Route Handlers  
+// Route Handlers
 // =============================================================================
 
 export const maxDuration = 300; // 5 minutes for long-running executions
 
-export async function POST(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function POST(request: NextRequest, context: RouteContext) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
         const { agentId } = await context.params;
 
-        // Get agent from store
-        const agent = mockAgents.get(agentId);
-        if (!agent) {
+        // Get agent from Convex
+        const agentDoc = await convex.query(api.agents.getById, {
+          id: agentId as Id<'agents'>,
+        });
+        if (!agentDoc) {
           return notFoundResponse('Agent not found');
         }
 
         // Check ownership
-        if (agent.walletAddress !== walletAddress) {
-          return unauthorizedResponse('Access denied: You do not own this agent');
+        if (agentDoc.walletAddress !== walletAddress) {
+          return unauthorizedResponse(
+            'Access denied: You do not own this agent'
+          );
         }
+
+        // Convert to Agent format for execution engine
+        const agent: Agent = {
+          id: agentDoc._id,
+          name: agentDoc.name,
+          description: agentDoc.description,
+          model: agentDoc.model,
+          systemPrompt: agentDoc.systemPrompt,
+          temperature: agentDoc.temperature,
+          maxTokens: agentDoc.maxTokens,
+          tools: agentDoc.tools || [],
+          maxSteps: agentDoc.maxSteps || 10,
+          walletAddress: agentDoc.walletAddress,
+          createdAt: agentDoc.createdAt,
+          updatedAt: agentDoc.updatedAt,
+        };
 
         // Parse and validate request body
         const body = await req.json();
@@ -92,7 +109,7 @@ export async function POST(
           input: executeData.input,
           maxSteps: executeData.maxSteps,
           autoApprove: executeData.autoApprove,
-          metadata: executeData.metadata
+          metadata: executeData.metadata,
         };
 
         console.log(
@@ -106,7 +123,10 @@ export async function POST(
           const stream = new ReadableStream({
             async start(controller) {
               try {
-                for await (const event of agenticEngine.streamExecution(agent, executionRequest)) {
+                for await (const event of agenticEngine.streamExecution(
+                  agent,
+                  executionRequest
+                )) {
                   const data = `data: ${JSON.stringify(event)}\n\n`;
                   controller.enqueue(encoder.encode(data));
                 }
@@ -114,53 +134,60 @@ export async function POST(
               } catch (error) {
                 const errorEvent = {
                   type: 'error',
-                  data: { error: error instanceof Error ? error.message : String(error) }
+                  data: {
+                    error:
+                      error instanceof Error ? error.message : String(error),
+                  },
                 };
                 const data = `data: ${JSON.stringify(errorEvent)}\n\n`;
                 controller.enqueue(encoder.encode(data));
                 controller.close();
               }
-            }
+            },
           });
 
           return new NextResponse(stream, {
             headers: {
               'Content-Type': 'text/event-stream',
               'Cache-Control': 'no-cache',
-              'Connection': 'keep-alive',
+              Connection: 'keep-alive',
               'Access-Control-Allow-Origin': '*',
               'Access-Control-Allow-Methods': 'POST, OPTIONS',
-              'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
+              'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            },
           });
-        } else {
-          // Execute agent synchronously
-          const execution = await agenticEngine.executeAgent(agent, executionRequest);
-
-          console.log(
-            `Agent execution completed: ${execution.id}, status: ${execution.status}, steps: ${execution.steps.length}`
-          );
-
-          const response = successResponse({
-            execution,
-            summary: {
-              executionId: execution.id,
-              status: execution.status,
-              totalSteps: execution.steps.length,
-              executionTime: execution.completedAt ? execution.completedAt - execution.startedAt : undefined,
-              tokensUsed: execution.result?.tokensUsed,
-              toolsUsed: execution.result?.toolsUsed
-            }
-          });
-
-          return addSecurityHeaders(response);
         }
+        // Execute agent synchronously
+        const execution = await agenticEngine.executeAgent(
+          agent,
+          executionRequest
+        );
+
+        console.log(
+          `Agent execution completed: ${execution.id}, status: ${execution.status}, steps: ${execution.steps.length}`
+        );
+
+        const response = successResponse({
+          execution,
+          summary: {
+            executionId: execution.id,
+            status: execution.status,
+            totalSteps: execution.steps.length,
+            executionTime: execution.completedAt
+              ? execution.completedAt - execution.startedAt
+              : undefined,
+            tokensUsed: execution.result?.tokensUsed,
+            toolsUsed: execution.result?.toolsUsed,
+          },
+        });
+
+        return addSecurityHeaders(response);
       } catch (error) {
         console.error('Agent execution error:', error);
         const response = NextResponse.json(
-          { 
+          {
             error: 'Agent execution failed',
-            details: error instanceof Error ? error.message : String(error)
+            details: error instanceof Error ? error.message : String(error),
           },
           { status: 500 }
         );

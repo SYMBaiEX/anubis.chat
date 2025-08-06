@@ -74,7 +74,9 @@ export const search = query({
         v.literal('text'),
         v.literal('markdown'),
         v.literal('pdf'),
-        v.literal('url')
+        v.literal('url'),
+        v.literal('json'),
+        v.literal('csv')
       )
     ),
   },
@@ -155,9 +157,13 @@ export const create = mutation({
       v.literal('text'),
       v.literal('markdown'),
       v.literal('pdf'),
-      v.literal('url')
+      v.literal('url'),
+      v.literal('json'),
+      v.literal('csv')
     ),
     ownerId: v.string(),
+    isPublic: v.optional(v.boolean()),
+    tags: v.optional(v.array(v.string())),
     metadata: v.optional(
       v.object({
         source: v.optional(v.string()),
@@ -183,6 +189,8 @@ export const create = mutation({
       content: args.content,
       type: args.type,
       ownerId: args.ownerId,
+      isPublic: args.isPublic || false,
+      tags: args.tags,
       metadata: {
         ...args.metadata,
         wordCount,
@@ -281,8 +289,8 @@ export const getByCategory = query({
 
     return await ctx.db
       .query('documents')
-      .withIndex('by_category', (q) => q.eq('metadata.category', args.category))
-      .filter((q) => q.eq(q.field('ownerId'), args.ownerId))
+      .withIndex('by_owner', (q) => q.eq('ownerId', args.ownerId))
+      .filter((q) => q.eq(q.field('metadata.category'), args.category))
       .order('desc')
       .take(limit);
   },
@@ -321,8 +329,8 @@ export const getTags = query({
     const tags = new Set<string>();
 
     documents.forEach((doc) => {
-      if (doc.metadata?.tags) {
-        doc.metadata.tags.forEach((tag) => tags.add(tag));
+      if (doc.tags) {
+        doc.tags.forEach((tag) => tags.add(tag));
       }
     });
 
@@ -346,6 +354,8 @@ export const getStats = query({
         markdown: 0,
         pdf: 0,
         url: 0,
+        json: 0,
+        csv: 0,
       },
       totalWords: 0,
       totalCharacters: 0,
@@ -362,8 +372,8 @@ export const getStats = query({
         stats.categories.add(doc.metadata.category);
       }
 
-      if (doc.metadata?.tags) {
-        doc.metadata.tags.forEach((tag) => stats.tags.add(tag));
+      if (doc.tags) {
+        doc.tags.forEach((tag) => stats.tags.add(tag));
       }
     });
 

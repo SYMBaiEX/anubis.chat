@@ -3,9 +3,9 @@
  * Implements the StorageBackend interface using Convex for production-ready storage
  */
 
-import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@convex/_generated/api';
-import type { Id, Doc } from '@convex/_generated/dataModel';
+import type { Doc, Id } from '@convex/_generated/dataModel';
+import { ConvexHttpClient } from 'convex/browser';
 import type {
   Document,
   DocumentSearchRequest,
@@ -17,11 +17,11 @@ export class ConvexStorage implements StorageBackend {
   private client: ConvexHttpClient;
 
   constructor(convexUrl?: string) {
-    this.client = new ConvexHttpClient(
-      convexUrl ||
-        process.env.NEXT_PUBLIC_CONVEX_URL ||
-        'https://veracious-capybara-763.convex.cloud'
-    );
+    const url = convexUrl || process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!url) {
+      throw new Error('Convex URL is required. Set NEXT_PUBLIC_CONVEX_URL environment variable.');
+    }
+    this.client = new ConvexHttpClient(url);
   }
 
   async createDocument(document: Document): Promise<Document> {
@@ -119,7 +119,9 @@ export class ConvexStorage implements StorageBackend {
         });
 
         return {
-          documents: results.map((doc: Doc<'documents'>) => this.convertFromConvexDocument(doc)),
+          documents: results.map((doc: Doc<'documents'>) =>
+            this.convertFromConvexDocument(doc)
+          ),
           total: results.length, // Search doesn't provide total count
         };
       }
@@ -182,7 +184,7 @@ export class ConvexStorage implements StorageBackend {
         ownerId: walletAddress,
         query,
         limit: options.limit,
-        type: options.filters?.type?.[0], // Convex function expects single type
+        type: options.filters?.type?.[0] as 'text' | 'pdf' | 'markdown' | 'url' | 'json' | 'csv' | undefined, // Convex function expects single type
       });
 
       // Convert to DocumentSearchResult format

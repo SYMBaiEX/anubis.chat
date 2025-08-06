@@ -125,7 +125,10 @@ export async function PUT(
           metadata: {
             ...metadata,
             ...(content && {
-              wordCount: content.trim().split(/\s+/).filter(word => word.length > 0).length,
+              wordCount: content
+                .trim()
+                .split(/\s+/)
+                .filter((word) => word.length > 0).length,
               characterCount: content.length,
             }),
           },

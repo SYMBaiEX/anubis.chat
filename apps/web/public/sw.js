@@ -14,7 +14,7 @@ self.addEventListener('install', (event) => {
         '/favicon.ico',
         '/favicon/apple-touch-icon.png',
         '/favicon/web-app-manifest-192x192.png',
-        '/favicon/web-app-manifest-512x512.png'
+        '/favicon/web-app-manifest-512x512.png',
       ]);
     })
   );
@@ -47,55 +47,64 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   // Skip non-HTTP requests
   if (!url.protocol.startsWith('http')) {
     return;
   }
-  
+
   // Skip API routes - always go to network
   if (url.pathname.startsWith('/api/')) {
     return;
   }
-  
+
   // Skip browser extension requests
-  if (url.origin.includes('extension://') || 
-      url.pathname.includes('solanaActionsContentScript') ||
-      url.pathname.includes('contentScript') ||
-      url.pathname.includes('injected.js')) {
+  if (
+    url.origin.includes('extension://') ||
+    url.pathname.includes('solanaActionsContentScript') ||
+    url.pathname.includes('contentScript') ||
+    url.pathname.includes('injected.js')
+  ) {
     return;
   }
-  
+
   // Skip Vite development server requests (shouldn't happen in production)
-  if (url.pathname.startsWith('/@vite/') || 
-      url.pathname.startsWith('/@react-refresh') ||
-      url.pathname.startsWith('/@vite-plugin-pwa/') ||
-      url.pathname === '/src/main.tsx') {
+  if (
+    url.pathname.startsWith('/@vite/') ||
+    url.pathname.startsWith('/@react-refresh') ||
+    url.pathname.startsWith('/@vite-plugin-pwa/') ||
+    url.pathname === '/src/main.tsx'
+  ) {
     console.warn('ISIS Chat SW: Blocking Vite request:', url.pathname);
     return;
   }
-  
+
   // Handle static assets
-  if (url.pathname.includes('/favicon/') || 
-      url.pathname === '/favicon.ico' ||
-      url.pathname === '/manifest.webmanifest') {
+  if (
+    url.pathname.includes('/favicon/') ||
+    url.pathname === '/favicon.ico' ||
+    url.pathname === '/manifest.webmanifest'
+  ) {
     event.respondWith(
       caches.match(request).then((response) => {
-        return response || fetch(request).then((fetchResponse) => {
-          // Cache successful responses
-          if (fetchResponse.ok) {
-            const responseClone = fetchResponse.clone();
-            caches.open(STATIC_CACHE).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return fetchResponse;
-        });
+        return (
+          response ||
+          fetch(request).then((fetchResponse) => {
+            // Cache successful responses
+            if (fetchResponse.ok) {
+              const responseClone = fetchResponse.clone();
+              caches.open(STATIC_CACHE).then((cache) => {
+                cache.put(request, responseClone);
+              });
+            }
+            return fetchResponse;
+          })
+        );
       })
     );
     return;
   }
-  
+
   // For other requests, try network first, fallback to cache
   event.respondWith(
     fetch(request)
@@ -119,7 +128,7 @@ self.addEventListener('fetch', (event) => {
 // Message event - handle commands from the app
 self.addEventListener('message', (event) => {
   const { command } = event.data || {};
-  
+
   switch (command) {
     case 'skipWaiting':
       self.skipWaiting();

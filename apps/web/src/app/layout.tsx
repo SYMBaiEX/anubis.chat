@@ -18,8 +18,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'ISIS Chat - AI Chat Platform with Web3',
-  description: 'Next-generation AI chat platform combining advanced RAG capabilities with Solana Web3 integration. Upload documents, create intelligent chatbots, and interact with multiple AI models.',
-  keywords: 'AI chat, Web3, Solana, RAG, document search, chatbot, Claude, GPT-4',
+  description:
+    'Next-generation AI chat platform combining advanced RAG capabilities with Solana Web3 integration. Upload documents, create intelligent chatbots, and interact with multiple AI models.',
+  keywords:
+    'AI chat, Web3, Solana, RAG, document search, chatbot, Claude, GPT-4',
   authors: [{ name: 'ISIS Chat Team' }],
   creator: 'ISIS Chat',
   publisher: 'ISIS Chat',
