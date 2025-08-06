@@ -59,7 +59,7 @@ export const useWallet = (): UseWalletReturn => {
     useState<WalletConnectionState>(INITIAL_WALLET_STATE);
   const [isHealthy, setIsHealthy] = useState(true);
   const [connectionHealthScore, setConnectionHealthScore] = useState(100);
-  const healthCheckRef = useRef<NodeJS.Timeout | undefined>();
+  const healthCheckRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const retryCountRef = useRef(0);
 
   // 2025 Security: Connection health check function

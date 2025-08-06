@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
             walletAddress,
             publicKey,
             preferences: {
-              theme: 'dark',
+              theme: 'dark' as 'dark' | 'light',
               aiModel: 'gpt-4o',
               notifications: true,
             },
@@ -208,12 +208,12 @@ export async function POST(request: NextRequest) {
           displayName: undefined,
           avatar: undefined,
           preferences: {
-            theme: 'dark',
+            theme: 'dark' as 'dark' | 'light',
             aiModel: 'gpt-4o',
             notifications: true,
           },
           subscription: {
-            tier: 'free',
+            tier: 'free' as 'free' | 'pro' | 'enterprise',
             tokensUsed: 0,
             tokensLimit: 10_000,
             features: ['basic_chat', 'document_upload'],
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
         token,
         refreshToken: '', // TODO: Implement refresh tokens
         expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-        user,
+        user: user!, // We ensure user is always defined above
       };
 
       // Add security headers and return response

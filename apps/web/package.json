@@ -6,7 +6,12 @@
     "dev": "next dev --turbopack --port=3001",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "npx vitest",
+    "test:watch": "npx vitest --watch",
+    "test:ui": "npx vitest --ui",
+    "test:coverage": "npx vitest --coverage",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "radix-ui": "^1.4.2",
@@ -44,6 +49,14 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4.1.10",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.8",
+    "@vitejs/plugin-react": "^4.4.1",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/user-event": "^14.5.2",
+    "jsdom": "^26.0.1",
+    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/ui": "^2.1.8"
   }
 }

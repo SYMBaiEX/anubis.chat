@@ -3,7 +3,8 @@ import {
   Connection,
   clusterApiUrl,
   LAMPORTS_PER_SOL,
-  type PublicKey,
+  PublicKey,
+  type PublicKey as PublicKeyType,
 } from '@solana/web3.js';
 
 // Configure the network to use
@@ -17,19 +18,29 @@ export const connection = new Connection(ENDPOINT, 'confirmed');
 
 // Utility functions
 export const lamportsToSol = (lamports: number): number => {
-  if (!Number.isFinite(lamports) || lamports < 0) {
-    throw new Error(
-      'Invalid lamports value: must be a non-negative finite number'
-    );
-  }
   return lamports / LAMPORTS_PER_SOL;
 };
 
 export const solToLamports = (sol: number): number => {
-  if (!Number.isFinite(sol) || sol < 0) {
-    throw new Error('Invalid SOL value: must be a non-negative finite number');
-  }
   return Math.floor(sol * LAMPORTS_PER_SOL);
+};
+
+// Format Solana address for display
+export const formatSolanaAddress = (address: string | null | undefined, length = 4): string => {
+  if (!address) return '';
+  if (address.length <= length * 2 + 3) return address;
+  return `${address.slice(0, length)}...${address.slice(-length)}`;
+};
+
+// Validate Solana address
+export const validateSolanaAddress = (address: string | null | undefined): boolean => {
+  if (!address) return false;
+  try {
+    new PublicKey(address);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 // Create a sign-in message for wallet authentication
@@ -69,7 +80,7 @@ Nonce: ${nonce}`;
 export interface WalletConnectionState {
   isConnected: boolean;
   isConnecting: boolean;
-  publicKey: PublicKey | null;
+  publicKey: PublicKeyType | null;
   balance: number | null;
   error: string | null;
 }

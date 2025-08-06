@@ -39,7 +39,7 @@ export const WalletProvider: FC<WalletProviderProps> = ({
   );
 
   // 2025 Wallet Standard: Use standard wallet adapters for automatic detection
-  const standardAdapters = useStandardWalletAdapters();
+  const standardAdapters = useStandardWalletAdapters([]);
 
   // 2025 Wallet Standard: Combine standard adapters with mobile support
   const wallets = useMemo(() => {
