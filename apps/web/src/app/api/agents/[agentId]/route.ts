@@ -92,9 +92,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
         const response = successResponse(formattedAgent);
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('Get agent error', { 
-          agentId, 
-          error: error instanceof Error ? error.message : String(error) 
+        log.error('Get agent error', {
+          agentId,
+          error: error instanceof Error ? error.message : String(error),
         });
         const response = NextResponse.json(
           { error: 'Failed to retrieve agent' },
@@ -145,9 +145,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         const response = successResponse(formattedAgent);
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('Update agent error', { 
-          agentId, 
-          error: error instanceof Error ? error.message : String(error) 
+        log.error('Update agent error', {
+          agentId,
+          error: error instanceof Error ? error.message : String(error),
         });
 
         // Handle Convex mutation errors (including ownership/not found)
@@ -194,9 +194,9 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         });
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('Delete agent error', { 
-          agentId, 
-          error: error instanceof Error ? error.message : String(error) 
+        log.error('Delete agent error', {
+          agentId,
+          error: error instanceof Error ? error.message : String(error),
         });
 
         // Handle Convex mutation errors (including ownership/not found)

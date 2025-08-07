@@ -9,6 +9,7 @@ import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('api/search');
+
 import { getStorage } from '@/lib/database/storage';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { searchRateLimit } from '@/lib/middleware/rate-limit';
@@ -224,7 +225,7 @@ export async function GET(request: NextRequest) {
           resultCount: results.length,
           contextLength: context.length,
           limit,
-          contextLength: contextLength,
+          contextLength,
           hasFilters: !!filters,
           hasContext: !!context,
         });

@@ -5,7 +5,6 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { mcpManager } from '@/lib/mcp/client';
-import { createModuleLogger } from '@/lib/utils/logger';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import {
@@ -13,6 +12,7 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 // =============================================================================
 // Logger

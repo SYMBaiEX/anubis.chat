@@ -4,7 +4,7 @@
  */
 
 import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // =============================================================================
@@ -169,7 +169,7 @@ export const update = mutation({
       throw new Error('Workflow not found or access denied');
     }
 
-    const updates: any = { updatedAt: Date.now() };
+    const updates: Partial<Doc<'workflows'>> = { updatedAt: Date.now() };
 
     if (args.name !== undefined) updates.name = args.name;
     if (args.description !== undefined) updates.description = args.description;
@@ -302,7 +302,10 @@ export const updateExecution = mutation({
       throw new Error('Execution not found or access denied');
     }
 
-    const updates: any = { status: args.status };
+    const updates: Partial<Doc<'workflowExecutions'>> = {
+      status: args.status,
+      updatedAt: Date.now(),
+    };
 
     if (args.currentStep !== undefined) updates.currentStep = args.currentStep;
     if (args.variables !== undefined) updates.variables = args.variables;
@@ -395,7 +398,10 @@ export const updateStepResult = mutation({
 
     if (existing) {
       // Update existing step result
-      const updates: any = { status: args.status };
+      const updates: Partial<Doc<'workflowExecutions'>> = {
+        status: args.status,
+        updatedAt: Date.now(),
+      };
 
       if (args.output !== undefined) updates.output = args.output;
       if (args.error !== undefined) updates.error = args.error;

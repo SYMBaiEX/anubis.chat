@@ -133,8 +133,8 @@ export async function GET(request: NextRequest) {
 
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('Get MCP servers error', { 
-          error: error instanceof Error ? error.message : String(error) 
+        log.error('Get MCP servers error', {
+          error: error instanceof Error ? error.message : String(error),
         });
         const response = NextResponse.json(
           { error: 'Failed to get MCP server status' },
@@ -174,9 +174,9 @@ export async function POST(request: NextRequest) {
         const tools = mcpManager.getServerTools(serverConfig.name);
         const toolNames = tools ? Object.keys(tools) : [];
 
-        log.info('MCP server initialized successfully', { 
-          serverName: serverConfig.name, 
-          toolCount: toolNames.length 
+        log.info('MCP server initialized successfully', {
+          serverName: serverConfig.name,
+          toolCount: toolNames.length,
         });
 
         const response = createdResponse({
@@ -188,8 +188,8 @@ export async function POST(request: NextRequest) {
 
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('Initialize MCP server error', { 
-          error: error instanceof Error ? error.message : String(error) 
+        log.error('Initialize MCP server error', {
+          error: error instanceof Error ? error.message : String(error),
         });
         const response = NextResponse.json(
           { error: 'Failed to initialize MCP server' },

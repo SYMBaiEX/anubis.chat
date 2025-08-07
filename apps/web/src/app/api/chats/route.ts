@@ -10,6 +10,7 @@ import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('api/chats');
+
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { chatRateLimit } from '@/lib/middleware/rate-limit';
 import type { Chat, CreateChatRequest } from '@/lib/types/api';

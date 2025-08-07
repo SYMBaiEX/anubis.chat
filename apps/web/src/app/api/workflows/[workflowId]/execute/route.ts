@@ -3,9 +3,12 @@
  * Handles execution of multi-step workflows with agent orchestration
  */
 
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { agenticEngine } from '@/lib/agentic/engine';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
@@ -41,13 +44,11 @@ const executeWorkflowSchema = z.object({
 });
 
 // =============================================================================
-// Mock Data Stores
+// Convex Integration
 // =============================================================================
 
-const mockWorkflows = new Map<string, Workflow>();
-const mockExecutions = new Map<string, WorkflowExecution>();
-// TODO: Load agents from Convex when needed for workflow execution
-// const mockAgents = new Map<string, Agent>(); // Shared with agent endpoints
+// Note: Workflow and execution data is now persisted in Convex database
+// We fetch from and write to Convex instead of using in-memory Maps
 
 // =============================================================================
 // Workflow Orchestration Engine
@@ -57,14 +58,17 @@ class WorkflowOrchestrator {
   private execution: WorkflowExecution;
   private workflow: Workflow;
   private autoApprove: boolean;
+  private walletAddress: string;
 
   constructor(
     workflow: Workflow,
     execution: WorkflowExecution,
+    walletAddress: string,
     autoApprove = false
   ) {
     this.workflow = workflow;
     this.execution = execution;
+    this.walletAddress = walletAddress;
     this.autoApprove = autoApprove;
   }
 
@@ -94,7 +98,11 @@ class WorkflowOrchestrator {
   }
 
   private async executeStep(step: WorkflowStep): Promise<JsonValue> {
-    log.info('Executing workflow step', { stepName: step.name, stepType: step.type, stepId: step.id });
+    log.info('Executing workflow step', {
+      stepName: step.name,
+      stepType: step.type,
+      stepId: step.id,
+    });
 
     this.execution.currentStep = step.id;
 
@@ -158,16 +166,50 @@ class WorkflowOrchestrator {
       throw new Error(`Agent task step "${step.name}" requires an agentId`);
     }
 
-    // TODO: Get agent from Convex for workflow execution
-    // For now, skip agent-dependent steps in workflows
-    log.warn('Skipping agent step - not implemented yet', { stepId: step.id, agentId: step.agentId });
-    return {
-      type: 'agent_execution' as const,
-      agentId: step.agentId || 'unknown',
-      executionId: 'skipped',
-      result: { message: 'Agent step skipped - not implemented yet' },
-      status: 'skipped',
-    };
+    // Get agent from Convex
+    try {
+      const agent = await fetchQuery(api.agents.getById, {
+        id: step.agentId as Id<'agents'>,
+      });
+
+      if (!agent || agent.walletAddress !== this.walletAddress) {
+        log.warn('Agent not found or access denied', {
+          stepId: step.id,
+          agentId: step.agentId,
+        });
+        return {
+          type: 'agent_execution' as const,
+          agentId: step.agentId || 'unknown',
+          executionId: 'skipped',
+          result: { message: 'Agent not found or access denied' },
+          status: 'skipped',
+        };
+      }
+
+      // TODO: Execute agent with proper integration
+      log.info('Agent found, execution pending implementation', {
+        agentId: agent._id,
+      });
+      return {
+        type: 'agent_execution' as const,
+        agentId: step.agentId || 'unknown',
+        executionId: 'pending',
+        result: { message: 'Agent execution pending full implementation' },
+        status: 'pending',
+      };
+    } catch (error) {
+      log.error('Failed to get agent from Convex', {
+        error,
+        agentId: step.agentId,
+      });
+      return {
+        type: 'agent_execution' as const,
+        agentId: step.agentId || 'unknown',
+        executionId: 'error',
+        result: { message: 'Failed to load agent', error: String(error) },
+        status: 'failed',
+      };
+    }
 
     /* Original agent execution code - TODO: reimplement with Convex
     // Prepare input for agent based on step parameters and previous results
@@ -407,23 +449,40 @@ export async function POST(request: NextRequest, context: RouteContext) {
         const { walletAddress } = authReq.user;
         const { workflowId } = await context.params;
 
-        // Get workflow from store
-        const workflow = mockWorkflows.get(workflowId);
-        if (!workflow) {
+        // Get workflow from Convex
+        const workflowData = await fetchQuery(api.workflows.getById, {
+          id: workflowId as Id<'workflows'>,
+        });
+
+        if (!workflowData) {
           return notFoundResponse('Workflow not found');
         }
 
         // Check ownership
-        if (workflow.walletAddress !== walletAddress) {
+        if (workflowData.walletAddress !== walletAddress) {
           return unauthorizedResponse(
             'Access denied: You do not own this workflow'
           );
         }
 
         // Check if workflow is active
-        if (!workflow.isActive) {
+        if (!workflowData.isActive) {
           return validationErrorResponse('Cannot execute inactive workflow');
         }
+
+        // Transform Convex workflow to expected format
+        const workflow: Workflow = {
+          id: workflowData._id,
+          name: workflowData.name,
+          description: workflowData.description || '',
+          walletAddress: workflowData.walletAddress,
+          steps: workflowData.steps || [],
+          trigger: workflowData.trigger || { type: 'manual' },
+          isActive: workflowData.isActive,
+          version: workflowData.version || '1.0.0',
+          createdAt: workflowData._creationTime,
+          updatedAt: workflowData.updatedAt || workflowData._creationTime,
+        };
 
         // Parse and validate request body
         const body = await req.json();
@@ -438,23 +497,35 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
         const executeData = validation.data;
 
-        // Create workflow execution record
+        // Create workflow execution record in Convex
+        const executionData = await fetchMutation(
+          api.workflows.createExecution,
+          {
+            workflowId: workflowId as Id<'workflows'>,
+            walletAddress,
+            variables: executeData.input || {},
+          }
+        );
+
+        if (!executionData) {
+          return validationErrorResponse('Failed to create workflow execution');
+        }
+
+        // Transform Convex execution to expected format
         const execution: WorkflowExecution = {
-          id: nanoid(),
-          workflowId: workflow.id,
-          walletAddress,
-          status: 'pending',
-          currentStep: '',
+          id: executionData._id,
+          workflowId: executionData.workflowId,
+          walletAddress: executionData.walletAddress,
+          status: executionData.status,
+          currentStep: executionData.currentStep || '',
           stepResults: {},
-          startedAt: Date.now(),
+          startedAt: executionData.startedAt,
         };
 
-        mockExecutions.set(execution.id, execution);
-
-        log.info('Workflow execution started', { 
-          executionId: execution.id, 
-          workflowId, 
-          walletAddress 
+        log.info('Workflow execution started', {
+          executionId: execution.id,
+          workflowId,
+          walletAddress,
         });
 
         // Handle streaming vs non-streaming execution
@@ -463,10 +534,37 @@ export async function POST(request: NextRequest, context: RouteContext) {
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             async start(controller) {
+              // Set up heartbeat interval to keep connection alive
+              // Send a heartbeat every 30 seconds
+              const heartbeatInterval = setInterval(() => {
+                try {
+                  // Send a lightweight ping event as a comment (SSE comment format)
+                  // Comments in SSE start with ':' and are ignored by EventSource
+                  controller.enqueue(
+                    encoder.encode(`: heartbeat ${Date.now()}\n\n`)
+                  );
+
+                  // Alternatively, send a typed heartbeat event
+                  const heartbeatEvent = {
+                    type: 'heartbeat',
+                    timestamp: Date.now(),
+                  };
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify(heartbeatEvent)}\n\n`
+                    )
+                  );
+                } catch (error) {
+                  // If we can't send heartbeat, connection might be closed
+                  clearInterval(heartbeatInterval);
+                }
+              }, 30_000); // 30 seconds
+
               try {
                 const orchestrator = new WorkflowOrchestrator(
                   workflow,
                   execution,
+                  walletAddress,
                   executeData.autoApprove
                 );
 
@@ -491,6 +589,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
                   encoder.encode(`data: ${JSON.stringify(endEvent)}\n\n`)
                 );
 
+                // Clear heartbeat interval before closing
+                clearInterval(heartbeatInterval);
                 controller.close();
               } catch (error) {
                 const errorEvent = {
@@ -504,6 +604,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
                 controller.enqueue(
                   encoder.encode(`data: ${JSON.stringify(errorEvent)}\n\n`)
                 );
+
+                // Clear heartbeat interval on error
+                clearInterval(heartbeatInterval);
                 controller.close();
               }
             },
@@ -523,14 +626,24 @@ export async function POST(request: NextRequest, context: RouteContext) {
         const orchestrator = new WorkflowOrchestrator(
           workflow,
           execution,
+          walletAddress,
           executeData.autoApprove
         );
         const result = await orchestrator.executeWorkflow();
 
-        log.info('Workflow execution completed', { 
-          executionId: result.id, 
-          status: result.status, 
-          stepsCompleted: Object.keys(result.stepResults).length 
+        // Update execution status in Convex
+        await fetchMutation(api.workflows.updateExecution, {
+          id: execution.id as Id<'workflowExecutions'>,
+          walletAddress,
+          status: result.status,
+          currentStep: result.currentStep || '',
+          error: result.error,
+        });
+
+        log.info('Workflow execution completed', {
+          executionId: result.id,
+          status: result.status,
+          stepsCompleted: Object.keys(result.stepResults).length,
         });
 
         const response = successResponse({
@@ -549,8 +662,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         const origin = req.headers.get('origin');
         return addSecurityHeaders(response, origin);
       } catch (error) {
-        log.error('Workflow execution error', { 
-          error: error instanceof Error ? error.message : String(error) 
+        log.error('Workflow execution error', {
+          error: error instanceof Error ? error.message : String(error),
         });
         const response = NextResponse.json(
           {

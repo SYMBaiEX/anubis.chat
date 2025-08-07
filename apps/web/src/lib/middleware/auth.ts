@@ -89,7 +89,9 @@ export async function verifyJWTToken(
 
     return decoded;
   } catch (error) {
-    log.error('JWT verification failed', { error: error instanceof Error ? error.message : String(error) });
+    log.error('JWT verification failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -114,7 +116,9 @@ export function verifyWalletSignature(
       publicKeyBytes
     );
   } catch (error) {
-    log.error('Signature verification failed', { error: error instanceof Error ? error.message : String(error) });
+    log.error('Signature verification failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }
@@ -190,7 +194,9 @@ export async function withAuth<T extends NextRequest>(
     // Call the handler with authenticated request
     return await handler(authenticatedRequest);
   } catch (error) {
-    log.error('Authentication middleware error', { error: error instanceof Error ? error.message : String(error) });
+    log.error('Authentication middleware error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return createErrorResponse(
       APIErrorCode.INTERNAL_ERROR,
       'Authentication failed'
@@ -228,7 +234,9 @@ export async function withOptionalAuth<T extends NextRequest>(
     );
   } catch (error) {
     // For optional auth, we continue without auth on errors
-    log.error('Optional authentication error', { error: error instanceof Error ? error.message : String(error) });
+    log.error('Optional authentication error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return await handler(
       request as T & { user?: { walletAddress: string; publicKey: string } }
     );
@@ -366,7 +374,10 @@ export async function blacklistToken(token: string): Promise<boolean> {
     await storage.blacklistToken(decoded.jti, decoded.expiresAt);
     return true;
   } catch (error) {
-    log.error('Token blacklisting failed', { jti, error: error instanceof Error ? error.message : String(error) });
+    log.error('Token blacklisting failed', {
+      jti,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }

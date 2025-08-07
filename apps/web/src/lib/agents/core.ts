@@ -50,7 +50,7 @@ export interface AgentConfig {
   temperature?: number;
   maxRetries?: number;
   topP?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Agent Task
@@ -63,7 +63,7 @@ export interface AgentTask {
   outputFormat?: 'text' | 'json' | 'structured';
   schema?: z.ZodSchema;
   priority?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Agent Result
@@ -71,7 +71,7 @@ export interface AgentResult {
   taskId: string;
   agentId: string;
   success: boolean;
-  output?: any;
+  output?: unknown;
   error?: string;
   usage?: {
     promptTokens: number;
@@ -79,7 +79,7 @@ export interface AgentResult {
     totalTokens: number;
   };
   duration: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Base Agent Class
@@ -103,8 +103,8 @@ export class Agent {
     const taskId = task.id || uuidv4();
 
     try {
-      let result: any;
-      let usage: any;
+      let result: unknown;
+      let usage: LanguageModelUsage | undefined;
 
       // Build messages
       const messages: CoreMessage[] = [
@@ -444,8 +444,15 @@ export class OrchestratorAgent extends Agent {
       throw new Error('Failed to decompose task');
     }
 
+    interface Subtask {
+      agentId: string;
+      description: string;
+      dependencies?: string[];
+      priority?: number;
+    }
+
     // Convert to agent tasks
-    return decomposition.output.subtasks.map((subtask: any) => ({
+    return decomposition.output.subtasks.map((subtask: Subtask) => ({
       agentId: subtask.agentId,
       task: {
         id: uuidv4(),

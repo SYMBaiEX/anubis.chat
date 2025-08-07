@@ -9,8 +9,8 @@ import type {
   DocumentSearchRequest,
   DocumentSearchResult,
 } from '@/lib/types/documents';
-import { ConvexStorage } from './convex-storage';
 import { createModuleLogger } from '../utils/logger';
+import { ConvexStorage } from './convex-storage';
 
 const log = createModuleLogger('storage');
 
@@ -391,7 +391,9 @@ export function createStorage(): StorageBackend {
       throw new Error('MongoDB storage not yet implemented');
 
     default:
-      log.warn('Unknown storage type, falling back to in-memory', { storageType });
+      log.warn('Unknown storage type, falling back to in-memory', {
+        storageType,
+      });
       return new InMemoryStorage();
   }
 }

@@ -13,6 +13,25 @@ const log = createModuleLogger('websocket-hook');
 // Types
 // =============================================================================
 
+// Event Data Types
+interface AgentExecutionData {
+  agentId: string;
+  executionId?: string;
+  step?: unknown;
+  result?: unknown;
+  error?: Error;
+}
+
+interface MemoryEventData {
+  memory: unknown;
+  memoryId?: string;
+}
+
+interface ConversationEventData {
+  conversationId: string;
+  message: unknown;
+}
+
 export type WebSocketEvent =
   | 'agent.execution.started'
   | 'agent.execution.step'
@@ -28,9 +47,9 @@ export type WebSocketEvent =
   | 'conversation.message'
   | 'conversation.created';
 
-export interface WebSocketMessage {
+export interface WebSocketMessage<T = unknown> {
   type: string;
-  data: any;
+  data: T;
   timestamp: number;
 }
 
@@ -50,9 +69,9 @@ export interface UseWebSocketReturn {
   disconnect: () => void;
   subscribe: (events: WebSocketEvent[]) => void;
   unsubscribe: (events: WebSocketEvent[]) => void;
-  on: (event: WebSocketEvent, handler: (data: any) => void) => void;
-  off: (event: WebSocketEvent, handler?: (data: any) => void) => void;
-  emit: (event: string, data: any) => void;
+  on: (event: WebSocketEvent, handler: (data: unknown) => void) => void;
+  off: (event: WebSocketEvent, handler?: (data: unknown) => void) => void;
+  emit: (event: string, data: unknown) => void;
 }
 
 // =============================================================================
@@ -73,7 +92,9 @@ export function useWebSocket(
   const [isConnected, setIsConnected] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const socketRef = useRef<Socket | null>(null);
-  const handlersRef = useRef<Map<string, Set<(data: any) => void>>>(new Map());
+  const handlersRef = useRef<Map<string, Set<(data: unknown) => void>>>(
+    new Map()
+  );
 
   /**
    * Connect to WebSocket server
@@ -120,7 +141,7 @@ export function useWebSocket(
       }
     });
 
-    socket.on('error', (error: any) => {
+    socket.on('error', (error: unknown) => {
       log.error('WebSocket error', { error });
     });
 
@@ -168,7 +189,7 @@ export function useWebSocket(
    * Add event listener
    */
   const on = useCallback(
-    (event: WebSocketEvent, handler: (data: any) => void) => {
+    (event: WebSocketEvent, handler: (data: unknown) => void) => {
       // Store handler for cleanup
       if (!handlersRef.current.has(event)) {
         handlersRef.current.set(event, new Set());
@@ -189,7 +210,7 @@ export function useWebSocket(
    * Remove event listener
    */
   const off = useCallback(
-    (event: WebSocketEvent, handler?: (data: any) => void) => {
+    (event: WebSocketEvent, handler?: (data: unknown) => void) => {
       if (!socketRef.current) return;
 
       if (handler) {
@@ -214,7 +235,7 @@ export function useWebSocket(
   /**
    * Emit custom event
    */
-  const emit = useCallback((event: string, data: any) => {
+  const emit = useCallback((event: string, data: unknown) => {
     if (!socketRef.current?.connected) {
       log.warn('WebSocket not connected');
       return;
@@ -275,16 +296,30 @@ export function useWebSocket(
 /**
  * Hook for agent execution updates
  */
+interface AgentExecution {
+  agentId: string;
+  executionId?: string;
+  result?: unknown;
+  error?: boolean;
+}
+
+interface AgentStep {
+  id: string;
+  type: string;
+  status: string;
+  data?: unknown;
+}
+
 export function useAgentExecution(agentId?: string) {
   const ws = useWebSocket();
-  const [execution, setExecution] = useState<any>(null);
-  const [steps, setSteps] = useState<any[]>([]);
+  const [execution, setExecution] = useState<AgentExecution | null>(null);
+  const [steps, setSteps] = useState<AgentStep[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
 
   useEffect(() => {
     if (!ws.isConnected) return;
 
-    const handleStarted = (data: any) => {
+    const handleStarted = (data: AgentExecutionData) => {
       if (!agentId || data.agentId === agentId) {
         setIsExecuting(true);
         setExecution(data);
@@ -292,20 +327,20 @@ export function useAgentExecution(agentId?: string) {
       }
     };
 
-    const handleStep = (data: any) => {
+    const handleStep = (data: AgentExecutionData) => {
       if (!agentId || data.agentId === agentId) {
-        setSteps((prev) => [...prev, data.step]);
+        setSteps((prev) => [...prev, data.step as AgentStep]);
       }
     };
 
-    const handleCompleted = (data: any) => {
+    const handleCompleted = (data: AgentExecutionData) => {
       if (!agentId || data.agentId === agentId) {
         setIsExecuting(false);
         setExecution(data);
       }
     };
 
-    const handleError = (data: any) => {
+    const handleError = (data: AgentExecutionData) => {
       if (!agentId || data.agentId === agentId) {
         setIsExecuting(false);
         setExecution({ ...data, error: true });
@@ -343,26 +378,47 @@ export function useAgentExecution(agentId?: string) {
 /**
  * Hook for memory updates
  */
+interface Memory {
+  id: string;
+  content: unknown;
+  metadata?: Record<string, unknown>;
+}
+
+interface MemoryUpdate {
+  type: 'created' | 'updated' | 'deleted';
+  memory?: Memory;
+  memoryId?: string;
+}
+
 export function useMemoryUpdates() {
   const ws = useWebSocket();
-  const [latestMemory, setLatestMemory] = useState<any>(null);
-  const [memoryUpdates, setMemoryUpdates] = useState<any[]>([]);
+  const [latestMemory, setLatestMemory] = useState<Memory | null>(null);
+  const [memoryUpdates, setMemoryUpdates] = useState<MemoryUpdate[]>([]);
 
   useEffect(() => {
     if (!ws.isConnected) return;
 
-    const handleCreated = (data: any) => {
-      setLatestMemory(data.memory);
-      setMemoryUpdates((prev) => [...prev, { type: 'created', ...data }]);
+    const handleCreated = (data: MemoryEventData) => {
+      setLatestMemory(data.memory as Memory);
+      setMemoryUpdates((prev) => [
+        ...prev,
+        { type: 'created' as const, ...data },
+      ]);
     };
 
-    const handleUpdated = (data: any) => {
-      setLatestMemory(data.memory);
-      setMemoryUpdates((prev) => [...prev, { type: 'updated', ...data }]);
+    const handleUpdated = (data: MemoryEventData) => {
+      setLatestMemory(data.memory as Memory);
+      setMemoryUpdates((prev) => [
+        ...prev,
+        { type: 'updated' as const, ...data },
+      ]);
     };
 
-    const handleDeleted = (data: any) => {
-      setMemoryUpdates((prev) => [...prev, { type: 'deleted', ...data }]);
+    const handleDeleted = (data: MemoryEventData) => {
+      setMemoryUpdates((prev) => [
+        ...prev,
+        { type: 'deleted' as const, ...data },
+      ]);
     };
 
     ws.on('memory.created', handleCreated);
@@ -388,18 +444,27 @@ export function useMemoryUpdates() {
 /**
  * Hook for conversation updates
  */
+interface ConversationMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant' | 'system';
+  timestamp: number;
+  metadata?: Record<string, unknown>;
+}
+
 export function useConversationUpdates(conversationId?: string) {
   const ws = useWebSocket();
-  const [messages, setMessages] = useState<any[]>([]);
-  const [latestMessage, setLatestMessage] = useState<any>(null);
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [latestMessage, setLatestMessage] =
+    useState<ConversationMessage | null>(null);
 
   useEffect(() => {
     if (!ws.isConnected) return;
 
-    const handleMessage = (data: any) => {
+    const handleMessage = (data: ConversationEventData) => {
       if (!conversationId || data.conversationId === conversationId) {
-        setLatestMessage(data.message);
-        setMessages((prev) => [...prev, data.message]);
+        setLatestMessage(data.message as ConversationMessage);
+        setMessages((prev) => [...prev, data.message as ConversationMessage]);
       }
     };
 

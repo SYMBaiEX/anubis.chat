@@ -78,7 +78,9 @@ export async function POST(request: NextRequest) {
       const response = successResponse(refreshResponse);
       return addSecurityHeaders(response);
     } catch (error) {
-      log.error('Token refresh error', { error: error instanceof Error ? error.message : String(error) });
+      log.error('Token refresh error', {
+        error: error instanceof Error ? error.message : String(error),
+      });
 
       return unauthorizedResponse('Token refresh failed');
     }

@@ -12,6 +12,7 @@ import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('api/ai/generate-object');
+
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import type {
@@ -140,7 +141,7 @@ function getOpenAIModel(modelId: string) {
 }
 
 // Convert JSON Schema-like definition to Zod schema
-function jsonSchemaPropertyToZod(prop: JSONSchemaProperty): z.ZodTypeAny {
+function jsonSchemaPropertyToZod(prop: JSONSchemaProperty): z.ZodType<unknown> {
   switch (prop.type) {
     case 'string': {
       let stringSchema = z.string();
@@ -193,7 +194,7 @@ function jsonSchemaPropertyToZod(prop: JSONSchemaProperty): z.ZodTypeAny {
 
     case 'object':
       if (prop.properties) {
-        const shape: Record<string, z.ZodTypeAny> = {};
+        const shape: Record<string, z.ZodType<unknown>> = {};
         for (const [key, value] of Object.entries(prop.properties)) {
           shape[key] = jsonSchemaPropertyToZod(value);
         }
@@ -209,7 +210,7 @@ function jsonSchemaPropertyToZod(prop: JSONSchemaProperty): z.ZodTypeAny {
 function getSchema(
   schemaType?: string,
   customSchema?: Record<string, unknown>
-): z.ZodTypeAny {
+): z.ZodType<unknown> {
   if (schemaType && schemaType in commonSchemas) {
     return commonSchemas[schemaType as keyof typeof commonSchemas];
   }

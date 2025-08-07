@@ -94,7 +94,9 @@ export async function POST(request: NextRequest) {
       const response = successResponse(challenge);
       return addSecurityHeaders(response);
     } catch (error) {
-      log.error('Challenge generation error', { error: error instanceof Error ? error.message : String(error) });
+      log.error('Challenge generation error', {
+        error: error instanceof Error ? error.message : String(error),
+      });
 
       return validationErrorResponse('Failed to generate challenge');
     }

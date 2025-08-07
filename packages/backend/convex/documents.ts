@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // Get documents by owner with pagination
@@ -236,7 +236,7 @@ export const update = mutation({
       throw new Error('Document not found or access denied');
     }
 
-    const updates: any = {
+    const updates: Partial<Doc<'documents'>> = {
       updatedAt: Date.now(),
     };
 

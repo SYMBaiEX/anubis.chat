@@ -84,7 +84,9 @@ export async function GET(request: NextRequest) {
         const response = successResponse(userProfile);
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('Get user profile error', { error: error instanceof Error ? error.message : String(error) });
+        log.error('Get user profile error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
 
         // Return minimal profile on error
         const response = successResponse({
@@ -167,7 +169,9 @@ export async function PUT(request: NextRequest) {
         const response = successResponse(updatedProfile);
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('Update profile error', { error: error instanceof Error ? error.message : String(error) });
+        log.error('Update profile error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
         return validationErrorResponse('Failed to update profile');
       }
     });

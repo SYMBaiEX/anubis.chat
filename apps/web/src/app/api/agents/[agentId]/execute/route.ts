@@ -115,10 +115,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
           metadata: executeData.metadata,
         };
 
-        log.info('Agent execution started', { 
-          agentId, 
-          walletAddress, 
-          autoApprove: executeData.autoApprove 
+        log.info('Agent execution started', {
+          agentId,
+          walletAddress,
+          autoApprove: executeData.autoApprove,
         });
 
         // Handle streaming vs non-streaming execution
@@ -167,10 +167,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
           executionRequest
         );
 
-        log.info('Agent execution completed', { 
-          executionId: execution.id, 
-          status: execution.status, 
-          stepsCount: execution.steps.length 
+        log.info('Agent execution completed', {
+          executionId: execution.id,
+          status: execution.status,
+          stepsCount: execution.steps.length,
         });
 
         const response = successResponse({
@@ -189,10 +189,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('Agent execution error', { 
-          agentId, 
-          walletAddress, 
-          error: error instanceof Error ? error.message : String(error) 
+        log.error('Agent execution error', {
+          agentId,
+          walletAddress,
+          error: error instanceof Error ? error.message : String(error),
         });
         const response = NextResponse.json(
           {

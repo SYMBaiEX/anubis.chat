@@ -6,6 +6,9 @@
 import type { Server as HTTPServer } from 'http';
 import { type Socket, Server as SocketIOServer } from 'socket.io';
 import { z } from 'zod';
+import type { JsonValue } from '@/lib/types/mcp';
+import type { AgentStep, AgentExecutionResult, StepResult } from '@/lib/types/agentic';
+import type { Chat, ChatMessage } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 // =============================================================================
@@ -26,9 +29,40 @@ export interface WebSocketUser {
 
 export interface WebSocketMessage {
   type: string;
-  data: any;
+  data: JsonValue;
   timestamp: number;
 }
+
+// Memory types
+export interface Memory {
+  _id: string;
+  userId: string;
+  content: string;
+  embedding: number[];
+  importance: number;
+  type: 'fact' | 'preference' | 'skill' | 'goal' | 'context';
+  tags?: string[];
+  sourceId?: string;
+  sourceType?: 'chat' | 'document' | 'agent' | 'workflow';
+  accessCount: number;
+  lastAccessed?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface MemoryUpdate {
+  content?: string;
+  importance?: number;
+  type?: 'fact' | 'preference' | 'skill' | 'goal' | 'context';
+  tags?: string[];
+  accessCount?: number;
+  lastAccessed?: number;
+  updatedAt: number;
+}
+
+// Conversation types (using API types)
+export type Conversation = Chat;
+export type Message = ChatMessage;
 
 // Event types
 export type WebSocketEvent =
@@ -143,7 +177,10 @@ export class WebSocketManager {
     if (!this.userSockets.has(walletAddress)) {
       this.userSockets.set(walletAddress, new Set());
     }
-    this.userSockets.get(walletAddress)!.add(socket.id);
+    const userSocketSet = this.userSockets.get(walletAddress);
+    if (userSocketSet) {
+      userSocketSet.add(socket.id);
+    }
 
     // Join user-specific room
     socket.join(`user:${walletAddress}`);
@@ -221,7 +258,11 @@ export class WebSocketManager {
   /**
    * Emit event to specific user
    */
-  emitToUser(walletAddress: string, event: WebSocketEvent, data: any): void {
+  emitToUser(
+    walletAddress: string,
+    event: WebSocketEvent,
+    data: JsonValue
+  ): void {
     if (!this.io) return;
 
     const message: WebSocketMessage = {
@@ -236,7 +277,7 @@ export class WebSocketManager {
   /**
    * Emit event to all subscribers of an event type
    */
-  emitToEventSubscribers(event: WebSocketEvent, data: any): void {
+  emitToEventSubscribers(event: WebSocketEvent, data: JsonValue): void {
     if (!this.io) return;
 
     const message: WebSocketMessage = {
@@ -251,7 +292,7 @@ export class WebSocketManager {
   /**
    * Broadcast event to all connected users
    */
-  broadcast(event: WebSocketEvent, data: any): void {
+  broadcast(event: WebSocketEvent, data: JsonValue): void {
     if (!this.io) return;
 
     const message: WebSocketMessage = {
@@ -282,7 +323,7 @@ export class WebSocketManager {
     walletAddress: string,
     agentId: string,
     executionId: string,
-    step: any
+    step: AgentStep
   ): void {
     this.emitToUser(walletAddress, 'agent.execution.step', {
       agentId,
@@ -295,7 +336,7 @@ export class WebSocketManager {
     walletAddress: string,
     agentId: string,
     executionId: string,
-    result: any
+    result: AgentExecutionResult
   ): void {
     this.emitToUser(walletAddress, 'agent.execution.completed', {
       agentId,
@@ -336,7 +377,7 @@ export class WebSocketManager {
     walletAddress: string,
     workflowId: string,
     executionId: string,
-    step: any
+    step: StepResult
   ): void {
     this.emitToUser(walletAddress, 'workflow.step', {
       workflowId,
@@ -349,7 +390,7 @@ export class WebSocketManager {
     walletAddress: string,
     workflowId: string,
     executionId: string,
-    result: any
+    result: StepResult
   ): void {
     this.emitToUser(walletAddress, 'workflow.completed', {
       workflowId,
@@ -375,11 +416,11 @@ export class WebSocketManager {
   // Memory Events
   // =============================================================================
 
-  emitMemoryCreated(walletAddress: string, memory: any): void {
+  emitMemoryCreated(walletAddress: string, memory: Memory): void {
     this.emitToUser(walletAddress, 'memory.created', { memory });
   }
 
-  emitMemoryUpdated(walletAddress: string, memory: any): void {
+  emitMemoryUpdated(walletAddress: string, memory: Memory): void {
     this.emitToUser(walletAddress, 'memory.updated', { memory });
   }
 
@@ -394,7 +435,7 @@ export class WebSocketManager {
   emitConversationMessage(
     walletAddress: string,
     conversationId: string,
-    message: any
+    message: Message
   ): void {
     this.emitToUser(walletAddress, 'conversation.message', {
       conversationId,
@@ -402,7 +443,10 @@ export class WebSocketManager {
     });
   }
 
-  emitConversationCreated(walletAddress: string, conversation: any): void {
+  emitConversationCreated(
+    walletAddress: string,
+    conversation: Conversation
+  ): void {
     this.emitToUser(walletAddress, 'conversation.created', { conversation });
   }
 

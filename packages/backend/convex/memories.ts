@@ -4,6 +4,7 @@
  */
 
 import { v } from 'convex/values';
+import type { Doc } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // =============================================================================
@@ -168,7 +169,7 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
-    const updateData: any = { ...updates };
+    const updateData: Partial<Doc<'memories'>> = { ...updates };
 
     if (Object.keys(updateData).length > 0) {
       updateData.updatedAt = Date.now();

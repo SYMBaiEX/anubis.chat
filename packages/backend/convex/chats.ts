@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // Get chats by owner
@@ -119,7 +119,7 @@ export const update = mutation({
       throw new Error('Chat not found or access denied');
     }
 
-    const updates: any = {
+    const updates: Partial<Doc<'chats'>> = {
       updatedAt: Date.now(),
     };
 
@@ -224,7 +224,7 @@ export const updateLastMessageTime = mutation({
       throw new Error('Chat not found');
     }
 
-    const updates: any = {
+    const updates: Partial<Doc<'chats'>> = {
       lastMessageAt: args.timestamp,
       updatedAt: Date.now(),
     };

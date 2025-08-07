@@ -6,7 +6,6 @@
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createModuleLogger } from '@/lib/utils/logger';
 import { getStorage } from '@/lib/database/storage';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
@@ -20,6 +19,7 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 // =============================================================================
 // Logger
@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
           title,
           type,
           contentLength: content.length,
-          wordCount: wordCount,
+          wordCount,
           hasMetadata: !!metadata,
         });
 

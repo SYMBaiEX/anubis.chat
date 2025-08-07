@@ -102,7 +102,9 @@ function parseSignInMessage(message: string): {
       expirationTime: expirationTimeMatch[1],
     };
   } catch (error) {
-    log.error('Message parsing failed', { error: error instanceof Error ? error.message : String(error) });
+    log.error('Message parsing failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -209,7 +211,9 @@ export async function POST(request: NextRequest) {
       const response = successResponse(authSession);
       return addSecurityHeaders(response);
     } catch (error) {
-      log.error('Authentication verification error', { error: error instanceof Error ? error.message : String(error) });
+      log.error('Authentication verification error', {
+        error: error instanceof Error ? error.message : String(error),
+      });
 
       return unauthorizedResponse('Authentication failed');
     }

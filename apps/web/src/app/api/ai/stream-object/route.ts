@@ -12,6 +12,7 @@ import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('api/ai/stream-object');
+
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import {
@@ -144,7 +145,7 @@ function getOpenAIModel(modelId: string) {
   return openai(modelId);
 }
 
-function getStreamingSchema(schemaType: string): z.ZodTypeAny {
+function getStreamingSchema(schemaType: string): z.ZodType<unknown> {
   if (schemaType in streamingSchemas) {
     return streamingSchemas[schemaType as keyof typeof streamingSchemas];
   }

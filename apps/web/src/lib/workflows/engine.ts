@@ -17,19 +17,61 @@ export type NodeType =
   | 'condition'
   | 'parallel'
   | 'loop'
+  | 'wait'
   | 'subworkflow';
 
-// Workflow Node
-export interface WorkflowNode {
-  id: string;
-  type: NodeType;
-  name: string;
-  description?: string;
-  config?: any;
-  next?: string | string[]; // Next node(s) to execute
-  condition?: (context: WorkflowContext) => boolean | Promise<boolean>;
-  retryPolicy?: RetryPolicy;
-}
+// Workflow Node - Discriminated Union based on NodeType
+export type WorkflowNode =
+  | {
+      id: string;
+      type: 'task';
+      name: string;
+      description?: string;
+      config?: TaskNodeConfig;
+      next?: string | string[];
+      condition?: (context: WorkflowContext) => boolean | Promise<boolean>;
+      retryPolicy?: RetryPolicy;
+    }
+  | {
+      id: string;
+      type: 'condition';
+      name: string;
+      description?: string;
+      config?: ConditionNodeConfig;
+      next?: string | string[];
+      condition?: (context: WorkflowContext) => boolean | Promise<boolean>;
+      retryPolicy?: RetryPolicy;
+    }
+  | {
+      id: string;
+      type: 'parallel';
+      name: string;
+      description?: string;
+      config?: ParallelNodeConfig;
+      next?: string | string[];
+      condition?: (context: WorkflowContext) => boolean | Promise<boolean>;
+      retryPolicy?: RetryPolicy;
+    }
+  | {
+      id: string;
+      type: 'loop';
+      name: string;
+      description?: string;
+      config?: LoopNodeConfig;
+      next?: string | string[];
+      condition?: (context: WorkflowContext) => boolean | Promise<boolean>;
+      retryPolicy?: RetryPolicy;
+    }
+  | {
+      id: string;
+      type: 'start' | 'end' | 'wait' | 'subworkflow';
+      name: string;
+      description?: string;
+      config?: Record<string, unknown>;
+      next?: string | string[];
+      condition?: (context: WorkflowContext) => boolean | Promise<boolean>;
+      retryPolicy?: RetryPolicy;
+    };
 
 // Task Node Configuration
 export interface TaskNodeConfig {
@@ -483,7 +525,7 @@ class LoopNodeExecutor extends NodeExecutor {
 
     let iterations = 0;
     const maxIterations = config.maxIterations || 1000;
-    const results: any[] = [];
+    const results: unknown[] = [];
 
     while (iterations < maxIterations && config.condition(context)) {
       // Execute loop body

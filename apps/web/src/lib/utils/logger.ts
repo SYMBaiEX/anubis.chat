@@ -4,8 +4,8 @@
  * Pino is ~2.3x faster than Winston and better suited for modern applications
  */
 
-import pino from 'pino';
 import type { Logger } from 'pino';
+import pino from 'pino';
 
 // Environment detection
 const isProduction = process.env.NODE_ENV === 'production';
@@ -27,11 +27,11 @@ const pinoConfig: pino.LoggerOptions = {
     // Add severity for Google Cloud Logging compatibility
     level: (label, number) => {
       const severityMap = {
-        10: 'DEBUG',    // trace
-        20: 'DEBUG',    // debug
-        30: 'INFO',     // info
-        40: 'WARNING',  // warn
-        50: 'ERROR',    // error
+        10: 'DEBUG', // trace
+        20: 'DEBUG', // debug
+        30: 'INFO', // info
+        40: 'WARNING', // warn
+        50: 'ERROR', // error
         60: 'CRITICAL', // fatal
       } as const;
       return {
@@ -65,7 +65,10 @@ const pinoConfig: pino.LoggerOptions = {
 };
 
 // Configure transport based on environment
-let transport: pino.TransportSingleOptions | pino.TransportMultiOptions | undefined;
+let transport:
+  | pino.TransportSingleOptions
+  | pino.TransportMultiOptions
+  | undefined;
 
 if (isDevelopment) {
   // Development: Pretty printing to console
@@ -123,7 +126,10 @@ if (isDevelopment) {
 }
 
 // Create the main logger instance
-const logger: Logger = pino(pinoConfig, transport ? pino.transport(transport) : undefined);
+const logger: Logger = pino(
+  pinoConfig,
+  transport ? pino.transport(transport) : undefined
+);
 
 // Export logger interface with enhanced methods
 export interface AppLogger {
@@ -188,12 +194,12 @@ class EnhancedLogger implements AppLogger {
     // Recursively sanitize nested objects
     const sanitizeValue = (obj: any): any => {
       if (obj === null || obj === undefined) return obj;
-      
+
       if (typeof obj === 'object' && !Array.isArray(obj)) {
         const sanitizedObj: Record<string, any> = {};
         for (const [key, value] of Object.entries(obj)) {
           const lowerKey = key.toLowerCase();
-          if (sensitiveKeys.some(sensitive => lowerKey.includes(sensitive))) {
+          if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
             sanitizedObj[key] = '[REDACTED]';
           } else {
             sanitizedObj[key] = sanitizeValue(value);
@@ -201,11 +207,11 @@ class EnhancedLogger implements AppLogger {
         }
         return sanitizedObj;
       }
-      
+
       if (Array.isArray(obj)) {
         return obj.map(sanitizeValue);
       }
-      
+
       return obj;
     };
 
@@ -222,20 +228,47 @@ class EnhancedLogger implements AppLogger {
 
   /**
    * Log API requests with standardized format
+   * Overloaded to support both detailed and simple logging patterns
    */
   apiRequest(
-    method: string,
-    url: string,
-    statusCode: number,
-    duration: number,
-    meta: Record<string, any> = {}
+    methodOrEndpoint: string,
+    urlOrMeta?: string | Record<string, unknown>,
+    statusCode?: number,
+    duration?: number,
+    meta: Record<string, unknown> = {}
   ): void {
-    const level = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
-    this[level](`${method} ${url} ${statusCode} - ${duration}ms`, {
+    // Handle the simplified signature used throughout the codebase
+    // e.g., log.apiRequest('GET /api/documents/[id]', { documentId, walletAddress })
+    if (typeof urlOrMeta === 'object' && !statusCode && !duration) {
+      // Simple signature: apiRequest(endpoint, metadata)
+      const endpoint = methodOrEndpoint;
+      const metadata = urlOrMeta;
+
+      // Default to info level for simplified logging
+      this.info(`API Request: ${endpoint}`, {
+        endpoint,
+        type: 'http',
+        ...metadata,
+      });
+      return;
+    }
+
+    // Handle the original detailed signature
+    // e.g., log.apiRequest('GET', '/api/documents/123', 200, 45, { walletAddress })
+    const method = methodOrEndpoint;
+    const url = urlOrMeta as string;
+    const level =
+      (statusCode || 200) >= 500
+        ? 'error'
+        : (statusCode || 200) >= 400
+          ? 'warn'
+          : 'info';
+
+    this[level](`${method} ${url} ${statusCode || 200} - ${duration || 0}ms`, {
       method,
       url,
-      statusCode,
-      duration,
+      statusCode: statusCode || 200,
+      duration: duration || 0,
       type: 'http',
       ...meta,
     });
@@ -243,17 +276,43 @@ class EnhancedLogger implements AppLogger {
 
   /**
    * Log database operations with standardized format
+   * Supports both simple and detailed logging patterns
    */
   dbOperation(
-    operation: string,
-    table: string,
-    duration: number,
-    meta: Record<string, any> = {}
+    operationOrDetails: string,
+    tableOrMeta?: string | Record<string, unknown>,
+    duration?: number,
+    meta: Record<string, unknown> = {}
   ): void {
-    this.debug(`DB ${operation} on ${table} - ${duration}ms`, {
+    // Handle the simplified signature used throughout the codebase
+    // e.g., log.dbOperation('chat_created', { chatId, walletAddress })
+    if (typeof tableOrMeta === 'object' && duration === undefined) {
+      // Simple signature: dbOperation(operation, metadata)
+      const operation = operationOrDetails;
+      const metadata = tableOrMeta;
+
+      // Extract table from operation if possible (e.g., 'chat_created' -> 'chat')
+      const table = operation.split('_')[0] || 'unknown';
+
+      this.debug(`DB Operation: ${operation}`, {
+        operation,
+        table,
+        type: 'database',
+        ...metadata,
+      });
+      return;
+    }
+
+    // Handle the original detailed signature
+    // e.g., log.dbOperation('INSERT', 'users', 45, { userId: '123' })
+    const operation = operationOrDetails;
+    const table = (tableOrMeta as string) || 'unknown';
+    const durationMs = duration || 0;
+
+    this.debug(`DB ${operation} on ${table} - ${durationMs}ms`, {
       operation,
       table,
-      duration,
+      duration: durationMs,
       type: 'database',
       ...meta,
     });
@@ -274,10 +333,18 @@ class EnhancedLogger implements AppLogger {
   /**
    * Log security events
    */
-  security(event: string, severity: 'low' | 'medium' | 'high' | 'critical', meta: Record<string, any> = {}): void {
-    const logLevel = severity === 'critical' || severity === 'high' ? 'error' : 
-                     severity === 'medium' ? 'warn' : 'info';
-    
+  security(
+    event: string,
+    severity: 'low' | 'medium' | 'high' | 'critical',
+    meta: Record<string, any> = {}
+  ): void {
+    const logLevel =
+      severity === 'critical' || severity === 'high'
+        ? 'error'
+        : severity === 'medium'
+          ? 'warn'
+          : 'info';
+
     this[logLevel](`Security: ${event}`, {
       event,
       severity,
@@ -289,7 +356,12 @@ class EnhancedLogger implements AppLogger {
   /**
    * Log performance metrics
    */
-  performance(metric: string, value: number, unit: string, meta: Record<string, any> = {}): void {
+  performance(
+    metric: string,
+    value: number,
+    unit: string,
+    meta: Record<string, any> = {}
+  ): void {
     this.info(`Performance: ${metric} = ${value}${unit}`, {
       metric,
       value,

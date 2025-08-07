@@ -35,13 +35,18 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        log.info('User logged out successfully', { walletAddress, timestamp: new Date().toISOString() });
+        log.info('User logged out successfully', {
+          walletAddress,
+          timestamp: new Date().toISOString(),
+        });
 
         // Return 204 No Content for successful logout
         const response = noContentResponse();
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('Logout error', { error: error instanceof Error ? error.message : String(error) });
+        log.error('Logout error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
 
         // Even if there's an error, we still want to indicate successful logout
         // from the client's perspective

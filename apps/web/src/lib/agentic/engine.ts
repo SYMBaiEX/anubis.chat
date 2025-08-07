@@ -198,7 +198,7 @@ export class AgenticEngine {
         if (result.toolCalls && result.toolCalls.length > 0) {
           step.type =
             result.toolCalls.length > 1 ? 'parallel_tools' : 'tool_call';
-          step.toolCalls = result.toolCalls.map((tc: any) => ({
+          step.toolCalls = result.toolCalls.map((tc: TypedToolCall) => ({
             id: tc.toolCallId,
             name: tc.toolName,
             parameters: tc.args,
@@ -208,7 +208,7 @@ export class AgenticEngine {
           // Process tool results
           const toolResults: ToolResult[] = [];
 
-          for (const toolCall of result.toolCalls as any[]) {
+          for (const toolCall of result.toolCalls as TypedToolCall[]) {
             toolsUsed.add(toolCall.toolName);
 
             // Tool results are already processed by the execute function above
@@ -226,7 +226,7 @@ export class AgenticEngine {
           // Add tool results to messages using correct Vercel AI SDK format
           messages.push({
             role: 'tool',
-            content: result.toolCalls.map((toolCall: any) => ({
+            content: result.toolCalls.map((toolCall: TypedToolCall) => ({
               type: 'tool-result',
               toolCallId: toolCall.toolCallId,
               toolName: toolCall.toolName,
@@ -358,7 +358,10 @@ export class AgenticEngine {
   /**
    * Determine if the task is complete based on AI response
    */
-  private isTaskComplete(text: string, toolCalls: any[] | undefined): boolean {
+  private isTaskComplete(
+    text: string,
+    toolCalls: TypedToolCall[] | undefined
+  ): boolean {
     // Simple heuristics to determine task completion
     const completionIndicators = [
       'task completed',
@@ -436,7 +439,7 @@ export class AgenticEngine {
   async *streamExecution(
     agent: Agent,
     request: ExecuteAgentRequest
-  ): AsyncIterable<{ type: string; data: any }> {
+  ): AsyncIterable<{ type: string; data: unknown }> {
     // This would be implemented for streaming execution updates
     // For now, we'll just execute and yield the final result
 

@@ -60,9 +60,9 @@ export const useWallet = (): UseWalletReturn => {
         const balance = await connection.getBalance(pubkey);
         return lamportsToSol(balance);
       } catch (error) {
-        log.error('Failed to fetch balance', { 
-          publicKey: pubkey.toBase58(), 
-          error: error instanceof Error ? error.message : String(error) 
+        log.error('Failed to fetch balance', {
+          publicKey: pubkey.toBase58(),
+          error: error instanceof Error ? error.message : String(error),
         });
         return 0;
       }
@@ -182,8 +182,8 @@ export const useWallet = (): UseWalletReturn => {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to refresh balance';
       setState((prev) => ({ ...prev, error: errorMessage }));
-      log.error('Failed to refresh balance', { 
-        error: error instanceof Error ? error.message : String(error) 
+      log.error('Failed to refresh balance', {
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }, [walletPublicKey, fetchBalance]);

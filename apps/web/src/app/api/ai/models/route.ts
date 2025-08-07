@@ -137,9 +137,9 @@ export async function GET(request: NextRequest) {
         //   );
         // }
 
-        log.info('Models requested by user', { 
-          walletAddress: user.walletAddress, 
-          modelCount: filteredModels.length 
+        log.info('Models requested by user', {
+          walletAddress: user.walletAddress,
+          modelCount: filteredModels.length,
         });
 
         const response = successResponse({
@@ -154,8 +154,8 @@ export async function GET(request: NextRequest) {
 
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('Get models error', { 
-          error: error instanceof Error ? error.message : String(error) 
+        log.error('Get models error', {
+          error: error instanceof Error ? error.message : String(error),
         });
         const response = NextResponse.json(
           { error: 'Failed to retrieve models' },

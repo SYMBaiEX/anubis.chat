@@ -8,7 +8,6 @@ import { ConvexError } from 'convex/values';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createModuleLogger } from '@/lib/utils/logger';
 import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
 import { Agent, AgentFactory } from '@/lib/agents/core';
 import { api, convex } from '@/lib/database/convex';
@@ -30,6 +29,7 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
 import {
   WorkflowBuilder,
   type WorkflowDefinition,
@@ -656,8 +656,12 @@ export async function PUT(request: NextRequest) {
         log.apiRequest('PUT /api/workflows - Execute', {
           workflowId,
           walletAddress,
-          status: 'status' in executionResult ? executionResult.status : 'unknown',
-          executionTime: 'executionTime' in executionResult ? executionResult.executionTime : 0,
+          status:
+            'status' in executionResult ? executionResult.status : 'unknown',
+          executionTime:
+            'executionTime' in executionResult
+              ? executionResult.executionTime
+              : 0,
         });
 
         const response = successResponse({

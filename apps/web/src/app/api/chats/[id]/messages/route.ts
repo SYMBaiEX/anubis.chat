@@ -8,7 +8,6 @@ import { convertToModelMessages, streamText } from 'ai';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createModuleLogger } from '@/lib/utils/logger';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { messageRateLimit } from '@/lib/middleware/rate-limit';
 import type { ChatMessage, SendMessageRequest } from '@/lib/types/api';
@@ -21,6 +20,7 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 // =============================================================================
 // Logger

@@ -99,7 +99,7 @@ export class MCPClientManager {
    */
   private async initializeTools(
     serverName: string,
-    toolSchemas?: Record<string, z.ZodObject<any>>
+    toolSchemas?: Record<string, z.ZodObject<z.ZodRawShape>>
   ): Promise<void> {
     const client = this.clients.get(serverName);
     if (!client) {
@@ -107,7 +107,7 @@ export class MCPClientManager {
     }
 
     const serverTools = await client.listTools();
-    const tools: Record<string, any> = {};
+    const tools: Record<string, MCPTool> = {};
 
     for (const serverTool of serverTools.tools) {
       const schema = toolSchemas?.[serverTool.name];
@@ -340,11 +340,13 @@ export async function initializeDefaultMCPServers(): Promise<void> {
   for (const server of DEFAULT_MCP_SERVERS) {
     try {
       await mcpManager.initializeClient(server);
-      log.info('MCP server initialized successfully', { serverName: server.name });
+      log.info('MCP server initialized successfully', {
+        serverName: server.name,
+      });
     } catch (error) {
-      log.error('Failed to initialize MCP server', { 
-        serverName: server.name, 
-        error: error instanceof Error ? error.message : String(error) 
+      log.error('Failed to initialize MCP server', {
+        serverName: server.name,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
