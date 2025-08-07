@@ -8,6 +8,7 @@ import { convertToModelMessages, streamText } from 'ai';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { messageRateLimit } from '@/lib/middleware/rate-limit';
 import type { ChatMessage, SendMessageRequest } from '@/lib/types/api';
@@ -20,6 +21,12 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+
+// =============================================================================
+// Logger
+// =============================================================================
+
+const log = createModuleLogger('api/chats/messages');
 
 // =============================================================================
 // Request Validation
@@ -150,7 +157,13 @@ export async function GET(
           { cursor, limit }
         );
 
-        console.log(`Retrieved ${messages.length} messages for chat ${chatId}`);
+        log.apiRequest('GET /api/chats/[id]/messages', {
+          chatId,
+          walletAddress,
+          messageCount: messages.length,
+          hasMore,
+          cursor,
+        });
 
         const response = paginatedResponse(messages, {
           cursor,
@@ -161,7 +174,11 @@ export async function GET(
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get messages error:', error);
+        log.error('Failed to retrieve messages', {
+          error,
+          chatId,
+          operation: 'get_messages',
+        });
         return validationErrorResponse('Failed to retrieve messages');
       }
     });
@@ -214,7 +231,13 @@ export async function POST(
 
         // If not streaming, return the saved message
         if (!stream) {
-          console.log(`Message created for chat ${chatId}: ${userMessage._id}`);
+          log.dbOperation('message_created', {
+            messageId: userMessage._id,
+            chatId,
+            walletAddress,
+            role,
+            tokenCount: userMessage.tokenCount,
+          });
           const response = createdResponse(userMessage);
           return addSecurityHeaders(response);
         }
@@ -272,23 +295,44 @@ export async function POST(
               // await saveMessage(assistantMessage);
               // await updateChatLastMessage(chatId, assistantMessage);
 
-              console.log(
-                `AI response completed for chat ${chatId}: ${assistantMessage._id}`
-              );
+              log.dbOperation('ai_message_created', {
+                messageId: assistantMessage._id,
+                chatId,
+                walletAddress,
+                model: chat.model,
+                tokenCount: assistantMessage.tokenCount,
+                finishReason,
+                usage,
+              });
             } catch (error) {
-              console.error('Failed to save AI response:', error);
+              log.error('Failed to save AI response', {
+                error,
+                chatId,
+                operation: 'save_ai_response',
+              });
             }
           },
         });
 
-        console.log(`Streaming AI response for chat ${chatId}`);
+        log.apiRequest('POST /api/chats/[id]/messages - Stream', {
+          chatId,
+          walletAddress,
+          model: chat.model,
+          temperature: temperature ?? chat.temperature ?? 0.7,
+          maxTokens: maxTokens ?? chat.maxTokens ?? 2000,
+          historyLength: conversationHistory.length,
+        });
 
         // Return streaming response
         return result.toUIMessageStreamResponse({
           originalMessages: conversationHistory,
         });
       } catch (error) {
-        console.error('Send message error:', error);
+        log.error('Failed to send message', {
+          error,
+          chatId,
+          operation: 'send_message',
+        });
         return validationErrorResponse('Failed to send message');
       }
     });

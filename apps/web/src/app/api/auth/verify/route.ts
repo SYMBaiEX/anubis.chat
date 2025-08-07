@@ -20,6 +20,9 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('auth-verify-api');
 
 // =============================================================================
 // Request Validation
@@ -99,7 +102,7 @@ function parseSignInMessage(message: string): {
       expirationTime: expirationTimeMatch[1],
     };
   } catch (error) {
-    console.error('Message parsing failed:', error);
+    log.error('Message parsing failed', { error: error instanceof Error ? error.message : String(error) });
     return null;
   }
 }
@@ -206,7 +209,7 @@ export async function POST(request: NextRequest) {
       const response = successResponse(authSession);
       return addSecurityHeaders(response);
     } catch (error) {
-      console.error('Authentication verification error:', error);
+      log.error('Authentication verification error', { error: error instanceof Error ? error.message : String(error) });
 
       return unauthorizedResponse('Authentication failed');
     }

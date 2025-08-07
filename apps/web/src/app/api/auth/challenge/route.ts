@@ -14,6 +14,9 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('auth-challenge-api');
 
 // =============================================================================
 // Request Validation
@@ -91,7 +94,7 @@ export async function POST(request: NextRequest) {
       const response = successResponse(challenge);
       return addSecurityHeaders(response);
     } catch (error) {
-      console.error('Challenge generation error:', error);
+      log.error('Challenge generation error', { error: error instanceof Error ? error.message : String(error) });
 
       return validationErrorResponse('Failed to generate challenge');
     }

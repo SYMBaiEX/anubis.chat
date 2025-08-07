@@ -6,6 +6,7 @@
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { getStorage } from '@/lib/database/storage';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
@@ -19,6 +20,12 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+
+// =============================================================================
+// Logger
+// =============================================================================
+
+const log = createModuleLogger('api/documents');
 
 // =============================================================================
 // Request Validation Schemas
@@ -105,9 +112,15 @@ export async function GET(request: NextRequest) {
 
         const totalPages = Math.ceil(total / limit);
 
-        console.log(
-          `Documents listed for ${walletAddress}: ${paginatedDocs.length}/${total} documents`
-        );
+        log.apiRequest('GET /api/documents', {
+          walletAddress,
+          documentCount: paginatedDocs.length,
+          total,
+          page,
+          limit,
+          category,
+          search,
+        });
 
         const responseData: DocumentListResponse = {
           documents: paginatedDocs,
@@ -128,7 +141,11 @@ export async function GET(request: NextRequest) {
         const response = successResponse(responseData);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get documents error:', error);
+        log.error('Failed to retrieve documents', {
+          error,
+          walletAddress,
+          operation: 'get_documents',
+        });
         const response = NextResponse.json(
           { error: 'Failed to retrieve documents' },
           { status: 500 }
@@ -187,9 +204,15 @@ export async function POST(request: NextRequest) {
         await storage.createDocument(document);
         await storage.addDocumentToUser(walletAddress, documentId);
 
-        console.log(
-          `Document created: ${documentId} by ${walletAddress}, type: ${type}, length: ${content.length} chars`
-        );
+        log.dbOperation('document_created', {
+          documentId,
+          walletAddress,
+          title,
+          type,
+          contentLength: content.length,
+          wordCount: wordCount,
+          hasMetadata: !!metadata,
+        });
 
         const responseData: DocumentUploadResponse = {
           document,
@@ -199,7 +222,11 @@ export async function POST(request: NextRequest) {
         const response = successResponse(responseData);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Upload document error:', error);
+        log.error('Failed to upload document', {
+          error,
+          walletAddress,
+          operation: 'upload_document',
+        });
         const response = NextResponse.json(
           { error: 'Failed to upload document' },
           { status: 500 }

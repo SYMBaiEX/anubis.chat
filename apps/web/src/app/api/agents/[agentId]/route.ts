@@ -19,6 +19,9 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('agent-detail-api');
 
 // =============================================================================
 // Request Validation Schemas
@@ -81,7 +84,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
           );
         }
 
-        console.log(`Agent retrieved: ${agentId} by user ${walletAddress}`);
+        log.info('Agent retrieved successfully', { agentId, walletAddress });
 
         // Convert Convex document to API format
         const formattedAgent = convexAgentToApiFormat(agent);
@@ -89,7 +92,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
         const response = successResponse(formattedAgent);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get agent error:', error);
+        log.error('Get agent error', { 
+          agentId, 
+          error: error instanceof Error ? error.message : String(error) 
+        });
         const response = NextResponse.json(
           { error: 'Failed to retrieve agent' },
           { status: 500 }
@@ -131,7 +137,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           return notFoundResponse('Agent not found or update failed');
         }
 
-        console.log(`Agent updated: ${agentId} by user ${walletAddress}`);
+        log.info('Agent updated successfully', { agentId, walletAddress });
 
         // Convert to API format
         const formattedAgent = convexAgentToApiFormat(updatedAgent);
@@ -139,7 +145,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         const response = successResponse(formattedAgent);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Update agent error:', error);
+        log.error('Update agent error', { 
+          agentId, 
+          error: error instanceof Error ? error.message : String(error) 
+        });
 
         // Handle Convex mutation errors (including ownership/not found)
         const errorMessage =
@@ -177,7 +186,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
           walletAddress,
         });
 
-        console.log(`Agent deleted: ${agentId} by user ${walletAddress}`);
+        log.info('Agent deleted successfully', { agentId, walletAddress });
 
         const response = successResponse({
           message: 'Agent deleted successfully',
@@ -185,7 +194,10 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         });
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Delete agent error:', error);
+        log.error('Delete agent error', { 
+          agentId, 
+          error: error instanceof Error ? error.message : String(error) 
+        });
 
         // Handle Convex mutation errors (including ownership/not found)
         const errorMessage =

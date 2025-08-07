@@ -5,6 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { getStorage } from '@/lib/database/storage';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { searchRateLimit } from '@/lib/middleware/rate-limit';
@@ -14,6 +15,12 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+
+// =============================================================================
+// Logger
+// =============================================================================
+
+const log = createModuleLogger('api/search/semantic');
 
 // =============================================================================
 // Request Validation Schemas
@@ -368,14 +375,26 @@ export async function POST(request: NextRequest) {
           searchOptions
         );
 
-        console.log(
-          `Semantic search by ${walletAddress}: "${searchOptions.query}" -> ${searchResponse.total} results (${searchResponse.processingTime}ms)`
-        );
+        log.apiRequest('POST /api/search/semantic', {
+          walletAddress,
+          query: searchOptions.query,
+          resultCount: searchResponse.total,
+          processingTime: searchResponse.processingTime,
+          limit: searchOptions.limit,
+          contextLength: searchOptions.contextLength,
+          hasFilters: !!searchOptions.filters,
+          hasContext: !!searchOptions.context,
+          userIntent: searchOptions.context?.userIntent,
+        });
 
         const response = successResponse(searchResponse);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Semantic search error:', error);
+        log.error('Semantic search failed', {
+          error,
+          walletAddress,
+          operation: 'semantic_search',
+        });
         const response = NextResponse.json(
           { error: 'Failed to perform semantic search' },
           { status: 500 }

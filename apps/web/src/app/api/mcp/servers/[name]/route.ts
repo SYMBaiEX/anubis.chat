@@ -5,6 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { mcpManager } from '@/lib/mcp/client';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import {
@@ -12,6 +13,12 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+
+// =============================================================================
+// Logger
+// =============================================================================
+
+const log = createModuleLogger('api/mcp/servers');
 
 // =============================================================================
 // Route Handlers
@@ -36,7 +43,10 @@ export async function DELETE(
         // Close the server
         await mcpManager.closeClient(serverName);
 
-        console.log(`✅ Closed MCP server: ${serverName}`);
+        log.info('MCP server closed', {
+          serverName,
+          operation: 'close_server',
+        });
 
         const response = successResponse({
           message: `Server ${serverName} closed successfully`,
@@ -44,7 +54,11 @@ export async function DELETE(
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Close MCP server error:', error);
+        log.error('Failed to close MCP server', {
+          error,
+          serverName,
+          operation: 'close_server',
+        });
         const response = NextResponse.json(
           { error: 'Failed to close MCP server' },
           { status: 500 }

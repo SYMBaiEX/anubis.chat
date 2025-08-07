@@ -16,9 +16,13 @@ import {
 import { clusterApiUrl } from '@solana/web3.js';
 import type { FC, ReactNode } from 'react';
 import React, { useMemo } from 'react';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
+
+// Initialize logger
+const log = createModuleLogger('wallet-provider');
 
 interface WalletProviderProps {
   children: ReactNode;
@@ -42,15 +46,16 @@ export const WalletProvider: FC<WalletProviderProps> = ({
       new LedgerWalletAdapter(),
     ];
 
-    // Debug: Log available wallets (August 2025)
-    console.log(
-      '🔗 Configured Solana wallets:',
-      walletList.map((w) => ({
+    // Log available wallets for debugging
+    log.info('Solana wallets configured', {
+      wallets: walletList.map((w) => ({
         name: w.name,
         readyState: w.readyState,
         publicKey: w.publicKey?.toString() || 'Not connected',
-      }))
-    );
+      })),
+      network,
+      endpoint,
+    });
 
     return walletList;
   }, [network]);

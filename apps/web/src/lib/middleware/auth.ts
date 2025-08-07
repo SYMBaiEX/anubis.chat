@@ -12,6 +12,9 @@ import { getStorage } from '../database/storage';
 import { corsConfig, isProduction, jwtConfig } from '../env';
 import { APIErrorCode } from '../types/api';
 import { createErrorResponse } from '../utils/api-response';
+import { createModuleLogger } from '../utils/logger';
+
+const log = createModuleLogger('auth-middleware');
 
 // =============================================================================
 // Types
@@ -86,7 +89,7 @@ export async function verifyJWTToken(
 
     return decoded;
   } catch (error) {
-    console.error('JWT verification failed:', error);
+    log.error('JWT verification failed', { error: error instanceof Error ? error.message : String(error) });
     return null;
   }
 }
@@ -111,7 +114,7 @@ export function verifyWalletSignature(
       publicKeyBytes
     );
   } catch (error) {
-    console.error('Signature verification failed:', error);
+    log.error('Signature verification failed', { error: error instanceof Error ? error.message : String(error) });
     return false;
   }
 }
@@ -187,7 +190,7 @@ export async function withAuth<T extends NextRequest>(
     // Call the handler with authenticated request
     return await handler(authenticatedRequest);
   } catch (error) {
-    console.error('Authentication middleware error:', error);
+    log.error('Authentication middleware error', { error: error instanceof Error ? error.message : String(error) });
     return createErrorResponse(
       APIErrorCode.INTERNAL_ERROR,
       'Authentication failed'
@@ -225,7 +228,7 @@ export async function withOptionalAuth<T extends NextRequest>(
     );
   } catch (error) {
     // For optional auth, we continue without auth on errors
-    console.error('Optional authentication error:', error);
+    log.error('Optional authentication error', { error: error instanceof Error ? error.message : String(error) });
     return await handler(
       request as T & { user?: { walletAddress: string; publicKey: string } }
     );
@@ -363,7 +366,7 @@ export async function blacklistToken(token: string): Promise<boolean> {
     await storage.blacklistToken(decoded.jti, decoded.expiresAt);
     return true;
   } catch (error) {
-    console.error('Token blacklisting failed:', error);
+    log.error('Token blacklisting failed', { jti, error: error instanceof Error ? error.message : String(error) });
     return false;
   }
 }

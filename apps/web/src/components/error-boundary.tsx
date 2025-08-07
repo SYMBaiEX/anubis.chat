@@ -1,6 +1,10 @@
 'use client';
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// Initialize logger
+const log = createModuleLogger('error-boundary');
 
 interface Props {
   children: ReactNode;
@@ -25,7 +29,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
     if (isSolanaExtensionError) {
       // Log but don't trigger error boundary for Solana extension issues
-      console.warn('Solana extension error (non-critical):', error);
+      log.warn('Solana extension error filtered (non-critical)', {
+        error: error.message,
+        stack: error.stack?.slice(0, 500), // Truncate stack trace
+        type: 'solana_extension_error',
+      });
       return { hasError: false };
     }
 
@@ -39,7 +47,14 @@ export class ErrorBoundary extends Component<Props, State> {
       error.message?.includes('solanaActionsContentScript');
 
     if (!isSolanaExtensionError) {
-      console.error('Uncaught error:', error, errorInfo);
+      log.error('Uncaught error in application', {
+        error,
+        errorInfo: {
+          componentStack: errorInfo.componentStack?.slice(0, 1000), // Truncate
+          errorBoundary: 'ErrorBoundary',
+        },
+        type: 'uncaught_error',
+      });
     }
   }
 
@@ -82,12 +97,19 @@ if (typeof window !== 'undefined') {
       error?.message?.includes('solanaActionsContentScript') ||
       error?.stack?.includes('solanaActionsContentScript')
     ) {
-      console.warn('Solana extension promise rejection (non-critical):', error);
+      log.warn('Solana extension promise rejection filtered', {
+        error: error?.message || 'Unknown error',
+        stack: error?.stack?.slice(0, 500),
+        type: 'solana_extension_promise_rejection',
+      });
       event.preventDefault(); // Prevent logging to console
       return;
     }
 
-    console.error('Unhandled promise rejection:', error);
+    log.error('Unhandled promise rejection', {
+      error,
+      type: 'unhandled_promise_rejection',
+    });
   });
 
   // Handle general errors
@@ -100,7 +122,13 @@ if (typeof window !== 'undefined') {
       error?.message?.includes('solanaActionsContentScript') ||
       event.filename?.includes('solanaActionsContentScript')
     ) {
-      console.warn('Solana extension error (non-critical):', error);
+      log.warn('Solana extension error filtered', {
+        error: error?.message || 'Unknown error',
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        type: 'solana_extension_window_error',
+      });
       event.preventDefault(); // Prevent logging to console
       return;
     }

@@ -19,6 +19,9 @@ import {
   addSecurityHeaders,
   createCorsPreflightResponse,
 } from '@/lib/utils/cors';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('mcp-tools-api');
 
 // =============================================================================
 // Request Validation Schemas
@@ -89,9 +92,9 @@ class MCPInitializer {
     try {
       await initializeDefaultMCPServers();
       this.initialized = true;
-      console.log('MCP servers initialized successfully');
+      log.info('MCP servers initialized successfully', { component: 'MCPInitializer' });
     } catch (error) {
-      console.error('Failed to initialize MCP servers:', error);
+      log.error('Failed to initialize MCP servers', { error: error instanceof Error ? error.message : String(error), component: 'MCPInitializer' });
       this.initPromise = null; // Allow retry on next request
       throw error;
     }
@@ -159,7 +162,7 @@ export async function GET(request: NextRequest) {
     const response = successResponse({ tools: toolList });
     return addSecurityHeaders(response, origin);
   } catch (error) {
-    console.error('Error listing MCP tools:', error);
+    log.error('Error listing MCP tools', { error: error instanceof Error ? error.message : String(error), method: 'GET', endpoint: '/api/mcp/tools' });
     const errorResponse = internalErrorResponse('Failed to list MCP tools');
     return addSecurityHeaders(errorResponse, origin);
   }
@@ -261,7 +264,7 @@ export async function POST(request: NextRequest) {
     });
     return addSecurityHeaders(response, origin);
   } catch (error) {
-    console.error('Error executing MCP tool:', error);
+    log.error('Error executing MCP tool', { error: error instanceof Error ? error.message : String(error), method: 'POST', endpoint: '/api/mcp/tools' });
 
     // Provide more specific error messages
     let errorMessage = 'Failed to execute MCP tool';

@@ -8,6 +8,9 @@ import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
 import type { AIModel } from '@/lib/types/ai';
 import { addSecurityHeaders, successResponse } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('ai-models-api');
 
 // =============================================================================
 // Available AI Models Configuration
@@ -134,9 +137,10 @@ export async function GET(request: NextRequest) {
         //   );
         // }
 
-        console.log(
-          `Models requested by user ${user.walletAddress}: ${filteredModels.length} models`
-        );
+        log.info('Models requested by user', { 
+          walletAddress: user.walletAddress, 
+          modelCount: filteredModels.length 
+        });
 
         const response = successResponse({
           models: filteredModels,
@@ -150,7 +154,9 @@ export async function GET(request: NextRequest) {
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get models error:', error);
+        log.error('Get models error', { 
+          error: error instanceof Error ? error.message : String(error) 
+        });
         const response = NextResponse.json(
           { error: 'Failed to retrieve models' },
           { status: 500 }

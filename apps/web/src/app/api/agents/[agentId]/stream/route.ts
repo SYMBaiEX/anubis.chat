@@ -16,6 +16,9 @@ import {
   createCorsPreflightResponse,
   getStreamingHeaders,
 } from '@/lib/utils/cors';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('agent-stream-api');
 
 // =============================================================================
 // Request Validation
@@ -71,7 +74,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       try {
         agent = convexAgentToApiFormat(agentDoc);
       } catch (conversionError) {
-        console.error('Agent conversion error:', conversionError);
+        log.error('Agent conversion error', { 
+          agentId, 
+          walletAddress, 
+          error: conversionError instanceof Error ? conversionError.message : String(conversionError) 
+        });
         return new Response(
           JSON.stringify({
             error: 'Invalid agent configuration',
@@ -117,7 +124,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
       // Detect client disconnect
       req.signal?.addEventListener('abort', () => {
-        console.log('Client disconnected from stream');
+        log.info('Client disconnected from stream', { agentId, walletAddress });
         isClientDisconnected = true;
         executionAborted = true;
         abortController.abort();
@@ -139,7 +146,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
                   '\n';
                 controller.enqueue(encoder.encode(`data: ${heartbeat}\n\n`));
               } catch (heartbeatError) {
-                console.log('Client disconnected during heartbeat');
+                log.debug('Client disconnected during heartbeat', { agentId });
                 isClientDisconnected = true;
                 clearInterval(heartbeatInterval);
               }
@@ -152,9 +159,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
             )) {
               // Check if client disconnected
               if (isClientDisconnected || executionAborted) {
-                console.log(
-                  'Stopping stream due to client disconnect or abort'
-                );
+                log.info('Stopping stream due to client disconnect or abort', { agentId });
                 clearInterval(heartbeatInterval);
                 controller.close();
                 return;
@@ -164,7 +169,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
                 const data = JSON.stringify(event) + '\n';
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`));
               } catch (enqueueError) {
-                console.log('Client disconnected during event streaming');
+                log.debug('Client disconnected during event streaming', { agentId });
                 isClientDisconnected = true;
                 clearInterval(heartbeatInterval);
                 controller.close();
@@ -179,13 +184,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
               try {
                 controller.enqueue(encoder.encode('data: [DONE]\n\n'));
               } catch (doneError) {
-                console.log('Client disconnected when sending done event');
+                log.debug('Client disconnected when sending done event', { agentId });
               }
             }
 
             controller.close();
           } catch (error) {
-            console.error('Stream execution error:', error);
+            log.error('Stream execution error', { 
+              agentId, 
+              walletAddress, 
+              error: error instanceof Error ? error.message : String(error) 
+            });
 
             // Don't send error if client is disconnected
             if (!(isClientDisconnected || executionAborted)) {
@@ -202,7 +211,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
                 const data = JSON.stringify(errorEvent) + '\n';
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`));
               } catch (errorEnqueueError) {
-                console.log('Client disconnected during error sending');
+                log.debug('Client disconnected during error sending', { agentId });
               }
             }
 
@@ -211,7 +220,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         },
 
         cancel(reason) {
-          console.log('Stream cancelled by client:', reason);
+          log.info('Stream cancelled by client', { agentId, reason });
           isClientDisconnected = true;
           executionAborted = true;
           abortController.abort();

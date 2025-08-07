@@ -8,6 +8,10 @@ import { generateText, streamText } from 'ai';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// Initialize logger
+const log = createModuleLogger('api/ai/completions');
 import { openaiConfig } from '@/lib/env';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
@@ -41,7 +45,7 @@ const completionSchema = z.object({
 function getOpenAIModel(modelId: string) {
   // Check if OpenAI is enabled
   if (!openaiConfig.enabled) {
-    console.error('OpenAI API key not configured');
+    log.error('OpenAI API key not configured');
     return null;
   }
 
@@ -89,7 +93,7 @@ export async function POST(request: NextRequest) {
 
         const completionId = nanoid(12);
 
-        console.log(
+        log.info(
           `AI completion requested: ${completionId} by ${walletAddress} using ${model}`
         );
 
@@ -103,7 +107,7 @@ export async function POST(request: NextRequest) {
             maxOutputTokens: maxTokens,
           });
 
-          console.log(`Streaming completion: ${completionId}`);
+          log.info(`Streaming completion: ${completionId}`);
           return result.toUIMessageStreamResponse();
         }
 
@@ -133,14 +137,14 @@ export async function POST(request: NextRequest) {
           },
         };
 
-        console.log(
+        log.info(
           `Completion generated: ${completionId}, tokens: ${result.usage.totalTokens}`
         );
 
         const response = successResponse(completionResult);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('AI completion error:', error);
+        log.error('AI completion error:', error);
         const response = NextResponse.json(
           { error: 'Failed to generate completion' },
           { status: 500 }

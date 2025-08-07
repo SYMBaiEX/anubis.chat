@@ -6,6 +6,13 @@
 import type { Server as HTTPServer } from 'http';
 import { type Socket, Server as SocketIOServer } from 'socket.io';
 import { z } from 'zod';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// =============================================================================
+// Logger
+// =============================================================================
+
+const log = createModuleLogger('websocket-server');
 
 // =============================================================================
 // Types
@@ -67,7 +74,15 @@ export class WebSocketManager {
     });
 
     this.setupEventHandlers();
-    console.log('✅ WebSocket server initialized');
+    log.info('WebSocket server initialized', {
+      cors: {
+        origin: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
+        methods: ['GET', 'POST'],
+        credentials: true,
+      },
+      path: '/api/ws',
+      transports: ['websocket', 'polling'],
+    });
 
     return this.io;
   }
@@ -79,7 +94,10 @@ export class WebSocketManager {
     if (!this.io) return;
 
     this.io.on('connection', (socket: Socket) => {
-      console.log(`New WebSocket connection: ${socket.id}`);
+      log.info('New WebSocket connection', {
+        socketId: socket.id,
+        timestamp: Date.now(),
+      });
 
       // Handle authentication
       socket.on('authenticate', (data: { walletAddress: string }) => {
@@ -136,7 +154,11 @@ export class WebSocketManager {
       timestamp: Date.now(),
     });
 
-    console.log(`User ${walletAddress} authenticated with socket ${socket.id}`);
+    log.auth('User authenticated via WebSocket', {
+      walletAddress,
+      socketId: socket.id,
+      connectedAt: user.connectedAt,
+    });
   }
 
   /**
@@ -183,9 +205,12 @@ export class WebSocketManager {
       }
 
       this.users.delete(socket.id);
-      console.log(
-        `User ${user.walletAddress} disconnected (socket ${socket.id})`
-      );
+      log.info('User disconnected from WebSocket', {
+        walletAddress: user.walletAddress,
+        socketId: socket.id,
+        connectionDuration: Date.now() - user.connectedAt,
+        remainingSockets: this.userSockets.get(user.walletAddress)?.size || 0,
+      });
     }
   }
 
@@ -424,7 +449,10 @@ export class WebSocketManager {
       this.io = null;
       this.users.clear();
       this.userSockets.clear();
-      console.log('WebSocket server shut down');
+      log.info('WebSocket server shut down', {
+        totalConnectionsAtShutdown: this.users.size,
+        totalUsersAtShutdown: this.userSockets.size,
+      });
     }
   }
 }

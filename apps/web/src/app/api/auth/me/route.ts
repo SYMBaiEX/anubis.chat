@@ -13,6 +13,9 @@ import {
   internalErrorResponse,
   successResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('auth-me-api');
 
 // =============================================================================
 // Route Handlers
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
         const response = successResponse(userProfile);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get user profile error:', error);
+        log.error('Get user profile error', { error: error instanceof Error ? error.message : String(error) });
         return internalErrorResponse('Failed to retrieve user profile');
       }
     });

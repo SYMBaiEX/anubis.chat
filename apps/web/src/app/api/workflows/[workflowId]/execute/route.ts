@@ -25,6 +25,9 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('workflow-execute-api');
 
 // =============================================================================
 // Request Validation Schema
@@ -91,7 +94,7 @@ class WorkflowOrchestrator {
   }
 
   private async executeStep(step: WorkflowStep): Promise<JsonValue> {
-    console.log(`Executing workflow step: ${step.name} (${step.type})`);
+    log.info('Executing workflow step', { stepName: step.name, stepType: step.type, stepId: step.id });
 
     this.execution.currentStep = step.id;
 
@@ -157,9 +160,7 @@ class WorkflowOrchestrator {
 
     // TODO: Get agent from Convex for workflow execution
     // For now, skip agent-dependent steps in workflows
-    console.warn(
-      `Skipping agent step ${step.agentId} - agent loading from Convex not implemented yet`
-    );
+    log.warn('Skipping agent step - not implemented yet', { stepId: step.id, agentId: step.agentId });
     return {
       type: 'agent_execution' as const,
       agentId: step.agentId || 'unknown',
@@ -450,9 +451,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
         mockExecutions.set(execution.id, execution);
 
-        console.log(
-          `Workflow execution started: ${execution.id} for workflow ${workflowId} by ${walletAddress}`
-        );
+        log.info('Workflow execution started', { 
+          executionId: execution.id, 
+          workflowId, 
+          walletAddress 
+        });
 
         // Handle streaming vs non-streaming execution
         if (executeData.stream) {
@@ -524,9 +527,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
         );
         const result = await orchestrator.executeWorkflow();
 
-        console.log(
-          `Workflow execution completed: ${result.id}, status: ${result.status}, steps completed: ${Object.keys(result.stepResults).length}`
-        );
+        log.info('Workflow execution completed', { 
+          executionId: result.id, 
+          status: result.status, 
+          stepsCompleted: Object.keys(result.stepResults).length 
+        });
 
         const response = successResponse({
           execution: result,
@@ -544,7 +549,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
         const origin = req.headers.get('origin');
         return addSecurityHeaders(response, origin);
       } catch (error) {
-        console.error('Workflow execution error:', error);
+        log.error('Workflow execution error', { 
+          error: error instanceof Error ? error.message : String(error) 
+        });
         const response = NextResponse.json(
           {
             error: 'Workflow execution failed',

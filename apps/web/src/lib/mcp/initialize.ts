@@ -4,6 +4,9 @@
  */
 
 import { initializeDefaultMCPServers, mcpManager } from './client';
+import { createModuleLogger } from '../utils/logger';
+
+const log = createModuleLogger('mcp-initialize');
 
 let initialized = false;
 
@@ -16,12 +19,14 @@ export async function ensureMCPServersInitialized(): Promise<void> {
   }
 
   try {
-    console.log('🚀 Initializing MCP servers...');
+    log.info('Initializing MCP servers');
     await initializeDefaultMCPServers();
     initialized = true;
-    console.log('✅ MCP servers initialized successfully');
+    log.info('MCP servers initialized successfully');
   } catch (error) {
-    console.error('❌ Failed to initialize MCP servers:', error);
+    log.error('Failed to initialize MCP servers', { 
+      error: error instanceof Error ? error.message : String(error) 
+    });
     // Don't throw - allow API to continue without MCP
     // MCP features will be unavailable but the API will still work
   }

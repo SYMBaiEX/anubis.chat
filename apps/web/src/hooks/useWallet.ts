@@ -11,6 +11,9 @@ import {
   INITIAL_WALLET_STATE,
   lamportsToSol,
 } from '@/lib/solana';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('wallet-hook');
 
 interface UseWalletReturn extends WalletConnectionState {
   connect: () => Promise<void>;
@@ -57,7 +60,10 @@ export const useWallet = (): UseWalletReturn => {
         const balance = await connection.getBalance(pubkey);
         return lamportsToSol(balance);
       } catch (error) {
-        console.error('Failed to fetch balance:', error);
+        log.error('Failed to fetch balance', { 
+          publicKey: pubkey.toBase58(), 
+          error: error instanceof Error ? error.message : String(error) 
+        });
         return 0;
       }
     },
@@ -176,7 +182,9 @@ export const useWallet = (): UseWalletReturn => {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to refresh balance';
       setState((prev) => ({ ...prev, error: errorMessage }));
-      console.error('Failed to refresh balance:', error);
+      log.error('Failed to refresh balance', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   }, [walletPublicKey, fetchBalance]);
 

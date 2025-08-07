@@ -8,6 +8,7 @@ import { ConvexError } from 'convex/values';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createModuleLogger } from '@/lib/utils/logger';
 import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
 import { Agent, AgentFactory } from '@/lib/agents/core';
 import { api, convex } from '@/lib/database/convex';
@@ -34,6 +35,12 @@ import {
   type WorkflowDefinition,
   WorkflowEngine,
 } from '@/lib/workflows/engine';
+
+// =============================================================================
+// Logger
+// =============================================================================
+
+const log = createModuleLogger('api/workflows');
 
 // =============================================================================
 // Request Validation Schemas
@@ -232,9 +239,13 @@ export async function GET(request: NextRequest) {
           ? filteredWorkflows[filteredWorkflows.length - 1]?.id
           : undefined;
 
-        console.log(
-          `Listed ${filteredWorkflows.length} workflows for user ${walletAddress}`
-        );
+        log.apiRequest('GET /api/workflows', {
+          walletAddress,
+          count: filteredWorkflows.length,
+          hasMore,
+          searchTerm: search || undefined,
+          activeFilter: active,
+        });
 
         const response = paginatedResponse(filteredWorkflows, {
           cursor,
@@ -245,7 +256,10 @@ export async function GET(request: NextRequest) {
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('List workflows error:', error);
+        log.error('Failed to list workflows', {
+          error,
+          operation: 'list_workflows',
+        });
         const response = NextResponse.json(
           { error: 'Failed to retrieve workflows' },
           { status: 500 }
@@ -394,9 +408,13 @@ export async function POST(request: NextRequest) {
             updatedAt: createdWorkflow.updatedAt,
           };
 
-          console.log(
-            `v2 Workflow created: ${createdWorkflow._id} for user ${walletAddress}`
-          );
+          log.dbOperation('workflow_created', {
+            workflowId: createdWorkflow._id,
+            walletAddress,
+            type: 'v2',
+            stepCount: steps.length,
+            triggerCount: triggers?.length || 0,
+          });
 
           const response = createdResponse(newWorkflow);
           return addSecurityHeaders(response);
@@ -473,14 +491,21 @@ export async function POST(request: NextRequest) {
           updatedAt: createdWorkflow.updatedAt,
         };
 
-        console.log(
-          `v1 Workflow created: ${createdWorkflow._id} for user ${walletAddress}`
-        );
+        log.dbOperation('workflow_created', {
+          workflowId: createdWorkflow._id,
+          walletAddress,
+          type: 'v1',
+          stepCount: steps.length,
+          triggerCount: triggers?.length || 0,
+        });
 
         const response = createdResponse(newWorkflow);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Create workflow error:', error);
+        log.error('Failed to create workflow', {
+          error,
+          operation: 'create_workflow',
+        });
         const response = NextResponse.json(
           { error: 'Failed to create workflow' },
           { status: 500 }
@@ -565,7 +590,11 @@ export async function PUT(request: NextRequest) {
               input
             );
           } catch (error) {
-            console.error('v2 workflow execution error:', error);
+            log.error('v2 workflow execution failed', {
+              error,
+              workflowId,
+              type: 'v2',
+            });
             executionResult = {
               id: nanoid(),
               status: 'failed',
@@ -624,9 +653,12 @@ export async function PUT(request: NextRequest) {
           };
         }
 
-        console.log(
-          `Workflow executed: ${workflowId} for user ${walletAddress}`
-        );
+        log.apiRequest('PUT /api/workflows - Execute', {
+          workflowId,
+          walletAddress,
+          status: 'status' in executionResult ? executionResult.status : 'unknown',
+          executionTime: 'executionTime' in executionResult ? executionResult.executionTime : 0,
+        });
 
         const response = successResponse({
           executionId: 'id' in executionResult ? executionResult.id : 'unknown',
@@ -647,7 +679,11 @@ export async function PUT(request: NextRequest) {
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Execute workflow error:', error);
+        log.error('Failed to execute workflow', {
+          error,
+          workflowId,
+          operation: 'execute_workflow',
+        });
         const response = NextResponse.json(
           { error: 'Failed to execute workflow' },
           { status: 500 }

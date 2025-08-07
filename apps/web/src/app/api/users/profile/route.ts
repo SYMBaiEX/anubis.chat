@@ -19,6 +19,9 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('user-profile-api');
 
 // =============================================================================
 // Request Validation
@@ -81,7 +84,7 @@ export async function GET(request: NextRequest) {
         const response = successResponse(userProfile);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get user profile error:', error);
+        log.error('Get user profile error', { error: error instanceof Error ? error.message : String(error) });
 
         // Return minimal profile on error
         const response = successResponse({
@@ -159,12 +162,12 @@ export async function PUT(request: NextRequest) {
           isActive: true,
         };
 
-        console.log(`Profile updated for user ${walletAddress}`);
+        log.info('Profile updated for user', { walletAddress });
 
         const response = successResponse(updatedProfile);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Update profile error:', error);
+        log.error('Update profile error', { error: error instanceof Error ? error.message : String(error) });
         return validationErrorResponse('Failed to update profile');
       }
     });

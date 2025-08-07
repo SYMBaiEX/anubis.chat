@@ -36,6 +36,9 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('agents-api');
 
 // =============================================================================
 // Request Validation Schemas
@@ -114,7 +117,9 @@ async function ensureMCPInitialized() {
       await initializeDefaultMCPServers();
       mcpInitialized = true;
     } catch (error) {
-      console.error('Failed to initialize MCP servers:', error);
+      log.error('Failed to initialize MCP servers', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   }
 }
@@ -164,7 +169,10 @@ async function initializeDefaultAgents(walletAddress: string) {
       }
     }
   } catch (error) {
-    console.error('Failed to initialize default agents:', error);
+    log.error('Failed to initialize default agents', { 
+      walletAddress, 
+      error: error instanceof Error ? error.message : String(error) 
+    });
   }
 }
 
@@ -232,9 +240,10 @@ export async function GET(request: NextRequest) {
           ? formattedAgents[formattedAgents.length - 1]?.id
           : undefined;
 
-        console.log(
-          `Listed ${formattedAgents.length} agents for user ${walletAddress}`
-        );
+        log.info('Listed agents for user', { 
+          agentCount: formattedAgents.length, 
+          walletAddress 
+        });
 
         const response = paginatedResponse(formattedAgents, {
           cursor,
@@ -245,7 +254,9 @@ export async function GET(request: NextRequest) {
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('List agents error:', error);
+        log.error('List agents error', { 
+          error: error instanceof Error ? error.message : String(error) 
+        });
         const response = NextResponse.json(
           { error: 'Failed to retrieve agents' },
           { status: 500 }
@@ -351,12 +362,18 @@ export async function POST(request: NextRequest) {
           walletAddress: newAgent.walletAddress,
         });
 
-        console.log(`Agent created: ${newAgent.id} for user ${walletAddress}`);
+        log.info('Agent created successfully', { 
+          agentId: newAgent.id, 
+          agentName: newAgent.name, 
+          walletAddress 
+        });
 
         const response = createdResponse(newAgent);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Create agent error:', error);
+        log.error('Create agent error', { 
+          error: error instanceof Error ? error.message : String(error) 
+        });
         const response = NextResponse.json(
           { error: 'Failed to create agent' },
           { status: 500 }

@@ -12,6 +12,9 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { z } from 'zod';
 import type { MCPTransportConfig as MCPTransportConfigType } from '@/lib/types/mcp';
 import { MCPTransportType } from '@/lib/types/mcp';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('mcp-client');
 
 // Re-export the transport config from types/mcp.ts for backwards compatibility
 export type MCPTransportConfig = MCPTransportConfigType;
@@ -337,12 +340,12 @@ export async function initializeDefaultMCPServers(): Promise<void> {
   for (const server of DEFAULT_MCP_SERVERS) {
     try {
       await mcpManager.initializeClient(server);
-      console.log(`✅ Initialized MCP server: ${server.name}`);
+      log.info('MCP server initialized successfully', { serverName: server.name });
     } catch (error) {
-      console.error(
-        `❌ Failed to initialize MCP server ${server.name}:`,
-        error
-      );
+      log.error('Failed to initialize MCP server', { 
+        serverName: server.name, 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   }
 }

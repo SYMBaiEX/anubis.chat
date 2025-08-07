@@ -19,6 +19,9 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('mcp-servers-api');
 
 // =============================================================================
 // Request Validation
@@ -130,7 +133,9 @@ export async function GET(request: NextRequest) {
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get MCP servers error:', error);
+        log.error('Get MCP servers error', { 
+          error: error instanceof Error ? error.message : String(error) 
+        });
         const response = NextResponse.json(
           { error: 'Failed to get MCP server status' },
           { status: 500 }
@@ -169,9 +174,10 @@ export async function POST(request: NextRequest) {
         const tools = mcpManager.getServerTools(serverConfig.name);
         const toolNames = tools ? Object.keys(tools) : [];
 
-        console.log(
-          `✅ Initialized MCP server: ${serverConfig.name} with ${toolNames.length} tools`
-        );
+        log.info('MCP server initialized successfully', { 
+          serverName: serverConfig.name, 
+          toolCount: toolNames.length 
+        });
 
         const response = createdResponse({
           name: serverConfig.name,
@@ -182,7 +188,9 @@ export async function POST(request: NextRequest) {
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Initialize MCP server error:', error);
+        log.error('Initialize MCP server error', { 
+          error: error instanceof Error ? error.message : String(error) 
+        });
         const response = NextResponse.json(
           { error: 'Failed to initialize MCP server' },
           { status: 500 }

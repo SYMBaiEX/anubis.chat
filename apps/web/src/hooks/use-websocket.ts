@@ -5,6 +5,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('websocket-hook');
 
 // =============================================================================
 // Types
@@ -95,7 +98,7 @@ export function useWebSocket(
 
     // Connection events
     socket.on('connect', () => {
-      console.log('WebSocket connected');
+      log.info('WebSocket connected');
       setIsConnected(true);
 
       // Authenticate if wallet address is provided
@@ -105,20 +108,20 @@ export function useWebSocket(
     });
 
     socket.on('disconnect', () => {
-      console.log('WebSocket disconnected');
+      log.info('WebSocket disconnected');
       setIsConnected(false);
       setIsAuthenticated(false);
     });
 
     socket.on('authenticated', (data: { success: boolean }) => {
       if (data.success) {
-        console.log('WebSocket authenticated');
+        log.info('WebSocket authenticated');
         setIsAuthenticated(true);
       }
     });
 
     socket.on('error', (error: any) => {
-      console.error('WebSocket error:', error);
+      log.error('WebSocket error', { error });
     });
 
     // Connect
@@ -142,7 +145,7 @@ export function useWebSocket(
    */
   const subscribe = useCallback((events: WebSocketEvent[]) => {
     if (!socketRef.current?.connected) {
-      console.warn('WebSocket not connected');
+      log.warn('WebSocket not connected');
       return;
     }
 
@@ -154,7 +157,7 @@ export function useWebSocket(
    */
   const unsubscribe = useCallback((events: WebSocketEvent[]) => {
     if (!socketRef.current?.connected) {
-      console.warn('WebSocket not connected');
+      log.warn('WebSocket not connected');
       return;
     }
 
@@ -213,7 +216,7 @@ export function useWebSocket(
    */
   const emit = useCallback((event: string, data: any) => {
     if (!socketRef.current?.connected) {
-      console.warn('WebSocket not connected');
+      log.warn('WebSocket not connected');
       return;
     }
 

@@ -8,6 +8,9 @@ import { rateLimitConfig } from '../env';
 import { APIErrorCode } from '../types/api';
 import { addRateLimitHeaders, rateLimitResponse } from '../utils/api-response';
 import { extractWalletFromRequest } from './auth';
+import { createModuleLogger } from '../utils/logger';
+
+const log = createModuleLogger('rate-limit-middleware');
 
 // =============================================================================
 // Extended Request Interface
@@ -303,7 +306,7 @@ export const aiRateLimit = createRateLimiter({
   ...rateLimitConfigs.ai,
   keyGenerator: keyGenerators.wallet,
   onLimitReached: (key, request) => {
-    console.warn(`AI rate limit exceeded for ${key}`, {
+    log.warn('AI rate limit exceeded', { key,
       url: request.url,
       timestamp: new Date().toISOString(),
     });
