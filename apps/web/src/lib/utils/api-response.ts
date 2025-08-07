@@ -52,7 +52,7 @@ export function createErrorResponse(
     requestId: options?.requestId ?? nanoid(12),
   };
 
-  const response: APIResponse = {
+  const response: APIResponse<never> = {
     success: false,
     error,
   };
@@ -295,8 +295,13 @@ export function unsafeContentResponse(
 // Response Headers
 // =============================================================================
 
+/**
+ * @deprecated Use addSecurityHeaders from @/lib/utils/cors instead
+ * This function is kept for backward compatibility
+ */
 export function addSecurityHeaders(
-  response: NextResponse | Response
+  response: NextResponse | Response,
+  requestOrigin?: string | null
 ): NextResponse {
   // Convert Response to NextResponse if needed
   const nextResponse =
@@ -308,26 +313,10 @@ export function addSecurityHeaders(
           headers: response.headers,
         });
 
-  // CORS headers for Web3 compatibility
-  nextResponse.headers.set(
-    'Access-Control-Allow-Origin',
-    process.env.ALLOWED_ORIGINS ?? '*'
-  );
-  nextResponse.headers.set(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PUT, DELETE, OPTIONS'
-  );
-  nextResponse.headers.set(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Wallet-Signature, X-Wallet-Message, X-Wallet-Pubkey, X-Timestamp'
-  );
+  // Import CORS utility dynamically to avoid circular dependency
+  const corsUtil = require('@/lib/utils/cors');
 
-  // Security headers
-  nextResponse.headers.set('X-Content-Type-Options', 'nosniff');
-  nextResponse.headers.set('X-Frame-Options', 'DENY');
-  nextResponse.headers.set('X-XSS-Protection', '1; mode=block');
-
-  return nextResponse;
+  return corsUtil.addSecurityHeaders(nextResponse, requestOrigin);
 }
 
 export function addRateLimitHeaders(

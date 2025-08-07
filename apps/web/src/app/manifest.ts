@@ -4,7 +4,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'ISIS Chat',
     short_name: 'ISIS Chat',
-    description: 'Next-generation AI chat platform with Web3 integration and RAG capabilities',
+    description:
+      'Next-generation AI chat platform with Web3 integration and RAG capabilities',
     start_url: '/',
     display: 'standalone',
     background_color: '#000000',
@@ -14,7 +15,7 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/favicon.png',
         sizes: '512x512',
         type: 'image/png',
-        purpose: 'any maskable',
+        purpose: 'maskable',
       },
       {
         src: '/favicon/icon-192x192.png',

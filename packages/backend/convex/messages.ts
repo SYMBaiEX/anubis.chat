@@ -39,37 +39,74 @@ export const getById = query({
 export const create = mutation({
   args: {
     chatId: v.id('chats'),
+    walletAddress: v.string(),
     role: v.union(
       v.literal('user'),
       v.literal('assistant'),
       v.literal('system')
     ),
     content: v.string(),
+    tokenCount: v.optional(v.number()),
+    embedding: v.optional(v.array(v.number())),
     metadata: v.optional(
       v.object({
         model: v.optional(v.string()),
-        tokensUsed: v.optional(v.number()),
         finishReason: v.optional(v.string()),
-        processingTime: v.optional(v.number()),
+        usage: v.optional(
+          v.object({
+            inputTokens: v.number(),
+            outputTokens: v.number(),
+            totalTokens: v.number(),
+          })
+        ),
+        tools: v.optional(
+          v.array(
+            v.object({
+              id: v.string(),
+              name: v.string(),
+              args: v.any(),
+              result: v.optional(
+                v.object({
+                  success: v.boolean(),
+                  data: v.optional(v.any()),
+                  error: v.optional(v.string()),
+                  executionTime: v.optional(v.number()),
+                })
+              ),
+            })
+          )
+        ),
+        reasoning: v.optional(v.string()),
         citations: v.optional(v.array(v.string())), // Document IDs for RAG
       })
     ),
+    status: v.optional(v.string()),
+    parentMessageId: v.optional(v.id('messages')),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
 
     const messageId = await ctx.db.insert('messages', {
       chatId: args.chatId,
+      walletAddress: args.walletAddress,
       role: args.role,
       content: args.content,
+      tokenCount: args.tokenCount,
+      embedding: args.embedding,
       metadata: args.metadata,
+      status: args.status,
+      parentMessageId: args.parentMessageId,
       createdAt: now,
     });
 
-    // Update chat's last message timestamp
+    // Update chat's last message timestamp and counters
+    const tokenCount =
+      args.tokenCount || args.metadata?.usage?.totalTokens || 0;
     await ctx.db.patch(args.chatId, {
       lastMessageAt: now,
       updatedAt: now,
+      messageCount: (await ctx.db.get(args.chatId))!.messageCount + 1,
+      totalTokens: (await ctx.db.get(args.chatId))!.totalTokens + tokenCount,
     });
 
     return await ctx.db.get(messageId);
@@ -181,14 +218,19 @@ export const getStats = query({
     const systemMessages = messages.filter((m) => m.role === 'system');
 
     const totalTokens = messages.reduce(
-      (sum, msg) => sum + (msg.metadata?.tokensUsed || 0),
+      (sum, msg) => sum + (msg.metadata?.usage?.totalTokens || 0),
       0
     );
 
-    const totalProcessingTime = assistantMessages.reduce(
-      (sum, msg) => sum + (msg.metadata?.processingTime || 0),
-      0
-    );
+    const totalProcessingTime = assistantMessages.reduce((sum, msg) => {
+      // Calculate processing time from tool execution times
+      const toolExecutionTime =
+        msg.metadata?.tools?.reduce(
+          (toolSum, tool) => toolSum + (tool.result?.executionTime || 0),
+          0
+        ) || 0;
+      return sum + toolExecutionTime;
+    }, 0);
 
     const modelsUsed = new Set(
       assistantMessages

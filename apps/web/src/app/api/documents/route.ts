@@ -19,6 +19,13 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// =============================================================================
+// Logger
+// =============================================================================
+
+const log = createModuleLogger('api/documents');
 
 // =============================================================================
 // Request Validation Schemas
@@ -105,9 +112,15 @@ export async function GET(request: NextRequest) {
 
         const totalPages = Math.ceil(total / limit);
 
-        console.log(
-          `Documents listed for ${walletAddress}: ${paginatedDocs.length}/${total} documents`
-        );
+        log.apiRequest('GET /api/documents', {
+          walletAddress,
+          documentCount: paginatedDocs.length,
+          total,
+          page,
+          limit,
+          category,
+          search,
+        });
 
         const responseData: DocumentListResponse = {
           documents: paginatedDocs,
@@ -128,7 +141,11 @@ export async function GET(request: NextRequest) {
         const response = successResponse(responseData);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get documents error:', error);
+        log.error('Failed to retrieve documents', {
+          error,
+          walletAddress,
+          operation: 'get_documents',
+        });
         const response = NextResponse.json(
           { error: 'Failed to retrieve documents' },
           { status: 500 }
@@ -172,7 +189,10 @@ export async function POST(request: NextRequest) {
           ownerId: walletAddress,
           metadata: {
             ...metadata,
-            wordCount: content.trim().split(/\s+/).filter(word => word.length > 0).length,
+            wordCount: content
+              .trim()
+              .split(/\s+/)
+              .filter((word) => word.length > 0).length,
             characterCount: content.length,
           },
           createdAt: now,
@@ -184,9 +204,15 @@ export async function POST(request: NextRequest) {
         await storage.createDocument(document);
         await storage.addDocumentToUser(walletAddress, documentId);
 
-        console.log(
-          `Document created: ${documentId} by ${walletAddress}, type: ${type}, length: ${content.length} chars`
-        );
+        log.dbOperation('document_created', {
+          documentId,
+          walletAddress,
+          title,
+          type,
+          contentLength: content.length,
+          wordCount,
+          hasMetadata: !!metadata,
+        });
 
         const responseData: DocumentUploadResponse = {
           document,
@@ -196,7 +222,11 @@ export async function POST(request: NextRequest) {
         const response = successResponse(responseData);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Upload document error:', error);
+        log.error('Failed to upload document', {
+          error,
+          walletAddress,
+          operation: 'upload_document',
+        });
         const response = NextResponse.json(
           { error: 'Failed to upload document' },
           { status: 500 }

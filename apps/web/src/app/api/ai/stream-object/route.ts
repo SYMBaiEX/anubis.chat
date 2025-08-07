@@ -8,6 +8,11 @@ import { streamObject } from 'ai';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// Initialize logger
+const log = createModuleLogger('api/ai/stream-object');
+
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import {
@@ -140,7 +145,7 @@ function getOpenAIModel(modelId: string) {
   return openai(modelId);
 }
 
-function getStreamingSchema(schemaType: string): z.ZodTypeAny {
+function getStreamingSchema(schemaType: string): z.ZodType<unknown> {
   if (schemaType in streamingSchemas) {
     return streamingSchemas[schemaType as keyof typeof streamingSchemas];
   }
@@ -200,7 +205,7 @@ export async function POST(request: NextRequest) {
 
         const streamId = nanoid(12);
 
-        console.log(
+        log.info(
           `Object streaming requested: ${streamId} by ${walletAddress} using ${model}, schema: ${schemaType}, output: ${output}`
         );
 
@@ -222,9 +227,9 @@ export async function POST(request: NextRequest) {
           maxOutputTokens: maxTokens,
           onFinish: ({ usage, error }) => {
             if (error) {
-              console.error(`Object stream error: ${streamId}`, error);
+              log.error(`Object stream error: ${streamId}`, error);
             } else {
-              console.log(
+              log.info(
                 `Object stream completed: ${streamId}, tokens: ${usage?.totalTokens || 'unknown'}`
               );
             }
@@ -240,7 +245,7 @@ export async function POST(request: NextRequest) {
           },
         });
       } catch (error) {
-        console.error('AI object streaming error:', error);
+        log.error('AI object streaming error:', error);
         const response = NextResponse.json(
           { error: 'Failed to stream object' },
           { status: 500 }
@@ -273,7 +278,7 @@ export async function GET(request: NextRequest) {
 
       return addSecurityHeaders(response);
     } catch (error) {
-      console.error('Get streaming schemas error:', error);
+      log.error('Get streaming schemas error:', error);
       const response = NextResponse.json(
         { error: 'Failed to retrieve streaming schemas' },
         { status: 500 }

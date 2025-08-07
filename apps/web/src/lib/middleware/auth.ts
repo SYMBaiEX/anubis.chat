@@ -8,10 +8,13 @@ import bs58 from 'bs58';
 import { sign, verify } from 'jsonwebtoken';
 import type { NextRequest } from 'next/server';
 import nacl from 'tweetnacl';
-import { jwtConfig, isProduction, corsConfig } from '../env';
 import { getStorage } from '../database/storage';
+import { corsConfig, isProduction, jwtConfig } from '../env';
 import { APIErrorCode } from '../types/api';
 import { createErrorResponse } from '../utils/api-response';
+import { createModuleLogger } from '../utils/logger';
+
+const log = createModuleLogger('auth-middleware');
 
 // =============================================================================
 // Types
@@ -86,7 +89,9 @@ export async function verifyJWTToken(
 
     return decoded;
   } catch (error) {
-    console.error('JWT verification failed:', error);
+    log.error('JWT verification failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -111,7 +116,9 @@ export function verifyWalletSignature(
       publicKeyBytes
     );
   } catch (error) {
-    console.error('Signature verification failed:', error);
+    log.error('Signature verification failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }
@@ -187,7 +194,9 @@ export async function withAuth<T extends NextRequest>(
     // Call the handler with authenticated request
     return await handler(authenticatedRequest);
   } catch (error) {
-    console.error('Authentication middleware error:', error);
+    log.error('Authentication middleware error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return createErrorResponse(
       APIErrorCode.INTERNAL_ERROR,
       'Authentication failed'
@@ -225,7 +234,9 @@ export async function withOptionalAuth<T extends NextRequest>(
     );
   } catch (error) {
     // For optional auth, we continue without auth on errors
-    console.error('Optional authentication error:', error);
+    log.error('Optional authentication error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return await handler(
       request as T & { user?: { walletAddress: string; publicKey: string } }
     );
@@ -278,14 +289,17 @@ export interface RateLimitConfig {
 const rateLimits = new Map<string, { count: number; resetTime: number }>();
 
 // Periodic cleanup for expired rate limit entries (every 5 minutes)
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimits.entries()) {
-    if (entry.resetTime <= now) {
-      rateLimits.delete(key);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, entry] of rateLimits.entries()) {
+      if (entry.resetTime <= now) {
+        rateLimits.delete(key);
+      }
     }
-  }
-}, 5 * 60 * 1000);
+  },
+  5 * 60 * 1000
+);
 
 export function checkRateLimit(
   walletAddress: string,
@@ -324,10 +338,7 @@ export function checkRateLimit(
 export function addWeb3CorsHeaders(response: Response): Response {
   const headers = new Headers(response.headers);
 
-  headers.set(
-    'Access-Control-Allow-Origin',
-    corsConfig.origins.join(',')
-  );
+  headers.set('Access-Control-Allow-Origin', corsConfig.origins.join(','));
   headers.set(
     'Access-Control-Allow-Methods',
     'GET, POST, PUT, DELETE, OPTIONS'
@@ -363,7 +374,10 @@ export async function blacklistToken(token: string): Promise<boolean> {
     await storage.blacklistToken(decoded.jti, decoded.expiresAt);
     return true;
   } catch (error) {
-    console.error('Token blacklisting failed:', error);
+    log.error('Token blacklisting failed', {
+      jti,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }

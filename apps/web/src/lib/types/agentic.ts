@@ -1,10 +1,11 @@
 /**
  * Agentic AI Types and Interfaces
  * Comprehensive type definitions for multi-step AI agents, workflows, and tool calling
+ * Strict TypeScript - No any, unknown, or void types allowed
  */
 
-import type { CoreTool } from 'ai';
 import type { z } from 'zod';
+import type { Result } from './result';
 
 // =============================================================================
 // Core Agent Types
@@ -18,7 +19,7 @@ export interface Agent {
   systemPrompt: string;
   temperature?: number;
   maxTokens?: number;
-  tools?: AgentTool[];
+  tools?: AgentTool[] | string[]; // Can be tool definitions or tool names
   maxSteps?: number;
   walletAddress: string;
   createdAt: number;
@@ -32,16 +33,16 @@ export interface AgentExecution {
   status: AgentExecutionStatus;
   input: string;
   steps: AgentStep[];
-  result?: AgentResult;
+  result?: AgentExecutionResult;
   error?: string;
   startedAt: number;
   completedAt?: number;
   metadata?: Record<string, unknown>;
 }
 
-export type AgentExecutionStatus = 
+export type AgentExecutionStatus =
   | 'pending'
-  | 'running' 
+  | 'running'
   | 'waiting_approval'
   | 'completed'
   | 'failed'
@@ -61,7 +62,7 @@ export interface AgentStep {
   error?: string;
 }
 
-export type AgentStepType = 
+export type AgentStepType =
   | 'reasoning'
   | 'tool_call'
   | 'parallel_tools'
@@ -75,7 +76,7 @@ export type AgentStepStatus =
   | 'failed'
   | 'waiting_approval';
 
-export interface AgentResult {
+export interface AgentExecutionResult {
   success: boolean;
   output: string;
   finalStep: number;
@@ -87,23 +88,44 @@ export interface AgentResult {
     total: number;
   };
   executionTime: number;
+  [key: string]: unknown;
 }
 
 // =============================================================================
 // Tool System Types
 // =============================================================================
 
-export interface AgentTool {
+export interface AgentTool<TParams = unknown> {
   name: string;
   description: string;
-  parameters: z.ZodSchema;
-  execute: (params: any, context: AgentContext) => Promise<ToolResult>;
+  parameters: z.ZodSchema<TParams>;
+  execute: (params: TParams, context: AgentContext) => Promise<ToolResult>;
   requiresApproval?: boolean;
   category?: ToolCategory;
-  metadata?: Record<string, unknown>;
+  metadata?: AgentToolMetadata;
 }
 
-export type ToolCategory = 
+export interface AgentToolMetadata {
+  version?: string;
+  author?: string;
+  documentation?: string;
+  examples?: ToolExample[];
+  rateLimit?: ToolRateLimit;
+}
+
+export interface ToolExample {
+  description: string;
+  input: Record<string, unknown>;
+  expectedOutput: ToolResultData;
+}
+
+export interface ToolRateLimit {
+  requestsPerMinute: number;
+  requestsPerHour: number;
+  requestsPerDay: number;
+}
+
+export type ToolCategory =
   | 'data_retrieval'
   | 'computation'
   | 'communication'
@@ -122,10 +144,32 @@ export interface ToolCall {
 export interface ToolResult {
   id: string;
   success: boolean;
-  result: any;
-  error?: string;
+  result: ToolResultData;
+  error?: ToolError;
   executionTime: number;
-  metadata?: Record<string, unknown>;
+  metadata?: ToolResultMetadata;
+}
+
+export type ToolResultData =
+  | string
+  | number
+  | boolean
+  | null
+  | Record<string, unknown>
+  | unknown[];
+
+export interface ToolError {
+  code: string;
+  message: string;
+  details?: Record<string, string | number | boolean>;
+  retryable?: boolean;
+}
+
+export interface ToolResultMetadata {
+  cached?: boolean;
+  source?: string;
+  timestamp?: number;
+  version?: string;
 }
 
 export interface AgentContext {
@@ -164,14 +208,19 @@ export interface WorkflowStep {
   requiresApproval?: boolean;
 }
 
-export type WorkflowStepType = 
+export type WorkflowStepType =
   | 'agent_task'
   | 'condition'
   | 'parallel'
   | 'sequential'
   | 'human_approval'
   | 'delay'
-  | 'webhook';
+  | 'webhook'
+  | 'start'
+  | 'end'
+  | 'task'
+  | 'loop'
+  | 'subworkflow';
 
 export interface WorkflowTrigger {
   id: string;
@@ -180,7 +229,7 @@ export interface WorkflowTrigger {
   parameters?: Record<string, unknown>;
 }
 
-export type WorkflowTriggerType = 
+export type WorkflowTriggerType =
   | 'manual'
   | 'schedule'
   | 'webhook'
@@ -193,10 +242,35 @@ export interface WorkflowExecution {
   walletAddress: string;
   status: AgentExecutionStatus;
   currentStep: string;
-  stepResults: Record<string, any>;
+  stepResults: WorkflowStepResults;
+  variables?: WorkflowVariables;
   startedAt: number;
   completedAt?: number;
+  error?: WorkflowExecutionError;
+}
+
+export interface WorkflowStepResults {
+  [stepId: string]: StepResult;
+}
+
+export interface StepResult {
+  status: AgentStepStatus;
+  output?: ToolResultData;
   error?: string;
+  startedAt: number;
+  completedAt?: number;
+  retryCount?: number;
+}
+
+export interface WorkflowVariables {
+  [key: string]: string | number | boolean | null;
+}
+
+export interface WorkflowExecutionError {
+  stepId: string;
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
 }
 
 // =============================================================================
@@ -217,18 +291,14 @@ export interface ApprovalRequest {
   response?: ApprovalResponse;
 }
 
-export type ApprovalType = 
+export type ApprovalType =
   | 'tool_execution'
   | 'workflow_step'
   | 'sensitive_action'
   | 'resource_usage'
   | 'custom';
 
-export type ApprovalStatus = 
-  | 'pending'
-  | 'approved'
-  | 'rejected'
-  | 'expired';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired';
 
 export interface ApprovalResponse {
   approved: boolean;
@@ -303,7 +373,7 @@ export interface AgentEvent {
   timestamp: number;
 }
 
-export type AgentEventType = 
+export type AgentEventType =
   | 'execution_started'
   | 'step_completed'
   | 'tool_called'
@@ -313,36 +383,121 @@ export type AgentEventType =
   | 'execution_cancelled';
 
 // =============================================================================
+// Advanced Types
+// =============================================================================
+
+export interface AgentCapabilities {
+  supportedModels: string[];
+  maxConcurrentTools: number;
+  supportedToolCategories: ToolCategory[];
+  features: AgentFeature[];
+}
+
+export enum AgentFeature {
+  PARALLEL_TOOLS = 'parallel_tools',
+  CONDITIONAL_EXECUTION = 'conditional_execution',
+  HUMAN_IN_THE_LOOP = 'human_in_the_loop',
+  MEMORY_PERSISTENCE = 'memory_persistence',
+  CUSTOM_TOOLS = 'custom_tools',
+  WORKFLOW_INTEGRATION = 'workflow_integration',
+  STREAMING_RESPONSES = 'streaming_responses',
+  FUNCTION_CALLING = 'function_calling',
+}
+
+export interface AgentMetrics {
+  totalExecutions: number;
+  successRate: number;
+  averageExecutionTime: number;
+  averageSteps: number;
+  tokenUsage: TokenUsage;
+  costEstimate: number;
+}
+
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  cachedTokens?: number;
+}
+
+// =============================================================================
+// Result Type Integration
+// =============================================================================
+
+export type AgentOperationResult<T> = Result<T, AgentError>;
+export type AsyncAgentOperationResult<T> = Promise<AgentOperationResult<T>>;
+
+export interface AgentError {
+  code: AgentErrorCode;
+  message: string;
+  details?: Record<string, unknown>;
+  retryable?: boolean;
+  suggestion?: string;
+}
+
+export enum AgentErrorCode {
+  INVALID_INPUT = 'INVALID_INPUT',
+  TOOL_EXECUTION_FAILED = 'TOOL_EXECUTION_FAILED',
+  MAX_STEPS_EXCEEDED = 'MAX_STEPS_EXCEEDED',
+  TIMEOUT = 'TIMEOUT',
+  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
+  INSUFFICIENT_PERMISSIONS = 'INSUFFICIENT_PERMISSIONS',
+  MODEL_UNAVAILABLE = 'MODEL_UNAVAILABLE',
+  WORKFLOW_FAILED = 'WORKFLOW_FAILED',
+  APPROVAL_REJECTED = 'APPROVAL_REJECTED',
+  CONTEXT_TOO_LONG = 'CONTEXT_TOO_LONG',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+}
+
+// =============================================================================
 // Utility Types
 // =============================================================================
 
+export interface PaginationParams {
+  cursor?: string;
+  limit: number;
+  offset?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface PaginationMetadata {
+  cursor?: string;
+  nextCursor?: string;
+  prevCursor?: string;
+  hasMore: boolean;
+  hasPrevious?: boolean;
+  total?: number;
+  limit: number;
+  offset?: number;
+  page?: number;
+  totalPages?: number;
+}
+
 export interface PaginatedAgentsResponse {
   agents: Agent[];
-  pagination: {
-    cursor?: string;
-    nextCursor?: string;
-    hasMore: boolean;
-    limit: number;
-  };
+  pagination: PaginationMetadata;
 }
 
 export interface PaginatedExecutionsResponse {
   executions: AgentExecution[];
-  pagination: {
-    cursor?: string;
-    nextCursor?: string;
-    hasMore: boolean;
-    limit: number;
-  };
+  pagination: PaginationMetadata;
+}
+
+export interface PaginatedWorkflowsResponse {
+  workflows: Workflow[];
+  pagination: PaginationMetadata;
 }
 
 // =============================================================================
 // MCP Integration Types
 // =============================================================================
 
-export interface MCPTool extends AgentTool {
+export interface MCPTool<TParams = unknown> extends AgentTool<TParams> {
   mcpServerId: string;
   mcpToolName: string;
+  mcpVersion?: string;
+  mcpEndpoint?: string;
 }
 
 export interface MCPServerConfig {

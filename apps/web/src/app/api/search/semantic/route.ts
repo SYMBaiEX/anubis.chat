@@ -14,6 +14,13 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// =============================================================================
+// Logger
+// =============================================================================
+
+const log = createModuleLogger('api/search/semantic');
 
 // =============================================================================
 // Request Validation Schemas
@@ -24,18 +31,15 @@ const semanticSearchSchema = z.object({
     .string()
     .min(1, 'Query is required')
     .max(500, 'Query must be 500 characters or less')
-    .refine(
-      (val) => {
-        // Prevent potential ReDoS patterns
-        const suspiciousPatterns = [
-          /(\*{2,}|\+{2,}|\?{2,}|\|{2,})/,  // Repeated quantifiers
-          /\(.*\){20,}/,                     // Excessive groups
-          /(.*\*.*){10,}/,                   // Nested quantifiers
-        ];
-        return !suspiciousPatterns.some(pattern => pattern.test(val));
-      },
-      'Query contains potentially unsafe patterns'
-    ),
+    .refine((val) => {
+      // Prevent potential ReDoS patterns
+      const suspiciousPatterns = [
+        /(\*{2,}|\+{2,}|\?{2,}|\|{2,})/, // Repeated quantifiers
+        /\(.*\){20,}/, // Excessive groups
+        /(.*\*.*){10,}/, // Nested quantifiers
+      ];
+      return !suspiciousPatterns.some((pattern) => pattern.test(val));
+    }, 'Query contains potentially unsafe patterns'),
   limit: z.number().min(1).max(20).default(5),
   contextLength: z.number().min(100).max(2000).default(500),
   filters: z
@@ -371,14 +375,26 @@ export async function POST(request: NextRequest) {
           searchOptions
         );
 
-        console.log(
-          `Semantic search by ${walletAddress}: "${searchOptions.query}" -> ${searchResponse.total} results (${searchResponse.processingTime}ms)`
-        );
+        log.apiRequest('POST /api/search/semantic', {
+          walletAddress,
+          query: searchOptions.query,
+          resultCount: searchResponse.total,
+          processingTime: searchResponse.processingTime,
+          limit: searchOptions.limit,
+          contextLength: searchOptions.contextLength,
+          hasFilters: !!searchOptions.filters,
+          hasContext: !!searchOptions.context,
+          userIntent: searchOptions.context?.userIntent,
+        });
 
         const response = successResponse(searchResponse);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Semantic search error:', error);
+        log.error('Semantic search failed', {
+          error,
+          walletAddress,
+          operation: 'semantic_search',
+        });
         const response = NextResponse.json(
           { error: 'Failed to perform semantic search' },
           { status: 500 }

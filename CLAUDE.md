@@ -186,3 +186,7 @@ chore: Maintenance
 - `apps/web/src/components/providers.tsx`: App providers
 - `apps/web/src/app/layout.tsx`: Root layout
 - `.cursor/rules/main.mdc`: Primary development guidelines
+
+## Code Research Guidance
+- **Research Best Practices**:
+  - NEVER USE ANY TYPES, USE CONTEXT7 AND THE GREP MCP TO RESEARCH GITHUB FOR BEST PRACTICES AND DOCS

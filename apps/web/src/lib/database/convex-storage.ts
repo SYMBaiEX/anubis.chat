@@ -3,25 +3,30 @@
  * Implements the StorageBackend interface using Convex for production-ready storage
  */
 
-import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@convex/_generated/api';
-import type { Id, Doc } from '@convex/_generated/dataModel';
+import type { Doc, Id } from '@convex/_generated/dataModel';
+import { ConvexHttpClient } from 'convex/browser';
 import type {
   Document,
   DocumentSearchRequest,
   DocumentSearchResult,
 } from '@/lib/types/documents';
+import { createModuleLogger } from '@/lib/utils/logger';
 import type { StorageBackend } from './storage';
+
+const log = createModuleLogger('convex-storage');
 
 export class ConvexStorage implements StorageBackend {
   private client: ConvexHttpClient;
 
   constructor(convexUrl?: string) {
-    this.client = new ConvexHttpClient(
-      convexUrl ||
-        process.env.NEXT_PUBLIC_CONVEX_URL ||
-        'https://veracious-capybara-763.convex.cloud'
-    );
+    const url = convexUrl || process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!url) {
+      throw new Error(
+        'Convex URL is required. Set NEXT_PUBLIC_CONVEX_URL environment variable.'
+      );
+    }
+    this.client = new ConvexHttpClient(url);
   }
 
   async createDocument(document: Document): Promise<Document> {
@@ -39,7 +44,9 @@ export class ConvexStorage implements StorageBackend {
       }
       return this.convertFromConvexDocument(convexDoc);
     } catch (error) {
-      console.error('Failed to create document in Convex:', error);
+      log.error('Failed to create document in Convex', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new Error('Failed to create document');
     }
   }
@@ -52,7 +59,10 @@ export class ConvexStorage implements StorageBackend {
 
       return convexDoc ? this.convertFromConvexDocument(convexDoc) : null;
     } catch (error) {
-      console.error('Failed to get document from Convex:', error);
+      log.error('Failed to get document from Convex', {
+        docId,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return null;
     }
   }
@@ -76,7 +86,10 @@ export class ConvexStorage implements StorageBackend {
 
       return convexDoc ? this.convertFromConvexDocument(convexDoc) : null;
     } catch (error) {
-      console.error('Failed to update document in Convex:', error);
+      log.error('Failed to update document in Convex', {
+        docId,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new Error('Failed to update document');
     }
   }
@@ -95,7 +108,10 @@ export class ConvexStorage implements StorageBackend {
 
       return true;
     } catch (error) {
-      console.error('Failed to delete document in Convex:', error);
+      log.error('Failed to delete document in Convex', {
+        docId,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
@@ -119,7 +135,9 @@ export class ConvexStorage implements StorageBackend {
         });
 
         return {
-          documents: results.map((doc: Doc<'documents'>) => this.convertFromConvexDocument(doc)),
+          documents: results.map((doc: Doc<'documents'>) =>
+            this.convertFromConvexDocument(doc)
+          ),
           total: results.length, // Search doesn't provide total count
         };
       }
@@ -138,7 +156,10 @@ export class ConvexStorage implements StorageBackend {
         total: result.pagination.total,
       };
     } catch (error) {
-      console.error('Failed to get user documents from Convex:', error);
+      log.error('Failed to get user documents from Convex', {
+        walletAddress,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return { documents: [], total: 0 };
     }
   }
@@ -151,7 +172,11 @@ export class ConvexStorage implements StorageBackend {
       const doc = await this.getDocument(documentId);
       return doc ? doc.ownerId === walletAddress : false;
     } catch (error) {
-      console.error('Failed to check document access in Convex:', error);
+      log.error('Failed to check document access in Convex', {
+        docId,
+        walletAddress,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
@@ -182,7 +207,14 @@ export class ConvexStorage implements StorageBackend {
         ownerId: walletAddress,
         query,
         limit: options.limit,
-        type: options.filters?.type?.[0], // Convex function expects single type
+        type: options.filters?.type?.[0] as
+          | 'text'
+          | 'pdf'
+          | 'markdown'
+          | 'url'
+          | 'json'
+          | 'csv'
+          | undefined, // Convex function expects single type
       });
 
       // Convert to DocumentSearchResult format
@@ -192,7 +224,9 @@ export class ConvexStorage implements StorageBackend {
         highlights: this.extractHighlights(doc, query),
       }));
     } catch (error) {
-      console.error('Failed to search documents in Convex:', error);
+      log.error('Failed to search documents in Convex', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return [];
     }
   }
@@ -208,7 +242,10 @@ export class ConvexStorage implements StorageBackend {
         expiresAt,
       });
     } catch (error) {
-      console.error('Failed to blacklist token in Convex:', error);
+      log.error('Failed to blacklist token in Convex', {
+        jti,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new Error('Failed to blacklist token');
     }
   }
@@ -217,7 +254,10 @@ export class ConvexStorage implements StorageBackend {
     try {
       return await this.client.query(api.auth.isTokenBlacklisted, { tokenId });
     } catch (error) {
-      console.error('Failed to check token blacklist in Convex:', error);
+      log.error('Failed to check token blacklist in Convex', {
+        jti,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
@@ -227,7 +267,9 @@ export class ConvexStorage implements StorageBackend {
       const result = await this.client.mutation(api.auth.cleanupExpiredTokens);
       return result.cleaned;
     } catch (error) {
-      console.error('Failed to cleanup expired tokens in Convex:', error);
+      log.error('Failed to cleanup expired tokens in Convex', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return 0;
     }
   }
@@ -244,7 +286,11 @@ export class ConvexStorage implements StorageBackend {
         expiresAt,
       });
     } catch (error) {
-      console.error('Failed to store nonce in Convex:', error);
+      log.error('Failed to store nonce in Convex', {
+        nonce,
+        walletAddress,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new Error('Failed to store nonce');
     }
   }
@@ -259,7 +305,11 @@ export class ConvexStorage implements StorageBackend {
         nonce,
       });
     } catch (error) {
-      console.error('Failed to validate nonce in Convex:', error);
+      log.error('Failed to validate nonce in Convex', {
+        nonce,
+        walletAddress,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
@@ -269,7 +319,9 @@ export class ConvexStorage implements StorageBackend {
       const result = await this.client.mutation(api.auth.cleanupExpiredNonces);
       return result.cleaned;
     } catch (error) {
-      console.error('Failed to cleanup expired nonces in Convex:', error);
+      log.error('Failed to cleanup expired nonces in Convex', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return 0;
     }
   }
@@ -279,7 +331,9 @@ export class ConvexStorage implements StorageBackend {
       await this.client.query(api.healthCheck.get);
       return true;
     } catch (error) {
-      console.error('Convex health check failed:', error);
+      log.error('Convex health check failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }

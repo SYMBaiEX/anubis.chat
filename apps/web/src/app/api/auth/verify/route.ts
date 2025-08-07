@@ -13,12 +13,16 @@ import {
 } from '@/lib/middleware/auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import type { AuthSession } from '@/lib/types/api';
+import { SubscriptionFeature, SubscriptionTier, Theme } from '@/lib/types/api';
 import {
   addSecurityHeaders,
   successResponse,
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('auth-verify-api');
 
 // =============================================================================
 // Request Validation
@@ -98,7 +102,9 @@ function parseSignInMessage(message: string): {
       expirationTime: expirationTimeMatch[1],
     };
   } catch (error) {
-    console.error('Message parsing failed:', error);
+    log.error('Message parsing failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -185,15 +191,15 @@ export async function POST(request: NextRequest) {
           displayName: undefined,
           avatar: undefined,
           preferences: {
-            theme: 'dark',
+            theme: Theme.DARK,
             aiModel: 'gpt-4o',
             notifications: true,
           },
           subscription: {
-            tier: 'free',
+            tier: SubscriptionTier.FREE,
             tokensUsed: 0,
             tokensLimit: 10_000,
-            features: ['basic_chat', 'document_upload'],
+            features: [SubscriptionFeature.BASIC_CHAT],
           },
           createdAt: Date.now(),
           lastActiveAt: Date.now(),
@@ -205,7 +211,9 @@ export async function POST(request: NextRequest) {
       const response = successResponse(authSession);
       return addSecurityHeaders(response);
     } catch (error) {
-      console.error('Authentication verification error:', error);
+      log.error('Authentication verification error', {
+        error: error instanceof Error ? error.message : String(error),
+      });
 
       return unauthorizedResponse('Authentication failed');
     }

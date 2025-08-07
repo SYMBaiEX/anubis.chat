@@ -9,10 +9,19 @@ import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
 import type { UserProfile } from '@/lib/types/api';
 import {
+  Language,
+  SubscriptionFeature,
+  SubscriptionTier,
+  Theme,
+} from '@/lib/types/api';
+import {
   addSecurityHeaders,
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('user-profile-api');
 
 // =============================================================================
 // Request Validation
@@ -23,10 +32,10 @@ const updateProfileSchema = z.object({
   avatar: z.string().url().optional(),
   preferences: z
     .object({
-      theme: z.enum(['light', 'dark']).optional(),
+      theme: z.nativeEnum(Theme).optional(),
       aiModel: z.string().optional(),
       notifications: z.boolean().optional(),
-      language: z.string().optional(),
+      language: z.nativeEnum(Language).optional(),
       temperature: z.number().min(0).max(2).optional(),
       maxTokens: z.number().min(1).max(8000).optional(),
     })
@@ -53,16 +62,19 @@ export async function GET(request: NextRequest) {
           displayName: undefined,
           avatar: undefined,
           preferences: {
-            theme: 'dark',
+            theme: Theme.DARK,
             aiModel: 'gpt-4o',
             notifications: true,
-            language: 'en',
+            language: Language.EN,
           },
           subscription: {
-            tier: 'free',
+            tier: SubscriptionTier.FREE,
             tokensUsed: 150,
             tokensLimit: 10_000,
-            features: ['basic_chat', 'document_upload'],
+            features: [
+              SubscriptionFeature.BASIC_CHAT,
+              SubscriptionFeature.DOCUMENT_UPLOAD,
+            ],
           },
           createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000, // 30 days ago
           lastActiveAt: Date.now() - 5 * 60 * 1000, // 5 minutes ago
@@ -72,22 +84,24 @@ export async function GET(request: NextRequest) {
         const response = successResponse(userProfile);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get user profile error:', error);
+        log.error('Get user profile error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
 
         // Return minimal profile on error
         const response = successResponse({
           walletAddress: authReq.user.walletAddress,
           publicKey: authReq.user.publicKey,
           preferences: {
-            theme: 'dark',
+            theme: Theme.DARK,
             aiModel: 'gpt-4o',
             notifications: true,
           },
           subscription: {
-            tier: 'free',
+            tier: SubscriptionTier.FREE,
             tokensUsed: 0,
             tokensLimit: 10_000,
-            features: ['basic_chat'],
+            features: [SubscriptionFeature.BASIC_CHAT],
           },
           createdAt: Date.now(),
           lastActiveAt: Date.now(),
@@ -129,30 +143,35 @@ export async function PUT(request: NextRequest) {
           displayName: updates.displayName,
           avatar: updates.avatar,
           preferences: {
-            theme: updates.preferences?.theme || 'dark',
+            theme: updates.preferences?.theme || Theme.DARK,
             aiModel: updates.preferences?.aiModel || 'gpt-4o',
             notifications: updates.preferences?.notifications ?? true,
-            language: updates.preferences?.language || 'en',
+            language: updates.preferences?.language || Language.EN,
             temperature: updates.preferences?.temperature,
             maxTokens: updates.preferences?.maxTokens,
           },
           subscription: {
-            tier: 'free',
+            tier: SubscriptionTier.FREE,
             tokensUsed: 150,
             tokensLimit: 10_000,
-            features: ['basic_chat', 'document_upload'],
+            features: [
+              SubscriptionFeature.BASIC_CHAT,
+              SubscriptionFeature.DOCUMENT_UPLOAD,
+            ],
           },
           createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
           lastActiveAt: Date.now(),
           isActive: true,
         };
 
-        console.log(`Profile updated for user ${walletAddress}`);
+        log.info('Profile updated for user', { walletAddress });
 
         const response = successResponse(updatedProfile);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Update profile error:', error);
+        log.error('Update profile error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
         return validationErrorResponse('Failed to update profile');
       }
     });

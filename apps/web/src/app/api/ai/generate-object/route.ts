@@ -8,6 +8,11 @@ import { generateObject } from 'ai';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// Initialize logger
+const log = createModuleLogger('api/ai/generate-object');
+
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import type {
@@ -136,7 +141,7 @@ function getOpenAIModel(modelId: string) {
 }
 
 // Convert JSON Schema-like definition to Zod schema
-function jsonSchemaPropertyToZod(prop: JSONSchemaProperty): z.ZodTypeAny {
+function jsonSchemaPropertyToZod(prop: JSONSchemaProperty): z.ZodType<unknown> {
   switch (prop.type) {
     case 'string': {
       let stringSchema = z.string();
@@ -189,7 +194,7 @@ function jsonSchemaPropertyToZod(prop: JSONSchemaProperty): z.ZodTypeAny {
 
     case 'object':
       if (prop.properties) {
-        const shape: Record<string, z.ZodTypeAny> = {};
+        const shape: Record<string, z.ZodType<unknown>> = {};
         for (const [key, value] of Object.entries(prop.properties)) {
           shape[key] = jsonSchemaPropertyToZod(value);
         }
@@ -205,7 +210,7 @@ function jsonSchemaPropertyToZod(prop: JSONSchemaProperty): z.ZodTypeAny {
 function getSchema(
   schemaType?: string,
   customSchema?: Record<string, unknown>
-): z.ZodTypeAny {
+): z.ZodType<unknown> {
   if (schemaType && schemaType in commonSchemas) {
     return commonSchemas[schemaType as keyof typeof commonSchemas];
   }
@@ -293,7 +298,7 @@ export async function POST(request: NextRequest) {
 
         const generationId = nanoid(12);
 
-        console.log(
+        log.info(
           `Object generation requested: ${generationId} by ${walletAddress} using ${model}, schema: ${schemaType || 'custom'}`
         );
 
@@ -327,14 +332,14 @@ export async function POST(request: NextRequest) {
           },
         };
 
-        console.log(
+        log.info(
           `Object generated: ${generationId}, tokens: ${result.usage.totalTokens}`
         );
 
         const response = successResponse(generationResult);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('AI object generation error:', error);
+        log.error('AI object generation error:', error);
         const response = NextResponse.json(
           { error: 'Failed to generate object' },
           { status: 500 }
@@ -362,7 +367,7 @@ export async function GET(request: NextRequest) {
 
       return addSecurityHeaders(response);
     } catch (error) {
-      console.error('Get schemas error:', error);
+      log.error('Get schemas error:', error);
       const response = NextResponse.json(
         { error: 'Failed to retrieve schemas' },
         { status: 500 }

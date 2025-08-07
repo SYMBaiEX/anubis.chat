@@ -1,9 +1,9 @@
 'use client';
 
-import { useWallet } from '@/hooks/useWallet';
-import { Button } from '@/components/ui/button';
-import { Wallet } from 'lucide-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { Wallet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useWallet } from '@/hooks/useWallet';
 
 export function WalletConnectButton() {
   const { isConnected, isConnecting, formatAddress, disconnect } = useWallet();
@@ -19,18 +19,18 @@ export function WalletConnectButton() {
 
   return (
     <Button
-      onClick={handleClick}
+      className="border-2 transition-colors hover:border-primary"
       disabled={isConnecting}
-      variant="outline"
+      onClick={handleClick}
       size="sm"
-      className="border-2 hover:border-primary transition-colors"
+      variant="outline"
     >
       <Wallet className="mr-2 h-4 w-4" />
       {isConnecting
         ? 'Connecting...'
         : isConnected
-        ? formatAddress()
-        : 'Connect Wallet'}
+          ? formatAddress()
+          : 'Connect Wallet'}
     </Button>
   );
 }

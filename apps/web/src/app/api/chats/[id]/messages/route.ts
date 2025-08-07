@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { messageRateLimit } from '@/lib/middleware/rate-limit';
 import type { ChatMessage, SendMessageRequest } from '@/lib/types/api';
+import { MessageRole } from '@/lib/types/api';
 import {
   addSecurityHeaders,
   createdResponse,
@@ -19,6 +20,13 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// =============================================================================
+// Logger
+// =============================================================================
+
+const log = createModuleLogger('api/chats/messages');
 
 // =============================================================================
 // Request Validation
@@ -29,7 +37,7 @@ const sendMessageSchema = z.object({
     .string()
     .min(1, 'Message content is required')
     .max(10_000, 'Message must be 10000 characters or less'),
-  role: z.enum(['user']).default('user'),
+  role: z.nativeEnum(MessageRole).default(MessageRole.USER),
   stream: z.boolean().default(true),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().min(1).max(8000).optional(),
@@ -76,7 +84,7 @@ async function getChatMessages(
       _id: nanoid(12),
       chatId,
       walletAddress,
-      role: i % 2 === 0 ? 'user' : 'assistant',
+      role: i % 2 === 0 ? MessageRole.USER : MessageRole.ASSISTANT,
       content:
         i % 2 === 0 ? 'User message content' : 'Assistant response content',
       tokenCount: Math.floor(Math.random() * 100) + 20,
@@ -112,13 +120,13 @@ async function getChatMessages(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return messageRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const { id: chatId } = params;
+        const { id: chatId } = await params;
         const { searchParams } = new URL(req.url);
 
         // Validate chat exists and user has access
@@ -149,7 +157,13 @@ export async function GET(
           { cursor, limit }
         );
 
-        console.log(`Retrieved ${messages.length} messages for chat ${chatId}`);
+        log.apiRequest('GET /api/chats/[id]/messages', {
+          chatId,
+          walletAddress,
+          messageCount: messages.length,
+          hasMore,
+          cursor,
+        });
 
         const response = paginatedResponse(messages, {
           cursor,
@@ -160,7 +174,11 @@ export async function GET(
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get messages error:', error);
+        log.error('Failed to retrieve messages', {
+          error,
+          chatId,
+          operation: 'get_messages',
+        });
         return validationErrorResponse('Failed to retrieve messages');
       }
     });
@@ -169,13 +187,13 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return messageRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const { id: chatId } = params;
+        const { id: chatId } = await params;
 
         // Validate chat exists and user has access
         const chat = await getChatById(chatId, walletAddress);
@@ -213,7 +231,13 @@ export async function POST(
 
         // If not streaming, return the saved message
         if (!stream) {
-          console.log(`Message created for chat ${chatId}: ${userMessage._id}`);
+          log.dbOperation('message_created', {
+            messageId: userMessage._id,
+            chatId,
+            walletAddress,
+            role,
+            tokenCount: userMessage.tokenCount,
+          });
           const response = createdResponse(userMessage);
           return addSecurityHeaders(response);
         }
@@ -253,7 +277,7 @@ export async function POST(
                 _id: nanoid(12),
                 chatId,
                 walletAddress,
-                role: 'assistant',
+                role: MessageRole.ASSISTANT,
                 content: text,
                 tokenCount: usage.totalTokens || Math.floor(text.length / 4),
                 metadata: {
@@ -271,23 +295,44 @@ export async function POST(
               // await saveMessage(assistantMessage);
               // await updateChatLastMessage(chatId, assistantMessage);
 
-              console.log(
-                `AI response completed for chat ${chatId}: ${assistantMessage._id}`
-              );
+              log.dbOperation('ai_message_created', {
+                messageId: assistantMessage._id,
+                chatId,
+                walletAddress,
+                model: chat.model,
+                tokenCount: assistantMessage.tokenCount,
+                finishReason,
+                usage,
+              });
             } catch (error) {
-              console.error('Failed to save AI response:', error);
+              log.error('Failed to save AI response', {
+                error,
+                chatId,
+                operation: 'save_ai_response',
+              });
             }
           },
         });
 
-        console.log(`Streaming AI response for chat ${chatId}`);
+        log.apiRequest('POST /api/chats/[id]/messages - Stream', {
+          chatId,
+          walletAddress,
+          model: chat.model,
+          temperature: temperature ?? chat.temperature ?? 0.7,
+          maxTokens: maxTokens ?? chat.maxTokens ?? 2000,
+          historyLength: conversationHistory.length,
+        });
 
         // Return streaming response
         return result.toUIMessageStreamResponse({
           originalMessages: conversationHistory,
         });
       } catch (error) {
-        console.error('Send message error:', error);
+        log.error('Failed to send message', {
+          error,
+          chatId,
+          operation: 'send_message',
+        });
         return validationErrorResponse('Failed to send message');
       }
     });

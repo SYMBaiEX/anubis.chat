@@ -4,25 +4,27 @@
  */
 
 import { openai } from '@ai-sdk/openai';
+import type { TypedToolCall, TypedToolResult } from 'ai';
 import { generateText, streamObject, tool } from 'ai';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { openaiConfig } from '@/lib/env';
 import type {
   Agent,
-  AgentExecution,
-  AgentStep,
-  AgentResult,
   AgentContext,
-  ExecuteAgentRequest,
+  AgentExecution,
+  AgentExecutionResult,
   AgentExecutionStatus,
+  AgenticConfig,
+  AgentStep,
   AgentStepType,
+  AgentTool,
+  ApprovalRequest,
+  ExecuteAgentRequest,
   ToolCall,
   ToolResult,
-  ApprovalRequest,
-  AgenticConfig
 } from '@/lib/types/agentic';
-import { TOOL_REGISTRY, getTool } from './tools';
-import { openaiConfig } from '@/lib/env';
+import { getTool, TOOL_REGISTRY } from './tools';
 
 // =============================================================================
 // Configuration
@@ -33,12 +35,12 @@ const DEFAULT_CONFIG: AgenticConfig = {
   defaultModel: 'gpt-4o-mini',
   defaultTemperature: 0.7,
   defaultMaxTokens: 2000,
-  toolTimeout: 30000, // 30 seconds
-  approvalTimeout: 300000, // 5 minutes
+  toolTimeout: 30_000, // 30 seconds
+  approvalTimeout: 300_000, // 5 minutes
   enableParallelExecution: true,
   maxParallelTools: 3,
   enableHumanApproval: true,
-  requiredApprovalTools: ['solana_wallet', 'document_write', 'web_request']
+  requiredApprovalTools: ['solana_wallet', 'document_write', 'web_request'],
 };
 
 // =============================================================================
@@ -70,7 +72,7 @@ export class AgenticEngine {
       input: request.input,
       steps: [],
       startedAt: Date.now(),
-      metadata: request.metadata || {}
+      metadata: request.metadata || {},
     };
 
     this.activeExecutions.set(execution.id, execution);
@@ -78,7 +80,7 @@ export class AgenticEngine {
     try {
       // Execute agent with step-by-step reasoning
       const result = await this.runAgentSteps(agent, execution, request);
-      
+
       execution.result = result;
       execution.status = result.success ? 'completed' : 'failed';
       execution.completedAt = Date.now();
@@ -88,7 +90,7 @@ export class AgenticEngine {
       execution.status = 'failed';
       execution.error = error instanceof Error ? error.message : String(error);
       execution.completedAt = Date.now();
-      
+
       throw error;
     } finally {
       this.activeExecutions.delete(execution.id);
@@ -99,13 +101,14 @@ export class AgenticEngine {
    * Execute agent steps with AI SDK integration
    */
   private async runAgentSteps(
-    agent: Agent, 
+    agent: Agent,
     execution: AgentExecution,
     request: ExecuteAgentRequest
-  ): Promise<AgentResult> {
-    const maxSteps = request.maxSteps || agent.maxSteps || this.config.maxStepsPerExecution;
+  ): Promise<AgentExecutionResult> {
+    const maxSteps =
+      request.maxSteps || agent.maxSteps || this.config.maxStepsPerExecution;
     const totalStartTime = Date.now();
-    
+
     // Convert agent tools to AI SDK format
     const toolsMap = this.createToolsMap(agent.tools || []);
     const aiTools = Object.fromEntries(
@@ -113,7 +116,7 @@ export class AgenticEngine {
         name,
         tool({
           description: agentTool.description,
-          parameters: agentTool.parameters,
+          inputSchema: agentTool.parameters,
           execute: async (params) => {
             const context: AgentContext = {
               executionId: execution.id,
@@ -121,36 +124,44 @@ export class AgenticEngine {
               walletAddress: agent.walletAddress,
               stepNumber: execution.steps.length + 1,
               previousSteps: execution.steps,
-              metadata: execution.metadata || {}
+              metadata: execution.metadata || {},
             };
-            
-            return await this.executeToolWithApproval(agentTool, params, context, request.autoApprove || false);
-          }
-        })
+
+            return await this.executeToolWithApproval(
+              agentTool,
+              params,
+              context,
+              request.autoApprove
+            );
+          },
+        }),
       ])
     );
 
     let currentStep = 1;
-    let messages = [
+    const messages: Array<{
+      role: 'system' | 'user' | 'assistant';
+      content: string;
+    }> = [
       {
-        role: 'system' as const,
-        content: agent.systemPrompt
+        role: 'system',
+        content: agent.systemPrompt,
       },
       {
-        role: 'user' as const,
-        content: request.input
-      }
+        role: 'user',
+        content: request.input,
+      },
     ];
-    
+
     const toolsUsed = new Set<string>();
-    let totalTokensUsed = { input: 0, output: 0, total: 0 };
+    const totalTokensUsed = { input: 0, output: 0, total: 0 };
 
     while (currentStep <= maxSteps) {
       const step: AgentStep = {
         id: nanoid(),
         type: 'reasoning',
         status: 'running',
-        startedAt: Date.now()
+        startedAt: Date.now(),
       };
 
       execution.steps.push(step);
@@ -162,15 +173,14 @@ export class AgenticEngine {
           messages,
           tools: aiTools,
           temperature: agent.temperature || this.config.defaultTemperature,
-          maxOutputTokens: agent.maxTokens || this.config.defaultMaxTokens,
-          maxToolCalls: this.config.maxParallelTools
+          maxRetries: 3,
         });
 
         // Update token usage
         if (result.usage) {
-          totalTokensUsed.input += result.usage.inputTokens;
-          totalTokensUsed.output += result.usage.outputTokens;
-          totalTokensUsed.total += result.usage.totalTokens;
+          totalTokensUsed.input += result.usage.inputTokens || 0;
+          totalTokensUsed.output += result.usage.outputTokens || 0;
+          totalTokensUsed.total += result.usage.totalTokens || 0;
         }
 
         // Update step with result
@@ -181,50 +191,48 @@ export class AgenticEngine {
         // Add AI response to messages
         messages.push({
           role: 'assistant',
-          content: result.text
+          content: result.text,
         });
 
         // Process tool calls if any
         if (result.toolCalls && result.toolCalls.length > 0) {
-          step.type = result.toolCalls.length > 1 ? 'parallel_tools' : 'tool_call';
-          step.toolCalls = result.toolCalls.map(tc => ({
+          step.type =
+            result.toolCalls.length > 1 ? 'parallel_tools' : 'tool_call';
+          step.toolCalls = result.toolCalls.map((tc: TypedToolCall) => ({
             id: tc.toolCallId,
             name: tc.toolName,
             parameters: tc.args,
-            requiresApproval: this.requiresApproval(tc.toolName)
+            requiresApproval: this.requiresApproval(tc.toolName),
           }));
 
           // Process tool results
           const toolResults: ToolResult[] = [];
-          
-          for (const toolCall of result.toolCalls) {
+
+          for (const toolCall of result.toolCalls as TypedToolCall[]) {
             toolsUsed.add(toolCall.toolName);
-            
+
             // Tool results are already processed by the execute function above
             // We just need to record them
             toolResults.push({
               id: toolCall.toolCallId,
               success: true,
               result: toolCall.result,
-              executionTime: 0 // This would be measured in the actual execution
+              executionTime: 0, // This would be measured in the actual execution
             });
           }
 
           step.toolResults = toolResults;
 
-          // Add tool results to messages
-          for (const toolCall of result.toolCalls) {
-            messages.push({
-              role: 'tool',
-              content: [
-                {
-                  type: 'tool-result',
-                  toolCallId: toolCall.toolCallId,
-                  result: toolCall.result
-                }
-              ]
-            });
-          }
+          // Add tool results to messages using correct Vercel AI SDK format
+          messages.push({
+            role: 'tool',
+            content: result.toolCalls.map((toolCall: TypedToolCall) => ({
+              type: 'tool-result',
+              toolCallId: toolCall.toolCallId,
+              toolName: toolCall.toolName,
+              result: toolCall.result,
+            })),
+          });
         }
 
         // Check if we should continue or if the task is complete
@@ -237,20 +245,22 @@ export class AgenticEngine {
         step.status = 'failed';
         step.error = error instanceof Error ? error.message : String(error);
         step.completedAt = Date.now();
-        
+
         throw new Error(`Step ${currentStep} failed: ${step.error}`);
       }
     }
 
     // Create final result
-    const finalResult: AgentResult = {
+    const finalResult: AgentExecutionResult = {
       success: true,
-      output: execution.steps[execution.steps.length - 1]?.output || 'No output generated',
+      output:
+        execution.steps[execution.steps.length - 1]?.output ||
+        'No output generated',
       finalStep: currentStep - 1,
       totalSteps: execution.steps.length,
       toolsUsed: Array.from(toolsUsed),
       tokensUsed: totalTokensUsed,
-      executionTime: Date.now() - totalStartTime
+      executionTime: Date.now() - totalStartTime,
     };
 
     return finalResult;
@@ -260,11 +270,11 @@ export class AgenticEngine {
    * Execute a tool with approval workflow if required
    */
   private async executeToolWithApproval(
-    agentTool: any,
-    params: any,
+    agentTool: AgentTool<unknown>,
+    params: unknown,
     context: AgentContext,
     autoApprove: boolean
-  ): Promise<any> {
+  ): Promise<unknown> {
     // Check if tool requires approval
     if (agentTool.requiresApproval && !autoApprove) {
       const approvalRequest: ApprovalRequest = {
@@ -276,46 +286,61 @@ export class AgenticEngine {
         message: `Requesting approval to execute tool: ${agentTool.name}`,
         data: { toolName: agentTool.name, parameters: params },
         status: 'pending',
-        createdAt: Date.now()
+        createdAt: Date.now(),
       };
 
       this.pendingApprovals.set(approvalRequest.id, approvalRequest);
 
       // In a real implementation, this would notify the user and wait for approval
       // For now, we'll simulate auto-approval after a short delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Simulate approval
       approvalRequest.status = 'approved';
       approvalRequest.respondedAt = Date.now();
       approvalRequest.response = { approved: true };
-      
+
       this.pendingApprovals.delete(approvalRequest.id);
     }
 
     // Execute the tool
     const result = await agentTool.execute(params, context);
-    
+
     if (!result.success) {
-      throw new Error(result.error || 'Tool execution failed');
+      const errorMessage =
+        typeof result.error === 'string'
+          ? result.error
+          : result.error &&
+              typeof result.error === 'object' &&
+              'message' in result.error
+            ? result.error.message
+            : 'Tool execution failed';
+      throw new Error(errorMessage as string);
     }
-    
+
     return result.result;
   }
 
   /**
    * Create tools map from agent tool definitions
    */
-  private createToolsMap(toolNames: string[]): Map<string, any> {
+  private createToolsMap(
+    tools: string[] | AgentTool<unknown>[]
+  ): Map<string, AgentTool<unknown>> {
     const toolsMap = new Map();
-    
-    for (const toolName of toolNames) {
-      const tool = getTool(toolName);
-      if (tool) {
-        toolsMap.set(toolName, tool);
+
+    for (const toolItem of tools) {
+      if (typeof toolItem === 'string') {
+        const tool = getTool(toolItem);
+        if (tool) {
+          toolsMap.set(toolItem, tool);
+        }
+      } else {
+        // toolItem is already an AgentTool
+        toolsMap.set(toolItem.name, toolItem);
       }
     }
-    
+
     return toolsMap;
   }
 
@@ -324,13 +349,19 @@ export class AgenticEngine {
    */
   private requiresApproval(toolName: string): boolean {
     const tool = getTool(toolName);
-    return tool?.requiresApproval || this.config.requiredApprovalTools.includes(toolName);
+    return (
+      tool?.requiresApproval ||
+      this.config.requiredApprovalTools.includes(toolName)
+    );
   }
 
   /**
    * Determine if the task is complete based on AI response
    */
-  private isTaskComplete(text: string, toolCalls: any[]): boolean {
+  private isTaskComplete(
+    text: string,
+    toolCalls: TypedToolCall[] | undefined
+  ): boolean {
     // Simple heuristics to determine task completion
     const completionIndicators = [
       'task completed',
@@ -338,14 +369,14 @@ export class AgenticEngine {
       'done',
       'completed successfully',
       'final answer',
-      'conclusion'
+      'conclusion',
     ];
-    
+
     const textLower = text.toLowerCase();
-    const hasCompletionIndicator = completionIndicators.some(indicator => 
+    const hasCompletionIndicator = completionIndicators.some((indicator) =>
       textLower.includes(indicator)
     );
-    
+
     // If no tool calls and has completion indicators, likely done
     return (!toolCalls || toolCalls.length === 0) && hasCompletionIndicator;
   }
@@ -376,16 +407,17 @@ export class AgenticEngine {
    * Get pending approvals for a wallet
    */
   getPendingApprovals(walletAddress: string): ApprovalRequest[] {
-    return Array.from(this.pendingApprovals.values())
-      .filter(approval => approval.walletAddress === walletAddress);
+    return Array.from(this.pendingApprovals.values()).filter(
+      (approval) => approval.walletAddress === walletAddress
+    );
   }
 
   /**
    * Respond to approval request
    */
   async respondToApproval(
-    approvalId: string, 
-    approved: boolean, 
+    approvalId: string,
+    approved: boolean,
     message?: string
   ): Promise<boolean> {
     const approval = this.pendingApprovals.get(approvalId);
@@ -397,7 +429,7 @@ export class AgenticEngine {
 
     // Remove from pending approvals
     this.pendingApprovals.delete(approvalId);
-    
+
     return true;
   }
 
@@ -407,19 +439,19 @@ export class AgenticEngine {
   async *streamExecution(
     agent: Agent,
     request: ExecuteAgentRequest
-  ): AsyncIterable<{ type: string; data: any }> {
+  ): AsyncIterable<{ type: string; data: unknown }> {
     // This would be implemented for streaming execution updates
     // For now, we'll just execute and yield the final result
-    
+
     yield { type: 'execution_started', data: { agentId: agent.id } };
-    
+
     try {
       const result = await this.executeAgent(agent, request);
       yield { type: 'execution_completed', data: result };
     } catch (error) {
-      yield { 
-        type: 'execution_failed', 
-        data: { error: error instanceof Error ? error.message : String(error) }
+      yield {
+        type: 'execution_failed',
+        data: { error: error instanceof Error ? error.message : String(error) },
       };
     }
   }
@@ -443,25 +475,42 @@ export function createAgentFromTemplate(
 ): Agent {
   const templates = {
     general: {
-      systemPrompt: 'You are a helpful AI assistant that can use various tools to complete tasks. Break down complex tasks into steps and use the appropriate tools to gather information, perform calculations, and provide comprehensive answers.',
-      tools: ['calculator', 'text_analyzer', 'timestamp', 'web_search', 'chat_completion']
+      systemPrompt:
+        'You are a helpful AI assistant that can use various tools to complete tasks. Break down complex tasks into steps and use the appropriate tools to gather information, perform calculations, and provide comprehensive answers.',
+      tools: [
+        'calculator',
+        'text_analyzer',
+        'timestamp',
+        'web_search',
+        'chat_completion',
+      ],
     },
     research: {
-      systemPrompt: 'You are a research assistant specialized in finding, analyzing, and synthesizing information. Use web search and document retrieval tools to gather comprehensive information on topics and present well-structured findings.',
-      tools: ['web_search', 'document_retrieval', 'text_analyzer', 'chat_completion']
+      systemPrompt:
+        'You are a research assistant specialized in finding, analyzing, and synthesizing information. Use web search and document retrieval tools to gather comprehensive information on topics and present well-structured findings.',
+      tools: [
+        'web_search',
+        'document_retrieval',
+        'text_analyzer',
+        'chat_completion',
+      ],
     },
     analysis: {
-      systemPrompt: 'You are a data analysis expert. Use available tools to analyze text, perform calculations, and provide insights. Focus on accuracy and provide detailed explanations of your analysis process.',
-      tools: ['calculator', 'text_analyzer', 'timestamp', 'chat_completion']
+      systemPrompt:
+        'You are a data analysis expert. Use available tools to analyze text, perform calculations, and provide insights. Focus on accuracy and provide detailed explanations of your analysis process.',
+      tools: ['calculator', 'text_analyzer', 'timestamp', 'chat_completion'],
     },
     blockchain: {
-      systemPrompt: 'You are a blockchain and cryptocurrency assistant. Help users understand their wallets, transactions, and token holdings. Always request approval for sensitive blockchain operations.',
-      tools: ['solana_wallet', 'calculator', 'timestamp', 'web_search']
+      systemPrompt:
+        'You are a blockchain and cryptocurrency assistant. Help users understand their wallets, transactions, and token holdings. Always request approval for sensitive blockchain operations.',
+      tools: ['solana_wallet', 'calculator', 'timestamp', 'web_search'],
     },
     custom: {
-      systemPrompt: customPrompt || 'You are a specialized AI assistant. Use the available tools to complete tasks effectively.',
-      tools: ['calculator', 'text_analyzer', 'timestamp', 'chat_completion']
-    }
+      systemPrompt:
+        customPrompt ||
+        'You are a specialized AI assistant. Use the available tools to complete tasks effectively.',
+      tools: ['calculator', 'text_analyzer', 'timestamp', 'chat_completion'],
+    },
   };
 
   const template_config = templates[template];
@@ -478,7 +527,7 @@ export function createAgentFromTemplate(
     maxSteps: 10,
     walletAddress,
     createdAt: Date.now(),
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
   };
 }
 
@@ -497,28 +546,31 @@ export function validateAgentConfig(agent: Partial<Agent>): string[] {
     errors.push('System prompt is required');
   }
 
-  if (agent.temperature !== undefined) {
-    if (agent.temperature < 0 || agent.temperature > 2) {
-      errors.push('Temperature must be between 0 and 2');
-    }
+  if (
+    agent.temperature !== undefined &&
+    (agent.temperature < 0 || agent.temperature > 2)
+  ) {
+    errors.push('Temperature must be between 0 and 2');
   }
 
-  if (agent.maxTokens !== undefined) {
-    if (agent.maxTokens < 1 || agent.maxTokens > 8000) {
-      errors.push('Max tokens must be between 1 and 8000');
-    }
+  if (
+    agent.maxTokens !== undefined &&
+    (agent.maxTokens < 1 || agent.maxTokens > 8000)
+  ) {
+    errors.push('Max tokens must be between 1 and 8000');
   }
 
-  if (agent.maxSteps !== undefined) {
-    if (agent.maxSteps < 1 || agent.maxSteps > 50) {
-      errors.push('Max steps must be between 1 and 50');
-    }
+  if (
+    agent.maxSteps !== undefined &&
+    (agent.maxSteps < 1 || agent.maxSteps > 50)
+  ) {
+    errors.push('Max steps must be between 1 and 50');
   }
 
   if (agent.tools) {
-    for (const toolName of agent.tools) {
-      if (!getTool(toolName)) {
-        errors.push(`Unknown tool: ${toolName}`);
+    for (const toolItem of agent.tools) {
+      if (typeof toolItem === 'string' && !getTool(toolItem)) {
+        errors.push(`Unknown tool: ${toolItem}`);
       }
     }
   }

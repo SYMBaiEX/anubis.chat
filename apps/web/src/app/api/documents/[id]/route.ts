@@ -15,6 +15,13 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// =============================================================================
+// Logger
+// =============================================================================
+
+const log = createModuleLogger('api/documents');
 
 // =============================================================================
 // Request Validation Schemas
@@ -51,13 +58,13 @@ const updateDocumentSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const { id: documentId } = params;
+        const { id: documentId } = await params;
 
         // Check if document exists and user can access it
         const storage = getStorage();
@@ -70,12 +77,20 @@ export async function GET(
           return notFoundResponse('Document not found');
         }
 
-        console.log(`Document retrieved: ${documentId} by ${walletAddress}`);
+        log.apiRequest('GET /api/documents/[id]', {
+          documentId,
+          walletAddress,
+          operation: 'get_document',
+        });
 
         const response = successResponse(document);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get document error:', error);
+        log.error('Failed to retrieve document', {
+          error,
+          documentId,
+          operation: 'get_document',
+        });
         const response = NextResponse.json(
           { error: 'Failed to retrieve document' },
           { status: 500 }
@@ -91,13 +106,13 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const { id: documentId } = params;
+        const { id: documentId } = await params;
 
         // Check if document exists and user can access it
         const storage = getStorage();
@@ -125,7 +140,10 @@ export async function PUT(
           metadata: {
             ...metadata,
             ...(content && {
-              wordCount: content.trim().split(/\s+/).filter(word => word.length > 0).length,
+              wordCount: content
+                .trim()
+                .split(/\s+/)
+                .filter((word) => word.length > 0).length,
               characterCount: content.length,
             }),
           },
@@ -141,7 +159,15 @@ export async function PUT(
           return notFoundResponse('Document not found');
         }
 
-        console.log(`Document updated: ${documentId} by ${walletAddress}`);
+        log.dbOperation('document_updated', {
+          documentId,
+          walletAddress,
+          hasTitle: !!title,
+          hasContent: !!content,
+          hasMetadata: !!metadata,
+          wordCount: updates.metadata?.wordCount,
+          characterCount: updates.metadata?.characterCount,
+        });
 
         const responseData: DocumentUpdateResponse = {
           document: updatedDocument,
@@ -151,7 +177,11 @@ export async function PUT(
         const response = successResponse(responseData);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Update document error:', error);
+        log.error('Failed to update document', {
+          error,
+          documentId,
+          operation: 'update_document',
+        });
         const response = NextResponse.json(
           { error: 'Failed to update document' },
           { status: 500 }
@@ -167,13 +197,13 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-        const { id: documentId } = params;
+        const { id: documentId } = await params;
 
         // Check if document exists and user can access it
         const storage = getStorage();
@@ -185,7 +215,11 @@ export async function DELETE(
         await storage.deleteDocument(documentId);
         await storage.removeDocumentFromUser(walletAddress, documentId);
 
-        console.log(`Document deleted: ${documentId} by ${walletAddress}`);
+        log.dbOperation('document_deleted', {
+          documentId,
+          walletAddress,
+          operation: 'delete_document',
+        });
 
         const response = successResponse({
           message: 'Document deleted successfully',
@@ -193,7 +227,11 @@ export async function DELETE(
         });
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Delete document error:', error);
+        log.error('Failed to delete document', {
+          error,
+          documentId,
+          operation: 'delete_document',
+        });
         const response = NextResponse.json(
           { error: 'Failed to delete document' },
           { status: 500 }

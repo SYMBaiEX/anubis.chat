@@ -16,9 +16,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       enableSystem
     >
       <ConvexProvider client={convex}>
-        <WalletProvider>
-          {children}
-        </WalletProvider>
+        <WalletProvider>{children}</WalletProvider>
       </ConvexProvider>
       <Toaster richColors />
     </ThemeProvider>

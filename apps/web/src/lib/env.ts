@@ -4,43 +4,57 @@
  */
 
 import { z } from 'zod';
+import { createModuleLogger } from './utils/logger';
+
+const log = createModuleLogger('env');
 
 // Define the schema for environment variables
 const envSchema = z.object({
   // Application
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z
+    .enum(['development', 'production', 'test'])
+    .default('development'),
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3001'),
-  
+
   // OpenAI Configuration
   OPENAI_API_KEY: z.string().startsWith('sk-').optional(),
   OPENAI_ORG_ID: z.string().startsWith('org-').optional(),
-  
+
   // Convex Backend
   CONVEX_DEPLOYMENT: z.string().optional(),
   CONVEX_URL: z.string().url().optional(),
   NEXT_PUBLIC_CONVEX_URL: z.string().url().optional(),
-  
+
   // JWT and Authentication
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default('24h'),
-  
+
   // CORS and Security
   ALLOWED_ORIGINS: z.string().default('http://localhost:3001'),
-  CORS_CREDENTIALS: z.string().default('true').transform(val => val === 'true'),
-  
+  CORS_CREDENTIALS: z
+    .string()
+    .default('true')
+    .transform((val) => val === 'true'),
+
   // Rate Limiting
-  RATE_LIMIT_MAX_REQUESTS: z.string().default('100').transform(val => parseInt(val)),
-  RATE_LIMIT_WINDOW_MS: z.string().default('900000').transform(val => parseInt(val)),
-  
+  RATE_LIMIT_MAX_REQUESTS: z
+    .string()
+    .default('100')
+    .transform((val) => Number.parseInt(val)),
+  RATE_LIMIT_WINDOW_MS: z
+    .string()
+    .default('900000')
+    .transform((val) => Number.parseInt(val)),
+
   // Database
   STORAGE_TYPE: z.enum(['convex', 'supabase', 'memory']).default('convex'),
-  
+
   // External Services (Optional)
   QDRANT_URL: z.string().url().optional(),
   QDRANT_API_KEY: z.string().optional(),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),
-  
+
   // Development
   DEBUG: z.string().optional(),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
@@ -75,7 +89,9 @@ function parseEnv() {
     return envSchema.parse(env);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.issues.map((err: z.ZodIssue) => `${err.path.join('.')}: ${err.message}`);
+      const missingVars = error.issues.map(
+        (err: z.ZodIssue) => `${err.path.join('.')}: ${err.message}`
+      );
       throw new Error(
         `Environment validation failed:\n${missingVars.join('\n')}\n\nPlease check your .env.local file.`
       );
@@ -118,7 +134,7 @@ export const jwtConfig = {
 
 // CORS configuration
 export const corsConfig = {
-  origins: env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()),
+  origins: env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()),
   credentials: env.CORS_CREDENTIALS,
 };
 
@@ -165,7 +181,10 @@ export function requireEnv(key: keyof Env): string {
   return value as string;
 }
 
-export function getEnv(key: keyof Env, defaultValue?: string): string | undefined {
+export function getEnv(
+  key: keyof Env,
+  defaultValue?: string
+): string | undefined {
   return (env[key] as string) || defaultValue;
 }
 
@@ -175,7 +194,9 @@ if (isProduction) {
   const requiredProdVars = ['JWT_SECRET'] as const;
   for (const varName of requiredProdVars) {
     if (!env[varName]) {
-      throw new Error(`Required production environment variable ${varName} is not set`);
+      throw new Error(
+        `Required production environment variable ${varName} is not set`
+      );
     }
   }
 
@@ -187,7 +208,7 @@ if (isProduction) {
 
   for (const { name, purpose } of recommendedVars) {
     if (!env[name as keyof Env]) {
-      console.warn(`Warning: ${name} not set - ${purpose} will be disabled`);
+      log.warn('Environment variable not set', { name, purpose });
     }
   }
 }
