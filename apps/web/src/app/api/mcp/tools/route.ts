@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
         await ensureMCPInitialized();
 
         // Parse and validate request body
-        let body: any;
+        let body: unknown;
         try {
           const rawBody = await req.text();
 

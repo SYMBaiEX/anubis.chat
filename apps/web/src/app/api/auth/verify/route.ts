@@ -6,6 +6,7 @@
 import { PublicKey } from '@solana/web3.js';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getStorage } from '@/lib/database/storage';
 import {
   createJWTToken,
   validateNonce,
@@ -175,8 +176,59 @@ export async function POST(request: NextRequest) {
       // Generate JWT token
       const token = createJWTToken(walletAddress, publicKey);
 
-      // TODO: Create or update user in database
-      // This would typically involve calling a Convex mutation
+      // Create or update user in Convex database
+      const storage = getStorage();
+      let user;
+
+      try {
+        // Using ConvexHttpClient to call the users.upsert mutation
+        const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+        if (!convexUrl) {
+          throw new Error(
+            'NEXT_PUBLIC_CONVEX_URL environment variable is required'
+          );
+        }
+
+        const convexClient = new (
+          await import('convex/browser')
+        ).ConvexHttpClient(convexUrl);
+
+        user = await convexClient.mutation(
+          (await import('@convex/_generated/api')).api.users.upsert,
+          {
+            walletAddress,
+            publicKey,
+            preferences: {
+              theme: 'dark' as 'dark' | 'light',
+              aiModel: 'gpt-4o',
+              notifications: true,
+            },
+          }
+        );
+      } catch (error) {
+        // Failed to create/update user in database
+        // Continue with default user data if database operation fails
+        user = {
+          walletAddress,
+          publicKey,
+          displayName: undefined,
+          avatar: undefined,
+          preferences: {
+            theme: 'dark' as 'dark' | 'light',
+            aiModel: 'gpt-4o',
+            notifications: true,
+          },
+          subscription: {
+            tier: 'free' as 'free' | 'pro' | 'enterprise',
+            tokensUsed: 0,
+            tokensLimit: 10_000,
+            features: ['basic_chat', 'document_upload'],
+          },
+          createdAt: Date.now(),
+          lastActiveAt: Date.now(),
+          isActive: true,
+        };
+      }
 
       // Create auth session response
       const authSession: AuthSession = {
@@ -185,26 +237,7 @@ export async function POST(request: NextRequest) {
         token,
         refreshToken: '', // TODO: Implement refresh tokens
         expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-        user: {
-          walletAddress,
-          publicKey,
-          displayName: undefined,
-          avatar: undefined,
-          preferences: {
-            theme: Theme.DARK,
-            aiModel: 'gpt-4o',
-            notifications: true,
-          },
-          subscription: {
-            tier: SubscriptionTier.FREE,
-            tokensUsed: 0,
-            tokensLimit: 10_000,
-            features: [SubscriptionFeature.BASIC_CHAT],
-          },
-          createdAt: Date.now(),
-          lastActiveAt: Date.now(),
-          isActive: true,
-        },
+        user: user!, // We ensure user is always defined above
       };
 
       // Add security headers and return response

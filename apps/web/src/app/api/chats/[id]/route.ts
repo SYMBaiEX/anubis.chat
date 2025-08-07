@@ -80,10 +80,9 @@ export async function GET(
 ) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      const { walletAddress } = authReq.user;
-      const { id: chatId } = await params;
-
       try {
+        const { walletAddress } = authReq.user;
+        const { id: chatId } = await params;
         // Fetch chat by ID
         const chat = await getChatById(chatId, walletAddress);
 
@@ -117,10 +116,9 @@ export async function PUT(
 ) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      const { walletAddress } = authReq.user;
-      const { id: chatId } = await params;
-
       try {
+        const { walletAddress } = authReq.user;
+        const { id: chatId } = await params;
         // Check if chat exists
         const existingChat = await getChatById(chatId, walletAddress);
         if (!existingChat) {
@@ -187,10 +185,9 @@ export async function DELETE(
 ) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      const { walletAddress } = authReq.user;
-      const { id: chatId } = await params;
-
       try {
+        const { walletAddress } = authReq.user;
+        const { id: chatId } = await params;
         // Check if chat exists
         const existingChat = await getChatById(chatId, walletAddress);
         if (!existingChat) {

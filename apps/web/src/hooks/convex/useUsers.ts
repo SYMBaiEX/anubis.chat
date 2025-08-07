@@ -1,0 +1,241 @@
+/**
+ * User-related Convex hooks with Result pattern and real-time updates
+ */
+
+import { useCallback } from 'react';
+import type { Result } from '@/lib/utils/result';
+import { success } from '@/lib/utils/result';
+import {
+  useConvexMutation,
+  useConvexQuery,
+  useOptimisticMutation,
+} from './useConvexResult';
+
+// Mock API structure - in real implementation this would be imported from Convex
+const api = {
+  users: {
+    getByWallet: 'users:getByWallet' as any,
+    getUsage: 'users:getUsage' as any,
+    upsert: 'users:upsert' as any,
+    updatePreferences: 'users:updatePreferences' as any,
+    updateProfile: 'users:updateProfile' as any,
+    trackUsage: 'users:trackUsage' as any,
+    deactivate: 'users:deactivate' as any,
+  },
+};
+
+// =============================================================================
+// User Queries
+// =============================================================================
+
+/**
+ * Get user by wallet address with real-time updates
+ */
+export function useUser(walletAddress: string) {
+  return useConvexQuery(api.users.getByWallet, { walletAddress });
+}
+
+/**
+ * Get user usage statistics with real-time updates
+ */
+export function useUserUsage(walletAddress: string) {
+  return useConvexQuery(api.users.getUsage, { walletAddress });
+}
+
+// =============================================================================
+// User Mutations
+// =============================================================================
+
+/**
+ * Create or update user profile with optimistic updates
+ */
+export function useUpsertUser() {
+  return useOptimisticMutation(api.users.upsert, {
+    rollbackOnError: true,
+    onOptimisticSuccess: (user: any) => {
+      console.log('User profile updated successfully', user);
+    },
+    onRollbackError: (error: Error) => {
+      console.error('Failed to update user profile', error);
+    },
+  });
+}
+
+/**
+ * Update user preferences with optimistic updates
+ */
+export function useUpdateUserPreferences() {
+  return useOptimisticMutation(api.users.updatePreferences, {
+    rollbackOnError: true,
+    onOptimisticSuccess: (user: any) => {
+      console.log('User preferences updated successfully', user);
+    },
+    onRollbackError: (error: Error) => {
+      console.error('Failed to update user preferences', error);
+    },
+  });
+}
+
+/**
+ * Update user profile information with optimistic updates
+ */
+export function useUpdateUserProfile() {
+  return useOptimisticMutation(api.users.updateProfile, {
+    rollbackOnError: true,
+    onOptimisticSuccess: (user: any) => {
+      console.log('User profile updated successfully', user);
+    },
+    onRollbackError: (error: Error) => {
+      console.error('Failed to update user profile', error);
+    },
+  });
+}
+
+/**
+ * Track user usage
+ */
+export function useTrackUsage() {
+  return useConvexMutation(api.users.trackUsage);
+}
+
+/**
+ * Deactivate user account
+ */
+export function useDeactivateUser() {
+  return useConvexMutation(api.users.deactivate);
+}
+
+// =============================================================================
+// Composite User Operations
+// =============================================================================
+
+/**
+ * Complete user setup flow (create user + set preferences)
+ */
+export function useUserSetup() {
+  const { mutate: upsertUser } = useUpsertUser();
+  const { mutate: updatePreferences } = useUpdateUserPreferences();
+
+  return useCallback(
+    async (userData: {
+      walletAddress: string;
+      publicKey: string;
+      displayName?: string;
+      avatar?: string;
+      preferences?: {
+        theme: 'light' | 'dark';
+        aiModel: string;
+        notifications: boolean;
+      };
+    }): Promise<Result<any, Error>> => {
+      // Step 1: Create/update user
+      const userResult = await upsertUser({
+        walletAddress: userData.walletAddress,
+        publicKey: userData.publicKey,
+        displayName: userData.displayName,
+        avatar: userData.avatar,
+        preferences: userData.preferences,
+      });
+
+      if (!userResult.success) {
+        return userResult;
+      }
+
+      // Step 2: Update preferences if provided and different from defaults
+      if (userData.preferences) {
+        const preferencesResult = await updatePreferences({
+          walletAddress: userData.walletAddress,
+          preferences: userData.preferences,
+        });
+
+        if (!preferencesResult.success) {
+          return preferencesResult;
+        }
+
+        return success({
+          user: userResult.data,
+          preferences: preferencesResult.data,
+        });
+      }
+
+      return success({ user: userResult.data });
+    },
+    [upsertUser, updatePreferences]
+  );
+}
+
+/**
+ * Batch update user profile and preferences
+ */
+export function useBatchUserUpdate() {
+  const { mutate: updateProfile } = useUpdateUserProfile();
+  const { mutate: updatePreferences } = useUpdateUserPreferences();
+
+  return useCallback(
+    async (updates: {
+      walletAddress: string;
+      profile?: {
+        displayName?: string;
+        avatar?: string;
+      };
+      preferences?: {
+        theme: 'light' | 'dark';
+        aiModel: string;
+        notifications: boolean;
+      };
+    }): Promise<Result<any, Error>> => {
+      const results: any[] = [];
+
+      // Update profile if provided
+      if (updates.profile) {
+        const profileResult = await updateProfile({
+          walletAddress: updates.walletAddress,
+          ...updates.profile,
+        });
+
+        if (!profileResult.success) {
+          return profileResult;
+        }
+
+        results.push({ type: 'profile', data: profileResult.data });
+      }
+
+      // Update preferences if provided
+      if (updates.preferences) {
+        const preferencesResult = await updatePreferences({
+          walletAddress: updates.walletAddress,
+          preferences: updates.preferences,
+        });
+
+        if (!preferencesResult.success) {
+          return preferencesResult;
+        }
+
+        results.push({ type: 'preferences', data: preferencesResult.data });
+      }
+
+      return success(results);
+    },
+    [updateProfile, updatePreferences]
+  );
+}
+
+// =============================================================================
+// Real-time User State Management
+// =============================================================================
+
+/**
+ * Subscribe to user changes with automatic error handling
+ */
+export function useUserState(walletAddress: string) {
+  const userQuery = useUser(walletAddress);
+  const usageQuery = useUserUsage(walletAddress);
+
+  return {
+    user: userQuery,
+    usage: usageQuery,
+    isLoading: userQuery.isLoading || usageQuery.isLoading,
+    hasError: !!(userQuery.error || usageQuery.error),
+    error: userQuery.error || usageQuery.error,
+  };
+}

@@ -62,10 +62,9 @@ export async function GET(
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      const { walletAddress } = authReq.user;
-      const { id: documentId } = await params;
-
       try {
+        const { walletAddress } = authReq.user;
+        const { id: documentId } = await params;
         // Check if document exists and user can access it
         const storage = getStorage();
         if (!(await storage.canAccessDocument(walletAddress, documentId))) {
@@ -110,10 +109,9 @@ export async function PUT(
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      const { walletAddress } = authReq.user;
-      const { id: documentId } = await params;
-
       try {
+        const { walletAddress } = authReq.user;
+        const { id: documentId } = await params;
         // Check if document exists and user can access it
         const storage = getStorage();
         if (!(await storage.canAccessDocument(walletAddress, documentId))) {
@@ -201,10 +199,9 @@ export async function DELETE(
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      const { walletAddress } = authReq.user;
-      const { id: documentId } = await params;
-
       try {
+        const { walletAddress } = authReq.user;
+        const { id: documentId } = await params;
         // Check if document exists and user can access it
         const storage = getStorage();
         if (!(await storage.canAccessDocument(walletAddress, documentId))) {

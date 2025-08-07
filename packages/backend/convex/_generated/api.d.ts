@@ -16,6 +16,7 @@ import type {
 import type * as admin from "../admin.js";
 import type * as agents from "../agents.js";
 import type * as auth from "../auth.js";
+import type * as blockchainTransactions from "../blockchainTransactions.js";
 import type * as chats from "../chats.js";
 import type * as documents from "../documents.js";
 import type * as env from "../env.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   agents: typeof agents;
   auth: typeof auth;
+  blockchainTransactions: typeof blockchainTransactions;
   chats: typeof chats;
   documents: typeof documents;
   env: typeof env;

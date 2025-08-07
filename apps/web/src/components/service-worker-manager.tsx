@@ -34,7 +34,11 @@ export default function ServiceWorkerManager() {
 
     // Development helper - expose reset function globally
     if (process.env.NODE_ENV === 'development') {
-      (window as any).resetPWA = resetPWAState;
+      // Safely extend window for development debugging
+      interface WindowWithPWA extends Window {
+        resetPWA?: () => Promise<void>;
+      }
+      (window as WindowWithPWA).resetPWA = resetPWAState;
       log.debug('Development mode PWA reset available', {
         nodeEnv: process.env.NODE_ENV,
         resetFunction: 'window.resetPWA()',

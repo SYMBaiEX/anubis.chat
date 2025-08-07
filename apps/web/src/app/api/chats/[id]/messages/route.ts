@@ -124,10 +124,9 @@ export async function GET(
 ) {
   return messageRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      const { walletAddress } = authReq.user;
-      const { id: chatId } = await params;
-
       try {
+        const { walletAddress } = authReq.user;
+        const { id: chatId } = await params;
         const { searchParams } = new URL(req.url);
 
         // Validate chat exists and user has access
@@ -192,10 +191,9 @@ export async function POST(
 ) {
   return messageRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      const { walletAddress } = authReq.user;
-      const { id: chatId } = await params;
-
       try {
+        const { walletAddress } = authReq.user;
+        const { id: chatId } = await params;
         // Validate chat exists and user has access
         const chat = await getChatById(chatId, walletAddress);
         if (!chat) {
