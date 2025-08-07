@@ -3,15 +3,33 @@ import {
   Connection,
   clusterApiUrl,
   LAMPORTS_PER_SOL,
+<<<<<<< HEAD
   PublicKey,
   type PublicKey as PublicKeyType,
+=======
+  type PublicKey,
+>>>>>>> upstream/main
 } from '@solana/web3.js';
 
-// Configure the network to use
-export const NETWORK = WalletAdapterNetwork.Devnet;
+// Configure the network to use from environment variables
+const getNetwork = (): WalletAdapterNetwork => {
+  const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'devnet';
+  switch (network) {
+    case 'mainnet-beta':
+      return WalletAdapterNetwork.Mainnet;
+    case 'testnet':
+      return WalletAdapterNetwork.Testnet;
+    case 'devnet':
+    default:
+      return WalletAdapterNetwork.Devnet;
+  }
+};
 
-// RPC endpoint
-export const ENDPOINT = clusterApiUrl(NETWORK);
+export const NETWORK = getNetwork();
+
+// RPC endpoint - use environment variable if provided, otherwise use cluster API
+export const ENDPOINT =
+  process.env.NEXT_PUBLIC_SOLANA_RPC_HOST || clusterApiUrl(NETWORK);
 
 // Create connection instance
 export const connection = new Connection(ENDPOINT, 'confirmed');
@@ -54,6 +72,7 @@ export const validateSolanaAddress = (address: string | null | undefined): boole
 
 // Create a sign-in message for wallet authentication
 export const createSignInMessage = (publicKey: string): string => {
+<<<<<<< HEAD
   // Validate public key format
   if (!publicKey || typeof publicKey !== 'string' || publicKey.length < 32) {
     throw new Error('Invalid public key provided');
@@ -61,6 +80,12 @@ export const createSignInMessage = (publicKey: string): string => {
 
   const domain =
     typeof window !== 'undefined' ? window.location.host : 'isis.chat';
+=======
+  const domain =
+    typeof window !== 'undefined'
+      ? window.location.host
+      : process.env.NEXT_PUBLIC_APP_DOMAIN || 'isis.chat';
+>>>>>>> upstream/main
   const now = new Date();
   // Generate cryptographically secure nonce
   const nonceArray = new Uint8Array(12);
@@ -79,8 +104,12 @@ ${publicKey}
 
 Domain: ${domain}
 Issued At: ${now.toISOString()}
+<<<<<<< HEAD
 Chain ID: ${NETWORK}
 Nonce: ${nonce}`;
+=======
+Chain ID: ${NETWORK}`;
+>>>>>>> upstream/main
 
   return message;
 };

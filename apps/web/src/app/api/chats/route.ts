@@ -6,6 +6,11 @@
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// Initialize logger
+const log = createModuleLogger('api/chats');
+
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { chatRateLimit } from '@/lib/middleware/rate-limit';
 import type { Chat, CreateChatRequest } from '@/lib/types/api';
@@ -110,9 +115,13 @@ export async function GET(request: NextRequest) {
           ? mockChats[mockChats.length - 1]._id
           : undefined;
 
-        console.log(
-          `Listed ${mockChats.length} chats for user ${walletAddress}`
-        );
+        log.apiRequest('GET /api/chats', {
+          walletAddress,
+          chatCount: mockChats.length,
+          cursor,
+          limit,
+          hasMore,
+        });
 
         const response = paginatedResponse(mockChats, {
           cursor,
@@ -123,7 +132,11 @@ export async function GET(request: NextRequest) {
 
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('List chats error:', error);
+        log.error('Failed to list chats', {
+          error,
+          walletAddress,
+          operation: 'list_chats',
+        });
         return validationErrorResponse('Failed to retrieve chats');
       }
     });
@@ -180,12 +193,23 @@ export async function POST(request: NextRequest) {
           // });
         }
 
-        console.log(`Chat created: ${newChat._id} for user ${walletAddress}`);
+        log.dbOperation('chat_created', {
+          chatId: newChat._id,
+          walletAddress,
+          model: newChat.model,
+          title: newChat.title,
+          temperature: newChat.temperature,
+          maxTokens: newChat.maxTokens,
+        });
 
         const response = createdResponse(newChat);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Create chat error:', error);
+        log.error('Failed to create chat', {
+          error,
+          walletAddress,
+          operation: 'create_chat',
+        });
         return validationErrorResponse('Failed to create chat');
       }
     });

@@ -233,6 +233,20 @@ body {
   }
 }
 
+/* Hieroglyphic animations */
+@keyframes fadeInOut {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  20%,
+  80% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes sway {
   0%, 100% {
     transform: rotate(15deg) translateX(0);
@@ -240,6 +254,13 @@ body {
   50% {
     transform: rotate(15deg) translateX(5px);
   }
+}
+
+/* Rosetta Stone hieroglyphic styles */
+.hieroglyphic_version {
+  font-family: "Noto Sans Egyptian Hieroglyphs", "Segoe UI Historic", serif;
+  line-height: 1.8;
+  letter-spacing: 0.1em;
 }
 
 @keyframes sway-reverse {
@@ -282,4 +303,13 @@ body {
     0 0 10px rgba(255, 215, 0, 0.5),
     0 0 20px rgba(255, 215, 0, 0.3),
     0 0 30px rgba(255, 215, 0, 0.2);
+}
+
+/* Accessibility: Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .hieroglyphic_version,
+  .hieroglyphic_version * {
+    animation: none !important;
+    transition: none !important;
+  }
 }

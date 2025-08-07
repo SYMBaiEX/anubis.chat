@@ -14,12 +14,16 @@ import {
 } from '@/lib/middleware/auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import type { AuthSession } from '@/lib/types/api';
+import { SubscriptionFeature, SubscriptionTier, Theme } from '@/lib/types/api';
 import {
   addSecurityHeaders,
   successResponse,
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('auth-verify-api');
 
 // =============================================================================
 // Request Validation
@@ -99,7 +103,9 @@ function parseSignInMessage(message: string): {
       expirationTime: expirationTimeMatch[1],
     };
   } catch (error) {
-    // Message parsing failed
+    log.error('Message parsing failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -238,7 +244,9 @@ export async function POST(request: NextRequest) {
       const response = successResponse(authSession);
       return addSecurityHeaders(response);
     } catch (error) {
-      // Authentication verification error
+      log.error('Authentication verification error', {
+        error: error instanceof Error ? error.message : String(error),
+      });
 
       return unauthorizedResponse('Authentication failed');
     }

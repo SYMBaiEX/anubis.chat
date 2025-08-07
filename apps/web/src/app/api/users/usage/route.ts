@@ -5,6 +5,11 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// Initialize logger
+const log = createModuleLogger('api/users/usage');
+
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
 import {
@@ -166,14 +171,20 @@ export async function GET(request: NextRequest) {
           },
         };
 
-        console.log(
-          `Usage stats requested for user ${walletAddress}, period: ${period}`
-        );
+        log.apiRequest('GET /api/users/usage', {
+          walletAddress,
+          period,
+          operation: 'get_usage_stats',
+        });
 
         const response = successResponse(usageStats);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get usage stats error:', error);
+        log.error('Failed to get usage stats', {
+          error,
+          walletAddress,
+          operation: 'get_usage_stats',
+        });
         return validationErrorResponse('Failed to retrieve usage statistics');
       }
     });

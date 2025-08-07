@@ -1,8 +1,15 @@
 'use client';
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+<<<<<<< HEAD
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+=======
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// Initialize logger
+const log = createModuleLogger('error-boundary');
+>>>>>>> upstream/main
 
 interface Props {
   children: ReactNode;
@@ -28,7 +35,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
     if (isSolanaExtensionError) {
       // Log but don't trigger error boundary for Solana extension issues
-      console.warn('Solana extension error (non-critical):', error);
+      log.warn('Solana extension error filtered (non-critical)', {
+        error: error.message,
+        stack: error.stack?.slice(0, 500), // Truncate stack trace
+        type: 'solana_extension_error',
+      });
       return { hasError: false };
     }
 
@@ -42,7 +53,14 @@ export class ErrorBoundary extends Component<Props, State> {
       error.message?.includes('solanaActionsContentScript');
 
     if (!isSolanaExtensionError) {
-      console.error('Uncaught error:', error, errorInfo);
+      log.error('Uncaught error in application', {
+        error,
+        errorInfo: {
+          componentStack: errorInfo.componentStack?.slice(0, 1000), // Truncate
+          errorBoundary: 'ErrorBoundary',
+        },
+        type: 'uncaught_error',
+      });
     }
   }
 
@@ -61,6 +79,7 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
+<<<<<<< HEAD
         <div className="min-h-screen flex items-center justify-center p-4 bg-background">
           <Card className="w-full max-w-md">
             <CardHeader>
@@ -87,6 +106,24 @@ export class ErrorBoundary extends Component<Props, State> {
               </div>
             </CardContent>
           </Card>
+=======
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <h2 className="font-bold text-2xl text-red-600">
+              Something went wrong
+            </h2>
+            <p className="mt-2 text-gray-600">
+              Please refresh the page or contact support if the problem
+              persists.
+            </p>
+            <button
+              className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+              onClick={() => window.location.reload()}
+            >
+              Refresh Page
+            </button>
+          </div>
+>>>>>>> upstream/main
         </div>
       );
     }
@@ -107,12 +144,23 @@ if (typeof window !== 'undefined') {
       error?.message?.includes('solanaActionsContentScript') ||
       error?.stack?.includes('solanaActionsContentScript')
     ) {
-      console.warn('Solana extension promise rejection (non-critical):', error);
+      log.warn('Solana extension promise rejection filtered', {
+        error: error?.message || 'Unknown error',
+        stack: error?.stack?.slice(0, 500),
+        type: 'solana_extension_promise_rejection',
+      });
       event.preventDefault(); // Prevent logging to console
       return;
     }
 
+<<<<<<< HEAD
     console.error('Unhandled promise rejection:', error);
+=======
+    log.error('Unhandled promise rejection', {
+      error,
+      type: 'unhandled_promise_rejection',
+    });
+>>>>>>> upstream/main
   });
 
   // Handle general errors
@@ -125,12 +173,19 @@ if (typeof window !== 'undefined') {
       error?.message?.includes('solanaActionsContentScript') ||
       event.filename?.includes('solanaActionsContentScript')
     ) {
-      console.warn('Solana extension error (non-critical):', error);
+      log.warn('Solana extension error filtered', {
+        error: error?.message || 'Unknown error',
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        type: 'solana_extension_window_error',
+      });
       event.preventDefault(); // Prevent logging to console
       return;
     }
   });
 }
+<<<<<<< HEAD
 
 // Hook version for functional components
 export function withErrorBoundary<T extends Record<string, unknown>>(
@@ -145,3 +200,5 @@ export function withErrorBoundary<T extends Record<string, unknown>>(
     );
   };
 }
+=======
+>>>>>>> upstream/main

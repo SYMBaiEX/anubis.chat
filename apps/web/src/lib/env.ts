@@ -4,6 +4,9 @@
  */
 
 import { z } from 'zod';
+import { createModuleLogger } from './utils/logger';
+
+const log = createModuleLogger('env');
 
 // Define the schema for environment variables
 const envSchema = z.object({
@@ -205,7 +208,7 @@ if (isProduction) {
 
   for (const { name, purpose } of recommendedVars) {
     if (!env[name as keyof Env]) {
-      console.warn(`Warning: ${name} not set - ${purpose} will be disabled`);
+      log.warn('Environment variable not set', { name, purpose });
     }
   }
 }

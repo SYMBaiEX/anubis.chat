@@ -16,6 +16,13 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// =============================================================================
+// Logger
+// =============================================================================
+
+const log = createModuleLogger('api/chats');
 
 // =============================================================================
 // Request Validation
@@ -69,14 +76,22 @@ async function getChatById(
 
 export async function GET(
   request: NextRequest,
+<<<<<<< HEAD
   context: { params: Promise<{ id: string }> }
+=======
+  { params }: { params: Promise<{ id: string }> }
+>>>>>>> upstream/main
 ) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
+<<<<<<< HEAD
         const params = await context.params;
         const { id: chatId } = params;
+=======
+        const { id: chatId } = await params;
+>>>>>>> upstream/main
 
         // Fetch chat by ID
         const chat = await getChatById(chatId, walletAddress);
@@ -85,12 +100,20 @@ export async function GET(
           return notFoundResponse('Chat not found');
         }
 
-        console.log(`Retrieved chat ${chatId} for user ${walletAddress}`);
+        log.apiRequest('GET /api/chats/[id]', {
+          chatId,
+          walletAddress,
+          operation: 'get_chat',
+        });
 
         const response = successResponse(chat);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get chat error:', error);
+        log.error('Failed to retrieve chat', {
+          error,
+          chatId,
+          operation: 'get_chat',
+        });
         return validationErrorResponse('Failed to retrieve chat');
       }
     });
@@ -99,14 +122,22 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
+<<<<<<< HEAD
   context: { params: Promise<{ id: string }> }
+=======
+  { params }: { params: Promise<{ id: string }> }
+>>>>>>> upstream/main
 ) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
+<<<<<<< HEAD
         const params = await context.params;
         const { id: chatId } = params;
+=======
+        const { id: chatId } = await params;
+>>>>>>> upstream/main
 
         // Check if chat exists
         const existingChat = await getChatById(chatId, walletAddress);
@@ -142,12 +173,26 @@ export async function PUT(
           updatedAt: Date.now(),
         };
 
-        console.log(`Chat updated: ${chatId} for user ${walletAddress}`);
+        log.dbOperation('chat_updated', {
+          chatId,
+          walletAddress,
+          updatedFields: Object.keys(updates),
+          hasTitle: !!updates.title,
+          hasDescription: updates.description !== undefined,
+          hasSystemPrompt: updates.systemPrompt !== undefined,
+          temperature: updates.temperature,
+          maxTokens: updates.maxTokens,
+          isPinned: updates.isPinned,
+        });
 
         const response = successResponse(updatedChat);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Update chat error:', error);
+        log.error('Failed to update chat', {
+          error,
+          chatId,
+          operation: 'update_chat',
+        });
         return validationErrorResponse('Failed to update chat');
       }
     });
@@ -156,14 +201,22 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
+<<<<<<< HEAD
   context: { params: Promise<{ id: string }> }
+=======
+  { params }: { params: Promise<{ id: string }> }
+>>>>>>> upstream/main
 ) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
+<<<<<<< HEAD
         const params = await context.params;
         const { id: chatId } = params;
+=======
+        const { id: chatId } = await params;
+>>>>>>> upstream/main
 
         // Check if chat exists
         const existingChat = await getChatById(chatId, walletAddress);
@@ -174,12 +227,20 @@ export async function DELETE(
         // TODO: Delete chat and all associated messages in Convex
         // await deleteChat(chatId, walletAddress);
 
-        console.log(`Chat deleted: ${chatId} for user ${walletAddress}`);
+        log.dbOperation('chat_deleted', {
+          chatId,
+          walletAddress,
+          operation: 'delete_chat',
+        });
 
         const response = noContentResponse();
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Delete chat error:', error);
+        log.error('Failed to delete chat', {
+          error,
+          chatId,
+          operation: 'delete_chat',
+        });
         return validationErrorResponse('Failed to delete chat');
       }
     });

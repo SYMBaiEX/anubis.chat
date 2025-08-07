@@ -2,29 +2,43 @@
 
 import { useEffect } from 'react';
 import { registerServiceWorker, resetPWAState } from '@/lib/service-worker';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// Initialize logger
+const log = createModuleLogger('service-worker-manager');
 
 export default function ServiceWorkerManager() {
   useEffect(() => {
     // Register service worker on mount
     registerServiceWorker({
       onUpdate: (registration) => {
-        console.log(
-          'New version available! Consider prompting user to reload.'
-        );
+        log.info('Service Worker update available', {
+          scope: registration.scope,
+          state: registration.active?.state,
+        });
         // Optionally show update notification to user
       },
       onSuccess: (registration) => {
-        console.log('ISIS Chat PWA ready for offline use');
+        log.info('PWA ready for offline use', {
+          scope: registration.scope,
+          state: registration.active?.state,
+        });
       },
       onError: (error) => {
-        console.error('Service Worker registration failed:', error);
+        log.error('Service Worker registration failed', {
+          error,
+          operation: 'register_in_component',
+        });
       },
     });
 
     // Development helper - expose reset function globally
     if (process.env.NODE_ENV === 'development') {
       (window as any).resetPWA = resetPWAState;
-      console.log('Development mode: Use window.resetPWA() to reset PWA state');
+      log.debug('Development mode PWA reset available', {
+        nodeEnv: process.env.NODE_ENV,
+        resetFunction: 'window.resetPWA()',
+      });
     }
   }, []);
 

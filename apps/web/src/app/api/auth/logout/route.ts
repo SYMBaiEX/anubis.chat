@@ -10,6 +10,9 @@ import {
   addSecurityHeaders,
   noContentResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('auth-logout-api');
 
 // =============================================================================
 // Route Handlers
@@ -28,19 +31,22 @@ export async function POST(request: NextRequest) {
           const { blacklistToken } = await import('@/lib/middleware/auth');
           const blacklisted = await blacklistToken(token);
           if (blacklisted) {
-            console.log(`Token blacklisted for user ${walletAddress}`);
+            log.info('Token blacklisted for user', { walletAddress });
           }
         }
 
-        console.log(
-          `User ${walletAddress} logged out at ${new Date().toISOString()}`
-        );
+        log.info('User logged out successfully', {
+          walletAddress,
+          timestamp: new Date().toISOString(),
+        });
 
         // Return 204 No Content for successful logout
         const response = noContentResponse();
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Logout error:', error);
+        log.error('Logout error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
 
         // Even if there's an error, we still want to indicate successful logout
         // from the client's perspective

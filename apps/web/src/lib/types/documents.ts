@@ -7,7 +7,7 @@
 // Core Document Types
 // =============================================================================
 
-export type DocumentType = 'text' | 'markdown' | 'pdf' | 'url';
+export type DocumentType = 'text' | 'markdown' | 'pdf' | 'url' | 'json' | 'csv';
 
 export interface DocumentMetadata {
   source?: string;

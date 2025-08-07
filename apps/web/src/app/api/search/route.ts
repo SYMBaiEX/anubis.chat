@@ -5,6 +5,11 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+// Initialize logger
+const log = createModuleLogger('api/search');
+
 import { getStorage } from '@/lib/database/storage';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { searchRateLimit } from '@/lib/middleware/rate-limit';
@@ -141,9 +146,13 @@ export async function POST(request: NextRequest) {
         );
         const processingTime = Date.now() - startTime;
 
-        console.log(
-          `Search performed by ${walletAddress}: "${searchRequest.query}" -> ${results.length} results (${processingTime}ms)`
-        );
+        log.apiRequest('GET /api/search', {
+          walletAddress,
+          query: searchRequest.query,
+          resultCount: results.length,
+          processingTime,
+          hasFilters: !!searchRequest.filters,
+        });
 
         const responseData: DocumentSearchResponse = {
           results,
@@ -156,7 +165,11 @@ export async function POST(request: NextRequest) {
         const response = successResponse(responseData);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Search documents error:', error);
+        log.error('Failed to search documents', {
+          error,
+          walletAddress,
+          operation: 'search_documents',
+        });
         const response = NextResponse.json(
           { error: 'Failed to search documents' },
           { status: 500 }
@@ -206,9 +219,16 @@ export async function GET(request: NextRequest) {
         );
         const context = extractContext(results.slice(0, 3)); // Use top 3 for context
 
-        console.log(
-          `Semantic search by ${walletAddress}: "${query}" -> ${results.length} results, context: ${context.length} chars`
-        );
+        log.apiRequest('POST /api/search - Semantic', {
+          walletAddress,
+          query,
+          resultCount: results.length,
+          contextLength: context.length,
+          limit,
+          contextLength,
+          hasFilters: !!filters,
+          hasContext: !!context,
+        });
 
         const responseData = {
           results,
@@ -225,7 +245,11 @@ export async function GET(request: NextRequest) {
         const response = successResponse(responseData);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Semantic search error:', error);
+        log.error('Failed to perform semantic search', {
+          error,
+          walletAddress,
+          operation: 'semantic_search',
+        });
         const response = NextResponse.json(
           { error: 'Failed to perform semantic search' },
           { status: 500 }

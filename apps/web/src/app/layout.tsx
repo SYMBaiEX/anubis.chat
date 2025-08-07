@@ -22,6 +22,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+<<<<<<< HEAD
   title: "isis.chat - Ancient Wisdom • Modern AI",
   description: "Solana-native AI chat platform with RAG capabilities. Authenticate with your wallet, chat with AI, and unlock the power of ancient wisdom through modern technology.",
   keywords: ["AI chat", "Solana", "Web3", "RAG", "Ancient Egypt", "Blockchain", "Crypto"],
@@ -42,6 +43,16 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+=======
+  title: 'ISIS Chat - AI Chat Platform with Web3',
+  description:
+    'Next-generation AI chat platform combining advanced RAG capabilities with Solana Web3 integration. Upload documents, create intelligent chatbots, and interact with multiple AI models.',
+  keywords:
+    'AI chat, Web3, Solana, RAG, document search, chatbot, Claude, GPT-4',
+  authors: [{ name: 'ISIS Chat Team' }],
+  creator: 'ISIS Chat',
+  publisher: 'ISIS Chat',
+>>>>>>> upstream/main
   formatDetection: {
     email: false,
     address: false,

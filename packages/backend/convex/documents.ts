@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // Get documents by owner with pagination
@@ -23,18 +23,24 @@ export const getByOwner = query({
     const limit = Math.min(args.limit ?? 10, 50); // Max 50 per page
     const offset = (page - 1) * limit;
 
-    let query = ctx.db
-      .query('documents')
-      .withIndex('by_owner', (q) => q.eq('ownerId', args.ownerId));
+    let query;
 
-    if (args.type) {
-      query = query.filter((q) => q.eq(q.field('type'), args.type));
+    // Use the optimized category index when category is specified
+    if (args.category) {
+      query = ctx.db
+        .query('documents')
+        .withIndex('by_owner_category', (q) =>
+          q.eq('ownerId', args.ownerId).eq('metadata.category', args.category)
+        );
+    } else {
+      query = ctx.db
+        .query('documents')
+        .withIndex('by_owner', (q) => q.eq('ownerId', args.ownerId));
     }
 
-    if (args.category) {
-      query = query.filter((q) =>
-        q.eq(q.field('metadata.category'), args.category)
-      );
+    // Only apply type filter when not using category index (to maintain efficiency)
+    if (args.type) {
+      query = query.filter((q) => q.eq(q.field('type'), args.type));
     }
 
     const allDocs = await query.order('desc').collect();
@@ -74,7 +80,9 @@ export const search = query({
         v.literal('text'),
         v.literal('markdown'),
         v.literal('pdf'),
-        v.literal('url')
+        v.literal('url'),
+        v.literal('json'),
+        v.literal('csv')
       )
     ),
   },
@@ -155,9 +163,13 @@ export const create = mutation({
       v.literal('text'),
       v.literal('markdown'),
       v.literal('pdf'),
-      v.literal('url')
+      v.literal('url'),
+      v.literal('json'),
+      v.literal('csv')
     ),
     ownerId: v.string(),
+    isPublic: v.optional(v.boolean()),
+    tags: v.optional(v.array(v.string())),
     metadata: v.optional(
       v.object({
         source: v.optional(v.string()),
@@ -183,6 +195,8 @@ export const create = mutation({
       content: args.content,
       type: args.type,
       ownerId: args.ownerId,
+      isPublic: args.isPublic,
+      tags: args.tags,
       metadata: {
         ...args.metadata,
         wordCount,
@@ -222,7 +236,7 @@ export const update = mutation({
       throw new Error('Document not found or access denied');
     }
 
-    const updates: any = {
+    const updates: Partial<Doc<'documents'>> = {
       updatedAt: Date.now(),
     };
 
@@ -281,8 +295,9 @@ export const getByCategory = query({
 
     return await ctx.db
       .query('documents')
-      .withIndex('by_category', (q) => q.eq('metadata.category', args.category))
-      .filter((q) => q.eq(q.field('ownerId'), args.ownerId))
+      .withIndex('by_owner_category', (q) =>
+        q.eq('ownerId', args.ownerId).eq('metadata.category', args.category)
+      )
       .order('desc')
       .take(limit);
   },
@@ -321,8 +336,8 @@ export const getTags = query({
     const tags = new Set<string>();
 
     documents.forEach((doc) => {
-      if (doc.metadata?.tags) {
-        doc.metadata.tags.forEach((tag) => tags.add(tag));
+      if (doc.tags) {
+        doc.tags.forEach((tag) => tags.add(tag));
       }
     });
 
@@ -346,6 +361,8 @@ export const getStats = query({
         markdown: 0,
         pdf: 0,
         url: 0,
+        json: 0,
+        csv: 0,
       },
       totalWords: 0,
       totalCharacters: 0,
@@ -362,8 +379,8 @@ export const getStats = query({
         stats.categories.add(doc.metadata.category);
       }
 
-      if (doc.metadata?.tags) {
-        doc.metadata.tags.forEach((tag) => stats.tags.add(tag));
+      if (doc.tags) {
+        doc.tags.forEach((tag) => stats.tags.add(tag));
       }
     });
 

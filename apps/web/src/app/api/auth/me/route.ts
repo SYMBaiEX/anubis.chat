@@ -7,11 +7,15 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
 import type { UserProfile } from '@/lib/types/api';
+import { SubscriptionFeature, SubscriptionTier, Theme } from '@/lib/types/api';
 import {
   addSecurityHeaders,
   internalErrorResponse,
   successResponse,
 } from '@/lib/utils/api-response';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('auth-me-api');
 
 // =============================================================================
 // Route Handlers
@@ -33,15 +37,18 @@ export async function GET(request: NextRequest) {
           displayName: undefined,
           avatar: undefined,
           preferences: {
-            theme: 'dark',
+            theme: Theme.DARK,
             aiModel: 'gpt-4o',
             notifications: true,
           },
           subscription: {
-            tier: 'free',
+            tier: SubscriptionTier.FREE,
             tokensUsed: 0,
             tokensLimit: 10_000,
-            features: ['basic_chat', 'document_upload'],
+            features: [
+              SubscriptionFeature.BASIC_CHAT,
+              SubscriptionFeature.DOCUMENT_UPLOAD,
+            ],
           },
           createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000, // 7 days ago
           lastActiveAt: Date.now(),
@@ -52,7 +59,9 @@ export async function GET(request: NextRequest) {
         const response = successResponse(userProfile);
         return addSecurityHeaders(response);
       } catch (error) {
-        console.error('Get user profile error:', error);
+        log.error('Get user profile error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
         return internalErrorResponse('Failed to retrieve user profile');
       }
     });

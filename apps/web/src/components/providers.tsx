@@ -22,6 +22,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       }}
       showDetails={process.env.NODE_ENV === 'development'}
     >
+<<<<<<< HEAD
       <ThemeProvider
         attribute="class"
         defaultTheme="system"
@@ -40,5 +41,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <Toaster richColors />
       </ThemeProvider>
     </ConvexErrorBoundary>
+=======
+      <ConvexProvider client={convex}>
+        <WalletProvider>{children}</WalletProvider>
+      </ConvexProvider>
+      <Toaster richColors />
+    </ThemeProvider>
+>>>>>>> upstream/main
   );
 }

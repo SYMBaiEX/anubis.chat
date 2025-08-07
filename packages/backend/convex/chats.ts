@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // Get chats by owner
@@ -70,6 +70,7 @@ export const getById = query({
 export const create = mutation({
   args: {
     title: v.string(),
+    description: v.optional(v.string()),
     ownerId: v.string(),
     model: v.string(),
     systemPrompt: v.optional(v.string()),
@@ -81,12 +82,16 @@ export const create = mutation({
 
     const chatId = await ctx.db.insert('chats', {
       title: args.title,
+      description: args.description,
       ownerId: args.ownerId,
       model: args.model,
       systemPrompt: args.systemPrompt,
       temperature: args.temperature,
       maxTokens: args.maxTokens,
+      isPinned: false,
       isActive: true,
+      messageCount: 0,
+      totalTokens: 0,
       createdAt: now,
       updatedAt: now,
     });
@@ -114,7 +119,7 @@ export const update = mutation({
       throw new Error('Chat not found or access denied');
     }
 
-    const updates: any = {
+    const updates: Partial<Doc<'chats'>> = {
       updatedAt: Date.now(),
     };
 
@@ -205,15 +210,54 @@ export const restore = mutation({
   },
 });
 
-// Update last message timestamp
+// Update last message timestamp and counters
 export const updateLastMessageTime = mutation({
   args: {
     id: v.id('chats'),
     timestamp: v.number(),
+    incrementMessageCount: v.optional(v.boolean()),
+    addTokens: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {
+    const chat = await ctx.db.get(args.id);
+    if (!chat) {
+      throw new Error('Chat not found');
+    }
+
+    const updates: Partial<Doc<'chats'>> = {
       lastMessageAt: args.timestamp,
+      updatedAt: Date.now(),
+    };
+
+    if (args.incrementMessageCount) {
+      updates.messageCount = chat.messageCount + 1;
+    }
+
+    if (args.addTokens) {
+      updates.totalTokens = chat.totalTokens + args.addTokens;
+    }
+
+    await ctx.db.patch(args.id, updates);
+    return await ctx.db.get(args.id);
+  },
+});
+
+// Pin or unpin a chat
+export const togglePin = mutation({
+  args: {
+    id: v.id('chats'),
+    ownerId: v.string(),
+    isPinned: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const chat = await ctx.db.get(args.id);
+
+    if (!chat || chat.ownerId !== args.ownerId) {
+      throw new Error('Chat not found or access denied');
+    }
+
+    await ctx.db.patch(args.id, {
+      isPinned: args.isPinned,
       updatedAt: Date.now(),
     });
 
