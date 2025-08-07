@@ -850,6 +850,39 @@ export interface EmbeddingResponse {
 }
 
 // =============================================================================
+// File Management Types
+// =============================================================================
+
+export interface FileObject {
+  id: string;
+  object: 'file';
+  bytes: number;
+  created_at: number;
+  filename: string;
+  purpose: 'assistants' | 'vision' | 'batch' | 'fine-tune';
+  status: 'uploaded' | 'processing' | 'processed' | 'error' | 'deleting' | 'deleted';
+  status_details: string | null;
+}
+
+export interface FileUploadResponse extends FileObject {
+  // Response from file upload
+}
+
+export interface FileListResponse {
+  object: 'list';
+  data: FileObject[];
+  has_more: boolean;
+  first_id?: string;
+  last_id?: string;
+}
+
+export interface FileDeleteResponse {
+  id: string;
+  object: 'file';
+  deleted: boolean;
+}
+
+// =============================================================================
 // Knowledge Base Types
 // =============================================================================
 
