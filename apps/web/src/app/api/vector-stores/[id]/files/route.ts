@@ -1,6 +1,7 @@
 /**
- * Vector Store Files Management Endpoint
- * Handles adding, listing, and removing files from vector stores
+ * Vector Store Files Collection Endpoint
+ * Handles listing files in vector stores and adding new files
+ * DELETE operations are handled at the individual file resource level
  */
 
 import type { Id } from '@convex/_generated/dataModel';
@@ -211,63 +212,6 @@ async function handleCreate(req: AuthenticatedRequest, vectorStoreId: string) {
   }
 }
 
-// =============================================================================
-// DELETE /api/vector-stores/[id]/files/[fileId] - Remove file from vector store
-// =============================================================================
-
-async function handleDelete(req: AuthenticatedRequest, vectorStoreId: string) {
-  try {
-    // Extract fileId from URL path
-    const url = new URL(req.url);
-    const pathParts = url.pathname.split('/');
-    const fileId = pathParts[pathParts.length - 1];
-
-    if (!fileId || fileId === 'files') {
-      return validationErrorResponse('File ID is required in the URL path', {
-        fileId: ['File ID is required in the URL path'],
-      });
-    }
-
-    // Verify vector store ownership
-    const vectorStore = await convex.query(api.vectorStores.get, {
-      id: vectorStoreId as Id<'vectorStores'>,
-      walletAddress: req.user.walletAddress,
-    });
-
-    if (!vectorStore) {
-      return notFoundResponse('Vector store not found');
-    }
-
-    // Delete file from vector store
-    await convex.mutation(api.vectorStoreFiles.deleteFile, {
-      vectorStoreId: vectorStoreId as Id<'vectorStores'>,
-      fileId,
-      walletAddress: req.user.walletAddress,
-    });
-
-    log.info('Removed file from vector store', {
-      vectorStoreId,
-      fileId,
-      walletAddress: req.user.walletAddress,
-    });
-
-    const response = successResponse(
-      {
-        id: fileId,
-        deleted: true,
-      },
-      nanoid()
-    );
-    response.headers.set('X-Vector-Store-Id', vectorStoreId);
-    return response;
-  } catch (error) {
-    log.error('Failed to remove file from vector store', {
-      error,
-      vectorStoreId,
-    });
-    throw error;
-  }
-}
 
 // =============================================================================
 // Main Handler
@@ -291,8 +235,6 @@ async function handler(
         return await handleList(req, vectorStoreId);
       case 'POST':
         return await handleCreate(req, vectorStoreId);
-      case 'DELETE':
-        return await handleDelete(req, vectorStoreId);
       default:
         return new NextResponse('Method not allowed', { status: 405 });
     }
@@ -324,7 +266,8 @@ export async function GET(
 ) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      return handler(authReq, context);
+      const response = await handler(authReq, context);
+      return addSecurityHeaders(response);
     });
   });
 }
@@ -335,18 +278,9 @@ export async function POST(
 ) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      return handler(authReq, context);
+      const response = await handler(authReq, context);
+      return addSecurityHeaders(response);
     });
   });
 }
 
-export async function DELETE(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  return aiRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      return handler(authReq, context);
-    });
-  });
-}

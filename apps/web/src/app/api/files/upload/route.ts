@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { api, convex } from '@/lib/database/convex';
-import { withAuth } from '@/lib/middleware/auth';
+import { withAuth, type AuthenticatedRequest } from '@/lib/middleware/auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import type { FileUploadResponse } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -42,6 +42,16 @@ const ALLOWED_FILE_TYPES: Record<string, string> = {
   'text/html': '.html',
   'text/css': '.css',
 };
+
+// =============================================================================
+// Types
+// =============================================================================
+
+interface FileMetadata {
+  purpose?: 'assistants' | 'vision' | 'batch' | 'fine-tune';
+  description?: string;
+  tags?: string[];
+}
 
 // =============================================================================
 // Validation Schema
@@ -80,7 +90,7 @@ async function parseFormData(req: NextRequest) {
     }
 
     // Parse metadata if provided
-    let metadata = {};
+    let metadata: FileMetadata = {};
     if (metadataStr) {
       try {
         const parsed = JSON.parse(metadataStr);
@@ -123,16 +133,10 @@ async function processFile(file: File): Promise<{
 // POST /api/files/upload - Upload a file
 // =============================================================================
 
-async function handlePost(req: NextRequest) {
+async function handlePost(req: AuthenticatedRequest) {
   try {
-    // Get wallet address from auth
-    const walletAddress = req.headers.get('x-wallet-address');
-    if (!walletAddress) {
-      return NextResponse.json(
-        { error: 'Wallet address required' },
-        { status: 401 }
-      );
-    }
+    // Get wallet address from authenticated request
+    const walletAddress = req.walletAddress;
 
     // Parse form data
     const { file, metadata } = await parseFormData(req);
@@ -148,7 +152,6 @@ async function handlePost(req: NextRequest) {
     const base64Data = Buffer.from(buffer).toString('base64');
 
     // Store file metadata in Convex
-    const fileMetadata = metadata as any;
     const storedFile = await convex.mutation(api.files.upload, {
       walletAddress,
       fileId,
@@ -157,9 +160,9 @@ async function handlePost(req: NextRequest) {
       size: file.size,
       hash,
       data: base64Data,
-      purpose: fileMetadata.purpose || 'assistants',
-      description: fileMetadata.description,
-      tags: fileMetadata.tags || [],
+      purpose: metadata.purpose || 'assistants',
+      description: metadata.description,
+      tags: metadata.tags || [],
     });
 
     log.info('File uploaded successfully', {
@@ -177,7 +180,7 @@ async function handlePost(req: NextRequest) {
       bytes: file.size,
       created_at: Date.now(),
       filename: fileName,
-      purpose: fileMetadata.purpose || 'assistants',
+      purpose: metadata.purpose || 'assistants',
       status: 'processed',
       status_details: null,
     };
@@ -197,7 +200,9 @@ async function handlePost(req: NextRequest) {
 // =============================================================================
 
 export async function POST(request: NextRequest) {
-  return authRateLimit(request, handlePost);
+  return authRateLimit(request, async (req) =>
+    withAuth(req, async (authReq: AuthenticatedRequest) => handlePost(authReq))
+  );
 }
 
 // OPTIONS for CORS

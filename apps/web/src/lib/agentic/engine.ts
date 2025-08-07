@@ -4,7 +4,7 @@
  */
 
 import { openai } from '@ai-sdk/openai';
-import type { TypedToolCall } from 'ai';
+import type { CoreMessage, TypedToolCall } from 'ai';
 import { generateText, tool } from 'ai';
 import { nanoid } from 'nanoid';
 import type {
@@ -134,10 +134,7 @@ export class AgenticEngine {
     );
 
     let currentStep = 1;
-    const messages: Array<{
-      role: 'system' | 'user' | 'assistant';
-      content: string;
-    }> = [
+    const messages: CoreMessage[] = [
       {
         role: 'system',
         content: agent.systemPrompt,
@@ -193,10 +190,10 @@ export class AgenticEngine {
         if (result.toolCalls && result.toolCalls.length > 0) {
           step.type =
             result.toolCalls.length > 1 ? 'parallel_tools' : 'tool_call';
-          step.toolCalls = result.toolCalls.map((tc: TypedToolCall<any>) => ({
+          step.toolCalls = result.toolCalls.map((tc) => ({
             id: tc.toolCallId,
             name: tc.toolName,
-            parameters: (tc as any).args || (tc as any).arguments || {},
+            parameters: tc.args || {},
             requiresApproval: this.requiresApproval(tc.toolName),
           }));
 
@@ -204,7 +201,7 @@ export class AgenticEngine {
           const toolResults: ToolResult[] = [];
 
           for (let i = 0; i < result.toolCalls.length; i++) {
-            const toolCall = result.toolCalls[i] as TypedToolCall<any>;
+            const toolCall = result.toolCalls[i];
             const toolResult = result.toolResults?.[i];
             toolsUsed.add(toolCall.toolName);
 
@@ -220,16 +217,17 @@ export class AgenticEngine {
 
           step.toolResults = toolResults;
 
-          // Add tool results to messages using correct Vercel AI SDK format
-          // Tool messages should be added as assistant messages with tool results
+          // Add tool results to messages using correct Vercel AI SDK v5 format
           if (result.toolResults && result.toolResults.length > 0) {
-            for (let i = 0; i < result.toolResults.length; i++) {
-              const toolResult = result.toolResults[i];
-              messages.push({
-                role: 'assistant',
-                content: JSON.stringify(toolResult),
-              });
-            }
+            messages.push({
+              role: 'tool',
+              content: result.toolResults.map((toolResult, i) => ({
+                type: 'tool-result',
+                toolCallId: result.toolCalls[i].toolCallId,
+                toolName: result.toolCalls[i].toolName,
+                result: toolResult,
+              })),
+            });
           }
         }
 
@@ -358,7 +356,7 @@ export class AgenticEngine {
    */
   private isTaskComplete(
     text: string,
-    toolCalls: TypedToolCall<any>[] | undefined
+    toolCalls: TypedToolCall[] | undefined
   ): boolean {
     // Simple heuristics to determine task completion
     const completionIndicators = [

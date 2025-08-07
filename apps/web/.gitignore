@@ -8,6 +8,9 @@
 !.yarn/releases
 !.yarn/versions
 
+# Claude Flow
+.claude-flow/
+
 # Testing
 /coverage
 

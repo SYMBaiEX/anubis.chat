@@ -7,7 +7,7 @@ import type { Id } from '@convex/_generated/dataModel';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { api, convex } from '@/lib/database/convex';
-import { withAuth } from '@/lib/middleware/auth';
+import { withAuth, type AuthenticatedRequest } from '@/lib/middleware/auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import { createModuleLogger } from '@/lib/utils/logger';
 
@@ -32,10 +32,36 @@ const exportQuerySchema = z.object({
 });
 
 // =============================================================================
+// Types
+// =============================================================================
+
+interface Message {
+  _id: string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string;
+  createdAt: number;
+  metadata?: {
+    model?: string;
+    toolName?: string;
+    [key: string]: unknown;
+  };
+}
+
+interface Chat {
+  _id: Id<'chats'>;
+  title: string;
+  model: string;
+  systemPrompt?: string;
+  createdAt: number;
+  updatedAt: number;
+  ownerId: string;
+}
+
+// =============================================================================
 // Helper Functions
 // =============================================================================
 
-function formatMessageAsMarkdown(message: any): string {
+function formatMessageAsMarkdown(message: Message): string {
   const role = message.role.charAt(0).toUpperCase() + message.role.slice(1);
   const timestamp = new Date(message.createdAt).toLocaleString();
 
@@ -50,7 +76,7 @@ function formatMessageAsMarkdown(message: any): string {
   return content;
 }
 
-function generateMarkdown(chat: any, messages: any[]): string {
+function generateMarkdown(chat: Chat, messages: Message[]): string {
   let markdown = `# ${chat.title}\n\n`;
   markdown += `**Created:** ${new Date(chat.createdAt).toLocaleString()}\n`;
   markdown += `**Model:** ${chat.model}\n`;
@@ -72,35 +98,142 @@ function generateMarkdown(chat: any, messages: any[]): string {
 }
 
 async function generatePDF(markdown: string, title: string): Promise<Buffer> {
-  // Note: In production, you would use a library like puppeteer or jsPDF
-  // For now, we'll return a simple implementation that converts markdown to basic PDF
-  // This is a placeholder - you should implement proper PDF generation
+  // Import jsPDF dynamically to avoid issues with SSR
+  const { jsPDF } = await import('jspdf');
+  
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>${title}</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        h1 { color: #333; }
-        h2 { color: #666; margin-top: 30px; }
-        h3 { color: #888; margin-top: 20px; }
-        p { line-height: 1.6; }
-        hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }
-        em { color: #999; }
-      </style>
-    </head>
-    <body>
-      ${markdown.replace(/\n/g, '<br>')}
-    </body>
-    </html>
-  `;
+  // Set up document properties
+  doc.setProperties({
+    title: title,
+    creator: 'ISIS Chat',
+    subject: 'Chat Export',
+    keywords: 'chat, export, pdf',
+  });
 
-  // This is a simplified implementation
-  // In production, use a proper HTML to PDF converter
-  return Buffer.from(htmlContent, 'utf-8');
+  // Configure text settings
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 20;
+  const maxLineWidth = pageWidth - 2 * margin;
+  let currentY = margin;
+
+  // Helper function to add new page if needed
+  function checkPageBreak(lineHeight: number) {
+    if (currentY + lineHeight > pageHeight - margin) {
+      doc.addPage();
+      currentY = margin;
+    }
+  }
+
+  // Helper function to wrap text
+  function addWrappedText(text: string, x: number, y: number, maxWidth: number, fontSize: number, fontStyle: string = 'normal') {
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', fontStyle);
+    
+    const lines = doc.splitTextToSize(text, maxWidth);
+    const lineHeight = fontSize * 0.4; // Approximate line height in mm
+    
+    for (const line of lines) {
+      checkPageBreak(lineHeight);
+      doc.text(line, x, currentY);
+      currentY += lineHeight;
+    }
+    
+    return currentY;
+  }
+
+  // Parse and render markdown content
+  const lines = markdown.split('\n');
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    if (line === '') {
+      currentY += 3; // Small spacing for empty lines
+      continue;
+    }
+    
+    // Handle different markdown elements
+    if (line.startsWith('# ')) {
+      // H1 - Title
+      checkPageBreak(12);
+      currentY += 5;
+      addWrappedText(line.substring(2), margin, currentY, maxLineWidth, 18, 'bold');
+      currentY += 8;
+    } else if (line.startsWith('## ')) {
+      // H2 - Section headers
+      checkPageBreak(10);
+      currentY += 4;
+      addWrappedText(line.substring(3), margin, currentY, maxLineWidth, 14, 'bold');
+      currentY += 6;
+    } else if (line.startsWith('### ')) {
+      // H3 - Message headers (User, Assistant, etc.)
+      checkPageBreak(8);
+      currentY += 3;
+      addWrappedText(line.substring(4), margin, currentY, maxLineWidth, 12, 'bold');
+      currentY += 4;
+    } else if (line.startsWith('**') && line.endsWith('**')) {
+      // Bold text (metadata)
+      checkPageBreak(6);
+      const text = line.substring(2, line.length - 2);
+      addWrappedText(text, margin, currentY, maxLineWidth, 10, 'bold');
+      currentY += 2;
+    } else if (line.startsWith('*') && line.endsWith('*') && !line.startsWith('**')) {
+      // Italic text (timestamps, model info)
+      checkPageBreak(6);
+      const text = line.substring(1, line.length - 1);
+      addWrappedText(text, margin, currentY, maxLineWidth, 9, 'italic');
+      currentY += 2;
+    } else if (line === '---') {
+      // Horizontal rule
+      checkPageBreak(5);
+      currentY += 2;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, currentY, pageWidth - margin, currentY);
+      currentY += 4;
+    } else if (line.length > 0) {
+      // Regular text content
+      checkPageBreak(6);
+      addWrappedText(line, margin, currentY, maxLineWidth, 10, 'normal');
+      currentY += 2;
+    }
+  }
+
+  // Add footer with generation info
+  const totalPages = doc.internal.pages.length - 1; // Subtract 1 because pages array includes a null first element
+  
+  for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+    doc.setPage(pageNum);
+    
+    // Add page number
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(128, 128, 128);
+    doc.text(
+      `Page ${pageNum} of ${totalPages}`,
+      pageWidth - margin,
+      pageHeight - 10,
+      { align: 'right' }
+    );
+    
+    // Add generation timestamp on first page
+    if (pageNum === 1) {
+      doc.text(
+        `Generated on ${new Date().toLocaleString()}`,
+        margin,
+        pageHeight - 10
+      );
+    }
+  }
+
+  // Convert PDF to buffer
+  const pdfOutput = doc.output('arraybuffer');
+  return Buffer.from(pdfOutput);
 }
 
 // =============================================================================
@@ -108,19 +241,13 @@ async function generatePDF(markdown: string, title: string): Promise<Buffer> {
 // =============================================================================
 
 async function handleGet(
-  req: NextRequest,
+  req: AuthenticatedRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: chatId } = await params;
-    // Get wallet address from auth
-    const walletAddress = req.headers.get('x-wallet-address');
-    if (!walletAddress) {
-      return NextResponse.json(
-        { error: 'Wallet address required' },
-        { status: 401 }
-      );
-    }
+    // Get wallet address from authenticated request
+    const walletAddress = req.walletAddress;
 
     // Parse query parameters
     const searchParams = req.nextUrl.searchParams;
@@ -146,7 +273,7 @@ async function handleGet(
     // Get chat from Convex
     const chat = await convex.query(api.chats.getById, {
       id: chatId as Id<'chats'>,
-    });
+    }) as Chat | null;
 
     if (!chat || chat.ownerId !== walletAddress) {
       return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
@@ -159,14 +286,14 @@ async function handleGet(
     });
 
     // Filter messages based on options
-    let messages = messagesResult;
+    let messages = messagesResult as Message[];
     if (!includeSystemMessages) {
-      messages = messages.filter((m: any) => m.role !== 'system');
+      messages = messages.filter((m) => m.role !== 'system');
     }
 
     // Clean metadata if not included
     if (!includeMetadata) {
-      messages = messages.map((m: any) => ({
+      messages = messages.map((m) => ({
         ...m,
         metadata: undefined,
       }));
@@ -191,7 +318,7 @@ async function handleGet(
             createdAt: chat.createdAt,
             updatedAt: chat.updatedAt,
           },
-          messages: messages.map((m: any) => ({
+          messages: messages.map((m) => ({
             role: m.role,
             content: m.content,
             createdAt: m.createdAt,
@@ -222,7 +349,7 @@ async function handleGet(
         const markdown = generateMarkdown(chat, messages);
         const pdfBuffer = await generatePDF(markdown, chat.title);
 
-        return new NextResponse(pdfBuffer as any, {
+        return new NextResponse(pdfBuffer, {
           headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': `attachment; filename="${chat.title.replace(/[^a-z0-9]/gi, '_')}_export.pdf"`,
@@ -254,5 +381,7 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  return authRateLimit(request, async (req) => handleGet(req, context));
+  return authRateLimit(request, async (req) =>
+    withAuth(req, async (authReq: AuthenticatedRequest) => handleGet(authReq, context))
+  );
 }

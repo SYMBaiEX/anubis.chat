@@ -92,7 +92,7 @@ const initServerSchema = z.object({
     timeout: z.number().optional(),
   }),
   description: z.string().optional(),
-  toolSchemas: z.record(z.string(), z.any()).optional(),
+  toolSchemas: z.record(z.string(), toolSchemaSchema).optional(),
   enabled: z.boolean().optional(),
   autoConnect: z.boolean().optional(),
   priority: z.number().optional(),
