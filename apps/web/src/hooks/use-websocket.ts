@@ -5,6 +5,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import type { Memory } from '@/lib/memory/store';
+import type { AgentExecution, AgentStep } from '@/lib/types/agentic';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('websocket-hook');
@@ -17,13 +19,13 @@ const log = createModuleLogger('websocket-hook');
 interface AgentExecutionData {
   agentId: string;
   executionId?: string;
-  step?: unknown;
+  step?: AgentStep;
   result?: unknown;
-  error?: Error;
+  error?: string;
 }
 
 interface MemoryEventData {
-  memory: unknown;
+  memory?: Memory;
   memoryId?: string;
 }
 
@@ -296,19 +298,7 @@ export function useWebSocket(
 /**
  * Hook for agent execution updates
  */
-interface AgentExecution {
-  agentId: string;
-  executionId?: string;
-  result?: unknown;
-  error?: boolean;
-}
-
-interface AgentStep {
-  id: string;
-  type: string;
-  status: string;
-  data?: unknown;
-}
+// Using types from agentic.ts - no need to redefine
 
 export function useAgentExecution(agentId?: string) {
   const ws = useWebSocket();
@@ -319,31 +309,75 @@ export function useAgentExecution(agentId?: string) {
   useEffect(() => {
     if (!ws.isConnected) return;
 
-    const handleStarted = (data: AgentExecutionData) => {
-      if (!agentId || data.agentId === agentId) {
+    const handleStarted = (data: unknown) => {
+      const executionData = data as AgentExecutionData;
+      if (!agentId || executionData.agentId === agentId) {
         setIsExecuting(true);
-        setExecution(data);
+        // Convert AgentExecutionData to AgentExecution format
+        const agentExecution: AgentExecution = {
+          id: executionData.executionId || '',
+          agentId: executionData.agentId,
+          walletAddress: '', // Will be populated from server
+          status: 'running',
+          input: '',
+          steps: [],
+          result: executionData.result as AgentExecution['result'],
+          error: executionData.error,
+          startedAt: Date.now(),
+        };
+        setExecution(agentExecution);
         setSteps([]);
       }
     };
 
-    const handleStep = (data: AgentExecutionData) => {
-      if (!agentId || data.agentId === agentId) {
-        setSteps((prev) => [...prev, data.step as AgentStep]);
+    const handleStep = (data: unknown) => {
+      const executionData = data as AgentExecutionData;
+      if (
+        (!agentId || executionData.agentId === agentId) &&
+        executionData.step
+      ) {
+        setSteps((prev) => [...prev, executionData.step as AgentStep]);
       }
     };
 
-    const handleCompleted = (data: AgentExecutionData) => {
-      if (!agentId || data.agentId === agentId) {
+    const handleCompleted = (data: unknown) => {
+      const executionData = data as AgentExecutionData;
+      if (!agentId || executionData.agentId === agentId) {
         setIsExecuting(false);
-        setExecution(data);
+        // Convert to AgentExecution format
+        const agentExecution: AgentExecution = {
+          id: executionData.executionId || '',
+          agentId: executionData.agentId,
+          walletAddress: '',
+          status: 'completed',
+          input: '',
+          steps: [],
+          result: executionData.result as AgentExecution['result'],
+          error: executionData.error,
+          startedAt: Date.now(),
+          completedAt: Date.now(),
+        };
+        setExecution(agentExecution);
       }
     };
 
-    const handleError = (data: AgentExecutionData) => {
-      if (!agentId || data.agentId === agentId) {
+    const handleError = (data: unknown) => {
+      const executionData = data as AgentExecutionData;
+      if (!agentId || executionData.agentId === agentId) {
         setIsExecuting(false);
-        setExecution({ ...data, error: true });
+        const agentExecution: AgentExecution = {
+          id: executionData.executionId || '',
+          agentId: executionData.agentId,
+          walletAddress: '',
+          status: 'failed',
+          input: '',
+          steps: [],
+          result: executionData.result as AgentExecution['result'],
+          error: executionData.error || 'Unknown error occurred',
+          startedAt: Date.now(),
+          completedAt: Date.now(),
+        };
+        setExecution(agentExecution);
       }
     };
 
@@ -378,11 +412,7 @@ export function useAgentExecution(agentId?: string) {
 /**
  * Hook for memory updates
  */
-interface Memory {
-  id: string;
-  content: unknown;
-  metadata?: Record<string, unknown>;
-}
+// Using Memory type from store - no need to redefine
 
 interface MemoryUpdate {
   type: 'created' | 'updated' | 'deleted';
@@ -398,26 +428,45 @@ export function useMemoryUpdates() {
   useEffect(() => {
     if (!ws.isConnected) return;
 
-    const handleCreated = (data: MemoryEventData) => {
-      setLatestMemory(data.memory as Memory);
-      setMemoryUpdates((prev) => [
-        ...prev,
-        { type: 'created' as const, ...data },
-      ]);
+    const handleCreated = (data: unknown) => {
+      const memoryData = data as MemoryEventData;
+      if (memoryData.memory) {
+        setLatestMemory(memoryData.memory);
+        setMemoryUpdates((prev) => [
+          ...prev,
+          {
+            type: 'created' as const,
+            memory: memoryData.memory,
+            memoryId: memoryData.memoryId,
+          },
+        ]);
+      }
     };
 
-    const handleUpdated = (data: MemoryEventData) => {
-      setLatestMemory(data.memory as Memory);
-      setMemoryUpdates((prev) => [
-        ...prev,
-        { type: 'updated' as const, ...data },
-      ]);
+    const handleUpdated = (data: unknown) => {
+      const memoryData = data as MemoryEventData;
+      if (memoryData.memory) {
+        setLatestMemory(memoryData.memory);
+        setMemoryUpdates((prev) => [
+          ...prev,
+          {
+            type: 'updated' as const,
+            memory: memoryData.memory,
+            memoryId: memoryData.memoryId,
+          },
+        ]);
+      }
     };
 
-    const handleDeleted = (data: MemoryEventData) => {
+    const handleDeleted = (data: unknown) => {
+      const memoryData = data as MemoryEventData;
       setMemoryUpdates((prev) => [
         ...prev,
-        { type: 'deleted' as const, ...data },
+        {
+          type: 'deleted' as const,
+          memory: undefined,
+          memoryId: memoryData.memoryId,
+        },
       ]);
     };
 
@@ -461,10 +510,15 @@ export function useConversationUpdates(conversationId?: string) {
   useEffect(() => {
     if (!ws.isConnected) return;
 
-    const handleMessage = (data: ConversationEventData) => {
-      if (!conversationId || data.conversationId === conversationId) {
-        setLatestMessage(data.message as ConversationMessage);
-        setMessages((prev) => [...prev, data.message as ConversationMessage]);
+    const handleMessage = (data: unknown) => {
+      const conversationData = data as ConversationEventData;
+      if (
+        !conversationId ||
+        conversationData.conversationId === conversationId
+      ) {
+        const message = conversationData.message as ConversationMessage;
+        setLatestMessage(message);
+        setMessages((prev) => [...prev, message]);
       }
     };
 

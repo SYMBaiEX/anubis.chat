@@ -60,9 +60,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       const { walletAddress } = authReq.user;
       const { agentId } = await context.params;
-      
-      try {
 
+      try {
         // Get agent from Convex
         const agentDoc = await convex.query(api.agents.getById, {
           id: agentId as Id<'agents'>,
@@ -191,8 +190,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         return addSecurityHeaders(response);
       } catch (error) {
         log.error('Agent execution error', {
-          agentId: agentId,
-          walletAddress: walletAddress,
+          agentId,
+          walletAddress,
           error: error instanceof Error ? error.message : String(error),
         });
         const response = NextResponse.json(

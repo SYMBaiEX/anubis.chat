@@ -943,8 +943,7 @@ export default defineSchema({
     walletAddress: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index('by_wallet', ['walletAddress', 'updatedAt']),
+  }).index('by_wallet', ['walletAddress', 'updatedAt']),
 
   // Thread messages
   threadMessages: defineTable({
@@ -1327,7 +1326,9 @@ export default defineSchema({
     hyperparameters: v.optional(
       v.object({
         batchSize: v.optional(v.union(v.number(), v.literal('auto'))),
-        learningRateMultiplier: v.optional(v.union(v.number(), v.literal('auto'))),
+        learningRateMultiplier: v.optional(
+          v.union(v.number(), v.literal('auto'))
+        ),
         nEpochs: v.optional(v.union(v.number(), v.literal('auto'))),
       })
     ),
@@ -1371,8 +1372,7 @@ export default defineSchema({
     ),
     metadata: v.optional(v.object({})),
     createdAt: v.number(),
-  })
-    .index('by_job', ['fineTuningJobId', 'createdAt']),
+  }).index('by_job', ['fineTuningJobId', 'createdAt']),
 
   // Code executions
   codeExecutions: defineTable({
@@ -1613,4 +1613,42 @@ export default defineSchema({
   })
     .index('by_wallet', ['walletAddress', 'createdAt'])
     .index('by_status', ['status', 'createdAt']),
+
+  // =============================================================================
+  // File Storage System
+  // =============================================================================
+
+  // Files table for direct file management
+  files: defineTable({
+    walletAddress: v.string(),
+    fileId: v.string(),
+    fileName: v.string(),
+    mimeType: v.string(),
+    size: v.number(),
+    hash: v.string(),
+    data: v.string(), // Base64 encoded file data
+    purpose: v.union(
+      v.literal('assistants'),
+      v.literal('vision'),
+      v.literal('batch'),
+      v.literal('fine-tune')
+    ),
+    description: v.optional(v.string()),
+    tags: v.array(v.string()),
+    status: v.union(
+      v.literal('uploaded'),
+      v.literal('processed'),
+      v.literal('error')
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_wallet', ['walletAddress', 'createdAt'])
+    .index('by_fileId', ['fileId'])
+    .index('by_hash', ['hash', 'walletAddress'])
+    .index('by_purpose', ['purpose', 'walletAddress'])
+    .searchIndex('search_name', {
+      searchField: 'fileName',
+      filterFields: ['walletAddress', 'purpose'],
+    }),
 });

@@ -67,9 +67,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       const { walletAddress } = authReq.user;
       const { agentId } = await context.params;
-      
-      try {
 
+      try {
         // Get agent from Convex
         const agent = await convex.query(api.agents.getById, {
           id: agentId as Id<'agents'>,
@@ -85,7 +84,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
           );
         }
 
-        log.info('Agent retrieved successfully', { agentId: agentId, walletAddress: walletAddress });
+        log.info('Agent retrieved successfully', { agentId, walletAddress });
 
         // Convert Convex document to API format
         const formattedAgent = convexAgentToApiFormat(agent);
@@ -94,7 +93,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         return addSecurityHeaders(response);
       } catch (error) {
         log.error('Get agent error', {
-          agentId: agentId,
+          agentId,
           error: error instanceof Error ? error.message : String(error),
         });
         const response = NextResponse.json(
@@ -112,9 +111,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       const { walletAddress } = authReq.user;
       const { agentId } = await context.params;
-      
-      try {
 
+      try {
         // Parse and validate request body
         const body = await req.json();
         const validation = updateAgentSchema.safeParse(body);
@@ -139,7 +137,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           return notFoundResponse('Agent not found or update failed');
         }
 
-        log.info('Agent updated successfully', { agentId: agentId, walletAddress: walletAddress });
+        log.info('Agent updated successfully', { agentId, walletAddress });
 
         // Convert to API format
         const formattedAgent = convexAgentToApiFormat(updatedAgent);
@@ -148,7 +146,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         return addSecurityHeaders(response);
       } catch (error) {
         log.error('Update agent error', {
-          agentId: agentId,
+          agentId,
           error: error instanceof Error ? error.message : String(error),
         });
 
@@ -180,16 +178,15 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       const { walletAddress } = authReq.user;
       const { agentId } = await context.params;
-      
-      try {
 
+      try {
         // Delete agent from Convex (handles ownership internally)
         await convex.mutation(api.agents.remove, {
           id: agentId as Id<'agents'>,
           walletAddress,
         });
 
-        log.info('Agent deleted successfully', { agentId: agentId, walletAddress: walletAddress });
+        log.info('Agent deleted successfully', { agentId, walletAddress });
 
         const response = successResponse({
           message: 'Agent deleted successfully',
@@ -198,7 +195,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         return addSecurityHeaders(response);
       } catch (error) {
         log.error('Delete agent error', {
-          agentId: agentId,
+          agentId,
           error: error instanceof Error ? error.message : String(error),
         });
 

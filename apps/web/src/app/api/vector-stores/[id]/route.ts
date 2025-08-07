@@ -3,16 +3,14 @@
  * Handles GET, PATCH, DELETE operations for specific vector stores
  */
 
+import type { Id } from '@convex/_generated/dataModel';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { api, convex } from '@/lib/database/convex';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
-import type {
-  UpdateVectorStoreRequest,
-  VectorStore,
-} from '@/lib/types/api';
+import type { UpdateVectorStoreRequest, VectorStore } from '@/lib/types/api';
 import {
   addSecurityHeaders,
   notFoundResponse,
@@ -50,14 +48,11 @@ const updateVectorStoreSchema = z.object({
 // GET /api/vector-stores/[id] - Get vector store
 // =============================================================================
 
-async function handleGet(
-  req: AuthenticatedRequest,
-  vectorStoreId: string
-) {
+async function handleGet(req: AuthenticatedRequest, vectorStoreId: string) {
   try {
     // Fetch vector store from Convex
     const vectorStore = await convex.query(api.vectorStores.get, {
-      id: vectorStoreId,
+      id: vectorStoreId as Id<'vectorStores'>,
       walletAddress: req.user.walletAddress,
     });
 
@@ -90,10 +85,9 @@ async function handleGet(
       walletAddress: req.user.walletAddress,
     });
 
-    return successResponse(apiVectorStore, {
-      'X-Request-Id': nanoid(),
-      'X-Vector-Store-Id': apiVectorStore.id,
-    });
+    const response = successResponse(apiVectorStore, nanoid());
+    response.headers.set('X-Vector-Store-Id', apiVectorStore.id);
+    return response;
   } catch (error) {
     log.error('Failed to get vector store', { error, id: vectorStoreId });
     throw error;
@@ -104,32 +98,32 @@ async function handleGet(
 // PATCH /api/vector-stores/[id] - Update vector store
 // =============================================================================
 
-async function handleUpdate(
-  req: AuthenticatedRequest,
-  vectorStoreId: string
-) {
+async function handleUpdate(req: AuthenticatedRequest, vectorStoreId: string) {
   try {
     const body = await req.json();
 
     // Validate request body
     const validation = updateVectorStoreSchema.safeParse(body);
     if (!validation.success) {
-      log.warn('Invalid request body', { errors: validation.error.errors });
-      return validationErrorResponse(validation.error);
+      log.warn('Invalid request body', { errors: validation.error.issues });
+      return validationErrorResponse(
+        'Invalid request body',
+        validation.error.flatten().fieldErrors
+      );
     }
 
     const data = validation.data as UpdateVectorStoreRequest;
 
     // Update vector store in Convex
     await convex.mutation(api.vectorStores.update, {
-      id: vectorStoreId,
+      id: vectorStoreId as Id<'vectorStores'>,
       walletAddress: req.user.walletAddress,
       ...data,
     });
 
     // Fetch the updated vector store
     const vectorStore = await convex.query(api.vectorStores.get, {
-      id: vectorStoreId,
+      id: vectorStoreId as Id<'vectorStores'>,
       walletAddress: req.user.walletAddress,
     });
 
@@ -159,10 +153,9 @@ async function handleUpdate(
       updates: Object.keys(data),
     });
 
-    return successResponse(apiVectorStore, {
-      'X-Request-Id': nanoid(),
-      'X-Vector-Store-Id': apiVectorStore.id,
-    });
+    const response = successResponse(apiVectorStore, nanoid());
+    response.headers.set('X-Vector-Store-Id', apiVectorStore.id);
+    return response;
   } catch (error) {
     log.error('Failed to update vector store', { error, id: vectorStoreId });
     throw error;
@@ -173,14 +166,11 @@ async function handleUpdate(
 // DELETE /api/vector-stores/[id] - Delete vector store
 // =============================================================================
 
-async function handleDelete(
-  req: AuthenticatedRequest,
-  vectorStoreId: string
-) {
+async function handleDelete(req: AuthenticatedRequest, vectorStoreId: string) {
   try {
     // Check if vector store exists
     const vectorStore = await convex.query(api.vectorStores.get, {
-      id: vectorStoreId,
+      id: vectorStoreId as Id<'vectorStores'>,
       walletAddress: req.user.walletAddress,
     });
 
@@ -193,8 +183,8 @@ async function handleDelete(
     }
 
     // Delete vector store and all associated files
-    await convex.mutation(api.vectorStores.delete, {
-      id: vectorStoreId,
+    await convex.mutation(api.vectorStores.deleteVectorStore, {
+      id: vectorStoreId as Id<'vectorStores'>,
       walletAddress: req.user.walletAddress,
     });
 
@@ -209,9 +199,7 @@ async function handleDelete(
         id: vectorStoreId,
         deleted: true,
       },
-      {
-        'X-Request-Id': nanoid(),
-      }
+      nanoid()
     );
   } catch (error) {
     log.error('Failed to delete vector store', { error, id: vectorStoreId });
@@ -225,26 +213,14 @@ async function handleDelete(
 
 async function handler(
   req: AuthenticatedRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  // Apply rate limiting
-  const rateLimitResult = await aiRateLimit(req);
-  if (rateLimitResult) {
-    return rateLimitResult;
-  }
-
-  const vectorStoreId = params.id;
+  const { id: vectorStoreId } = await params;
 
   if (!vectorStoreId) {
-    return validationErrorResponse(
-      new z.ZodError([
-        {
-          code: 'custom',
-          path: ['id'],
-          message: 'Vector store ID is required',
-        },
-      ])
-    );
+    return validationErrorResponse('Vector store ID is required', {
+      id: ['Vector store ID is required'],
+    });
   }
 
   try {
@@ -275,16 +251,40 @@ async function handler(
               : 'Failed to process vector store operation',
         },
       },
-      {
-        status: 500,
-        headers: addSecurityHeaders({
-          'X-Request-Id': nanoid(),
-        }),
-      }
+      { status: 500 }
     );
   }
 }
 
-export const GET = withAuth(handler);
-export const PATCH = withAuth(handler);
-export const DELETE = withAuth(handler);
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return aiRateLimit(request, async (req) => {
+    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      return handler(authReq, context);
+    });
+  });
+}
+
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return aiRateLimit(request, async (req) => {
+    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      return handler(authReq, context);
+    });
+  });
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return aiRateLimit(request, async (req) => {
+    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      return handler(authReq, context);
+    });
+  });
+}

@@ -4,7 +4,7 @@
  */
 
 import { v } from 'convex/values';
-import type { Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // =============================================================================
@@ -243,7 +243,7 @@ export const bulkCreate = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    const results = [];
+    const results: Id<'memories'>[] = [];
 
     for (const memory of args.memories) {
       const id = await ctx.db.insert('memories', {

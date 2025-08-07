@@ -9,10 +9,7 @@ import { z } from 'zod';
 import { api, convex } from '@/lib/database/convex';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
-import type {
-  CreateVectorStoreRequest,
-  VectorStore,
-} from '@/lib/types/api';
+import type { CreateVectorStoreRequest, VectorStore } from '@/lib/types/api';
 import {
   addSecurityHeaders,
   createdResponse,
@@ -67,8 +64,11 @@ async function handleList(req: AuthenticatedRequest) {
     // Validate query parameters
     const validation = listVectorStoresSchema.safeParse(searchParams);
     if (!validation.success) {
-      log.warn('Invalid query parameters', { errors: validation.error.errors });
-      return validationErrorResponse(validation.error);
+      log.warn('Invalid query parameters', { errors: validation.error.issues });
+      return validationErrorResponse(
+        'Invalid query parameters',
+        validation.error.flatten().fieldErrors
+      );
     }
 
     const { limit, order, after, before } = validation.data;
@@ -110,9 +110,7 @@ async function handleList(req: AuthenticatedRequest) {
         hasMore: vectorStores.hasMore,
         limit,
       },
-      {
-        'X-Request-Id': nanoid(),
-      }
+      nanoid()
     );
   } catch (error) {
     log.error('Failed to list vector stores', { error });
@@ -131,11 +129,14 @@ async function handleCreate(req: AuthenticatedRequest) {
     // Validate request body
     const validation = createVectorStoreSchema.safeParse(body);
     if (!validation.success) {
-      log.warn('Invalid request body', { errors: validation.error.errors });
-      return validationErrorResponse(validation.error);
+      log.warn('Invalid request body', { errors: validation.error.issues });
+      return validationErrorResponse(
+        'Invalid request body',
+        validation.error.flatten().fieldErrors
+      );
     }
 
-    const data = validation.data as CreateVectorStoreRequest;
+    const data = validation.data;
 
     // Create vector store in Convex
     const vectorStoreId = await convex.mutation(api.vectorStores.create, {
@@ -189,10 +190,9 @@ async function handleCreate(req: AuthenticatedRequest) {
       walletAddress: req.user.walletAddress,
     });
 
-    return createdResponse(apiVectorStore, {
-      'X-Request-Id': nanoid(),
-      'X-Vector-Store-Id': apiVectorStore.id,
-    });
+    const response = createdResponse(apiVectorStore, nanoid());
+    response.headers.set('X-Vector-Store-Id', apiVectorStore.id);
+    return response;
   } catch (error) {
     log.error('Failed to create vector store', { error });
     throw error;
@@ -204,12 +204,6 @@ async function handleCreate(req: AuthenticatedRequest) {
 // =============================================================================
 
 async function handler(req: AuthenticatedRequest) {
-  // Apply rate limiting
-  const rateLimitResult = await aiRateLimit(req);
-  if (rateLimitResult) {
-    return rateLimitResult;
-  }
-
   try {
     switch (req.method) {
       case 'GET':
@@ -232,15 +226,23 @@ async function handler(req: AuthenticatedRequest) {
               : 'Failed to process vector store operation',
         },
       },
-      {
-        status: 500,
-        headers: addSecurityHeaders({
-          'X-Request-Id': nanoid(),
-        }),
-      }
+      { status: 500 }
     );
   }
 }
 
-export const GET = withAuth(handler);
-export const POST = withAuth(handler);
+export async function GET(request: NextRequest) {
+  return aiRateLimit(request, async (req) => {
+    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      return handler(authReq);
+    });
+  });
+}
+
+export async function POST(request: NextRequest) {
+  return aiRateLimit(request, async (req) => {
+    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      return handler(authReq);
+    });
+  });
+}

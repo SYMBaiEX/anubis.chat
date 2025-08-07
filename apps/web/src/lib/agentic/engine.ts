@@ -4,27 +4,22 @@
  */
 
 import { openai } from '@ai-sdk/openai';
-import type { TypedToolCall, TypedToolResult } from 'ai';
-import { generateText, streamObject, tool } from 'ai';
+import type { TypedToolCall } from 'ai';
+import { generateText, tool } from 'ai';
 import { nanoid } from 'nanoid';
-import { z } from 'zod';
-import { openaiConfig } from '@/lib/env';
 import type {
   Agent,
   AgentContext,
   AgentExecution,
   AgentExecutionResult,
-  AgentExecutionStatus,
   AgenticConfig,
   AgentStep,
-  AgentStepType,
   AgentTool,
   ApprovalRequest,
   ExecuteAgentRequest,
-  ToolCall,
   ToolResult,
 } from '@/lib/types/agentic';
-import { getTool, TOOL_REGISTRY } from './tools';
+import { getTool } from './tools';
 
 // =============================================================================
 // Configuration
@@ -131,7 +126,7 @@ export class AgenticEngine {
               agentTool,
               params,
               context,
-              request.autoApprove
+              Boolean(request.autoApprove)
             );
           },
         }),
@@ -154,7 +149,7 @@ export class AgenticEngine {
     ];
 
     const toolsUsed = new Set<string>();
-    const totalTokensUsed = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+    const totalTokensUsed = { input: 0, output: 0, total: 0 };
 
     while (currentStep <= maxSteps) {
       const step: AgentStep = {
@@ -178,9 +173,9 @@ export class AgenticEngine {
 
         // Update token usage
         if (result.usage) {
-          totalTokensUsed.promptTokens += result.usage.inputTokens || 0;
-          totalTokensUsed.completionTokens += result.usage.outputTokens || 0;
-          totalTokensUsed.totalTokens += result.usage.totalTokens || 0;
+          totalTokensUsed.input += result.usage.inputTokens || 0;
+          totalTokensUsed.output += result.usage.outputTokens || 0;
+          totalTokensUsed.total += result.usage.totalTokens || 0;
         }
 
         // Update step with result
@@ -201,14 +196,16 @@ export class AgenticEngine {
           step.toolCalls = result.toolCalls.map((tc: TypedToolCall<any>) => ({
             id: tc.toolCallId,
             name: tc.toolName,
-            parameters: tc.args,
+            parameters: (tc as any).args || (tc as any).arguments || {},
             requiresApproval: this.requiresApproval(tc.toolName),
           }));
 
           // Process tool results
           const toolResults: ToolResult[] = [];
 
-          for (const toolCall of result.toolCalls as TypedToolCall<any>[]) {
+          for (let i = 0; i < result.toolCalls.length; i++) {
+            const toolCall = result.toolCalls[i] as TypedToolCall<any>;
+            const toolResult = result.toolResults?.[i];
             toolsUsed.add(toolCall.toolName);
 
             // Tool results are already processed by the execute function above
@@ -216,7 +213,7 @@ export class AgenticEngine {
             toolResults.push({
               id: toolCall.toolCallId,
               success: true,
-              result: toolCall.result,
+              result: toolResult || null,
               executionTime: 0, // This would be measured in the actual execution
             });
           }
@@ -224,15 +221,16 @@ export class AgenticEngine {
           step.toolResults = toolResults;
 
           // Add tool results to messages using correct Vercel AI SDK format
-          messages.push({
-            role: 'tool',
-            content: result.toolCalls.map((toolCall: TypedToolCall<any>) => ({
-              type: 'tool-result',
-              toolCallId: toolCall.toolCallId,
-              toolName: toolCall.toolName,
-              result: toolCall.result,
-            })),
-          });
+          // Tool messages should be added as assistant messages with tool results
+          if (result.toolResults && result.toolResults.length > 0) {
+            for (let i = 0; i < result.toolResults.length; i++) {
+              const toolResult = result.toolResults[i];
+              messages.push({
+                role: 'assistant',
+                content: JSON.stringify(toolResult),
+              });
+            }
+          }
         }
 
         // Check if we should continue or if the task is complete

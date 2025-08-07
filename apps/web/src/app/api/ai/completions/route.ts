@@ -145,7 +145,9 @@ export async function POST(request: NextRequest) {
         const response = successResponse(completionResult);
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('AI completion error', { error: error instanceof Error ? error.message : String(error) });
+        log.error('AI completion error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
         const response = NextResponse.json(
           { error: 'Failed to generate completion' },
           { status: 500 }

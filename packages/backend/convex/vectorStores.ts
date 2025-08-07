@@ -4,8 +4,8 @@
  */
 
 import { ConvexError, v } from 'convex/values';
-import { mutation, query } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
+import { mutation, query } from './_generated/server';
 
 // =============================================================================
 // Queries
@@ -27,10 +27,8 @@ export const list = query({
     // Build query
     let query = ctx.db
       .query('vectorStores')
-      .withIndex('by_wallet', (q) => q.eq('walletAddress', walletAddress));
-
-    // Apply ordering (required for Convex queries)
-    query = query.order(order === 'desc' ? 'desc' : 'asc');
+      .withIndex('by_wallet', (q) => q.eq('walletAddress', walletAddress))
+      .order(order === 'desc' ? 'desc' : 'asc');
 
     // Apply cursor if provided
     if (cursor) {
@@ -59,7 +57,9 @@ export const list = query({
     const returnItems = hasMore ? items.slice(0, limit) : items;
 
     // Get next cursor
-    const nextCursor = hasMore ? returnItems[returnItems.length - 1]._id : undefined;
+    const nextCursor = hasMore
+      ? returnItems[returnItems.length - 1]._id
+      : undefined;
 
     return {
       items: returnItems,
@@ -385,8 +385,8 @@ export const updateFileStatus = mutation({
       fileCounts.inProgress > 0
         ? 'in_progress'
         : fileCounts.failed === fileCounts.total
-        ? 'expired'
-        : 'completed';
+          ? 'expired'
+          : 'completed';
 
     await ctx.db.patch(vectorStoreId, {
       fileCounts,

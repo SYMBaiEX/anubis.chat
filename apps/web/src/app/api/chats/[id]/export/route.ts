@@ -3,7 +3,7 @@
  * Exports chat conversations in various formats (JSON, Markdown, PDF)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { api, convex } from '@/lib/database/convex';
 import { withAuth } from '@/lib/middleware/auth';
@@ -21,12 +21,12 @@ const exportQuerySchema = z.object({
   includeSystemMessages: z
     .enum(['true', 'false'])
     .optional()
-    .transform(val => val === 'true')
+    .transform((val) => val === 'true')
     .default(false),
   includeMetadata: z
     .enum(['true', 'false'])
     .optional()
-    .transform(val => val === 'true')
+    .transform((val) => val === 'true')
     .default(false),
 });
 
@@ -37,15 +37,15 @@ const exportQuerySchema = z.object({
 function formatMessageAsMarkdown(message: any): string {
   const role = message.role.charAt(0).toUpperCase() + message.role.slice(1);
   const timestamp = new Date(message.createdAt).toLocaleString();
-  
+
   let content = `### ${role}\n`;
   content += `*${timestamp}*\n\n`;
   content += `${message.content}\n\n`;
-  
+
   if (message.metadata?.model) {
     content += `*Model: ${message.metadata.model}*\n\n`;
   }
-  
+
   return content;
 }
 
@@ -54,19 +54,19 @@ function generateMarkdown(chat: any, messages: any[]): string {
   markdown += `**Created:** ${new Date(chat.createdAt).toLocaleString()}\n`;
   markdown += `**Model:** ${chat.model}\n`;
   markdown += `**Messages:** ${messages.length}\n\n`;
-  markdown += `---\n\n`;
-  
+  markdown += '---\n\n';
+
   if (chat.systemPrompt) {
     markdown += `## System Prompt\n\n${chat.systemPrompt}\n\n---\n\n`;
   }
-  
-  markdown += `## Conversation\n\n`;
-  
+
+  markdown += '## Conversation\n\n';
+
   for (const message of messages) {
     markdown += formatMessageAsMarkdown(message);
-    markdown += `---\n\n`;
+    markdown += '---\n\n';
   }
-  
+
   return markdown;
 }
 
@@ -74,7 +74,7 @@ async function generatePDF(markdown: string, title: string): Promise<Buffer> {
   // Note: In production, you would use a library like puppeteer or jsPDF
   // For now, we'll return a simple implementation that converts markdown to basic PDF
   // This is a placeholder - you should implement proper PDF generation
-  
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -96,7 +96,7 @@ async function generatePDF(markdown: string, title: string): Promise<Buffer> {
     </body>
     </html>
   `;
-  
+
   // This is a simplified implementation
   // In production, use a proper HTML to PDF converter
   return Buffer.from(htmlContent, 'utf-8');
@@ -130,12 +130,16 @@ async function handleGet(
 
     if (!queryValidation.success) {
       return NextResponse.json(
-        { error: 'Invalid query parameters', details: queryValidation.error.issues },
+        {
+          error: 'Invalid query parameters',
+          details: queryValidation.error.issues,
+        },
         { status: 400 }
       );
     }
 
-    const { format, includeSystemMessages, includeMetadata } = queryValidation.data;
+    const { format, includeSystemMessages, includeMetadata } =
+      queryValidation.data;
 
     // Get chat from Convex
     const chat = await convex.query(api.chats.getById, {
@@ -143,10 +147,7 @@ async function handleGet(
     });
 
     if (!chat || chat.ownerId !== walletAddress) {
-      return NextResponse.json(
-        { error: 'Chat not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
     }
 
     // Get messages
@@ -206,7 +207,7 @@ async function handleGet(
 
       case 'markdown': {
         const markdown = generateMarkdown(chat, messages);
-        
+
         return new NextResponse(markdown, {
           headers: {
             'Content-Type': 'text/markdown',
@@ -218,7 +219,7 @@ async function handleGet(
       case 'pdf': {
         const markdown = generateMarkdown(chat, messages);
         const pdfBuffer = await generatePDF(markdown, chat.title);
-        
+
         return new NextResponse(pdfBuffer as any, {
           headers: {
             'Content-Type': 'application/pdf',
@@ -235,7 +236,7 @@ async function handleGet(
     }
   } catch (error) {
     log.error('Export failed', { error, chatId: params.id });
-    
+
     return NextResponse.json(
       { error: 'Failed to export chat' },
       { status: 500 }

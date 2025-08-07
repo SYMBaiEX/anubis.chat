@@ -728,7 +728,7 @@ export interface Run {
   createdAt: number;
 }
 
-export type RunStatus = 
+export type RunStatus =
   | 'queued'
   | 'in_progress'
   | 'requires_action'
@@ -770,7 +770,11 @@ export interface TruncationStrategy {
   lastMessages?: number;
 }
 
-export type ToolChoice = 'none' | 'auto' | 'required' | { type: 'function'; function: { name: string } };
+export type ToolChoice =
+  | 'none'
+  | 'auto'
+  | 'required'
+  | { type: 'function'; function: { name: string } };
 
 // =============================================================================
 // Vector Store & Embeddings Types
@@ -813,7 +817,11 @@ export interface VectorStoreFile {
 }
 
 export interface VectorStoreFileError {
-  code: 'internal_error' | 'file_not_found' | 'parsing_error' | 'unhandled_mime_type';
+  code:
+    | 'internal_error'
+    | 'file_not_found'
+    | 'parsing_error'
+    | 'unhandled_mime_type';
   message: string;
 }
 
@@ -833,7 +841,10 @@ export interface Embedding {
 
 export interface EmbeddingRequest {
   input: string | string[];
-  model: 'text-embedding-ada-002' | 'text-embedding-3-small' | 'text-embedding-3-large';
+  model:
+    | 'text-embedding-ada-002'
+    | 'text-embedding-3-small'
+    | 'text-embedding-3-large';
   encodingFormat?: 'float' | 'base64';
   dimensions?: number;
   user?: string;
@@ -860,7 +871,13 @@ export interface FileObject {
   created_at: number;
   filename: string;
   purpose: 'assistants' | 'vision' | 'batch' | 'fine-tune';
-  status: 'uploaded' | 'processing' | 'processed' | 'error' | 'deleting' | 'deleted';
+  status:
+    | 'uploaded'
+    | 'processing'
+    | 'processed'
+    | 'error'
+    | 'deleting'
+    | 'deleted';
   status_details: string | null;
 }
 
@@ -915,19 +932,19 @@ export interface KnowledgeSource {
 export interface SourceConfig {
   // For files
   fileId?: string;
-  
+
   // For URLs
   url?: string;
   crawlDepth?: number;
   includePatterns?: string[];
   excludePatterns?: string[];
-  
+
   // For APIs
   endpoint?: string;
   method?: 'GET' | 'POST';
   headers?: Record<string, string>;
   body?: unknown;
-  
+
   // For databases
   connectionString?: string;
   query?: string;
@@ -1201,7 +1218,7 @@ export interface Webhook {
   walletAddress: string;
 }
 
-export type WebhookEventName = 
+export type WebhookEventName =
   | 'chat.created'
   | 'chat.message.created'
   | 'chat.message.updated'
@@ -1289,7 +1306,7 @@ export interface PlanLimits {
   dataRetentionDays?: number;
 }
 
-export type SubscriptionStatus = 
+export type SubscriptionStatus =
   | 'trialing'
   | 'active'
   | 'past_due'
@@ -1358,25 +1375,25 @@ export interface IntegrationConfig {
   githubToken?: string;
   githubOrg?: string;
   githubRepo?: string;
-  
+
   // Slack
   slackToken?: string;
   slackChannel?: string;
   slackWebhookUrl?: string;
-  
+
   // Discord
   discordToken?: string;
   discordGuildId?: string;
   discordChannelId?: string;
-  
+
   // Notion
   notionToken?: string;
   notionDatabaseId?: string;
-  
+
   // Linear
   linearApiKey?: string;
   linearTeamId?: string;
-  
+
   // Jira
   jiraUrl?: string;
   jiraEmail?: string;
@@ -1435,7 +1452,13 @@ export interface FineTuningJob {
   validationFile?: string;
   hyperparameters?: HyperParameters;
   suffix?: string;
-  status: 'validating_files' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+  status:
+    | 'validating_files'
+    | 'queued'
+    | 'running'
+    | 'succeeded'
+    | 'failed'
+    | 'cancelled';
   fineTunedModel?: string;
   error?: FineTuningError;
   createdAt: number;
@@ -1527,7 +1550,8 @@ export interface CreateAssistantRequest {
   responseFormat?: ResponseFormat;
 }
 
-export interface UpdateAssistantRequest extends Partial<CreateAssistantRequest> {}
+export interface UpdateAssistantRequest
+  extends Partial<CreateAssistantRequest> {}
 
 export interface ListAssistantsRequest {
   limit?: number;
@@ -1591,12 +1615,16 @@ export interface CreateKnowledgeBaseRequest {
   name: string;
   description?: string;
   type: 'documents' | 'urls' | 'api' | 'database';
-  sources: Omit<KnowledgeSource, 'id' | 'lastSyncAt' | 'status' | 'errorMessage'>[];
+  sources: Omit<
+    KnowledgeSource,
+    'id' | 'lastSyncAt' | 'status' | 'errorMessage'
+  >[];
   syncSchedule?: SyncSchedule;
   metadata?: Record<string, string>;
 }
 
-export interface UpdateKnowledgeBaseRequest extends Partial<CreateKnowledgeBaseRequest> {}
+export interface UpdateKnowledgeBaseRequest
+  extends Partial<CreateKnowledgeBaseRequest> {}
 
 // Team endpoints
 export interface CreateTeamRequest {
@@ -1697,7 +1725,8 @@ export interface CreateIntegrationRequest {
   metadata?: Record<string, string>;
 }
 
-export interface UpdateIntegrationRequest extends Partial<CreateIntegrationRequest> {}
+export interface UpdateIntegrationRequest
+  extends Partial<CreateIntegrationRequest> {}
 
 // Fine-tuning endpoints
 export interface CreateFineTuningJobRequest {

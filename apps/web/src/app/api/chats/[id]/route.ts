@@ -82,9 +82,8 @@ export async function GET(
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       const { walletAddress } = authReq.user;
       const { id: chatId } = await params;
-      
-      try {
 
+      try {
         // Fetch chat by ID
         const chat = await getChatById(chatId, walletAddress);
 
@@ -103,7 +102,7 @@ export async function GET(
       } catch (error) {
         log.error('Failed to retrieve chat', {
           error,
-          chatId: chatId,
+          chatId,
           operation: 'get_chat',
         });
         return validationErrorResponse('Failed to retrieve chat');
@@ -120,9 +119,8 @@ export async function PUT(
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       const { walletAddress } = authReq.user;
       const { id: chatId } = await params;
-      
-      try {
 
+      try {
         // Check if chat exists
         const existingChat = await getChatById(chatId, walletAddress);
         if (!existingChat) {
@@ -174,7 +172,7 @@ export async function PUT(
       } catch (error) {
         log.error('Failed to update chat', {
           error,
-          chatId: chatId,
+          chatId,
           operation: 'update_chat',
         });
         return validationErrorResponse('Failed to update chat');
@@ -191,9 +189,8 @@ export async function DELETE(
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       const { walletAddress } = authReq.user;
       const { id: chatId } = await params;
-      
-      try {
 
+      try {
         // Check if chat exists
         const existingChat = await getChatById(chatId, walletAddress);
         if (!existingChat) {
@@ -214,7 +211,7 @@ export async function DELETE(
       } catch (error) {
         log.error('Failed to delete chat', {
           error,
-          chatId: chatId,
+          chatId,
           operation: 'delete_chat',
         });
         return validationErrorResponse('Failed to delete chat');

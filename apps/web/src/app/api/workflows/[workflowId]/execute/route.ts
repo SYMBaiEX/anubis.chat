@@ -3,12 +3,12 @@
  * Handles execution of multi-step workflows with agent orchestration
  */
 
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { api } from '@/convex/_generated/api';
-import type { Id } from '@/convex/_generated/dataModel';
 import { agenticEngine } from '@/lib/agentic/engine';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
@@ -476,10 +476,23 @@ export async function POST(request: NextRequest, context: RouteContext) {
           name: workflowData.name,
           description: workflowData.description || '',
           walletAddress: workflowData.walletAddress,
-          steps: workflowData.steps || [],
-          trigger: workflowData.trigger || { type: 'manual' },
+          steps: (workflowData.steps || []).map((step: any) => ({
+            id: step.stepId || step._id || step.id || `step-${Math.random().toString(36).substr(2, 9)}`,
+            name: step.name || 'Unnamed Step',
+            type: step.type,
+            agentId: step.agentId,
+            condition: step.condition,
+            parameters: step.parameters,
+            nextSteps: step.nextSteps,
+            requiresApproval: step.requiresApproval,
+          })),
+          triggers: (workflowData.triggers || []).map((trigger: any) => ({
+            id: trigger.triggerId || trigger._id || trigger.id || `trigger-${Math.random().toString(36).substr(2, 9)}`,
+            type: trigger.type || 'manual',
+            condition: trigger.condition || '',
+            parameters: trigger.parameters,
+          })),
           isActive: workflowData.isActive,
-          version: workflowData.version || '1.0.0',
           createdAt: workflowData._creationTime,
           updatedAt: workflowData.updatedAt || workflowData._creationTime,
         };

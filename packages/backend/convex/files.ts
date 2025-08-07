@@ -4,8 +4,8 @@
  */
 
 import { ConvexError, v } from 'convex/values';
-import { mutation, query } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
+import { mutation, query } from './_generated/server';
 
 // =============================================================================
 // Queries
@@ -17,12 +17,14 @@ import type { Doc, Id } from './_generated/dataModel';
 export const list = query({
   args: {
     walletAddress: v.string(),
-    purpose: v.optional(v.union(
-      v.literal('assistants'),
-      v.literal('vision'),
-      v.literal('batch'),
-      v.literal('fine-tune')
-    )),
+    purpose: v.optional(
+      v.union(
+        v.literal('assistants'),
+        v.literal('vision'),
+        v.literal('batch'),
+        v.literal('fine-tune')
+      )
+    ),
     limit: v.optional(v.number()),
     cursor: v.optional(v.string()),
   },
@@ -62,7 +64,9 @@ export const list = query({
     const returnItems = hasMore ? items.slice(0, limit) : items;
 
     // Get next cursor
-    const nextCursor = hasMore ? returnItems[returnItems.length - 1]._id : undefined;
+    const nextCursor = hasMore
+      ? returnItems[returnItems.length - 1]._id
+      : undefined;
 
     return {
       items: returnItems,
@@ -158,7 +162,7 @@ export const upload = mutation({
     // Check if file with same hash already exists for this user
     const existingFile = await ctx.db
       .query('files')
-      .withIndex('by_hash', (q) => 
+      .withIndex('by_hash', (q) =>
         q.eq('hash', args.hash).eq('walletAddress', args.walletAddress)
       )
       .first();
@@ -198,12 +202,14 @@ export const updateMetadata = mutation({
     walletAddress: v.string(),
     description: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
-    purpose: v.optional(v.union(
-      v.literal('assistants'),
-      v.literal('vision'),
-      v.literal('batch'),
-      v.literal('fine-tune')
-    )),
+    purpose: v.optional(
+      v.union(
+        v.literal('assistants'),
+        v.literal('vision'),
+        v.literal('batch'),
+        v.literal('fine-tune')
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const { fileId, walletAddress, ...updates } = args;
@@ -280,16 +286,22 @@ export const getStats = query({
       .collect();
 
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-    const byPurpose = files.reduce((acc, file) => {
-      acc[file.purpose] = (acc[file.purpose] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const byPurpose = files.reduce(
+      (acc, file) => {
+        acc[file.purpose] = (acc[file.purpose] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
-    const byType = files.reduce((acc, file) => {
-      const type = file.mimeType.split('/')[0];
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const byType = files.reduce(
+      (acc, file) => {
+        const type = file.mimeType.split('/')[0];
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     return {
       totalFiles: files.length,
@@ -300,7 +312,7 @@ export const getStats = query({
       recentUploads: files
         .sort((a, b) => b.createdAt - a.createdAt)
         .slice(0, 5)
-        .map(f => ({
+        .map((f) => ({
           fileId: f.fileId,
           fileName: f.fileName,
           size: f.size,

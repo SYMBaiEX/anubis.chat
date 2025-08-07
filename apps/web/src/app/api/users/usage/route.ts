@@ -77,9 +77,9 @@ const usageQuerySchema = z.object({
 export async function GET(request: NextRequest) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { walletAddress } = authReq.user;
+      const { walletAddress } = authReq.user;
 
+      try {
         // Parse query parameters
         const { searchParams } = new URL(req.url);
         const queryValidation = usageQuerySchema.safeParse({

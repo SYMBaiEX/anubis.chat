@@ -62,10 +62,10 @@ export async function GET(
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { walletAddress } = authReq.user;
-        const { id: documentId } = await params;
+      const { walletAddress } = authReq.user;
+      const { id: documentId } = await params;
 
+      try {
         // Check if document exists and user can access it
         const storage = getStorage();
         if (!(await storage.canAccessDocument(walletAddress, documentId))) {
@@ -88,7 +88,7 @@ export async function GET(
       } catch (error) {
         log.error('Failed to retrieve document', {
           error,
-          documentId: documentId,
+          documentId,
           operation: 'get_document',
         });
         const response = NextResponse.json(
@@ -110,10 +110,10 @@ export async function PUT(
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { walletAddress } = authReq.user;
-        const { id: documentId } = await params;
+      const { walletAddress } = authReq.user;
+      const { id: documentId } = await params;
 
+      try {
         // Check if document exists and user can access it
         const storage = getStorage();
         if (!(await storage.canAccessDocument(walletAddress, documentId))) {
@@ -179,7 +179,7 @@ export async function PUT(
       } catch (error) {
         log.error('Failed to update document', {
           error,
-          documentId: documentId,
+          documentId,
           operation: 'update_document',
         });
         const response = NextResponse.json(
@@ -201,10 +201,10 @@ export async function DELETE(
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { walletAddress } = authReq.user;
-        const { id: documentId } = await params;
+      const { walletAddress } = authReq.user;
+      const { id: documentId } = await params;
 
+      try {
         // Check if document exists and user can access it
         const storage = getStorage();
         if (!(await storage.canAccessDocument(walletAddress, documentId))) {
@@ -229,7 +229,7 @@ export async function DELETE(
       } catch (error) {
         log.error('Failed to delete document', {
           error,
-          documentId: documentId,
+          documentId,
           operation: 'delete_document',
         });
         const response = NextResponse.json(

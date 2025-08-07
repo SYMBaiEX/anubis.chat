@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       const { walletAddress } = authReq.user;
-      
+
       try {
         const { searchParams } = new URL(req.url);
 
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
       } catch (error) {
         log.error('Failed to list chats', {
           error,
-          walletAddress: walletAddress,
+          walletAddress,
           operation: 'list_chats',
         });
         return validationErrorResponse('Failed to retrieve chats');
@@ -148,9 +148,8 @@ export async function POST(request: NextRequest) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       const { walletAddress } = authReq.user;
-      
-      try {
 
+      try {
         // Parse and validate request body
         const body = await req.json();
         const validation = createChatSchema.safeParse(body);
@@ -209,7 +208,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         log.error('Failed to create chat', {
           error,
-          walletAddress: walletAddress,
+          walletAddress,
           operation: 'create_chat',
         });
         return validationErrorResponse('Failed to create chat');

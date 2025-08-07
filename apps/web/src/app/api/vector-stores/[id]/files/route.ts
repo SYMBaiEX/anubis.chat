@@ -3,6 +3,7 @@
  * Handles adding, listing, and removing files from vector stores
  */
 
+import type { Id } from '@convex/_generated/dataModel';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -56,10 +57,7 @@ const listFilesSchema = z.object({
 // GET /api/vector-stores/[id]/files - List files in vector store
 // =============================================================================
 
-async function handleList(
-  req: AuthenticatedRequest,
-  vectorStoreId: string
-) {
+async function handleList(req: AuthenticatedRequest, vectorStoreId: string) {
   try {
     const url = new URL(req.url);
     const searchParams = Object.fromEntries(url.searchParams);
@@ -67,15 +65,18 @@ async function handleList(
     // Validate query parameters
     const validation = listFilesSchema.safeParse(searchParams);
     if (!validation.success) {
-      log.warn('Invalid query parameters', { errors: validation.error.errors });
-      return validationErrorResponse(validation.error);
+      log.warn('Invalid query parameters', { errors: validation.error.issues });
+      return validationErrorResponse(
+        'Invalid query parameters',
+        validation.error.flatten().fieldErrors
+      );
     }
 
     const { limit, order, after, before, filter } = validation.data;
 
     // Verify vector store ownership
     const vectorStore = await convex.query(api.vectorStores.get, {
-      id: vectorStoreId,
+      id: vectorStoreId as Id<'vectorStores'>,
       walletAddress: req.user.walletAddress,
     });
 
@@ -85,7 +86,7 @@ async function handleList(
 
     // Fetch files from Convex
     const files = await convex.query(api.vectorStoreFiles.list, {
-      vectorStoreId,
+      vectorStoreId: vectorStoreId as Id<'vectorStores'>,
       walletAddress: req.user.walletAddress,
       limit,
       order,
@@ -110,7 +111,7 @@ async function handleList(
       walletAddress: req.user.walletAddress,
     });
 
-    return paginatedResponse(
+    const response = paginatedResponse(
       apiFiles,
       {
         cursor: files.cursor,
@@ -118,11 +119,10 @@ async function handleList(
         hasMore: files.hasMore,
         limit,
       },
-      {
-        'X-Request-Id': nanoid(),
-        'X-Vector-Store-Id': vectorStoreId,
-      }
+      nanoid()
     );
+    response.headers.set('X-Vector-Store-Id', vectorStoreId);
+    return response;
   } catch (error) {
     log.error('Failed to list vector store files', { error, vectorStoreId });
     throw error;
@@ -133,25 +133,25 @@ async function handleList(
 // POST /api/vector-stores/[id]/files - Add file to vector store
 // =============================================================================
 
-async function handleCreate(
-  req: AuthenticatedRequest,
-  vectorStoreId: string
-) {
+async function handleCreate(req: AuthenticatedRequest, vectorStoreId: string) {
   try {
     const body = await req.json();
 
     // Validate request body
     const validation = createVectorStoreFileSchema.safeParse(body);
     if (!validation.success) {
-      log.warn('Invalid request body', { errors: validation.error.errors });
-      return validationErrorResponse(validation.error);
+      log.warn('Invalid request body', { errors: validation.error.issues });
+      return validationErrorResponse(
+        'Invalid request body',
+        validation.error.flatten().fieldErrors
+      );
     }
 
     const data = validation.data as CreateVectorStoreFileRequest;
 
     // Verify vector store ownership
     const vectorStore = await convex.query(api.vectorStores.get, {
-      id: vectorStoreId,
+      id: vectorStoreId as Id<'vectorStores'>,
       walletAddress: req.user.walletAddress,
     });
 
@@ -161,7 +161,7 @@ async function handleCreate(
 
     // Add file to vector store
     const fileId = await convex.mutation(api.vectorStoreFiles.create, {
-      vectorStoreId,
+      vectorStoreId: vectorStoreId as Id<'vectorStores'>,
       fileId: data.fileId,
       chunkingStrategy: data.chunkingStrategy || { type: 'auto' },
       walletAddress: req.user.walletAddress,
@@ -190,7 +190,7 @@ async function handleCreate(
 
     // Queue file processing
     await convex.mutation(api.vectorStores.queueFileProcessing, {
-      vectorStoreId,
+      vectorStoreId: vectorStoreId as Id<'vectorStores'>,
       fileIds: [data.fileId],
       walletAddress: req.user.walletAddress,
     });
@@ -201,11 +201,10 @@ async function handleCreate(
       walletAddress: req.user.walletAddress,
     });
 
-    return createdResponse(apiFile, {
-      'X-Request-Id': nanoid(),
-      'X-Vector-Store-Id': vectorStoreId,
-      'X-File-Id': apiFile.fileId,
-    });
+    const response = createdResponse(apiFile, nanoid());
+    response.headers.set('X-Vector-Store-Id', vectorStoreId);
+    response.headers.set('X-File-Id', apiFile.fileId);
+    return response;
   } catch (error) {
     log.error('Failed to add file to vector store', { error, vectorStoreId });
     throw error;
@@ -216,10 +215,7 @@ async function handleCreate(
 // DELETE /api/vector-stores/[id]/files/[fileId] - Remove file from vector store
 // =============================================================================
 
-async function handleDelete(
-  req: AuthenticatedRequest,
-  vectorStoreId: string
-) {
+async function handleDelete(req: AuthenticatedRequest, vectorStoreId: string) {
   try {
     // Extract fileId from URL path
     const url = new URL(req.url);
@@ -227,20 +223,14 @@ async function handleDelete(
     const fileId = pathParts[pathParts.length - 1];
 
     if (!fileId || fileId === 'files') {
-      return validationErrorResponse(
-        new z.ZodError([
-          {
-            code: 'custom',
-            path: ['fileId'],
-            message: 'File ID is required in the URL path',
-          },
-        ])
-      );
+      return validationErrorResponse('File ID is required in the URL path', {
+        fileId: ['File ID is required in the URL path'],
+      });
     }
 
     // Verify vector store ownership
     const vectorStore = await convex.query(api.vectorStores.get, {
-      id: vectorStoreId,
+      id: vectorStoreId as Id<'vectorStores'>,
       walletAddress: req.user.walletAddress,
     });
 
@@ -249,8 +239,8 @@ async function handleDelete(
     }
 
     // Delete file from vector store
-    await convex.mutation(api.vectorStoreFiles.delete, {
-      vectorStoreId,
+    await convex.mutation(api.vectorStoreFiles.deleteFile, {
+      vectorStoreId: vectorStoreId as Id<'vectorStores'>,
       fileId,
       walletAddress: req.user.walletAddress,
     });
@@ -261,16 +251,15 @@ async function handleDelete(
       walletAddress: req.user.walletAddress,
     });
 
-    return successResponse(
+    const response = successResponse(
       {
         id: fileId,
         deleted: true,
       },
-      {
-        'X-Request-Id': nanoid(),
-        'X-Vector-Store-Id': vectorStoreId,
-      }
+      nanoid()
     );
+    response.headers.set('X-Vector-Store-Id', vectorStoreId);
+    return response;
   } catch (error) {
     log.error('Failed to remove file from vector store', {
       error,
@@ -286,26 +275,14 @@ async function handleDelete(
 
 async function handler(
   req: AuthenticatedRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  // Apply rate limiting
-  const rateLimitResult = await aiRateLimit(req);
-  if (rateLimitResult) {
-    return rateLimitResult;
-  }
-
-  const vectorStoreId = params.id;
+  const { id: vectorStoreId } = await params;
 
   if (!vectorStoreId) {
-    return validationErrorResponse(
-      new z.ZodError([
-        {
-          code: 'custom',
-          path: ['id'],
-          message: 'Vector store ID is required',
-        },
-      ])
-    );
+    return validationErrorResponse('Vector store ID is required', {
+      id: ['Vector store ID is required'],
+    });
   }
 
   try {
@@ -336,16 +313,40 @@ async function handler(
               : 'Failed to process vector store file operation',
         },
       },
-      {
-        status: 500,
-        headers: addSecurityHeaders({
-          'X-Request-Id': nanoid(),
-        }),
-      }
+      { status: 500 }
     );
   }
 }
 
-export const GET = withAuth(handler);
-export const POST = withAuth(handler);
-export const DELETE = withAuth(handler);
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return aiRateLimit(request, async (req) => {
+    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      return handler(authReq, context);
+    });
+  });
+}
+
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return aiRateLimit(request, async (req) => {
+    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      return handler(authReq, context);
+    });
+  });
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return aiRateLimit(request, async (req) => {
+    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      return handler(authReq, context);
+    });
+  });
+}

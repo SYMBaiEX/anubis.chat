@@ -4,8 +4,8 @@
  */
 
 import { ConvexError, v } from 'convex/values';
+import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
-import type { Doc, Id } from './_generated/dataModel';
 
 // =============================================================================
 // Queries
@@ -48,15 +48,15 @@ export const list = query({
     // Build query
     let query = ctx.db
       .query('vectorStoreFiles')
-      .withIndex('by_vector_store', (q) => q.eq('vectorStoreId', vectorStoreId));
+      .withIndex('by_vector_store', (q) =>
+        q.eq('vectorStoreId', vectorStoreId)
+      )
+      .order(order === 'desc' ? 'desc' : 'asc');
 
     // Apply filter if provided
     if (filter) {
       query = query.filter((q) => q.eq(q.field('status'), filter));
     }
-
-    // Apply ordering (required for Convex queries)
-    query = query.order(order === 'desc' ? 'desc' : 'asc');
 
     // Apply cursor if provided
     if (cursor) {
@@ -83,7 +83,9 @@ export const list = query({
     const returnItems = hasMore ? items.slice(0, limit) : items;
 
     // Get next cursor
-    const nextCursor = hasMore ? returnItems[returnItems.length - 1]._id : undefined;
+    const nextCursor = hasMore
+      ? returnItems[returnItems.length - 1]._id
+      : undefined;
 
     return {
       items: returnItems,
@@ -176,6 +178,7 @@ export const getByStatus = query({
       .query('vectorStoreFiles')
       .withIndex('by_status', (q) => q.eq('status', status))
       .filter((q) => q.eq(q.field('vectorStoreId'), vectorStoreId))
+      .order('desc')
       .take(limit);
 
     return files;
@@ -379,7 +382,9 @@ export const batchDelete = mutation({
       // Find the file
       const vectorStoreFile = await ctx.db
         .query('vectorStoreFiles')
-        .withIndex('by_vector_store', (q) => q.eq('vectorStoreId', vectorStoreId))
+        .withIndex('by_vector_store', (q) =>
+          q.eq('vectorStoreId', vectorStoreId)
+        )
         .filter((q) => q.eq(q.field('fileId'), fileId))
         .first();
 

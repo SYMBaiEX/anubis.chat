@@ -227,7 +227,9 @@ export async function POST(request: NextRequest) {
           maxOutputTokens: maxTokens,
           onFinish: ({ usage, error }) => {
             if (error) {
-              log.error(`Object stream error: ${streamId}`, { error: error instanceof Error ? error.message : String(error) });
+              log.error(`Object stream error: ${streamId}`, {
+                error: error instanceof Error ? error.message : String(error),
+              });
             } else {
               log.info(
                 `Object stream completed: ${streamId}, tokens: ${usage?.totalTokens || 'unknown'}`
@@ -245,7 +247,9 @@ export async function POST(request: NextRequest) {
           },
         });
       } catch (error) {
-        log.error('AI object streaming error', { error: error instanceof Error ? error.message : String(error) });
+        log.error('AI object streaming error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
         const response = NextResponse.json(
           { error: 'Failed to stream object' },
           { status: 500 }
@@ -278,7 +282,9 @@ export async function GET(request: NextRequest) {
 
       return addSecurityHeaders(response);
     } catch (error) {
-      log.error('Get streaming schemas error', { error: error instanceof Error ? error.message : String(error) });
+      log.error('Get streaming schemas error', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       const response = NextResponse.json(
         { error: 'Failed to retrieve streaming schemas' },
         { status: 500 }
