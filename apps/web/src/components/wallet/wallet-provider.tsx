@@ -6,6 +6,13 @@ import {
   WalletProvider as SolanaWalletProvider,
 } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  TorusWalletAdapter,
+  LedgerWalletAdapter,
+} from '@solana/wallet-adapter-wallets';
+import { BackpackWalletAdapter } from '@solana/wallet-adapter-backpack';
 import { useStandardWalletAdapters } from '@solana/wallet-standard-wallet-adapter-react';
 import { clusterApiUrl } from '@solana/web3.js';
 import type { FC, ReactNode } from 'react';
@@ -41,17 +48,33 @@ export const WalletProvider: FC<WalletProviderProps> = ({
   // 2025 Wallet Standard: Use standard wallet adapters for automatic detection
   const standardAdapters = useStandardWalletAdapters([]);
 
-  // 2025 Wallet Standard: Combine standard adapters with mobile support
+  // 2025 Wallet Standard: Combine standard adapters with explicit wallet support
   const wallets = useMemo(() => {
-    // Use standard wallet adapters for automatic detection of all compatible wallets
-    // This includes Phantom, Solflare, Backpack, and mobile wallet adapters
-    const walletList = standardAdapters;
-
-    // Note: In production, send wallet detection metrics to monitoring service instead
-    // Debug logging removed per coding guidelines
-
-    return walletList;
-  }, [standardAdapters]);
+    // Include both standard adapters and explicit wallet adapters
+    // This ensures maximum compatibility
+    const explicitWallets = [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter({ network: selectedNetwork }),
+      new BackpackWalletAdapter(),
+      new TorusWalletAdapter(),
+      new LedgerWalletAdapter(),
+    ];
+    
+    // Combine standard and explicit adapters, avoiding duplicates
+    const walletMap = new Map();
+    
+    // Add standard adapters first
+    standardAdapters.forEach(adapter => {
+      walletMap.set(adapter.name, adapter);
+    });
+    
+    // Add explicit adapters (will override if duplicate)
+    explicitWallets.forEach(adapter => {
+      walletMap.set(adapter.name, adapter);
+    });
+    
+    return Array.from(walletMap.values());
+  }, [standardAdapters, selectedNetwork]);
 
   return (
     <ConnectionProvider endpoint={endpoint}>
