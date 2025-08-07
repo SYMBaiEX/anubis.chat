@@ -1,2 +1,8 @@
 node_modules
 .turbo
+
+# Claude Code
+.claude/cache/
+.claude/index/
+.claude/*.db
+.claude/docs-cache/

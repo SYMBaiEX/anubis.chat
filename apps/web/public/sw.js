@@ -72,6 +72,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/@vite-plugin-pwa/') ||
     url.pathname === '/src/main.tsx'
   ) {
+    console.warn('ISIS Chat SW: Blocking Vite request:', url.pathname);
     return;
   }
 

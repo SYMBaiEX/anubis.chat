@@ -96,6 +96,9 @@ export interface UserProfile {
   isActive: boolean;
 }
 
+// Type alias for convenience
+export type User = UserProfile;
+
 export enum Theme {
   LIGHT = 'light',
   DARK = 'dark',

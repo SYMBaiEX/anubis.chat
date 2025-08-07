@@ -415,127 +415,173 @@ export default defineSchema({
     }),
 
   // =============================================================================
-  // Agentic AI System
+  // Agentic AI System - Feature Branch Version with Blockchain Extensions
   // =============================================================================
 
-  // AI Agents
+  // AI Agents for specialized tasks
   agents: defineTable({
     name: v.string(),
-    description: v.optional(v.string()),
-    model: v.string(),
+    type: v.union(
+      v.literal('general'),
+      v.literal('trading'),
+      v.literal('defi'),
+      v.literal('nft'),
+      v.literal('dao'),
+      v.literal('portfolio'),
+      v.literal('custom')
+    ),
+    description: v.string(),
     systemPrompt: v.string(),
+    capabilities: v.array(v.string()), // List of available tools/actions
+    model: v.string(),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
-    tools: v.optional(v.array(v.string())), // Tool names
-    maxSteps: v.optional(v.number()),
-    walletAddress: v.string(),
+    config: v.optional(v.object({
+      rpcUrl: v.optional(v.string()),
+      priorityFee: v.optional(v.number()),
+      slippage: v.optional(v.number()),
+      gasBudget: v.optional(v.number()),
+    })),
+    isActive: v.boolean(),
+    isPublic: v.boolean(), // Whether available to all users or custom
+    createdBy: v.optional(v.string()), // walletAddress for custom agents
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_type', ['type', 'isActive'])
+    .index('by_creator', ['createdBy', 'createdAt'])
+    .index('by_public', ['isPublic', 'isActive']),
+
+  // Agent Sessions - tracks active agent contexts
+  agentSessions: defineTable({
+    chatId: v.id('chats'),
+    agentId: v.id('agents'),
+    userId: v.string(), // walletAddress
+    context: v.optional(v.object({
+      lastAction: v.optional(v.string()),
+      pendingTransactions: v.optional(v.array(v.string())),
+      walletBalance: v.optional(v.number()),
+      activePositions: v.optional(v.array(v.string())),
+      preferences: v.optional(v.object({
+        riskLevel: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
+        maxSlippage: v.optional(v.number()),
+        autoConfirm: v.optional(v.boolean()),
+      })),
+    })),
     isActive: v.boolean(),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index('by_owner', ['walletAddress', 'createdAt'])
-    .index('by_active', ['isActive', 'updatedAt'])
-    .searchIndex('search_name', {
-      searchField: 'name',
-      filterFields: ['walletAddress', 'isActive'],
-    }),
+    .index('by_chat', ['chatId'])
+    .index('by_agent', ['agentId', 'isActive'])
+    .index('by_user', ['userId', 'isActive']),
 
-  // Agent executions
-  agentExecutions: defineTable({
-    agentId: v.id('agents'),
-    walletAddress: v.string(),
+  // Blockchain Transactions initiated by agents
+  blockchainTransactions: defineTable({
+    chatId: v.optional(v.id('chats')),
+    messageId: v.optional(v.id('messages')),
+    agentId: v.optional(v.id('agents')),
+    userId: v.string(), // walletAddress
+    signature: v.optional(v.string()), // Transaction signature
+    type: v.union(
+      v.literal('transfer'),
+      v.literal('swap'),
+      v.literal('stake'),
+      v.literal('unstake'),
+      v.literal('lend'),
+      v.literal('borrow'),
+      v.literal('mint_nft'),
+      v.literal('buy_nft'),
+      v.literal('sell_nft'),
+      v.literal('vote'),
+      v.literal('create_token'),
+      v.literal('liquidity_add'),
+      v.literal('liquidity_remove'),
+      v.literal('other')
+    ),
+    operation: v.string(), // Specific operation name (e.g., 'deployToken', 'swapTokens')
+    parameters: v.object({
+      amount: v.optional(v.string()),
+      tokenMint: v.optional(v.string()),
+      targetAddress: v.optional(v.string()),
+      slippage: v.optional(v.number()),
+      priority: v.optional(v.number()),
+    }),
     status: v.union(
       v.literal('pending'),
-      v.literal('running'),
-      v.literal('waiting_approval'),
-      v.literal('completed'),
+      v.literal('confirmed'),
       v.literal('failed'),
       v.literal('cancelled')
     ),
-    input: v.string(),
-    result: v.optional(
-      v.object({
-        success: v.boolean(),
-        output: v.string(),
-        finalStep: v.number(),
-        totalSteps: v.number(),
-        toolsUsed: v.array(v.string()),
-        tokensUsed: v.object({
-          input: v.number(),
-          output: v.number(),
-          total: v.number(),
-        }),
-        executionTime: v.number(),
-      })
-    ),
-    error: v.optional(v.string()),
-    startedAt: v.number(),
-    completedAt: v.optional(v.number()),
-    metadata: v.optional(executionMetadata),
+    errorMessage: v.optional(v.string()),
+    fee: v.optional(v.number()), // Transaction fee in SOL
+    blockTime: v.optional(v.number()),
+    confirmations: v.optional(v.number()),
+    metadata: v.optional(v.object({
+      tokensBefore: v.optional(v.array(v.object({
+        mint: v.string(),
+        amount: v.string(),
+      }))),
+      tokensAfter: v.optional(v.array(v.object({
+        mint: v.string(),
+        amount: v.string(),
+      }))),
+      priceImpact: v.optional(v.number()),
+      executionTime: v.optional(v.number()),
+    })),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   })
-    .index('by_agent', ['agentId', 'startedAt'])
-    .index('by_user', ['walletAddress', 'startedAt'])
-    .index('by_status', ['status', 'startedAt']),
+    .index('by_user', ['userId', 'createdAt'])
+    .index('by_status', ['status', 'createdAt'])
+    .index('by_type', ['type', 'createdAt'])
+    .index('by_chat', ['chatId', 'createdAt'])
+    .index('by_signature', ['signature']),
 
-  // Agent execution steps
-  agentSteps: defineTable({
-    executionId: v.id('agentExecutions'),
-    stepNumber: v.number(),
-    type: v.union(
-      v.literal('reasoning'),
-      v.literal('tool_call'),
-      v.literal('parallel_tools'),
-      v.literal('human_approval'),
-      v.literal('workflow_step')
+  // Tool usage tracking for Solana Agent Kit
+  toolUsage: defineTable({
+    agentId: v.id('agents'),
+    userId: v.string(), // walletAddress
+    toolName: v.string(), // e.g., 'deployToken', 'swapTokens', 'getBalance'
+    category: v.union(
+      v.literal('wallet'),
+      v.literal('trading'),
+      v.literal('defi'),
+      v.literal('nft'),
+      v.literal('governance'),
+      v.literal('social'),
+      v.literal('utility')
     ),
-    status: v.union(
-      v.literal('pending'),
-      v.literal('running'),
-      v.literal('completed'),
-      v.literal('failed'),
-      v.literal('waiting_approval')
-    ),
-    input: v.optional(v.string()),
-    output: v.optional(v.string()),
-    reasoning: v.optional(v.string()),
-    toolCalls: v.optional(
-      v.array(
-        v.object({
-          id: v.string(),
-          name: v.string(),
-          parameters: toolParameters,
-          requiresApproval: v.boolean(),
-        })
-      )
-    ),
-    toolResults: v.optional(
-      v.array(
-        v.object({
-          id: v.string(),
-          success: v.boolean(),
-          result: toolResult,
-          error: v.optional(
-            v.object({
-              code: v.string(),
-              message: v.string(),
-              details: v.optional(errorDetails),
-              retryable: v.optional(v.boolean()),
-            })
-          ),
-          executionTime: v.number(),
-          metadata: v.optional(executionMetadata),
-        })
-      )
-    ),
-    startedAt: v.number(),
-    completedAt: v.optional(v.number()),
-    error: v.optional(v.string()),
+    parameters: v.optional(v.any()), // Tool-specific parameters
+    result: v.optional(v.any()), // Tool execution result
+    success: v.boolean(),
+    errorMessage: v.optional(v.string()),
+    executionTime: v.optional(v.number()), // milliseconds
+    gasUsed: v.optional(v.number()),
+    createdAt: v.number(),
   })
-    .index('by_execution', ['executionId', 'stepNumber'])
-    .index('by_status', ['status']),
+    .index('by_agent', ['agentId', 'createdAt'])
+    .index('by_user', ['userId', 'createdAt'])
+    .index('by_tool', ['toolName', 'createdAt'])
+    .index('by_category', ['category', 'success', 'createdAt']),
+
+  // Agent Capabilities - defines what each agent can do
+  agentCapabilities: defineTable({
+    agentId: v.id('agents'),
+    capability: v.string(), // Tool or action name
+    enabled: v.boolean(),
+    config: v.optional(v.any()), // Capability-specific configuration
+    permissions: v.optional(v.array(v.string())), // Required permissions
+    description: v.optional(v.string()),
+    category: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_agent', ['agentId', 'enabled'])
+    .index('by_capability', ['capability', 'enabled']),
 
   // =============================================================================
-  // Workflow System
+  // Workflow System (from upstream - for future compatibility)
   // =============================================================================
 
   // Workflows

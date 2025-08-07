@@ -190,3 +190,7 @@ chore: Maintenance
 ## Code Research Guidance
 - **Research Best Practices**:
   - NEVER USE ANY TYPES, USE CONTEXT7 AND THE GREP MCP TO RESEARCH GITHUB FOR BEST PRACTICES AND DOCS
+
+## Development Restrictions
+- **Key Constraint**:
+  - Dont touch auth, convex, or api

@@ -1,5 +1,6 @@
+// Simple PostCSS config for tests - disable tailwind for testing
 const config = {
-  plugins: ['@tailwindcss/postcss'],
+  plugins: [],
 };
 
 export default config;

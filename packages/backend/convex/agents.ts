@@ -1,6 +1,7 @@
 /**
  * Convex Functions for Agentic AI System
  * Complete CRUD operations for agents, executions, and steps
+ * Includes Solana blockchain-specific agent capabilities
  */
 
 import { v } from 'convex/values';
@@ -19,7 +20,53 @@ export const getById = query({
   },
 });
 
-// Get agents by owner
+// Get a specific agent by ID (alias for compatibility)
+export const get = query({
+  args: { id: v.id('agents') },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
+// List all available agents for a user
+// Includes both public agents and user's custom agents
+export const list = query({
+  args: { 
+    includePublic: v.optional(v.boolean()),
+    userId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const agents = [];
+
+    // Get public agents
+    if (args.includePublic !== false) {
+      const publicAgents = await ctx.db
+        .query('agents')
+        .withIndex('by_public', q => q.eq('isPublic', true).eq('isActive', true))
+        .collect();
+      agents.push(...publicAgents);
+    }
+
+    // Get user's custom agents
+    if (args.userId) {
+      const customAgents = await ctx.db
+        .query('agents')
+        .withIndex('by_creator', q => q.eq('createdBy', args.userId))
+        .filter(q => q.eq(q.field('isActive'), true))
+        .collect();
+      agents.push(...customAgents);
+    }
+
+    return agents.sort((a, b) => {
+      // Sort by: public agents first, then by creation date
+      if (a.isPublic && !b.isPublic) return -1;
+      if (!a.isPublic && b.isPublic) return 1;
+      return b.createdAt - a.createdAt;
+    });
+  },
+});
+
+// Get agents by owner (for upstream compatibility)
 export const getByOwner = query({
   args: {
     walletAddress: v.string(),
@@ -31,7 +78,7 @@ export const getByOwner = query({
 
     let query = ctx.db
       .query('agents')
-      .withIndex('by_owner', (q) => q.eq('walletAddress', args.walletAddress));
+      .withIndex('by_creator', (q) => q.eq('createdBy', args.walletAddress));
 
     if (args.isActive !== undefined) {
       query = query.filter((q) => q.eq(q.field('isActive'), args.isActive));
@@ -45,29 +92,48 @@ export const getByOwner = query({
 export const create = mutation({
   args: {
     name: v.string(),
-    description: v.optional(v.string()),
-    model: v.string(),
+    type: v.union(
+      v.literal('general'),
+      v.literal('trading'),
+      v.literal('defi'),
+      v.literal('nft'),
+      v.literal('dao'),
+      v.literal('portfolio'),
+      v.literal('custom')
+    ),
+    description: v.string(),
     systemPrompt: v.string(),
+    capabilities: v.array(v.string()),
+    model: v.string(),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
-    tools: v.optional(v.array(v.string())),
-    maxSteps: v.optional(v.number()),
-    walletAddress: v.string(),
+    config: v.optional(v.object({
+      rpcUrl: v.optional(v.string()),
+      priorityFee: v.optional(v.number()),
+      slippage: v.optional(v.number()),
+      gasBudget: v.optional(v.number()),
+    })),
+    isPublic: v.optional(v.boolean()),
+    createdBy: v.string(), // walletAddress
+    tools: v.optional(v.array(v.string())), // For upstream compatibility
+    maxSteps: v.optional(v.number()), // For upstream compatibility
   },
   handler: async (ctx, args) => {
     const now = Date.now();
 
     const agentId = await ctx.db.insert('agents', {
       name: args.name,
+      type: args.type,
       description: args.description,
-      model: args.model,
       systemPrompt: args.systemPrompt,
-      temperature: args.temperature,
+      capabilities: args.capabilities,
+      model: args.model,
+      temperature: args.temperature ?? 0.7,
       maxTokens: args.maxTokens,
-      tools: args.tools,
-      maxSteps: args.maxSteps,
-      walletAddress: args.walletAddress,
+      config: args.config,
       isActive: true,
+      isPublic: args.isPublic ?? false,
+      createdBy: args.createdBy,
       createdAt: now,
       updatedAt: now,
     });
@@ -80,56 +146,69 @@ export const create = mutation({
 export const update = mutation({
   args: {
     id: v.id('agents'),
-    walletAddress: v.string(),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
-    model: v.optional(v.string()),
     systemPrompt: v.optional(v.string()),
+    capabilities: v.optional(v.array(v.string())),
+    model: v.optional(v.string()),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
-    tools: v.optional(v.array(v.string())),
-    maxSteps: v.optional(v.number()),
+    config: v.optional(v.object({
+      rpcUrl: v.optional(v.string()),
+      priorityFee: v.optional(v.number()),
+      slippage: v.optional(v.number()),
+      gasBudget: v.optional(v.number()),
+    })),
     isActive: v.optional(v.boolean()),
+    walletAddress: v.optional(v.string()), // For permission check
+    tools: v.optional(v.array(v.string())), // For upstream compatibility
+    maxSteps: v.optional(v.number()), // For upstream compatibility
   },
   handler: async (ctx, args) => {
     const agent = await ctx.db.get(args.id);
-
-    if (!agent || agent.walletAddress !== args.walletAddress) {
-      throw new Error('Agent not found or access denied');
+    
+    if (!agent) {
+      throw new Error('Agent not found');
     }
 
-    const updates: Partial<Doc<'agents'>> = { updatedAt: Date.now() };
+    // Check permissions if walletAddress provided
+    if (args.walletAddress && agent.createdBy !== args.walletAddress) {
+      throw new Error('Access denied');
+    }
 
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.model !== undefined) updates.model = args.model;
-    if (args.systemPrompt !== undefined)
-      updates.systemPrompt = args.systemPrompt;
-    if (args.temperature !== undefined) updates.temperature = args.temperature;
-    if (args.maxTokens !== undefined) updates.maxTokens = args.maxTokens;
-    if (args.tools !== undefined) updates.tools = args.tools;
-    if (args.maxSteps !== undefined) updates.maxSteps = args.maxSteps;
-    if (args.isActive !== undefined) updates.isActive = args.isActive;
+    const { id, walletAddress, ...updates } = args;
+    
+    await ctx.db.patch(id, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
 
-    await ctx.db.patch(args.id, updates);
-    return await ctx.db.get(args.id);
+    return await ctx.db.get(id);
   },
 });
 
 // Delete agent
 export const remove = mutation({
-  args: {
+  args: { 
     id: v.id('agents'),
-    walletAddress: v.string(),
+    userId: v.string(), // walletAddress - only allow user to delete their own custom agents
+    walletAddress: v.optional(v.string()), // Alias for upstream compatibility
   },
   handler: async (ctx, args) => {
     const agent = await ctx.db.get(args.id);
-
-    if (!agent || agent.walletAddress !== args.walletAddress) {
-      throw new Error('Agent not found or access denied');
+    
+    if (!agent) {
+      throw new Error('Agent not found');
     }
 
-    // Check if agent has active executions
+    const userWallet = args.userId || args.walletAddress;
+
+    // Only allow deleting custom agents created by the user
+    if (agent.isPublic || agent.createdBy !== userWallet) {
+      throw new Error('Cannot delete this agent');
+    }
+
+    // Check if agent has active executions (from upstream)
     const activeExecutions = await ctx.db
       .query('agentExecutions')
       .withIndex('by_agent', (q) => q.eq('agentId', args.id))
@@ -146,13 +225,113 @@ export const remove = mutation({
       throw new Error('Cannot delete agent with active executions');
     }
 
-    await ctx.db.delete(args.id);
+    await ctx.db.patch(args.id, {
+      isActive: false,
+      updatedAt: Date.now(),
+    });
+
     return { success: true, agentId: args.id };
   },
 });
 
+// Initialize default public agents (run once)
+export const initializeDefaults = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    // Check if agents already exist
+    const existingAgents = await ctx.db
+      .query('agents')
+      .withIndex('by_public', q => q.eq('isPublic', true))
+      .take(1);
+
+    if (existingAgents.length > 0) {
+      return 'Default agents already exist';
+    }
+
+    // Create default public agents
+    const defaultAgents = [
+      {
+        name: 'ISIS General Assistant',
+        type: 'general' as const,
+        description: 'General-purpose AI assistant with comprehensive Solana blockchain capabilities',
+        systemPrompt: 'You are ISIS, a helpful AI assistant with access to Solana blockchain operations. You can help users with trading, DeFi, NFTs, and general blockchain interactions. Always be helpful, accurate, and secure in your responses.',
+        capabilities: ['chat', 'getBalance', 'transfer', 'deployToken', 'swapTokens', 'getTokenPrice'],
+        model: 'gpt-4',
+        temperature: 0.7,
+        maxTokens: 4000,
+      },
+      {
+        name: 'Trading Specialist',
+        type: 'trading' as const,
+        description: 'Specialized in token trading, swaps, and market analysis on Solana',
+        systemPrompt: 'You are a specialized trading agent for Solana. You excel at token analysis, executing swaps, monitoring prices, and providing market insights. Always consider risk management and help users make informed trading decisions.',
+        capabilities: ['swapTokens', 'getTokenPrice', 'getTrendingTokens', 'getMarketData', 'analyzeToken'],
+        model: 'gpt-4',
+        temperature: 0.3,
+        maxTokens: 3000,
+      },
+      {
+        name: 'DeFi Expert',
+        type: 'defi' as const,
+        description: 'Expert in DeFi protocols, lending, staking, and yield farming',
+        systemPrompt: 'You are a DeFi specialist focused on Solana protocols. You can help with lending, borrowing, staking, liquidity provision, and yield farming. Always explain risks and help users understand protocol mechanics.',
+        capabilities: ['lendAssets', 'stake', 'restake', 'provideLiquidity', 'getDeFiPositions'],
+        model: 'gpt-4',
+        temperature: 0.5,
+        maxTokens: 3500,
+      },
+      {
+        name: 'NFT Creator',
+        type: 'nft' as const,
+        description: 'Handles NFT creation, trading, and marketplace operations',
+        systemPrompt: 'You are an NFT specialist for Solana. You can help with creating NFT collections, minting NFTs, trading on marketplaces, and managing NFT portfolios. Always consider authenticity and market dynamics.',
+        capabilities: ['deployCollection', 'mintNFT', 'getNFTsByOwner', 'listNFT', 'buyNFT'],
+        model: 'gpt-4',
+        temperature: 0.6,
+        maxTokens: 3000,
+      },
+      {
+        name: 'DAO Governance Agent',
+        type: 'dao' as const,
+        description: 'Manages DAO governance, voting, and proposal creation',
+        systemPrompt: 'You are a DAO governance specialist. You help users participate in decentralized governance, create proposals, vote on initiatives, and understand governance mechanisms. Always promote democratic participation.',
+        capabilities: ['createProposal', 'vote', 'getDaoInfo', 'getProposals', 'delegateVote'],
+        model: 'gpt-4',
+        temperature: 0.4,
+        maxTokens: 3000,
+      },
+      {
+        name: 'Portfolio Tracker',
+        type: 'portfolio' as const,
+        description: 'Tracks portfolio performance and provides analytics',
+        systemPrompt: 'You are a portfolio management specialist. You help users track their Solana assets, analyze performance, understand market exposure, and make portfolio optimization decisions. Focus on data-driven insights.',
+        capabilities: ['getBalance', 'getTokenBalances', 'getPortfolioValue', 'analyzePerformance', 'getAssetAllocation'],
+        model: 'gpt-4',
+        temperature: 0.3,
+        maxTokens: 3500,
+      },
+    ];
+
+    const agentIds = [];
+    for (const agent of defaultAgents) {
+      const agentId = await ctx.db.insert('agents', {
+        ...agent,
+        isActive: true,
+        isPublic: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+      agentIds.push(agentId);
+    }
+
+    return `Created ${agentIds.length} default agents`;
+  },
+});
+
 // =============================================================================
-// Agent Executions
+// Agent Executions (from upstream)
 // =============================================================================
 
 // Create agent execution
@@ -166,8 +345,8 @@ export const createExecution = mutation({
   handler: async (ctx, args) => {
     // Verify agent exists and user has access
     const agent = await ctx.db.get(args.agentId);
-    if (!agent || agent.walletAddress !== args.walletAddress) {
-      throw new Error('Agent not found or access denied');
+    if (!agent) {
+      throw new Error('Agent not found');
     }
 
     const executionId = await ctx.db.insert('agentExecutions', {
@@ -221,7 +400,6 @@ export const updateExecution = mutation({
 
     const updates: Partial<Doc<'agentExecutions'>> = {
       status: args.status,
-      updatedAt: Date.now(),
     };
 
     if (args.result !== undefined) updates.result = args.result;
@@ -399,7 +577,6 @@ export const updateStep = mutation({
   handler: async (ctx, args) => {
     const updates: Partial<Doc<'agentSteps'>> = {
       status: args.status,
-      updatedAt: Date.now(),
     };
 
     if (args.output !== undefined) updates.output = args.output;
@@ -422,7 +599,7 @@ export const getAgentStats = query({
   handler: async (ctx, args) => {
     const agents = await ctx.db
       .query('agents')
-      .withIndex('by_owner', (q) => q.eq('walletAddress', args.walletAddress))
+      .withIndex('by_creator', (q) => q.eq('createdBy', args.walletAddress))
       .collect();
 
     const activeAgents = agents.filter((agent) => agent.isActive);
