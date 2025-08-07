@@ -3,6 +3,7 @@
  * Exports chat conversations in various formats (JSON, Markdown, PDF)
  */
 
+import type { Id } from '@convex/_generated/dataModel';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { api, convex } from '@/lib/database/convex';
@@ -108,9 +109,10 @@ async function generatePDF(markdown: string, title: string): Promise<Buffer> {
 
 async function handleGet(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: chatId } = await params;
     // Get wallet address from auth
     const walletAddress = req.headers.get('x-wallet-address');
     if (!walletAddress) {
@@ -143,7 +145,7 @@ async function handleGet(
 
     // Get chat from Convex
     const chat = await convex.query(api.chats.getById, {
-      id: params.id as any,
+      id: chatId as Id<'chats'>,
     });
 
     if (!chat || chat.ownerId !== walletAddress) {
@@ -152,7 +154,7 @@ async function handleGet(
 
     // Get messages
     const messagesResult = await convex.query(api.messages.getByChatId, {
-      chatId: params.id as any,
+      chatId: chatId as Id<'chats'>,
       limit: 1000, // Export all messages
     });
 
@@ -171,7 +173,7 @@ async function handleGet(
     }
 
     log.info('Exporting chat', {
-      chatId: params.id,
+      chatId: chatId,
       format,
       messageCount: messages.length,
       walletAddress,
@@ -235,7 +237,7 @@ async function handleGet(
         );
     }
   } catch (error) {
-    log.error('Export failed', { error, chatId: params.id });
+    log.error('Export failed', { error });
 
     return NextResponse.json(
       { error: 'Failed to export chat' },
@@ -250,7 +252,7 @@ async function handleGet(
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   return authRateLimit(request, async (req) => handleGet(req, context));
 }

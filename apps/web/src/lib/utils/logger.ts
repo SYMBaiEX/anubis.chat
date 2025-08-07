@@ -118,7 +118,6 @@ if (isDevelopment) {
   // Test environment: minimal console output
   transport = {
     target: 'pino/file',
-    level: 'warn',
     options: {
       destination: 2, // stderr
     },

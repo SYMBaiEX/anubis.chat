@@ -115,7 +115,7 @@ export class Agent {
       switch (task.type) {
         case 'generate':
           result = await this.generateText(messages, tools);
-          usage = (result as any).usage;
+          usage = (result as { usage?: LanguageModelUsage }).usage;
           break;
 
         case 'stream':
@@ -130,12 +130,12 @@ export class Agent {
             throw new Error('Schema required for analyze task');
           }
           result = await this.generateStructured(messages, task.schema);
-          usage = (result as any).usage;
+          usage = (result as { usage?: LanguageModelUsage }).usage;
           break;
 
         case 'execute':
           result = await this.executeTools(messages, tools);
-          usage = (result as any).usage;
+          usage = (result as { usage?: LanguageModelUsage }).usage;
           break;
 
         default:
@@ -146,7 +146,7 @@ export class Agent {
         taskId,
         agentId: this.config.id,
         success: true,
-        output: result.output || result,
+        output: (result as { output?: unknown }).output || result,
         usage,
         duration: Date.now() - startTime,
         metadata: task.metadata,
@@ -446,9 +446,14 @@ export class OrchestratorAgent extends Agent {
       dependencies?: string[];
       priority?: number;
     }
+    
+    interface DecomposedTask {
+      subtasks: Subtask[];
+    }
 
-    // Convert to agent tasks
-    return (decomposition.output as any).subtasks.map((subtask: Subtask) => ({
+    // Convert to agent tasks with proper typing
+    const typedOutput = decomposition.output as DecomposedTask;
+    return typedOutput.subtasks.map((subtask) => ({
       agentId: subtask.agentId,
       task: {
         id: uuidv4(),

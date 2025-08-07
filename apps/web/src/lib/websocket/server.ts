@@ -195,8 +195,7 @@ export class WebSocketManager {
       timestamp: Date.now(),
     });
 
-    log.auth('User authenticated via WebSocket', {
-      walletAddress,
+    log.auth('User authenticated via WebSocket', walletAddress, {
       socketId: socket.id,
       connectedAt: user.connectedAt,
     });
