@@ -4,27 +4,22 @@
  */
 
 import { openai } from '@ai-sdk/openai';
-import type { TypedToolCall, TypedToolResult } from 'ai';
-import { generateText, streamObject, tool } from 'ai';
+import type { CoreMessage, TypedToolCall } from 'ai';
+import { generateText, tool } from 'ai';
 import { nanoid } from 'nanoid';
-import { z } from 'zod';
-import { openaiConfig } from '@/lib/env';
 import type {
   Agent,
   AgentContext,
   AgentExecution,
   AgentExecutionResult,
-  AgentExecutionStatus,
   AgenticConfig,
   AgentStep,
-  AgentStepType,
   AgentTool,
   ApprovalRequest,
   ExecuteAgentRequest,
-  ToolCall,
   ToolResult,
 } from '@/lib/types/agentic';
-import { getTool, TOOL_REGISTRY } from './tools';
+import { getTool } from './tools';
 
 // =============================================================================
 // Configuration
@@ -131,7 +126,7 @@ export class AgenticEngine {
               agentTool,
               params,
               context,
-              request.autoApprove
+              Boolean(request.autoApprove)
             );
           },
         }),
@@ -139,10 +134,7 @@ export class AgenticEngine {
     );
 
     let currentStep = 1;
-    const messages: Array<{
-      role: 'system' | 'user' | 'assistant';
-      content: string;
-    }> = [
+    const messages: CoreMessage[] = [
       {
         role: 'system',
         content: agent.systemPrompt,
@@ -198,17 +190,19 @@ export class AgenticEngine {
         if (result.toolCalls && result.toolCalls.length > 0) {
           step.type =
             result.toolCalls.length > 1 ? 'parallel_tools' : 'tool_call';
-          step.toolCalls = result.toolCalls.map((tc: TypedToolCall) => ({
+          step.toolCalls = result.toolCalls.map((tc) => ({
             id: tc.toolCallId,
             name: tc.toolName,
-            parameters: tc.args,
+            parameters: tc.args || {},
             requiresApproval: this.requiresApproval(tc.toolName),
           }));
 
           // Process tool results
           const toolResults: ToolResult[] = [];
 
-          for (const toolCall of result.toolCalls as TypedToolCall[]) {
+          for (let i = 0; i < result.toolCalls.length; i++) {
+            const toolCall = result.toolCalls[i];
+            const toolResult = result.toolResults?.[i];
             toolsUsed.add(toolCall.toolName);
 
             // Tool results are already processed by the execute function above
@@ -216,23 +210,25 @@ export class AgenticEngine {
             toolResults.push({
               id: toolCall.toolCallId,
               success: true,
-              result: toolCall.result,
+              result: toolResult || null,
               executionTime: 0, // This would be measured in the actual execution
             });
           }
 
           step.toolResults = toolResults;
 
-          // Add tool results to messages using correct Vercel AI SDK format
-          messages.push({
-            role: 'tool',
-            content: result.toolCalls.map((toolCall: TypedToolCall) => ({
-              type: 'tool-result',
-              toolCallId: toolCall.toolCallId,
-              toolName: toolCall.toolName,
-              result: toolCall.result,
-            })),
-          });
+          // Add tool results to messages using correct Vercel AI SDK v5 format
+          if (result.toolResults && result.toolResults.length > 0) {
+            messages.push({
+              role: 'tool',
+              content: result.toolResults.map((toolResult, i) => ({
+                type: 'tool-result',
+                toolCallId: result.toolCalls[i].toolCallId,
+                toolName: result.toolCalls[i].toolName,
+                result: toolResult,
+              })),
+            });
+          }
         }
 
         // Check if we should continue or if the task is complete

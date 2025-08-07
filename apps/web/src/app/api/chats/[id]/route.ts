@@ -76,23 +76,13 @@ async function getChatById(
 
 export async function GET(
   request: NextRequest,
-<<<<<<< HEAD
-  context: { params: Promise<{ id: string }> }
-=======
   { params }: { params: Promise<{ id: string }> }
->>>>>>> upstream/main
 ) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-<<<<<<< HEAD
-        const params = await context.params;
-        const { id: chatId } = params;
-=======
         const { id: chatId } = await params;
->>>>>>> upstream/main
-
         // Fetch chat by ID
         const chat = await getChatById(chatId, walletAddress);
 
@@ -122,23 +112,13 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-<<<<<<< HEAD
-  context: { params: Promise<{ id: string }> }
-=======
   { params }: { params: Promise<{ id: string }> }
->>>>>>> upstream/main
 ) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-<<<<<<< HEAD
-        const params = await context.params;
-        const { id: chatId } = params;
-=======
         const { id: chatId } = await params;
->>>>>>> upstream/main
-
         // Check if chat exists
         const existingChat = await getChatById(chatId, walletAddress);
         if (!existingChat) {
@@ -201,23 +181,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-<<<<<<< HEAD
-  context: { params: Promise<{ id: string }> }
-=======
   { params }: { params: Promise<{ id: string }> }
->>>>>>> upstream/main
 ) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-<<<<<<< HEAD
-        const params = await context.params;
-        const { id: chatId } = params;
-=======
         const { id: chatId } = await params;
->>>>>>> upstream/main
-
         // Check if chat exists
         const existingChat = await getChatById(chatId, walletAddress);
         if (!existingChat) {

@@ -33,9 +33,9 @@ export async function DELETE(
 ) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { name: serverName } = await params;
+      const { name: serverName } = await params;
 
+      try {
         if (!serverName) {
           return validationErrorResponse('Server name is required', {});
         }

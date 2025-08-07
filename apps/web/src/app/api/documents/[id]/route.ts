@@ -58,23 +58,13 @@ const updateDocumentSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-<<<<<<< HEAD
-  context: { params: Promise<{ id: string }> }
-=======
   { params }: { params: Promise<{ id: string }> }
->>>>>>> upstream/main
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-<<<<<<< HEAD
-        const params = await context.params;
-        const { id: documentId } = params;
-=======
         const { id: documentId } = await params;
->>>>>>> upstream/main
-
         // Check if document exists and user can access it
         const storage = getStorage();
         if (!(await storage.canAccessDocument(walletAddress, documentId))) {
@@ -115,23 +105,13 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-<<<<<<< HEAD
-  context: { params: Promise<{ id: string }> }
-=======
   { params }: { params: Promise<{ id: string }> }
->>>>>>> upstream/main
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-<<<<<<< HEAD
-        const params = await context.params;
-        const { id: documentId } = params;
-=======
         const { id: documentId } = await params;
->>>>>>> upstream/main
-
         // Check if document exists and user can access it
         const storage = getStorage();
         if (!(await storage.canAccessDocument(walletAddress, documentId))) {
@@ -215,23 +195,13 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-<<<<<<< HEAD
-  context: { params: Promise<{ id: string }> }
-=======
   { params }: { params: Promise<{ id: string }> }
->>>>>>> upstream/main
 ) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress } = authReq.user;
-<<<<<<< HEAD
-        const params = await context.params;
-        const { id: documentId } = params;
-=======
         const { id: documentId } = await params;
->>>>>>> upstream/main
-
         // Check if document exists and user can access it
         const storage = getStorage();
         if (!(await storage.canAccessDocument(walletAddress, documentId))) {

@@ -937,4 +937,764 @@ export default defineSchema({
     .index('by_tool', ['toolName', 'createdAt'])
     .index('by_user', ['userId', 'createdAt'])
     .index('by_success', ['success', 'createdAt']),
+
+  // =============================================================================
+  // NEW TABLES FOR V2 API ENDPOINTS
+  // =============================================================================
+
+  // Assistants (OpenAI-style persistent AI assistants)
+  assistants: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    model: v.string(),
+    instructions: v.optional(v.string()),
+    tools: v.array(
+      v.object({
+        type: v.union(
+          v.literal('code_interpreter'),
+          v.literal('file_search'),
+          v.literal('function')
+        ),
+        function: v.optional(
+          v.object({
+            name: v.string(),
+            description: v.optional(v.string()),
+            parameters: v.object({}),
+          })
+        ),
+      })
+    ),
+    fileIds: v.array(v.string()),
+    metadata: v.optional(v.object({})),
+    temperature: v.optional(v.number()),
+    topP: v.optional(v.number()),
+    responseFormat: v.optional(
+      v.object({
+        type: v.union(v.literal('text'), v.literal('json_object')),
+      })
+    ),
+    walletAddress: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_wallet', ['walletAddress', 'updatedAt'])
+    .searchIndex('search_name', {
+      searchField: 'name',
+      filterFields: ['walletAddress'],
+    }),
+
+  // Threads (conversation sessions with assistants)
+  threads: defineTable({
+    metadata: v.optional(v.object({})),
+    walletAddress: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_wallet', ['walletAddress', 'updatedAt']),
+
+  // Thread messages
+  threadMessages: defineTable({
+    threadId: v.id('threads'),
+    role: v.union(v.literal('user'), v.literal('assistant')),
+    content: v.array(
+      v.object({
+        type: v.union(
+          v.literal('text'),
+          v.literal('image_file'),
+          v.literal('image_url')
+        ),
+        text: v.optional(
+          v.object({
+            value: v.string(),
+            annotations: v.optional(v.array(v.object({}))),
+          })
+        ),
+        imageFile: v.optional(
+          v.object({
+            fileId: v.string(),
+            detail: v.optional(
+              v.union(v.literal('auto'), v.literal('low'), v.literal('high'))
+            ),
+          })
+        ),
+        imageUrl: v.optional(
+          v.object({
+            url: v.string(),
+            detail: v.optional(
+              v.union(v.literal('auto'), v.literal('low'), v.literal('high'))
+            ),
+          })
+        ),
+      })
+    ),
+    assistantId: v.optional(v.id('assistants')),
+    runId: v.optional(v.id('runs')),
+    fileIds: v.array(v.string()),
+    metadata: v.optional(v.object({})),
+    createdAt: v.number(),
+  })
+    .index('by_thread', ['threadId', 'createdAt'])
+    .index('by_assistant', ['assistantId', 'createdAt']),
+
+  // Runs (assistant executions on threads)
+  runs: defineTable({
+    threadId: v.id('threads'),
+    assistantId: v.id('assistants'),
+    status: v.union(
+      v.literal('queued'),
+      v.literal('in_progress'),
+      v.literal('requires_action'),
+      v.literal('cancelling'),
+      v.literal('cancelled'),
+      v.literal('failed'),
+      v.literal('completed'),
+      v.literal('expired')
+    ),
+    requiredAction: v.optional(
+      v.object({
+        type: v.literal('submit_tool_outputs'),
+        submitToolOutputs: v.object({
+          toolCalls: v.array(
+            v.object({
+              id: v.string(),
+              type: v.literal('function'),
+              function: v.object({
+                name: v.string(),
+                arguments: v.string(),
+              }),
+            })
+          ),
+        }),
+      })
+    ),
+    lastError: v.optional(
+      v.object({
+        code: v.union(
+          v.literal('server_error'),
+          v.literal('rate_limit_exceeded'),
+          v.literal('invalid_prompt')
+        ),
+        message: v.string(),
+      })
+    ),
+    expiresAt: v.optional(v.number()),
+    startedAt: v.optional(v.number()),
+    cancelledAt: v.optional(v.number()),
+    failedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    model: v.string(),
+    instructions: v.optional(v.string()),
+    tools: v.array(v.object({})),
+    fileIds: v.array(v.string()),
+    metadata: v.optional(v.object({})),
+    usage: v.optional(
+      v.object({
+        promptTokens: v.number(),
+        completionTokens: v.number(),
+        totalTokens: v.number(),
+      })
+    ),
+    temperature: v.optional(v.number()),
+    topP: v.optional(v.number()),
+    maxPromptTokens: v.optional(v.number()),
+    maxCompletionTokens: v.optional(v.number()),
+    truncationStrategy: v.optional(
+      v.object({
+        type: v.union(v.literal('auto'), v.literal('last_messages')),
+        lastMessages: v.optional(v.number()),
+      })
+    ),
+    responseFormat: v.optional(v.object({})),
+    toolChoice: v.optional(v.union(v.string(), v.object({}))),
+    createdAt: v.number(),
+  })
+    .index('by_thread', ['threadId', 'createdAt'])
+    .index('by_assistant', ['assistantId', 'createdAt'])
+    .index('by_status', ['status', 'createdAt']),
+
+  // Vector stores
+  vectorStores: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    fileCounts: v.object({
+      inProgress: v.number(),
+      completed: v.number(),
+      failed: v.number(),
+      cancelled: v.number(),
+      total: v.number(),
+    }),
+    status: v.union(
+      v.literal('expired'),
+      v.literal('in_progress'),
+      v.literal('completed')
+    ),
+    expiresAfter: v.optional(
+      v.object({
+        anchor: v.literal('last_active_at'),
+        days: v.number(),
+      })
+    ),
+    expiresAt: v.optional(v.number()),
+    lastActiveAt: v.number(),
+    metadata: v.optional(v.object({})),
+    walletAddress: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_wallet', ['walletAddress', 'updatedAt'])
+    .index('by_status', ['status', 'updatedAt'])
+    .searchIndex('search_name', {
+      searchField: 'name',
+      filterFields: ['walletAddress', 'status'],
+    }),
+
+  // Vector store files
+  vectorStoreFiles: defineTable({
+    vectorStoreId: v.id('vectorStores'),
+    fileId: v.string(),
+    status: v.union(
+      v.literal('in_progress'),
+      v.literal('completed'),
+      v.literal('cancelled'),
+      v.literal('failed')
+    ),
+    lastError: v.optional(
+      v.object({
+        code: v.union(
+          v.literal('internal_error'),
+          v.literal('file_not_found'),
+          v.literal('parsing_error'),
+          v.literal('unhandled_mime_type')
+        ),
+        message: v.string(),
+      })
+    ),
+    chunkingStrategy: v.optional(
+      v.object({
+        type: v.union(v.literal('static'), v.literal('auto')),
+        static: v.optional(
+          v.object({
+            maxChunkSizeTokens: v.number(),
+            chunkOverlapTokens: v.number(),
+          })
+        ),
+      })
+    ),
+    createdAt: v.number(),
+  })
+    .index('by_vector_store', ['vectorStoreId', 'createdAt'])
+    .index('by_file', ['fileId'])
+    .index('by_status', ['status', 'createdAt']),
+
+  // Knowledge bases
+  knowledgeBases: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    type: v.union(
+      v.literal('documents'),
+      v.literal('urls'),
+      v.literal('api'),
+      v.literal('database')
+    ),
+    vectorStoreId: v.optional(v.id('vectorStores')),
+    sources: v.array(
+      v.object({
+        id: v.string(),
+        type: v.union(
+          v.literal('file'),
+          v.literal('url'),
+          v.literal('api_endpoint'),
+          v.literal('database_query')
+        ),
+        name: v.string(),
+        config: v.object({}),
+        lastSyncAt: v.optional(v.number()),
+        status: v.union(
+          v.literal('active'),
+          v.literal('error'),
+          v.literal('disabled')
+        ),
+        errorMessage: v.optional(v.string()),
+      })
+    ),
+    syncSchedule: v.optional(
+      v.object({
+        frequency: v.union(
+          v.literal('hourly'),
+          v.literal('daily'),
+          v.literal('weekly'),
+          v.literal('monthly'),
+          v.literal('manual')
+        ),
+        dayOfWeek: v.optional(v.number()),
+        hourOfDay: v.optional(v.number()),
+        timezone: v.optional(v.string()),
+      })
+    ),
+    lastSyncAt: v.optional(v.number()),
+    status: v.union(
+      v.literal('active'),
+      v.literal('syncing'),
+      v.literal('error'),
+      v.literal('disabled')
+    ),
+    metadata: v.optional(v.object({})),
+    walletAddress: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_wallet', ['walletAddress', 'updatedAt'])
+    .index('by_status', ['status', 'updatedAt'])
+    .searchIndex('search_name', {
+      searchField: 'name',
+      filterFields: ['walletAddress', 'status'],
+    }),
+
+  // Teams
+  teams: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+    ownerId: v.string(),
+    settings: v.object({
+      defaultModel: v.optional(v.string()),
+      sharedVectorStores: v.array(v.id('vectorStores')),
+      sharedAgents: v.array(v.id('agents')),
+      allowGuestAccess: v.boolean(),
+      requireApproval: v.boolean(),
+      dataRetentionDays: v.optional(v.number()),
+    }),
+    subscription: v.optional(
+      v.object({
+        plan: v.union(
+          v.literal('free'),
+          v.literal('starter'),
+          v.literal('professional'),
+          v.literal('enterprise')
+        ),
+        status: v.union(
+          v.literal('active'),
+          v.literal('past_due'),
+          v.literal('cancelled'),
+          v.literal('paused')
+        ),
+        currentPeriodEnd: v.number(),
+        cancelAtPeriodEnd: v.boolean(),
+        seats: v.number(),
+        usedSeats: v.number(),
+      })
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_owner', ['ownerId', 'updatedAt'])
+    .searchIndex('search_name', {
+      searchField: 'name',
+      filterFields: ['ownerId'],
+    }),
+
+  // Team members
+  teamMembers: defineTable({
+    teamId: v.id('teams'),
+    walletAddress: v.string(),
+    role: v.union(
+      v.literal('owner'),
+      v.literal('admin'),
+      v.literal('member'),
+      v.literal('viewer')
+    ),
+    displayName: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+    permissions: v.array(
+      v.object({
+        resource: v.union(
+          v.literal('chats'),
+          v.literal('agents'),
+          v.literal('documents'),
+          v.literal('workflows'),
+          v.literal('team_settings')
+        ),
+        actions: v.array(
+          v.union(
+            v.literal('create'),
+            v.literal('read'),
+            v.literal('update'),
+            v.literal('delete'),
+            v.literal('share')
+          )
+        ),
+      })
+    ),
+    joinedAt: v.number(),
+    lastActiveAt: v.number(),
+  })
+    .index('by_team', ['teamId', 'joinedAt'])
+    .index('by_wallet', ['walletAddress', 'joinedAt'])
+    .index('by_role', ['role', 'teamId']),
+
+  // Team invitations
+  teamInvitations: defineTable({
+    teamId: v.id('teams'),
+    invitedBy: v.string(),
+    invitedEmail: v.optional(v.string()),
+    invitedWallet: v.optional(v.string()),
+    role: v.union(v.literal('admin'), v.literal('member'), v.literal('viewer')),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('accepted'),
+      v.literal('declined'),
+      v.literal('expired')
+    ),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index('by_team', ['teamId', 'status'])
+    .index('by_email', ['invitedEmail', 'status'])
+    .index('by_wallet', ['invitedWallet', 'status']),
+
+  // Embeddings
+  embeddings: defineTable({
+    text: v.string(),
+    model: v.string(),
+    embedding: v.array(v.number()),
+    dimensions: v.number(),
+    metadata: v.optional(v.object({})),
+    walletAddress: v.string(),
+    createdAt: v.number(),
+  })
+    .index('by_wallet', ['walletAddress', 'createdAt'])
+    .index('by_model', ['model', 'createdAt']),
+
+  // Fine-tuning jobs
+  fineTuningJobs: defineTable({
+    model: v.string(),
+    trainingFile: v.string(),
+    validationFile: v.optional(v.string()),
+    hyperparameters: v.optional(
+      v.object({
+        batchSize: v.optional(v.union(v.number(), v.literal('auto'))),
+        learningRateMultiplier: v.optional(
+          v.union(v.number(), v.literal('auto'))
+        ),
+        nEpochs: v.optional(v.union(v.number(), v.literal('auto'))),
+      })
+    ),
+    suffix: v.optional(v.string()),
+    status: v.union(
+      v.literal('validating_files'),
+      v.literal('queued'),
+      v.literal('running'),
+      v.literal('succeeded'),
+      v.literal('failed'),
+      v.literal('cancelled')
+    ),
+    fineTunedModel: v.optional(v.string()),
+    error: v.optional(
+      v.object({
+        code: v.string(),
+        message: v.string(),
+        param: v.optional(v.string()),
+      })
+    ),
+    walletAddress: v.string(),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+  })
+    .index('by_wallet', ['walletAddress', 'createdAt'])
+    .index('by_status', ['status', 'createdAt']),
+
+  // Training data
+  trainingData: defineTable({
+    fineTuningJobId: v.id('fineTuningJobs'),
+    messages: v.array(
+      v.object({
+        role: v.union(
+          v.literal('system'),
+          v.literal('user'),
+          v.literal('assistant')
+        ),
+        content: v.string(),
+        weight: v.optional(v.number()),
+      })
+    ),
+    metadata: v.optional(v.object({})),
+    createdAt: v.number(),
+  }).index('by_job', ['fineTuningJobId', 'createdAt']),
+
+  // Code executions
+  codeExecutions: defineTable({
+    language: v.union(
+      v.literal('python'),
+      v.literal('javascript'),
+      v.literal('typescript'),
+      v.literal('sql')
+    ),
+    code: v.string(),
+    output: v.optional(
+      v.object({
+        stdout: v.optional(v.string()),
+        stderr: v.optional(v.string()),
+        result: v.optional(jsonValue),
+        files: v.optional(
+          v.array(
+            v.object({
+              name: v.string(),
+              content: v.string(),
+              mimeType: v.string(),
+              size: v.number(),
+            })
+          )
+        ),
+        images: v.optional(
+          v.array(
+            v.object({
+              url: v.optional(v.string()),
+              b64Json: v.optional(v.string()),
+              revisedPrompt: v.optional(v.string()),
+            })
+          )
+        ),
+      })
+    ),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('running'),
+      v.literal('completed'),
+      v.literal('failed')
+    ),
+    error: v.optional(
+      v.object({
+        type: v.union(
+          v.literal('syntax'),
+          v.literal('runtime'),
+          v.literal('timeout'),
+          v.literal('memory_limit')
+        ),
+        message: v.string(),
+        line: v.optional(v.number()),
+        column: v.optional(v.number()),
+      })
+    ),
+    executionTime: v.optional(v.number()),
+    memoryUsed: v.optional(v.number()),
+    walletAddress: v.string(),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index('by_wallet', ['walletAddress', 'createdAt'])
+    .index('by_status', ['status', 'createdAt'])
+    .index('by_language', ['language', 'createdAt']),
+
+  // Subscriptions
+  subscriptions: defineTable({
+    walletAddress: v.string(),
+    teamId: v.optional(v.id('teams')),
+    plan: v.object({
+      id: v.string(),
+      name: v.string(),
+      description: v.optional(v.string()),
+      price: v.number(),
+      currency: v.string(),
+      interval: v.union(v.literal('month'), v.literal('year')),
+      features: v.array(
+        v.object({
+          name: v.string(),
+          description: v.optional(v.string()),
+          enabled: v.boolean(),
+        })
+      ),
+      limits: v.object({
+        maxRequests: v.optional(v.number()),
+        maxTokens: v.optional(v.number()),
+        maxDocuments: v.optional(v.number()),
+        maxVectorStores: v.optional(v.number()),
+        maxTeamMembers: v.optional(v.number()),
+        maxFileSize: v.optional(v.number()),
+        dataRetentionDays: v.optional(v.number()),
+      }),
+    }),
+    status: v.union(
+      v.literal('trialing'),
+      v.literal('active'),
+      v.literal('past_due'),
+      v.literal('canceled'),
+      v.literal('unpaid'),
+      v.literal('incomplete'),
+      v.literal('incomplete_expired'),
+      v.literal('paused')
+    ),
+    currentPeriodStart: v.number(),
+    currentPeriodEnd: v.number(),
+    cancelAtPeriodEnd: v.boolean(),
+    cancelledAt: v.optional(v.number()),
+    trialStart: v.optional(v.number()),
+    trialEnd: v.optional(v.number()),
+    metadata: v.optional(v.object({})),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_wallet', ['walletAddress', 'updatedAt'])
+    .index('by_team', ['teamId', 'updatedAt'])
+    .index('by_status', ['status', 'updatedAt']),
+
+  // Invoices
+  invoices: defineTable({
+    subscriptionId: v.id('subscriptions'),
+    walletAddress: v.string(),
+    amount: v.number(),
+    currency: v.string(),
+    status: v.union(
+      v.literal('draft'),
+      v.literal('open'),
+      v.literal('paid'),
+      v.literal('void'),
+      v.literal('uncollectible')
+    ),
+    dueDate: v.number(),
+    paidAt: v.optional(v.number()),
+    periodStart: v.number(),
+    periodEnd: v.number(),
+    items: v.array(
+      v.object({
+        description: v.string(),
+        quantity: v.number(),
+        unitPrice: v.number(),
+        amount: v.number(),
+        metadata: v.optional(v.object({})),
+      })
+    ),
+    metadata: v.optional(v.object({})),
+    createdAt: v.number(),
+  })
+    .index('by_wallet', ['walletAddress', 'createdAt'])
+    .index('by_subscription', ['subscriptionId', 'createdAt'])
+    .index('by_status', ['status', 'createdAt']),
+
+  // Integrations
+  integrations: defineTable({
+    type: v.union(
+      v.literal('github'),
+      v.literal('slack'),
+      v.literal('discord'),
+      v.literal('notion'),
+      v.literal('linear'),
+      v.literal('jira')
+    ),
+    name: v.string(),
+    description: v.optional(v.string()),
+    config: v.object({}),
+    status: v.union(
+      v.literal('connected'),
+      v.literal('disconnected'),
+      v.literal('error')
+    ),
+    lastSyncAt: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    metadata: v.optional(v.object({})),
+    walletAddress: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_wallet', ['walletAddress', 'updatedAt'])
+    .index('by_type', ['type', 'walletAddress'])
+    .index('by_status', ['status', 'updatedAt']),
+
+  // Data exports
+  dataExports: defineTable({
+    walletAddress: v.string(),
+    type: v.union(
+      v.literal('full'),
+      v.literal('chats'),
+      v.literal('documents'),
+      v.literal('agents'),
+      v.literal('workflows')
+    ),
+    format: v.union(v.literal('json'), v.literal('csv'), v.literal('markdown')),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('processing'),
+      v.literal('completed'),
+      v.literal('failed')
+    ),
+    fileUrl: v.optional(v.string()),
+    expiresAt: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    metadata: v.optional(v.object({})),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index('by_wallet', ['walletAddress', 'createdAt'])
+    .index('by_status', ['status', 'createdAt']),
+
+  // Data imports
+  dataImports: defineTable({
+    walletAddress: v.string(),
+    type: v.union(
+      v.literal('full'),
+      v.literal('chats'),
+      v.literal('documents'),
+      v.literal('agents'),
+      v.literal('workflows')
+    ),
+    format: v.union(v.literal('json'), v.literal('csv')),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('processing'),
+      v.literal('completed'),
+      v.literal('failed')
+    ),
+    fileUrl: v.string(),
+    processedItems: v.number(),
+    totalItems: v.number(),
+    errors: v.array(
+      v.object({
+        line: v.optional(v.number()),
+        field: v.optional(v.string()),
+        value: v.optional(jsonValue),
+        message: v.string(),
+      })
+    ),
+    metadata: v.optional(v.object({})),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index('by_wallet', ['walletAddress', 'createdAt'])
+    .index('by_status', ['status', 'createdAt']),
+
+  // =============================================================================
+  // File Storage System
+  // =============================================================================
+
+  // Files table for direct file management
+  files: defineTable({
+    walletAddress: v.string(),
+    fileId: v.string(),
+    fileName: v.string(),
+    mimeType: v.string(),
+    size: v.number(),
+    hash: v.string(),
+    data: v.string(), // Base64 encoded file data
+    purpose: v.union(
+      v.literal('assistants'),
+      v.literal('vision'),
+      v.literal('batch'),
+      v.literal('fine-tune')
+    ),
+    description: v.optional(v.string()),
+    tags: v.array(v.string()),
+    status: v.union(
+      v.literal('uploaded'),
+      v.literal('processed'),
+      v.literal('error')
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_wallet', ['walletAddress', 'createdAt'])
+    .index('by_fileId', ['fileId'])
+    .index('by_hash', ['hash', 'walletAddress'])
+    .index('by_purpose', ['purpose', 'walletAddress'])
+    .searchIndex('search_name', {
+      searchField: 'fileName',
+      filterFields: ['walletAddress', 'purpose'],
+    }),
 });

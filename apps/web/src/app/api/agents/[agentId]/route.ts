@@ -65,10 +65,10 @@ interface RouteContext {
 export async function GET(request: NextRequest, context: RouteContext) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { walletAddress } = authReq.user;
-        const { agentId } = await context.params;
+      const { walletAddress } = authReq.user;
+      const { agentId } = await context.params;
 
+      try {
         // Get agent from Convex
         const agent = await convex.query(api.agents.getById, {
           id: agentId as Id<'agents'>,
@@ -109,10 +109,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
 export async function PUT(request: NextRequest, context: RouteContext) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { walletAddress } = authReq.user;
-        const { agentId } = await context.params;
+      const { walletAddress } = authReq.user;
+      const { agentId } = await context.params;
 
+      try {
         // Parse and validate request body
         const body = await req.json();
         const validation = updateAgentSchema.safeParse(body);
@@ -176,10 +176,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 export async function DELETE(request: NextRequest, context: RouteContext) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { walletAddress } = authReq.user;
-        const { agentId } = await context.params;
+      const { walletAddress } = authReq.user;
+      const { agentId } = await context.params;
 
+      try {
         // Delete agent from Convex (handles ownership internally)
         await convex.mutation(api.agents.remove, {
           id: agentId as Id<'agents'>,

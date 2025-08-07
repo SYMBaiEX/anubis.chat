@@ -353,9 +353,9 @@ function generateRAGContext(
 export async function POST(request: NextRequest) {
   return searchRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { walletAddress } = authReq.user;
+      const { walletAddress } = authReq.user;
 
+      try {
         // Parse and validate request body
         const body = await req.json();
         const validation = semanticSearchSchema.safeParse(body);

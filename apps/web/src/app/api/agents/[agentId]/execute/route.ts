@@ -58,10 +58,10 @@ export const maxDuration = 300; // 5 minutes for long-running executions
 export async function POST(request: NextRequest, context: RouteContext) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { walletAddress } = authReq.user;
-        const { agentId } = await context.params;
+      const { walletAddress } = authReq.user;
+      const { agentId } = await context.params;
 
+      try {
         // Get agent from Convex
         const agentDoc = await convex.query(api.agents.getById, {
           id: agentId as Id<'agents'>,

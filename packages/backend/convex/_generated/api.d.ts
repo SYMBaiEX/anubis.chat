@@ -12,26 +12,22 @@ import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
-} from 'convex/server';
-import type * as admin from '../admin.js';
-<<<<<<< HEAD
-=======
-import type * as agents from '../agents.js';
->>>>>>> upstream/main
-import type * as auth from '../auth.js';
-import type * as chats from '../chats.js';
-import type * as documents from '../documents.js';
-import type * as env from '../env.js';
-import type * as healthCheck from '../healthCheck.js';
-<<<<<<< HEAD
-import type * as messages from '../messages.js';
-import type * as users from '../users.js';
-=======
-import type * as memories from '../memories.js';
-import type * as messages from '../messages.js';
-import type * as users from '../users.js';
-import type * as workflows from '../workflows.js';
->>>>>>> upstream/main
+} from "convex/server";
+import type * as admin from "../admin.js";
+import type * as agents from "../agents.js";
+import type * as auth from "../auth.js";
+import type * as blockchainTransactions from "../blockchainTransactions.js";
+import type * as chats from "../chats.js";
+import type * as documents from "../documents.js";
+import type * as env from "../env.js";
+import type * as files from "../files.js";
+import type * as healthCheck from "../healthCheck.js";
+import type * as memories from "../memories.js";
+import type * as messages from "../messages.js";
+import type * as users from "../users.js";
+import type * as vectorStoreFiles from "../vectorStoreFiles.js";
+import type * as vectorStores from "../vectorStores.js";
+import type * as workflows from "../workflows.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -45,20 +41,24 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   agents: typeof agents;
   auth: typeof auth;
+  blockchainTransactions: typeof blockchainTransactions;
   chats: typeof chats;
   documents: typeof documents;
   env: typeof env;
+  files: typeof files;
   healthCheck: typeof healthCheck;
   memories: typeof memories;
   messages: typeof messages;
   users: typeof users;
+  vectorStoreFiles: typeof vectorStoreFiles;
+  vectorStores: typeof vectorStores;
   workflows: typeof workflows;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
-  FunctionReference<any, 'public'>
+  FunctionReference<any, "public">
 >;
 export declare const internal: FilterApi<
   typeof fullApi,
-  FunctionReference<any, 'internal'>
+  FunctionReference<any, "internal">
 >;

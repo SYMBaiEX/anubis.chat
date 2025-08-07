@@ -61,8 +61,9 @@ const listChatsSchema = z.object({
 export async function GET(request: NextRequest) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      const { walletAddress } = authReq.user;
+
       try {
-        const { walletAddress } = authReq.user;
         const { searchParams } = new URL(req.url);
 
         // Parse and validate query parameters
@@ -146,9 +147,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { walletAddress } = authReq.user;
+      const { walletAddress } = authReq.user;
 
+      try {
         // Parse and validate request body
         const body = await req.json();
         const validation = createChatSchema.safeParse(body);

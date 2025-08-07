@@ -339,7 +339,9 @@ export async function POST(request: NextRequest) {
         const response = successResponse(generationResult);
         return addSecurityHeaders(response);
       } catch (error) {
-        log.error('AI object generation error:', error);
+        log.error('AI object generation error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
         const response = NextResponse.json(
           { error: 'Failed to generate object' },
           { status: 500 }
@@ -367,7 +369,9 @@ export async function GET(request: NextRequest) {
 
       return addSecurityHeaders(response);
     } catch (error) {
-      log.error('Get schemas error:', error);
+      log.error('Get schemas error', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       const response = NextResponse.json(
         { error: 'Failed to retrieve schemas' },
         { status: 500 }

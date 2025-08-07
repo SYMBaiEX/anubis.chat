@@ -304,7 +304,6 @@ export const updateExecution = mutation({
 
     const updates: Partial<Doc<'workflowExecutions'>> = {
       status: args.status,
-      updatedAt: Date.now(),
     };
 
     if (args.currentStep !== undefined) updates.currentStep = args.currentStep;
@@ -398,9 +397,8 @@ export const updateStepResult = mutation({
 
     if (existing) {
       // Update existing step result
-      const updates: Partial<Doc<'workflowExecutions'>> = {
+      const updates: Partial<Doc<'workflowStepResults'>> = {
         status: args.status,
-        updatedAt: Date.now(),
       };
 
       if (args.output !== undefined) updates.output = args.output;

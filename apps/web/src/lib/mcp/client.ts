@@ -9,6 +9,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 // We'll store MCP tool definitions, not AI SDK tools
+import type { CallToolRequest, CallToolResult, ListToolsResult, Tool as MCPServerTool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import type { MCPTransportConfig as MCPTransportConfigType } from '@/lib/types/mcp';
 import { MCPTransportType } from '@/lib/types/mcp';
@@ -19,19 +20,27 @@ const log = createModuleLogger('mcp-client');
 // Re-export the transport config from types/mcp.ts for backwards compatibility
 export type MCPTransportConfig = MCPTransportConfigType;
 
+// MCP Tool Definition with proper typing
+export interface MCPTool<TInput = Record<string, unknown>, TOutput = unknown> {
+  name: string;
+  description: string;
+  schema: z.ZodSchema<TInput>;
+  execute: (input: TInput) => Promise<TOutput>;
+}
+
 // MCP Server Configuration
 export interface MCPServerConfig {
   name: string;
   transport: MCPTransportConfig;
   description?: string;
-  toolSchemas?: Record<string, z.ZodObject<any, any>>;
+  toolSchemas?: Record<string, z.ZodObject<z.ZodRawShape>>;
 }
 
 // MCP Client Manager
 export class MCPClientManager {
   private clients: Map<string, Client> = new Map();
   private transports: Map<string, Transport> = new Map();
-  private tools: Map<string, Record<string, any>> = new Map();
+  private tools: Map<string, Record<string, MCPTool>> = new Map();
 
   /**
    * Initialize an MCP client with the specified configuration
@@ -106,7 +115,7 @@ export class MCPClientManager {
       throw new Error(`Client ${serverName} not found`);
     }
 
-    const serverTools = await client.listTools();
+    const serverTools = await client.listTools() as ListToolsResult;
     const tools: Record<string, MCPTool> = {};
 
     for (const serverTool of serverTools.tools) {
@@ -117,11 +126,11 @@ export class MCPClientManager {
         name: serverTool.name,
         description: serverTool.description || '',
         schema: schema || z.record(z.string(), z.unknown()),
-        execute: async (input: any) => {
+        execute: async (input: Record<string, unknown>) => {
           const result = await client.callTool({
             name: serverTool.name,
             arguments: input,
-          });
+          }) as CallToolResult;
           return result.content;
         },
       };
@@ -133,15 +142,15 @@ export class MCPClientManager {
   /**
    * Get all tools from a specific server
    */
-  getServerTools(serverName: string): Record<string, any> | undefined {
+  getServerTools(serverName: string): Record<string, MCPTool> | undefined {
     return this.tools.get(serverName);
   }
 
   /**
    * Get all tools from all servers
    */
-  getAllTools(): Record<string, any> {
-    const allTools: Record<string, any> = {};
+  getAllTools(): Record<string, MCPTool> {
+    const allTools: Record<string, MCPTool> = {};
 
     for (const [serverName, serverTools] of this.tools) {
       for (const [toolName, tool] of Object.entries(serverTools)) {
@@ -159,8 +168,8 @@ export class MCPClientManager {
   async callTool(
     serverName: string,
     toolName: string,
-    args: any
-  ): Promise<any> {
+    args: Record<string, unknown>
+  ): Promise<unknown> {
     const client = this.clients.get(serverName);
     if (!client) {
       throw new Error(`Client ${serverName} not found`);
@@ -169,15 +178,14 @@ export class MCPClientManager {
     const result = await client.callTool({
       name: toolName,
       arguments: args,
-    });
-
+    }) as CallToolResult;
     return result.content;
   }
 
   /**
    * List available prompts from a server
    */
-  async listPrompts(serverName: string): Promise<any[]> {
+  async listPrompts(serverName: string): Promise<Array<{ name: string; description?: string; arguments?: Array<{ name: string; description?: string; required?: boolean }> }>> {
     const client = this.clients.get(serverName);
     if (!client) {
       throw new Error(`Client ${serverName} not found`);
@@ -215,7 +223,7 @@ export class MCPClientManager {
   /**
    * List available resources from a server
    */
-  async listResources(serverName: string): Promise<any[]> {
+  async listResources(serverName: string): Promise<Array<{ uri: string; name?: string; description?: string; mimeType?: string }>> {
     const client = this.clients.get(serverName);
     if (!client) {
       throw new Error(`Client ${serverName} not found`);
@@ -228,7 +236,7 @@ export class MCPClientManager {
   /**
    * Read a resource from a server
    */
-  async readResource(serverName: string, uri: string): Promise<any> {
+  async readResource(serverName: string, uri: string): Promise<Array<{ uri: string; mimeType?: string; text?: string; blob?: string }>> {
     const client = this.clients.get(serverName);
     if (!client) {
       throw new Error(`Client ${serverName} not found`);

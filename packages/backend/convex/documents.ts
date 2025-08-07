@@ -195,7 +195,7 @@ export const create = mutation({
       content: args.content,
       type: args.type,
       ownerId: args.ownerId,
-      isPublic: args.isPublic,
+      isPublic: args.isPublic ?? false,
       tags: args.tags,
       metadata: {
         ...args.metadata,

@@ -375,7 +375,7 @@ export async function blacklistToken(token: string): Promise<boolean> {
     return true;
   } catch (error) {
     log.error('Token blacklisting failed', {
-      jti,
+      token: token.substring(0, 20) + '...', // Log partial token for debugging
       error: error instanceof Error ? error.message : String(error),
     });
     return false;

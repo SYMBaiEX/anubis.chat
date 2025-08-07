@@ -84,8 +84,9 @@ const updateDocumentSchema = z.object({
 export async function GET(request: NextRequest) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      const { walletAddress } = authReq.user;
+
       try {
-        const { walletAddress } = authReq.user;
         const { searchParams } = new URL(req.url);
 
         // Parse query parameters
@@ -162,9 +163,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return generalRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      try {
-        const { walletAddress } = authReq.user;
+      const { walletAddress } = authReq.user;
 
+      try {
         // Parse and validate request body
         const body = await req.json();
         const validation = uploadDocumentSchema.safeParse(body);
@@ -210,7 +211,7 @@ export async function POST(request: NextRequest) {
           title,
           type,
           contentLength: content.length,
-          wordCount,
+          wordCount: document.metadata?.wordCount,
           hasMetadata: !!metadata,
         });
 

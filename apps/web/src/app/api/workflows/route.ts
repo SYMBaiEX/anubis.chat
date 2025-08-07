@@ -329,24 +329,27 @@ export async function POST(request: NextRequest) {
           v2Workflows.set(v2Workflow.id, v2Workflow);
 
           // Convert v2 nodes to v1 steps format for Convex storage
-          const steps = v2Workflow.nodes.map((node, index) => ({
-            stepId: node.id,
-            name: node.name,
-            type:
-              node.type === 'task'
-                ? ('agent_task' as const)
-                : (node.type as any),
-            agentId: node.config?.agentId as Id<'agents'>,
-            condition: node.config?.condition as string,
-            parameters: node.config?.parameters || {},
-            nextSteps: Array.isArray(node.next)
-              ? node.next
-              : node.next
-                ? [node.next]
-                : [],
-            requiresApproval: node.config?.requiresApproval as boolean,
-            order: index,
-          }));
+          const steps = v2Workflow.nodes.map((node, index) => {
+            const config = node.config as any;
+            return {
+              stepId: node.id,
+              name: node.name,
+              type:
+                node.type === 'task'
+                  ? ('agent_task' as const)
+                  : (node.type as any),
+              agentId: config?.agentId as Id<'agents'> | undefined,
+              condition: config?.condition as string | undefined,
+              parameters: config?.parameters || {},
+              nextSteps: Array.isArray(node.next)
+                ? node.next
+                : node.next
+                  ? [node.next]
+                  : [],
+              requiresApproval: config?.requiresApproval as boolean | undefined,
+              order: index,
+            };
+          });
 
           // Validate workflow structure
           const validationErrors = validateWorkflowSteps(steps);
@@ -519,6 +522,8 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      let workflowId: string | null = null;
+
       try {
         const { walletAddress } = authReq.user;
 
@@ -540,7 +545,7 @@ export async function PUT(request: NextRequest) {
 
         // Get workflow ID from URL or body
         const { searchParams } = new URL(req.url);
-        const workflowId = searchParams.get('id') || body.workflowId;
+        workflowId = searchParams.get('id') || body.workflowId;
 
         if (!workflowId) {
           return validationErrorResponse('Workflow ID is required');

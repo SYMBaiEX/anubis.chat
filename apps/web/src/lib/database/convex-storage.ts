@@ -60,7 +60,7 @@ export class ConvexStorage implements StorageBackend {
       return convexDoc ? this.convertFromConvexDocument(convexDoc) : null;
     } catch (error) {
       log.error('Failed to get document from Convex', {
-        docId,
+        docId: id,
         error: error instanceof Error ? error.message : String(error),
       });
       return null;
@@ -87,7 +87,7 @@ export class ConvexStorage implements StorageBackend {
       return convexDoc ? this.convertFromConvexDocument(convexDoc) : null;
     } catch (error) {
       log.error('Failed to update document in Convex', {
-        docId,
+        docId: id,
         error: error instanceof Error ? error.message : String(error),
       });
       throw new Error('Failed to update document');
@@ -109,7 +109,7 @@ export class ConvexStorage implements StorageBackend {
       return true;
     } catch (error) {
       log.error('Failed to delete document in Convex', {
-        docId,
+        docId: id,
         error: error instanceof Error ? error.message : String(error),
       });
       return false;
@@ -173,7 +173,7 @@ export class ConvexStorage implements StorageBackend {
       return doc ? doc.ownerId === walletAddress : false;
     } catch (error) {
       log.error('Failed to check document access in Convex', {
-        docId,
+        docId: documentId,
         walletAddress,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -243,7 +243,7 @@ export class ConvexStorage implements StorageBackend {
       });
     } catch (error) {
       log.error('Failed to blacklist token in Convex', {
-        jti,
+        jti: tokenId,
         error: error instanceof Error ? error.message : String(error),
       });
       throw new Error('Failed to blacklist token');
@@ -255,7 +255,7 @@ export class ConvexStorage implements StorageBackend {
       return await this.client.query(api.auth.isTokenBlacklisted, { tokenId });
     } catch (error) {
       log.error('Failed to check token blacklist in Convex', {
-        jti,
+        jti: tokenId,
         error: error instanceof Error ? error.message : String(error),
       });
       return false;
@@ -288,7 +288,7 @@ export class ConvexStorage implements StorageBackend {
     } catch (error) {
       log.error('Failed to store nonce in Convex', {
         nonce,
-        walletAddress,
+        walletAddress: publicKey,
         error: error instanceof Error ? error.message : String(error),
       });
       throw new Error('Failed to store nonce');
@@ -307,7 +307,7 @@ export class ConvexStorage implements StorageBackend {
     } catch (error) {
       log.error('Failed to validate nonce in Convex', {
         nonce,
-        walletAddress,
+        walletAddress: publicKey,
         error: error instanceof Error ? error.message : String(error),
       });
       return false;

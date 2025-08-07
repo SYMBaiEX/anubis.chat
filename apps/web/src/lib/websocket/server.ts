@@ -6,9 +6,13 @@
 import type { Server as HTTPServer } from 'http';
 import { type Socket, Server as SocketIOServer } from 'socket.io';
 import { z } from 'zod';
-import type { JsonValue } from '@/lib/types/mcp';
-import type { AgentStep, AgentExecutionResult, StepResult } from '@/lib/types/agentic';
+import type {
+  AgentExecutionResult,
+  AgentStep,
+  StepResult,
+} from '@/lib/types/agentic';
 import type { Chat, ChatMessage } from '@/lib/types/api';
+import type { JsonValue } from '@/lib/types/mcp';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 // =============================================================================
@@ -191,8 +195,7 @@ export class WebSocketManager {
       timestamp: Date.now(),
     });
 
-    log.auth('User authenticated via WebSocket', {
-      walletAddress,
+    log.auth('User authenticated via WebSocket', walletAddress, {
       socketId: socket.id,
       connectedAt: user.connectedAt,
     });

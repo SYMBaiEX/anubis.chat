@@ -6,3 +6,11 @@ node_modules
 .claude/index/
 .claude/*.db
 .claude/docs-cache/
+
+# Claude Flow - Runtime metrics and generated files
+.claude-flow/
+.swarm/
+apps/web/.claude-flow/
+apps/web/.swarm/
+packages/backend/.claude-flow/
+packages/backend/.swarm/

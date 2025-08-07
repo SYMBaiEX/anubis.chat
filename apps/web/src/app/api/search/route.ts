@@ -120,8 +120,9 @@ function extractContext(results: DocumentSearchResult[]): string {
 export async function POST(request: NextRequest) {
   return searchRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      const { walletAddress } = authReq.user;
+
       try {
-        const { walletAddress } = authReq.user;
         const startTime = Date.now();
 
         // Parse and validate request body
@@ -186,8 +187,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   return searchRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      const { walletAddress } = authReq.user;
+
       try {
-        const { walletAddress } = authReq.user;
         const { searchParams } = new URL(req.url);
 
         // Handle semantic search via query parameters for GET request
@@ -225,8 +227,7 @@ export async function GET(request: NextRequest) {
           resultCount: results.length,
           contextLength: context.length,
           limit,
-          contextLength,
-          hasFilters: !!filters,
+          hasFilters: !!searchOptions.filters,
           hasContext: !!context,
         });
 
