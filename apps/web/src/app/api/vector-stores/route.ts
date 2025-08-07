@@ -12,7 +12,7 @@ import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import type {
   CreateVectorStoreRequest,
   VectorStore,
-} from '@/lib/types/api-v2';
+} from '@/lib/types/api';
 import {
   addSecurityHeaders,
   createdResponse,
