@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+
+// Initialize logger
+const log = createModuleLogger('message-bubble');
 
 /**
  * MessageBubble component - Individual message display
@@ -53,8 +57,16 @@ export function MessageBubble({
       setCopied(true);
       onCopy?.();
       setTimeout(() => setCopied(false), 2000);
+      log.debug('Message copied to clipboard', {
+        operation: 'copy_message',
+        messageRole: message.role
+      });
     } catch (error) {
-      console.error('Failed to copy message:', error);
+      log.error('Failed to copy message to clipboard', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        operation: 'copy_message'
+      });
     }
   };
 

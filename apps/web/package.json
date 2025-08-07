@@ -32,6 +32,8 @@
     "@solana/wallet-standard-wallet-adapter-react": "^1.0.5",
     "@solana/web3.js": "^1.98.4",
     "@tanstack/react-form": "^1.12.3",
+    "@types/dompurify": "^3.2.0",
+    "@types/jsdom": "^21.1.7",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/prismjs": "^1.26.5",
     "ai": "^5.0.5",
@@ -40,6 +42,7 @@
     "clsx": "^2.1.1",
     "convex": "^1.25.4",
     "date-fns": "^4.1.0",
+    "dompurify": "^3.2.6",
     "jsonwebtoken": "^9.0.2",
     "langchain": "^0.3.30",
     "lucide-react": "^0.487.0",
@@ -75,7 +78,7 @@
     "@testing-library/react": "^16.1.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/user-event": "^14.5.2",
-    "jsdom": "^26.0.1",
+    "jsdom": "^26.1.0",
     "@vitest/coverage-v8": "^2.1.8",
     "@vitest/ui": "^2.1.8"
   }

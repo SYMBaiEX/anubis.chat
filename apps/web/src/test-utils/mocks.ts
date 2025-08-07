@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import type { PublicKey } from '@solana/web3.js'
+import type { WalletAdapter } from '@solana/wallet-adapter-base'
 
 /**
  * Shared mock utilities for testing
@@ -15,16 +16,16 @@ export const createMockLocalStorage = () => ({
 
 // Mock Solana wallet state
 export interface MockWalletState {
-  wallet?: any | null
-  adapter?: any | null  
+  wallet?: WalletAdapter | null
+  adapter?: WalletAdapter | null  
   publicKey?: PublicKey | null
   connected?: boolean
   connecting?: boolean
   disconnecting?: boolean
-  connect?: any
-  disconnect?: any
-  select?: any
-  wallets?: any[]
+  connect?: () => Promise<void>
+  disconnect?: () => Promise<void>
+  select?: (walletName: string) => void
+  wallets?: WalletAdapter[]
   autoConnect?: boolean
 }
 
@@ -110,8 +111,8 @@ export const createMockAuthSession = (overrides = {}) => ({
   ...overrides,
 })
 
-// Mock API responses
-export const createMockResponse = (data: any, status = 200) => ({
+// Mock API responses  
+export const createMockResponse = <T = unknown>(data: T, status = 200) => ({
   ok: status >= 200 && status < 300,
   status,
   json: () => Promise.resolve(data),

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { BaseComponentProps } from '@/lib/types/components';
+import { sanitizeCodeHTML, sanitizeText, isCodeSafe } from '@/lib/security/sanitize';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 // Import Prism.js and themes
 import Prism from 'prismjs';
@@ -25,6 +27,8 @@ import 'prismjs/components/prism-sql';
 import 'prismjs/components/prism-yaml';
 import 'prismjs/components/prism-toml';
 import 'prismjs/components/prism-markdown';
+
+const log = createModuleLogger('code-block');
 
 interface CodeBlockProps extends BaseComponentProps {
   code: string;
@@ -48,16 +52,53 @@ export function CodeBlock({
   children,
 }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
-  const [highlightedCode, setHighlightedCode] = useState('');
+  const [highlightError, setHighlightError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Highlight the code using Prism.js
-    const highlighted = Prism.highlight(
-      code,
-      Prism.languages[language] || Prism.languages.text,
-      language
-    );
-    setHighlightedCode(highlighted);
+  // Memoize the highlighted and sanitized code to prevent re-processing on every render
+  const highlightedCode = useMemo(() => {
+    try {
+      // First check if the code is safe
+      if (!isCodeSafe(code)) {
+        log.warn('Potentially unsafe code detected, falling back to plain text', { 
+          language,
+          codeLength: code.length 
+        });
+        setHighlightError('Code contains potentially unsafe content');
+        return sanitizeText(code);
+      }
+
+      // Highlight the code using Prism.js
+      const highlighted = Prism.highlight(
+        code,
+        Prism.languages[language] || Prism.languages.text,
+        language
+      );
+      
+      // Sanitize the highlighted code to prevent XSS
+      const sanitized = sanitizeCodeHTML(highlighted);
+      
+      // If sanitization returned empty string, fall back to plain text
+      if (!sanitized && code.length > 0) {
+        log.warn('Code sanitization returned empty result, falling back to plain text', {
+          language,
+          originalLength: code.length,
+          highlightedLength: highlighted.length
+        });
+        setHighlightError('Code highlighting failed, displaying as plain text');
+        return sanitizeText(code);
+      }
+      
+      setHighlightError(null);
+      return sanitized;
+    } catch (error) {
+      log.error('Failed to highlight code', { 
+        error: error instanceof Error ? error.message : String(error),
+        language,
+        codeLength: code.length 
+      });
+      setHighlightError('Syntax highlighting unavailable');
+      return sanitizeText(code);
+    }
   }, [code, language]);
 
   const handleCopy = async () => {
@@ -66,7 +107,9 @@ export function CodeBlock({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy code:', error);
+      log.error('Failed to copy code', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   };
 
@@ -113,7 +156,7 @@ export function CodeBlock({
   return (
     <div className={cn("group relative my-4", className)}>
       {/* Header */}
-      {(title || language !== 'text' || showCopyButton) && (
+      {(title || language !== 'text' || showCopyButton || highlightError) && (
         <div className="flex items-center justify-between rounded-t-lg border border-b-0 border-muted bg-muted/50 px-4 py-2">
           <div className="flex items-center space-x-2">
             {title && (
@@ -122,6 +165,11 @@ export function CodeBlock({
             {language !== 'text' && (
               <Badge className="text-xs" variant="secondary">
                 {getLanguageDisplayName(language)}
+              </Badge>
+            )}
+            {highlightError && (
+              <Badge className="text-xs" variant="destructive">
+                ⚠ {highlightError}
               </Badge>
             )}
           </div>
@@ -151,7 +199,7 @@ export function CodeBlock({
         <pre
           className={cn(
             "overflow-x-auto rounded-lg border border-muted bg-[#2d3748] p-4 text-sm",
-            title || language !== 'text' ? "rounded-t-none border-t-0" : ""
+            title || language !== 'text' || highlightError ? "rounded-t-none border-t-0" : ""
           )}
         >
           <code
@@ -171,23 +219,39 @@ export function CodeBlock({
                     </div>
                   ))}
                 </div>
+                {highlightError ? (
+                  // Show plain text if there was an error
+                  <div className="leading-6 whitespace-pre-wrap">
+                    {code}
+                  </div>
+                ) : (
+                  // Show highlighted/sanitized HTML
+                  <div
+                    className="leading-6"
+                    dangerouslySetInnerHTML={{ __html: highlightedCode }}
+                  />
+                )}
+              </>
+            ) : (
+              // Without line numbers
+              highlightError ? (
+                // Show plain text if there was an error  
+                <div className="leading-6 whitespace-pre-wrap">
+                  {code}
+                </div>
+              ) : (
+                // Show highlighted/sanitized HTML
                 <div
                   className="leading-6"
                   dangerouslySetInnerHTML={{ __html: highlightedCode }}
                 />
-              </>
-            ) : (
-              // Without line numbers
-              <div
-                className="leading-6"
-                dangerouslySetInnerHTML={{ __html: highlightedCode }}
-              />
+              )
             )}
           </code>
         </pre>
 
         {/* Copy button (floating) - shown when no header */}
-        {showCopyButton && !title && language === 'text' && (
+        {showCopyButton && !title && language === 'text' && !highlightError && (
           <Button
             className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100"
             onClick={handleCopy}

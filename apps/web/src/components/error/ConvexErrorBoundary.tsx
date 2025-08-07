@@ -7,6 +7,7 @@
 
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -15,6 +16,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+
+// Initialize logger
+const log = createModuleLogger('convex-error-boundary');
 
 interface ConvexError extends Error {
   code?: string;
@@ -62,10 +66,18 @@ export class ConvexErrorBoundary extends Component<Props, State> {
     // Call custom error handler if provided
     this.props.onError?.(error, errorInfo);
 
-    // Log to error tracking service in production
-    if (process.env.NODE_ENV === 'production') {
-      console.error('ConvexErrorBoundary caught an error:', error, errorInfo);
-    }
+    // Log to error tracking service
+    log.error('ConvexErrorBoundary caught an error', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      errorInfo: {
+        componentStack: errorInfo.componentStack?.slice(0, 1000),
+        errorBoundary: 'ConvexErrorBoundary',
+      },
+      errorCode: (error as ConvexError).code,
+      errorDetails: (error as ConvexError).details,
+      operation: 'error_boundary_catch'
+    });
   }
 
   componentWillUnmount() {

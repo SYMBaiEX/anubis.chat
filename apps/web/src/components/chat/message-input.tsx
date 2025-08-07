@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -21,6 +22,9 @@ import {
   Square,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Initialize logger
+const log = createModuleLogger('message-input');
 
 /**
  * MessageInput component - Advanced message input with voice, files, etc.
@@ -69,12 +73,18 @@ export function MessageInput({
       // Stop recording
       setIsRecording(false);
       // TODO: Implement actual voice recording logic
-      console.log('Stop voice recording');
+      log.debug('Voice recording stopped', { 
+        operation: 'voice_recording_stop',
+        wasRecording: true
+      });
     } else {
       // Start recording
       setIsRecording(true);
       // TODO: Implement actual voice recording logic
-      console.log('Start voice recording');
+      log.debug('Voice recording started', { 
+        operation: 'voice_recording_start',
+        wasRecording: false
+      });
     }
   };
 
@@ -82,7 +92,10 @@ export function MessageInput({
     const files = event.target.files;
     if (files && files.length > 0) {
       // TODO: Implement file upload logic
-      console.log('Files selected:', files);
+      log.info('Files selected for upload', {
+        operation: 'file_upload_selection',
+        fileCount: files.length
+      });
       // Reset input
       event.target.value = '';
     }
@@ -92,7 +105,10 @@ export function MessageInput({
     const files = event.target.files;
     if (files && files.length > 0) {
       // TODO: Implement image upload logic
-      console.log('Images selected:', files);
+      log.info('Images selected for upload', {
+        operation: 'image_upload_selection',
+        imageCount: files.length
+      });
       // Reset input
       event.target.value = '';
     }

@@ -181,13 +181,9 @@ export async function resetPWAState() {
   try {
     await Promise.all([unregisterServiceWorkers(), clearCaches()]);
 
-<<<<<<< HEAD
-    console.log('PWA state reset complete - refreshing page...');
-=======
     log.info('PWA state reset complete - refreshing page', {
       operation: 'reset_pwa_state',
     });
->>>>>>> upstream/main
 
     // Reload the page to ensure clean state
     window.location.reload();

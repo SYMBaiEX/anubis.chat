@@ -1,8 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { createModuleLogger } from '@/lib/utils/logger';
 import type { FormWrapperProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
+
+// Initialize logger
+const log = createModuleLogger('form-wrapper');
 
 /**
  * FormWrapper component - Simple form wrapper with validation
@@ -29,14 +33,18 @@ export function FormWrapper({
         setFormData(defaultValues);
       }
     } catch (error) {
-      console.error('Form submission error:', error);
+      log.error('Form submission failed', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        operation: 'form_submission'
+      });
       throw error;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const updateField = (name: string, value: any) => {
+  const updateField = (name: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 

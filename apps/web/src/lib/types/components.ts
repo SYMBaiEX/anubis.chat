@@ -235,7 +235,7 @@ export interface PageHeaderProps extends BaseComponentProps {
 // Data Display Component Types
 // =============================================================================
 
-export interface DataTableProps<T = any> extends BaseComponentProps {
+export interface DataTableProps<T extends Record<string, unknown> = Record<string, unknown>> extends BaseComponentProps {
   data: T[];
   columns: DataTableColumn<T>[];
   loading?: boolean;
@@ -252,13 +252,13 @@ export interface DataTableProps<T = any> extends BaseComponentProps {
   };
 }
 
-export interface DataTableColumn<T = any> {
+export interface DataTableColumn<T extends Record<string, unknown> = Record<string, unknown>> {
   id: string;
   header: string;
-  accessor: keyof T | ((row: T) => any);
+  accessor: keyof T | ((row: T) => unknown);
   sortable?: boolean;
   width?: string;
-  render?: (value: any, row: T) => ReactNode;
+  render?: (value: unknown, row: T) => ReactNode;
 }
 
 export interface SearchBarProps extends BaseComponentProps {
@@ -266,7 +266,7 @@ export interface SearchBarProps extends BaseComponentProps {
   onSearch: (query: string) => void;
   placeholder?: string;
   showFilters?: boolean;
-  onFiltersChange?: (filters: any) => void;
+  onFiltersChange?: (filters: SearchFilters) => void;
 }
 
 export interface PaginationProps extends BaseComponentProps {
@@ -303,10 +303,10 @@ export interface ErrorDisplayProps extends BaseComponentProps {
 // Form Component Types
 // =============================================================================
 
-export interface FormWrapperProps extends BaseComponentProps {
-  onSubmit: (data: any) => void | Promise<void>;
-  validationSchema?: any; // Zod schema
-  defaultValues?: Record<string, any>;
+export interface FormWrapperProps<T extends Record<string, unknown> = Record<string, unknown>> extends BaseComponentProps {
+  onSubmit: (data: T) => void | Promise<void>;
+  validationSchema?: unknown; // Zod schema - use unknown instead of any
+  defaultValues?: T;
   resetOnSubmit?: boolean;
 }
 

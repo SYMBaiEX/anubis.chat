@@ -7,6 +7,9 @@ import { SolanaAgentProvider } from './providers/solana-agent-provider';
 import { ThemeProvider } from './theme-provider';
 import { Toaster } from './ui/sonner';
 import { WalletProvider } from './wallet/wallet-provider';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('providers');
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!, {
   // Enable verbose logging in development
@@ -18,11 +21,15 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <ConvexErrorBoundary
       onError={(error, errorInfo) => {
         // Log to error tracking service in production
-        console.error('Convex Error:', error, errorInfo);
+        log.error('Convex Error caught', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          errorInfo,
+          operation: 'convex_error_boundary'
+        });
       }}
       showDetails={process.env.NODE_ENV === 'development'}
     >
-<<<<<<< HEAD
       <ThemeProvider
         attribute="class"
         defaultTheme="system"
@@ -41,12 +48,5 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <Toaster richColors />
       </ThemeProvider>
     </ConvexErrorBoundary>
-=======
-      <ConvexProvider client={convex}>
-        <WalletProvider>{children}</WalletProvider>
-      </ConvexProvider>
-      <Toaster richColors />
-    </ThemeProvider>
->>>>>>> upstream/main
   );
 }

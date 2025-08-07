@@ -1,15 +1,12 @@
 'use client';
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-<<<<<<< HEAD
+import { createModuleLogger } from '@/lib/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-=======
-import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('error-boundary');
->>>>>>> upstream/main
 
 interface Props {
   children: ReactNode;
@@ -79,7 +76,6 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-<<<<<<< HEAD
         <div className="min-h-screen flex items-center justify-center p-4 bg-background">
           <Card className="w-full max-w-md">
             <CardHeader>
@@ -106,24 +102,6 @@ export class ErrorBoundary extends Component<Props, State> {
               </div>
             </CardContent>
           </Card>
-=======
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <h2 className="font-bold text-2xl text-red-600">
-              Something went wrong
-            </h2>
-            <p className="mt-2 text-gray-600">
-              Please refresh the page or contact support if the problem
-              persists.
-            </p>
-            <button
-              className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-              onClick={() => window.location.reload()}
-            >
-              Refresh Page
-            </button>
-          </div>
->>>>>>> upstream/main
         </div>
       );
     }
@@ -153,14 +131,11 @@ if (typeof window !== 'undefined') {
       return;
     }
 
-<<<<<<< HEAD
-    console.error('Unhandled promise rejection:', error);
-=======
     log.error('Unhandled promise rejection', {
-      error,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
       type: 'unhandled_promise_rejection',
     });
->>>>>>> upstream/main
   });
 
   // Handle general errors
@@ -185,7 +160,6 @@ if (typeof window !== 'undefined') {
     }
   });
 }
-<<<<<<< HEAD
 
 // Hook version for functional components
 export function withErrorBoundary<T extends Record<string, unknown>>(
@@ -200,5 +174,3 @@ export function withErrorBoundary<T extends Record<string, unknown>>(
     );
   };
 }
-=======
->>>>>>> upstream/main
