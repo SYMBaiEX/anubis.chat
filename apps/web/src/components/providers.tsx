@@ -3,6 +3,7 @@
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
 import { ConvexErrorBoundary } from './error/ConvexErrorBoundary';
 import { AuthProvider } from './providers/auth-provider';
+import { SolanaAgentProvider } from './providers/solana-agent-provider';
 import { ThemeProvider } from './theme-provider';
 import { Toaster } from './ui/sonner';
 import { WalletProvider } from './wallet/wallet-provider';
@@ -29,7 +30,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       >
         <ConvexProvider client={convex}>
           <WalletProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <SolanaAgentProvider>
+                {children}
+              </SolanaAgentProvider>
+            </AuthProvider>
           </WalletProvider>
         </ConvexProvider>
         <Toaster richColors />
