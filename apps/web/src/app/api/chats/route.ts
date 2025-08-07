@@ -61,8 +61,9 @@ const listChatsSchema = z.object({
 export async function GET(request: NextRequest) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      const { walletAddress } = authReq.user;
+      
       try {
-        const { walletAddress } = authReq.user;
         const { searchParams } = new URL(req.url);
 
         // Parse and validate query parameters
@@ -134,7 +135,7 @@ export async function GET(request: NextRequest) {
       } catch (error) {
         log.error('Failed to list chats', {
           error,
-          walletAddress,
+          walletAddress: walletAddress,
           operation: 'list_chats',
         });
         return validationErrorResponse('Failed to retrieve chats');
@@ -146,8 +147,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return chatRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      const { walletAddress } = authReq.user;
+      
       try {
-        const { walletAddress } = authReq.user;
 
         // Parse and validate request body
         const body = await req.json();
@@ -207,7 +209,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         log.error('Failed to create chat', {
           error,
-          walletAddress,
+          walletAddress: walletAddress,
           operation: 'create_chat',
         });
         return validationErrorResponse('Failed to create chat');

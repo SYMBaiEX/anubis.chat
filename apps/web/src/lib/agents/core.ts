@@ -73,11 +73,7 @@ export interface AgentResult {
   success: boolean;
   output?: unknown;
   error?: string;
-  usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
+  usage?: LanguageModelUsage;
   duration: number;
   metadata?: Record<string, unknown>;
 }

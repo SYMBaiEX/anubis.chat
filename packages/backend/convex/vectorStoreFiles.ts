@@ -55,10 +55,8 @@ export const list = query({
       query = query.filter((q) => q.eq(q.field('status'), filter));
     }
 
-    // Apply ordering
-    if (order === 'desc') {
-      query = query.order('desc');
-    }
+    // Apply ordering (required for Convex queries)
+    query = query.order(order === 'desc' ? 'desc' : 'asc');
 
     // Apply cursor if provided
     if (cursor) {
@@ -255,7 +253,7 @@ export const create = mutation({
 /**
  * Remove a file from a vector store
  */
-export const delete = mutation({
+export const deleteFile = mutation({
   args: {
     vectorStoreId: v.id('vectorStores'),
     fileId: v.string(),

@@ -6,10 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
-import { api } from '@/convex/_generated/api';
-import { convexClient } from '@/lib/convex';
+import { api, convex } from '@/lib/database/convex';
 import { withAuth } from '@/lib/middleware/auth';
-import { withRateLimit } from '@/lib/middleware/rate-limit';
+import { authRateLimit } from '@/lib/middleware/rate-limit';
 import { createModuleLogger } from '@/lib/utils/logger';
 import type { FileUploadResponse } from '@/lib/types/api';
 
@@ -20,7 +19,7 @@ const log = createModuleLogger('api/files/upload');
 // =============================================================================
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_FILE_TYPES = {
+const ALLOWED_FILE_TYPES: Record<string, string> = {
   // Documents
   'application/pdf': '.pdf',
   'text/plain': '.txt',
@@ -147,7 +146,8 @@ async function handlePost(req: NextRequest) {
     const base64Data = Buffer.from(buffer).toString('base64');
     
     // Store file metadata in Convex
-    const storedFile = await convexClient.mutation(api.files.upload, {
+    const fileMetadata = metadata as any;
+    const storedFile = await convex.mutation(api.files.upload, {
       walletAddress,
       fileId,
       fileName,
@@ -155,9 +155,9 @@ async function handlePost(req: NextRequest) {
       size: file.size,
       hash,
       data: base64Data,
-      purpose: metadata.purpose || 'assistants',
-      description: metadata.description,
-      tags: metadata.tags || [],
+      purpose: fileMetadata.purpose || 'assistants',
+      description: fileMetadata.description,
+      tags: fileMetadata.tags || [],
     });
     
     log.info('File uploaded successfully', {
@@ -175,7 +175,7 @@ async function handlePost(req: NextRequest) {
       bytes: file.size,
       created_at: Date.now(),
       filename: fileName,
-      purpose: metadata.purpose || 'assistants',
+      purpose: fileMetadata.purpose || 'assistants',
       status: 'processed',
       status_details: null,
     };
@@ -196,7 +196,9 @@ async function handlePost(req: NextRequest) {
 // Export with middleware
 // =============================================================================
 
-export const POST = withRateLimit(withAuth(handlePost));
+export async function POST(request: NextRequest) {
+  return authRateLimit(request, handlePost);
+}
 
 // OPTIONS for CORS
 export async function OPTIONS() {

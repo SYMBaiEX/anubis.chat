@@ -221,7 +221,6 @@ export const updateExecution = mutation({
 
     const updates: Partial<Doc<'agentExecutions'>> = {
       status: args.status,
-      updatedAt: Date.now(),
     };
 
     if (args.result !== undefined) updates.result = args.result;
@@ -399,7 +398,6 @@ export const updateStep = mutation({
   handler: async (ctx, args) => {
     const updates: Partial<Doc<'agentSteps'>> = {
       status: args.status,
-      updatedAt: Date.now(),
     };
 
     if (args.output !== undefined) updates.output = args.output;

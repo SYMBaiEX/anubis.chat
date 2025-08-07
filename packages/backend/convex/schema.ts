@@ -1306,54 +1306,6 @@ export default defineSchema({
     .index('by_email', ['invitedEmail', 'status'])
     .index('by_wallet', ['invitedWallet', 'status']),
 
-  // Webhooks
-  webhooks: defineTable({
-    url: v.string(),
-    events: v.array(v.string()),
-    secret: v.optional(v.string()),
-    description: v.optional(v.string()),
-    active: v.boolean(),
-    headers: v.optional(v.object({})),
-    retryPolicy: v.optional(
-      v.object({
-        maxRetries: v.number(),
-        initialDelayMs: v.number(),
-        maxDelayMs: v.number(),
-        backoffMultiplier: v.number(),
-      })
-    ),
-    lastTriggeredAt: v.optional(v.number()),
-    failureCount: v.number(),
-    metadata: v.optional(v.object({})),
-    walletAddress: v.string(),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index('by_wallet', ['walletAddress', 'updatedAt'])
-    .index('by_active', ['active', 'updatedAt'])
-    .index('by_events', ['events']),
-
-  // Webhook deliveries
-  webhookDeliveries: defineTable({
-    webhookId: v.id('webhooks'),
-    event: v.string(),
-    payload: v.object({}),
-    response: v.optional(
-      v.object({
-        status: v.number(),
-        headers: v.object({}),
-        body: v.string(),
-      })
-    ),
-    attempts: v.number(),
-    success: v.boolean(),
-    error: v.optional(v.string()),
-    createdAt: v.number(),
-    completedAt: v.optional(v.number()),
-  })
-    .index('by_webhook', ['webhookId', 'createdAt'])
-    .index('by_success', ['success', 'createdAt']),
-
   // Embeddings
   embeddings: defineTable({
     text: v.string(),

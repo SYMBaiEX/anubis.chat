@@ -5,10 +5,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { api } from '@/convex/_generated/api';
-import { convexClient } from '@/lib/convex';
+import { api, convex } from '@/lib/database/convex';
 import { withAuth } from '@/lib/middleware/auth';
-import { withRateLimit } from '@/lib/middleware/rate-limit';
+import { authRateLimit } from '@/lib/middleware/rate-limit';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('api/chats/export');
@@ -21,12 +20,14 @@ const exportQuerySchema = z.object({
   format: z.enum(['json', 'markdown', 'pdf']).default('json'),
   includeSystemMessages: z
     .enum(['true', 'false'])
+    .optional()
     .transform(val => val === 'true')
-    .default('false'),
+    .default(false),
   includeMetadata: z
     .enum(['true', 'false'])
+    .optional()
     .transform(val => val === 'true')
-    .default('false'),
+    .default(false),
 });
 
 // =============================================================================
@@ -129,7 +130,7 @@ async function handleGet(
 
     if (!queryValidation.success) {
       return NextResponse.json(
-        { error: 'Invalid query parameters', details: queryValidation.error.errors },
+        { error: 'Invalid query parameters', details: queryValidation.error.issues },
         { status: 400 }
       );
     }
@@ -137,7 +138,7 @@ async function handleGet(
     const { format, includeSystemMessages, includeMetadata } = queryValidation.data;
 
     // Get chat from Convex
-    const chat = await convexClient.query(api.chats.getById, {
+    const chat = await convex.query(api.chats.getById, {
       id: params.id as any,
     });
 
@@ -149,7 +150,7 @@ async function handleGet(
     }
 
     // Get messages
-    const messagesResult = await convexClient.query(api.messages.getByChatId, {
+    const messagesResult = await convex.query(api.messages.getByChatId, {
       chatId: params.id as any,
       limit: 1000, // Export all messages
     });
@@ -218,7 +219,7 @@ async function handleGet(
         const markdown = generateMarkdown(chat, messages);
         const pdfBuffer = await generatePDF(markdown, chat.title);
         
-        return new NextResponse(pdfBuffer, {
+        return new NextResponse(pdfBuffer as any, {
           headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': `attachment; filename="${chat.title.replace(/[^a-z0-9]/gi, '_')}_export.pdf"`,
@@ -246,4 +247,9 @@ async function handleGet(
 // Export with middleware
 // =============================================================================
 
-export const GET = withRateLimit(withAuth(handleGet));
+export async function GET(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
+  return authRateLimit(request, async (req) => handleGet(req, context));
+}

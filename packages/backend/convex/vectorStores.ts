@@ -29,10 +29,8 @@ export const list = query({
       .query('vectorStores')
       .withIndex('by_wallet', (q) => q.eq('walletAddress', walletAddress));
 
-    // Apply ordering
-    if (order === 'desc') {
-      query = query.order('desc');
-    }
+    // Apply ordering (required for Convex queries)
+    query = query.order(order === 'desc' ? 'desc' : 'asc');
 
     // Apply cursor if provided
     if (cursor) {
@@ -240,7 +238,7 @@ export const update = mutation({
 /**
  * Delete a vector store and all associated files
  */
-export const delete = mutation({
+export const deleteVectorStore = mutation({
   args: {
     id: v.id('vectorStores'),
     walletAddress: v.string(),

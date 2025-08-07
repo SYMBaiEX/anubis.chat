@@ -65,9 +65,10 @@ interface RouteContext {
 export async function GET(request: NextRequest, context: RouteContext) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      const { walletAddress } = authReq.user;
+      const { agentId } = await context.params;
+      
       try {
-        const { walletAddress } = authReq.user;
-        const { agentId } = await context.params;
 
         // Get agent from Convex
         const agent = await convex.query(api.agents.getById, {
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
           );
         }
 
-        log.info('Agent retrieved successfully', { agentId, walletAddress });
+        log.info('Agent retrieved successfully', { agentId: agentId, walletAddress: walletAddress });
 
         // Convert Convex document to API format
         const formattedAgent = convexAgentToApiFormat(agent);
@@ -93,7 +94,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         return addSecurityHeaders(response);
       } catch (error) {
         log.error('Get agent error', {
-          agentId,
+          agentId: agentId,
           error: error instanceof Error ? error.message : String(error),
         });
         const response = NextResponse.json(
@@ -109,9 +110,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
 export async function PUT(request: NextRequest, context: RouteContext) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      const { walletAddress } = authReq.user;
+      const { agentId } = await context.params;
+      
       try {
-        const { walletAddress } = authReq.user;
-        const { agentId } = await context.params;
 
         // Parse and validate request body
         const body = await req.json();
@@ -137,7 +139,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           return notFoundResponse('Agent not found or update failed');
         }
 
-        log.info('Agent updated successfully', { agentId, walletAddress });
+        log.info('Agent updated successfully', { agentId: agentId, walletAddress: walletAddress });
 
         // Convert to API format
         const formattedAgent = convexAgentToApiFormat(updatedAgent);
@@ -146,7 +148,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         return addSecurityHeaders(response);
       } catch (error) {
         log.error('Update agent error', {
-          agentId,
+          agentId: agentId,
           error: error instanceof Error ? error.message : String(error),
         });
 
@@ -176,9 +178,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 export async function DELETE(request: NextRequest, context: RouteContext) {
   return aiRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      const { walletAddress } = authReq.user;
+      const { agentId } = await context.params;
+      
       try {
-        const { walletAddress } = authReq.user;
-        const { agentId } = await context.params;
 
         // Delete agent from Convex (handles ownership internally)
         await convex.mutation(api.agents.remove, {
@@ -186,7 +189,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
           walletAddress,
         });
 
-        log.info('Agent deleted successfully', { agentId, walletAddress });
+        log.info('Agent deleted successfully', { agentId: agentId, walletAddress: walletAddress });
 
         const response = successResponse({
           message: 'Agent deleted successfully',
@@ -195,7 +198,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         return addSecurityHeaders(response);
       } catch (error) {
         log.error('Delete agent error', {
-          agentId,
+          agentId: agentId,
           error: error instanceof Error ? error.message : String(error),
         });
 

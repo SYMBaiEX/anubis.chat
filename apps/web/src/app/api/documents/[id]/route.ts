@@ -88,7 +88,7 @@ export async function GET(
       } catch (error) {
         log.error('Failed to retrieve document', {
           error,
-          documentId,
+          documentId: documentId,
           operation: 'get_document',
         });
         const response = NextResponse.json(
@@ -179,7 +179,7 @@ export async function PUT(
       } catch (error) {
         log.error('Failed to update document', {
           error,
-          documentId,
+          documentId: documentId,
           operation: 'update_document',
         });
         const response = NextResponse.json(
@@ -229,7 +229,7 @@ export async function DELETE(
       } catch (error) {
         log.error('Failed to delete document', {
           error,
-          documentId,
+          documentId: documentId,
           operation: 'delete_document',
         });
         const response = NextResponse.json(

@@ -124,9 +124,10 @@ export async function GET(
 ) {
   return messageRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      const { walletAddress } = authReq.user;
+      const { id: chatId } = await params;
+      
       try {
-        const { walletAddress } = authReq.user;
-        const { id: chatId } = await params;
         const { searchParams } = new URL(req.url);
 
         // Validate chat exists and user has access
@@ -176,7 +177,7 @@ export async function GET(
       } catch (error) {
         log.error('Failed to retrieve messages', {
           error,
-          chatId,
+          chatId: chatId,
           operation: 'get_messages',
         });
         return validationErrorResponse('Failed to retrieve messages');
@@ -191,9 +192,10 @@ export async function POST(
 ) {
   return messageRateLimit(request, async (req) => {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
+      const { walletAddress } = authReq.user;
+      const { id: chatId } = await params;
+      
       try {
-        const { walletAddress } = authReq.user;
-        const { id: chatId } = await params;
 
         // Validate chat exists and user has access
         const chat = await getChatById(chatId, walletAddress);
@@ -330,7 +332,7 @@ export async function POST(
       } catch (error) {
         log.error('Failed to send message', {
           error,
-          chatId,
+          chatId: chatId,
           operation: 'send_message',
         });
         return validationErrorResponse('Failed to send message');

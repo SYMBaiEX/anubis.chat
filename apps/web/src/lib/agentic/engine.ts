@@ -154,7 +154,7 @@ export class AgenticEngine {
     ];
 
     const toolsUsed = new Set<string>();
-    const totalTokensUsed = { input: 0, output: 0, total: 0 };
+    const totalTokensUsed = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
     while (currentStep <= maxSteps) {
       const step: AgentStep = {
@@ -178,9 +178,9 @@ export class AgenticEngine {
 
         // Update token usage
         if (result.usage) {
-          totalTokensUsed.input += result.usage.inputTokens || 0;
-          totalTokensUsed.output += result.usage.outputTokens || 0;
-          totalTokensUsed.total += result.usage.totalTokens || 0;
+          totalTokensUsed.promptTokens += result.usage.inputTokens || 0;
+          totalTokensUsed.completionTokens += result.usage.outputTokens || 0;
+          totalTokensUsed.totalTokens += result.usage.totalTokens || 0;
         }
 
         // Update step with result
@@ -198,7 +198,7 @@ export class AgenticEngine {
         if (result.toolCalls && result.toolCalls.length > 0) {
           step.type =
             result.toolCalls.length > 1 ? 'parallel_tools' : 'tool_call';
-          step.toolCalls = result.toolCalls.map((tc: TypedToolCall) => ({
+          step.toolCalls = result.toolCalls.map((tc: TypedToolCall<any>) => ({
             id: tc.toolCallId,
             name: tc.toolName,
             parameters: tc.args,
@@ -208,7 +208,7 @@ export class AgenticEngine {
           // Process tool results
           const toolResults: ToolResult[] = [];
 
-          for (const toolCall of result.toolCalls as TypedToolCall[]) {
+          for (const toolCall of result.toolCalls as TypedToolCall<any>[]) {
             toolsUsed.add(toolCall.toolName);
 
             // Tool results are already processed by the execute function above
@@ -226,7 +226,7 @@ export class AgenticEngine {
           // Add tool results to messages using correct Vercel AI SDK format
           messages.push({
             role: 'tool',
-            content: result.toolCalls.map((toolCall: TypedToolCall) => ({
+            content: result.toolCalls.map((toolCall: TypedToolCall<any>) => ({
               type: 'tool-result',
               toolCallId: toolCall.toolCallId,
               toolName: toolCall.toolName,
@@ -360,7 +360,7 @@ export class AgenticEngine {
    */
   private isTaskComplete(
     text: string,
-    toolCalls: TypedToolCall[] | undefined
+    toolCalls: TypedToolCall<any>[] | undefined
   ): boolean {
     // Simple heuristics to determine task completion
     const completionIndicators = [

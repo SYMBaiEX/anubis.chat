@@ -1201,7 +1201,7 @@ export interface Webhook {
   walletAddress: string;
 }
 
-export type WebhookEvent = 
+export type WebhookEventName = 
   | 'chat.created'
   | 'chat.message.created'
   | 'chat.message.updated'
