@@ -535,7 +535,10 @@ export function AgentTemplateGallery({ onSelectTemplate }: AgentTemplateGalleryP
                     "flex h-12 w-12 items-center justify-center rounded-lg text-white",
                     selectedTemplate.color
                   )}>
-                    <selectedTemplate.icon className="h-6 w-6" />
+                    {(() => {
+                      const TemplateIcon = selectedTemplate.icon;
+                      return <TemplateIcon className="h-6 w-6" />;
+                    })()}
                   </div>
                   <div className="flex-1">
                     <DialogTitle>{selectedTemplate.name}</DialogTitle>

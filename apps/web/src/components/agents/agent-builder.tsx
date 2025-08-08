@@ -152,7 +152,8 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
 
   const getTypeIcon = (type: string) => {
     const agentType = agentTypes.find(t => t.value === type);
-    return agentType ? <agentType.icon className="h-4 w-4" /> : <Bot className="h-4 w-4" />;
+    const IconComponent = agentType?.icon || Bot;
+    return <IconComponent className="h-4 w-4" />;
   };
 
   return (
@@ -326,14 +327,17 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {agentTypes.map(type => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  <div className="flex items-center">
-                                    <type.icon className="mr-2 h-4 w-4" />
-                                    {type.label}
-                                  </div>
-                                </SelectItem>
-                              ))}
+                              {agentTypes.map(type => {
+                                const TypeIcon = type.icon;
+                                return (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    <div className="flex items-center">
+                                      <TypeIcon className="mr-2 h-4 w-4" />
+                                      {type.label}
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectContent>
                           </Select>
                         </div>

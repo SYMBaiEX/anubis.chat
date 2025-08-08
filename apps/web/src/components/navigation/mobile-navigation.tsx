@@ -74,6 +74,7 @@ export function MobileNavigation({
         <div className="flex items-center gap-1">
           {navItems.slice(0, 4).map((item) => {
             const isActive = pathname === item.href;
+            const ItemIcon = item.icon;
             return (
               <motion.div
                 key={item.id}
@@ -88,7 +89,7 @@ export function MobileNavigation({
                   )}
                   onClick={() => handleNavigation(item.href)}
                 >
-                  <item.icon className="h-5 w-5" />
+                  <ItemIcon className="h-5 w-5" />
                   {item.badge && (
                     <Badge
                       variant={item.badgeVariant || 'destructive'}
@@ -174,6 +175,7 @@ export function MobileNavigation({
                     <div className="space-y-2">
                       {navItems.map((item) => {
                         const isActive = pathname === item.href;
+                        const ItemIcon = item.icon;
                         return (
                           <Button
                             key={item.id}
@@ -181,7 +183,7 @@ export function MobileNavigation({
                             className="w-full justify-start"
                             onClick={() => handleNavigation(item.href)}
                           >
-                            <item.icon className="h-5 w-5 mr-3" />
+                            <ItemIcon className="h-5 w-5 mr-3" />
                             {item.label}
                             {item.badge && (
                               <Badge
@@ -243,6 +245,7 @@ export function MobileNavigation({
       <div className="flex items-center justify-around max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const ItemIcon = item.icon;
           return (
             <motion.button
               key={item.id}
@@ -255,7 +258,7 @@ export function MobileNavigation({
               onClick={() => handleNavigation(item.href)}
             >
               <div className="relative">
-                <item.icon className={cn(
+                <ItemIcon className={cn(
                   'h-5 w-5 transition-colors',
                   isActive && 'text-primary'
                 )} />
