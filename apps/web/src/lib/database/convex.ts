@@ -5,13 +5,14 @@
 
 import { api } from '@convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
+import { convexConfig } from '@/lib/env';
 
 // Environment validation
-if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+if (!convexConfig.publicUrl) {
   throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is required');
 }
 
 // Create a singleton Convex client instance
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+const convex = new ConvexHttpClient(convexConfig.publicUrl);
 
 export { convex, api };

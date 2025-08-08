@@ -2,10 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, IBM_Plex_Mono } from 'next/font/google';
 import '../index.css';
 import { ErrorBoundary } from '@/components/error-boundary';
-import Sidebar from '@/components/sidebar';
-import Header from '@/components/header';
 import Providers from '@/components/providers';
-import LayoutWrapper from '@/components/layout-wrapper';
 import ServiceWorkerManager from '@/components/service-worker-manager';
 
 // PRD Typography: Inter for body, IBM Plex Mono for code
@@ -84,15 +81,9 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <ServiceWorkerManager />
-            <div className="flex h-screen">
-              <Sidebar />
-              <div className="flex-1 flex flex-col">
-                <Header />
-                <main className="flex-1 overflow-auto">
-                  {children}
-                </main>
-              </div>
-            </div>
+            <main className="min-h-screen">
+              {children}
+            </main>
           </Providers>
         </ErrorBoundary>
       </body>
