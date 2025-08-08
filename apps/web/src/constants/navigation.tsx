@@ -15,7 +15,7 @@ const allItems: NavItem[] = [
   { label: 'Home', href: '/', icon: Home, inHeader: true, inSidebar: true },
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, requiresAuth: true, inHeader: true, inSidebar: true },
   { label: 'Chat', href: '/chat', icon: MessageSquare, requiresAuth: true, inHeader: true, inSidebar: true },
-  { label: 'Tailwind Test', href: '/test-tailwind', icon: MessageSquare, inHeader: true, inSidebar: true, devOnly: true },
+  // Tailwind Test removed
 ];
 
 export function getHeaderNav(isAuthenticated: boolean, isDev: boolean): NavItem[] {

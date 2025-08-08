@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { BaseComponentProps } from '@/lib/types/components';
-import { sanitizeCodeHTML, sanitizeText, isCodeSafe } from '@/lib/security/sanitize';
+import { sanitizeCodeHTML, sanitizeText, isCodeSafe } from '@/lib/security/sanitize-client';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 // Import Prism.js and themes

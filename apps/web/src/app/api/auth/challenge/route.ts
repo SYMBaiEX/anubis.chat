@@ -41,24 +41,12 @@ async function generateChallenge(
   publicKey: string
 ): Promise<WalletAuthChallenge> {
   const domain = process.env.NEXT_PUBLIC_DOMAIN || 'localhost:3001';
-  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
   const nonce = await createNonce(publicKey);
   const expirationTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-  // Create SIWE-compatible message
-  const challenge = [
-    `${domain} wants you to sign in with your Solana account:`,
-    publicKey,
-    '',
-    'Sign in to ISIS Chat',
-    '',
-    `URI: ${origin}`,
-    'Version: 1',
-    'Chain ID: 1',
-    `Nonce: ${nonce}`,
-    `Issued At: ${new Date().toISOString()}`,
-    `Expiration Time: ${expirationTime.toISOString()}`,
-  ].join('\n');
+  // Create a simple, wallet-compatible message
+  // Using a minimal format to ensure compatibility with all wallet adapters
+  const challenge = `ISIS Chat Authentication\n\nNonce: ${nonce}`;
 
   return {
     challenge,

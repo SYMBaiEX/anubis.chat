@@ -56,14 +56,18 @@ export default function AuthPage() {
 
   // Auto-sign in if wallet is connected but not authenticated
   useEffect(() => {
-    if (isConnected && !isAuthenticated && !authLoading && !authError) {
-      // Give user a moment to see the wallet is connected
+    if (isConnected && publicKey && !isAuthenticated && !authLoading && !authError) {
+      // Give wallet more time to fully initialize before attempting to sign
       const timer = setTimeout(() => {
-        login();
-      }, 500);
+        console.log('Auto-login triggered after wallet connection');
+        console.log('Public key:', publicKey);
+        login().catch(err => {
+          console.error('Auto-login failed:', err);
+        });
+      }, 2500); // Increased delay to 2.5 seconds for wallet initialization
       return () => clearTimeout(timer);
     }
-  }, [isConnected, isAuthenticated, authLoading, authError, login]);
+  }, [isConnected, publicKey, isAuthenticated, authLoading, authError, login]);
 
   return (
     <div className="min-h-screen bg-background">

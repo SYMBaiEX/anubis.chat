@@ -47,60 +47,19 @@ const verifySchema = z.object({
 // =============================================================================
 
 function parseSignInMessage(message: string): {
-  domain: string;
-  publicKey: string;
-  statement: string;
-  uri: string;
-  version: string;
-  chainId: number;
   nonce: string;
-  issuedAt: string;
-  expirationTime: string;
 } | null {
   try {
-    const lines = message.split('\n');
-
-    // Parse SIWE-style message format
-    const domainMatch = lines[0]?.match(
-      /^(.+) wants you to sign in with your Solana account:$/
-    );
-    if (!domainMatch) return null;
-
-    const domain = domainMatch[1];
-    const publicKey = lines[1];
-    const statement = lines[3];
-
-    // Parse URI, Version, Chain ID, Nonce, Issued At, Expiration Time
-    const uriMatch = lines[5]?.match(/^URI: (.+)$/);
-    const versionMatch = lines[6]?.match(/^Version: (\d+)$/);
-    const chainIdMatch = lines[7]?.match(/^Chain ID: (\d+)$/);
-    const nonceMatch = lines[8]?.match(/^Nonce: (.+)$/);
-    const issuedAtMatch = lines[9]?.match(/^Issued At: (.+)$/);
-    const expirationTimeMatch = lines[10]?.match(/^Expiration Time: (.+)$/);
-
-    if (
-      !(
-        uriMatch &&
-        versionMatch &&
-        chainIdMatch &&
-        nonceMatch &&
-        issuedAtMatch &&
-        expirationTimeMatch
-      )
-    ) {
+    // Parse the simplified message format: "ISIS Chat Authentication\n\nNonce: {nonce}"
+    const nonceMatch = message.match(/Nonce: ([\w-]+)/);
+    
+    if (!nonceMatch || !nonceMatch[1]) {
+      log.error('Failed to parse nonce from message', { message });
       return null;
     }
 
     return {
-      domain,
-      publicKey,
-      statement,
-      uri: uriMatch[1],
-      version: versionMatch[1],
-      chainId: Number.parseInt(chainIdMatch[1]),
       nonce: nonceMatch[1],
-      issuedAt: issuedAtMatch[1],
-      expirationTime: expirationTimeMatch[1],
     };
   } catch (error) {
     log.error('Message parsing failed', {
@@ -130,34 +89,10 @@ export async function POST(request: NextRequest) {
 
       const { message, signature, publicKey } = validation.data;
 
-      // Parse the signed message
+      // Parse the signed message to extract the nonce
       const parsedMessage = parseSignInMessage(message);
       if (!parsedMessage) {
         return validationErrorResponse('Invalid message format');
-      }
-
-      // Validate the public key matches
-      if (parsedMessage.publicKey !== publicKey) {
-        return unauthorizedResponse('Public key mismatch');
-      }
-
-      // Check message expiration
-      const expirationTime = new Date(parsedMessage.expirationTime);
-      if (expirationTime < new Date()) {
-        return unauthorizedResponse('Challenge expired');
-      }
-
-      // Validate domain (prevent replay attacks from other domains)
-      const expectedDomain = process.env.NEXT_PUBLIC_DOMAIN || 'localhost:3001';
-      if (parsedMessage.domain !== expectedDomain) {
-        return unauthorizedResponse('Invalid domain');
-      }
-
-      // Validate URI
-      const expectedURI =
-        process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
-      if (parsedMessage.uri !== expectedURI) {
-        return unauthorizedResponse('Invalid URI');
       }
 
       // Validate nonce (prevent replay attacks)

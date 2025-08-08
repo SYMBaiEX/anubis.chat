@@ -107,8 +107,21 @@ export const useAuth = (): UseAuthReturn => {
           throw new Error(errorData.message || 'Failed to get challenge');
         }
 
-        return await response.json();
+        const apiResponse = await response.json();
+        console.log('Challenge API response:', apiResponse);
+        
+        // Handle API response wrapper structure
+        if (apiResponse.success && apiResponse.data) {
+          return apiResponse.data;
+        } else if (apiResponse.challenge) {
+          // Direct response (legacy format)
+          return apiResponse;
+        } else {
+          console.error('Unexpected challenge response format:', apiResponse);
+          throw new Error('Invalid challenge response format');
+        }
       } catch (error) {
+        console.error('Failed to get auth challenge:', error);
         // Log to error tracking service instead of console in production
         return null;
       }
@@ -160,13 +173,28 @@ export const useAuth = (): UseAuthReturn => {
 
     try {
       // Step 1: Get challenge from server
+      console.log('Getting auth challenge for:', publicKey.toString());
       const challenge = await getAuthChallenge(publicKey.toString());
       if (!challenge) {
         throw new Error('Failed to get authentication challenge');
       }
+      console.log('Challenge received:', challenge.challenge);
 
       // Step 2: Sign the challenge message
+      console.log('Requesting signature from wallet...');
+      console.log('Challenge object:', challenge);
+      console.log('Challenge message:', challenge.challenge);
+      
+      // Ensure we have a valid challenge message
+      if (!challenge.challenge || challenge.challenge.length === 0) {
+        throw new Error('Invalid challenge message received from server');
+      }
+      
+      // Add a small delay to ensure wallet is ready
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const signature = await signMessage(challenge.challenge);
+      console.log('Signature received:', signature);
 
       // Step 3: Verify signature and get auth session
       const authSession = await verifyAuthentication(
@@ -186,6 +214,7 @@ export const useAuth = (): UseAuthReturn => {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Login failed';
+      console.error('Login error:', errorMessage, error);
       setAuthState((prev) => ({
         ...prev,
         isLoading: false,

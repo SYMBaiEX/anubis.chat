@@ -23,9 +23,15 @@ const bottomItems: Array<{ label: string; href: string; requiresAuth?: boolean; 
 export default function Sidebar() {
   const { isCollapsed, toggleCollapsed } = useSidebar();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { isAuthenticated } = useAuthContext();
+
+  // Set mounted state
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -162,12 +168,16 @@ export default function Sidebar() {
               )}
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? (
-                <Sun className="h-5 w-5" />
+              {mounted ? (
+                theme === 'dark' ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )
               ) : (
-                <Moon className="h-5 w-5" />
+                <div className="h-5 w-5" /> // Placeholder during SSR
               )}
-              {!isCollapsed && (
+              {!isCollapsed && mounted && (
                 <span>
                   {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
                 </span>

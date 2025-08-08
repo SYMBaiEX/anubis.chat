@@ -95,7 +95,26 @@ export const WalletProvider: FC<WalletProviderProps> = ({
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <SolanaWalletProvider autoConnect wallets={wallets}>
+      <SolanaWalletProvider 
+        wallets={wallets}
+        autoConnect={true} // Enable auto-connect for better UX
+        onError={(error) => {
+          // Silently handle expected errors
+          const errorMessage = error?.message || '';
+          const isExpectedError = 
+            errorMessage.includes('User rejected') || 
+            errorMessage.includes('Wallet not found') ||
+            errorMessage.includes('Unexpected error') ||
+            errorMessage.includes('wallet not installed') ||
+            errorMessage.includes('connection cancelled');
+            
+          if (!isExpectedError && errorMessage) {
+            log.error('Wallet error', { error: errorMessage });
+          } else {
+            log.debug('Wallet connection attempt', { message: errorMessage });
+          }
+        }}
+      >
         <WalletModalProvider>{children}</WalletModalProvider>
       </SolanaWalletProvider>
     </ConnectionProvider>

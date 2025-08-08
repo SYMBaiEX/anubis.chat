@@ -4,6 +4,7 @@ import {
   useConnection,
   useWallet as useSolanaWallet,
 } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { Connection, type PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -56,7 +57,10 @@ export const useWallet = (): UseWalletReturn => {
     connect: connectWallet,
     disconnect: disconnectWallet,
     signMessage: walletSignMessage,
+    select,
+    signIn,
   } = useSolanaWallet();
+  const { setVisible } = useWalletModal();
 
   const [state, setState] =
     useState<WalletConnectionState>(INITIAL_WALLET_STATE);
@@ -132,6 +136,13 @@ export const useWallet = (): UseWalletReturn => {
       error: null,
     }));
 
+    // Log wallet capabilities for debugging
+    if (connected && wallet) {
+      console.log('Wallet connected:', wallet.adapter.name);
+      console.log('Sign message capability:', !!walletSignMessage);
+      console.log('Wallet adapter:', wallet.adapter);
+    }
+
     // Start health checks when connected
     if (connected && walletPublicKey) {
       performHealthCheck();
@@ -153,7 +164,7 @@ export const useWallet = (): UseWalletReturn => {
         clearInterval(healthCheckRef.current);
       }
     };
-  }, [connected, connecting, walletPublicKey, performHealthCheck]);
+  }, [connected, connecting, walletPublicKey, wallet, walletSignMessage, performHealthCheck]);
 
   // Fetch balance when wallet connects
   const fetchBalance = useCallback(
@@ -214,6 +225,13 @@ export const useWallet = (): UseWalletReturn => {
     try {
       setState((prev) => ({ ...prev, isConnecting: true, error: null }));
 
+      // If no wallet is selected, open the modal for wallet selection
+      if (!wallet) {
+        setVisible(true);
+        setState((prev) => ({ ...prev, isConnecting: false }));
+        return;
+      }
+
       // 2025 Security: Connection timeout protection
       const connectTimeout = new Promise<never>((_, reject) =>
         setTimeout(
@@ -236,11 +254,16 @@ export const useWallet = (): UseWalletReturn => {
         error: `Connection failed: ${errorMessage}`,
         isConnecting: false,
       }));
-      throw error;
+      
+      // Don't throw error if user cancelled or wallet not found
+      if (!errorMessage.includes('User rejected') && 
+          !errorMessage.includes('Wallet not found')) {
+        throw error;
+      }
     } finally {
       setState((prev) => ({ ...prev, isConnecting: false }));
     }
-  }, [connectWallet]);
+  }, [connectWallet, wallet, setVisible]);
 
   const disconnect = useCallback(async (): Promise<void> => {
     try {
@@ -271,24 +294,66 @@ export const useWallet = (): UseWalletReturn => {
 
   const signMessage = useCallback(
     async (message: string): Promise<string> => {
-      if (!(walletSignMessage && walletPublicKey)) {
-        throw new Error(
-          'Wallet not connected or does not support message signing'
-        );
+      // Check wallet is connected
+      if (!walletPublicKey) {
+        throw new Error('Wallet not connected');
+      }
+      
+      // Validate message
+      if (!message || typeof message !== 'string') {
+        throw new Error('Invalid message to sign');
       }
 
       try {
+        // Add a small delay to ensure wallet is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        console.log('Attempting to sign message:', message);
+        console.log('Wallet adapter:', wallet?.adapter?.name);
+        console.log('SignMessage available:', !!walletSignMessage);
+        console.log('SignIn available:', !!signIn);
+        
+        // Check if wallet supports message signing
+        if (!walletSignMessage) {
+          // Some wallets might not have signMessage but have signIn for SIWS
+          if (signIn) {
+            console.log('Using signIn method instead of signMessage');
+            const result = await signIn({
+              domain: window.location.host,
+              address: walletPublicKey.toString(),
+              statement: message,
+              nonce: crypto.randomUUID(),
+            });
+            if (result?.signature) {
+              return bs58.encode(result.signature);
+            }
+          }
+          throw new Error('Wallet does not support message signing. Please try a different wallet.');
+        }
+        
         const messageBytes = new TextEncoder().encode(message);
+        console.log('Message bytes length:', messageBytes.length);
+        
+        // Call the wallet's signMessage function
         const signature = await walletSignMessage(messageBytes);
-        return bs58.encode(signature);
+        
+        if (!signature) {
+          throw new Error('No signature returned from wallet');
+        }
+        
+        const encodedSignature = bs58.encode(signature);
+        
+        console.log('Signature received:', encodedSignature);
+        return encodedSignature;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to sign message';
+        console.error('Signing error details:', error);
         setState((prev) => ({ ...prev, error: errorMessage }));
         throw new Error(`Message signing failed: ${errorMessage}`);
       }
     },
-    [walletSignMessage, walletPublicKey]
+    [walletSignMessage, walletPublicKey, wallet, signIn]
   );
 
   const signInWithSolana = useCallback(async (): Promise<{

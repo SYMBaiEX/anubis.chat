@@ -74,26 +74,26 @@ export default function DashboardPage() {
   const { publicKey, balance, formatAddress } = useWallet();
   const [selectedTimeRange, setSelectedTimeRange] = useState('7d');
 
-  // Convex data
+  // Convex data (skip until wallet is available)
+  const ownerWallet = isAuthenticated && user ? user.walletAddress : undefined;
   const chatStats = useQuery(
     api.chats.getStats,
-    isAuthenticated && user ? { ownerId: user.walletAddress } : { ownerId: undefined }
+    ownerWallet ? { ownerId: ownerWallet } : undefined
   );
-  const userUsage = useQuery(
-    api.users.getUsage,
-    isAuthenticated && user ? { walletAddress: user.walletAddress } : undefined
-  );
+  const userUsage = ownerWallet
+    ? useQuery(api.users.getUsage, { walletAddress: ownerWallet })
+    : undefined;
   const recentMessages = useQuery(
     api.messages.getRecent,
-    isAuthenticated && user ? { userId: user.walletAddress, limit: 10 } : undefined
+    ownerWallet ? { userId: ownerWallet, limit: 10 } : undefined
   );
   const agentsList = useQuery(
     api.agents.getByOwner,
-    isAuthenticated && user ? { walletAddress: user.walletAddress, limit: 10 } : undefined
+    ownerWallet ? { walletAddress: ownerWallet, limit: 10 } : undefined
   );
   const txStats = useQuery(
     api.blockchainTransactions.getStats,
-    isAuthenticated && user ? { userId: user.walletAddress } : undefined
+    ownerWallet ? { userId: ownerWallet } : undefined
   );
 
   const isDataLoading =

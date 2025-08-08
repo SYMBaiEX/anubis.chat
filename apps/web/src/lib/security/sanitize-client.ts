@@ -1,43 +1,9 @@
 /**
- * HTML Sanitization Utilities
- * Cross-platform DOMPurify wrapper for safe HTML rendering
+ * Client-side HTML Sanitization Utilities
+ * Browser-only DOMPurify wrapper for safe HTML rendering
  */
 
 import DOMPurify from 'dompurify';
-
-/**
- * Create isomorphic DOMPurify instance that works in both browser and Node.js
- */
-let isomorphicDOMPurify: typeof DOMPurify;
-
-if (typeof window !== 'undefined') {
-  // Browser environment
-  isomorphicDOMPurify = DOMPurify;
-} else {
-  // Node.js environment (SSR) - Use dynamic import to avoid bundling jsdom
-  // This will only run on the server side
-  const createServerDOMPurify = async () => {
-    const { JSDOM } = await import('jsdom');
-    const window = new JSDOM('').window;
-    return DOMPurify(window as unknown as Window);
-  };
-  
-  // For server-side, we'll create a simple fallback that just escapes HTML
-  // The actual DOMPurify instance will be created on demand
-  isomorphicDOMPurify = {
-    sanitize: (dirty: string, config?: any) => {
-      // Simple HTML escaping as fallback for SSR
-      // This is safe but doesn't preserve any formatting
-      return dirty
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;')
-        .replace(/\//g, '&#x2F;');
-    }
-  } as typeof DOMPurify;
-}
 
 /**
  * Default sanitization options for code highlighting
@@ -73,11 +39,12 @@ const STRICT_SANITIZE_OPTIONS: DOMPurify.Config = {
  */
 export function sanitizeCodeHTML(html: string): string {
   try {
-    return isomorphicDOMPurify.sanitize(html, DEFAULT_CODE_SANITIZE_OPTIONS);
+    if (typeof window === 'undefined') {
+      // Server-side fallback - just escape HTML
+      return sanitizeText(html);
+    }
+    return DOMPurify.sanitize(html, DEFAULT_CODE_SANITIZE_OPTIONS);
   } catch (error) {
-    // Fallback to empty string if sanitization fails
-    // Using console.error here as a fallback since this is a critical security function
-    // and we want to ensure errors are always logged even if logger fails
     console.error('Code sanitization failed:', error);
     return '';
   }
@@ -89,11 +56,12 @@ export function sanitizeCodeHTML(html: string): string {
  */
 export function sanitizeUserHTML(html: string): string {
   try {
-    return isomorphicDOMPurify.sanitize(html, STRICT_SANITIZE_OPTIONS);
+    if (typeof window === 'undefined') {
+      // Server-side fallback - just escape HTML
+      return sanitizeText(html);
+    }
+    return DOMPurify.sanitize(html, STRICT_SANITIZE_OPTIONS);
   } catch (error) {
-    // Fallback to empty string if sanitization fails
-    // Using console.error here as a fallback since this is a critical security function
-    // and we want to ensure errors are always logged even if logger fails
     console.error('User content sanitization failed:', error);
     return '';
   }
@@ -131,6 +99,3 @@ export function isCodeSafe(code: string): boolean {
 
   return !dangerousPatterns.some(pattern => pattern.test(code));
 }
-
-// Export the isomorphic instance for advanced use cases
-export { isomorphicDOMPurify };
