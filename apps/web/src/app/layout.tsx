@@ -2,9 +2,10 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, IBM_Plex_Mono } from 'next/font/google';
 import '../index.css';
 import { ErrorBoundary } from '@/components/error-boundary';
-import Header from '@/components/header';
 import Sidebar from '@/components/sidebar';
+import Header from '@/components/header';
 import Providers from '@/components/providers';
+import LayoutWrapper from '@/components/layout-wrapper';
 import ServiceWorkerManager from '@/components/service-worker-manager';
 
 // PRD Typography: Inter for body, IBM Plex Mono for code
@@ -70,19 +71,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Preload Satoshi Variable font for better performance with Bun */}
+        {/* Load Satoshi font stylesheet without client event handlers */}
+        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
         <link
-          rel="preload"
+          rel="stylesheet"
           href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap"
-          as="style"
-          onLoad="this.onload=null;this.rel='stylesheet'"
         />
-        <noscript>
-          <link
-            rel="stylesheet"
-            href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap"
-          />
-        </noscript>
       </head>
       <body
         className={`${inter.variable} ${ibmPlexMono.variable} font-sans antialiased`}
@@ -90,9 +84,9 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <ServiceWorkerManager />
-            <Sidebar />
             <div className="flex h-screen">
-              <div className="flex-1 flex flex-col lg:ml-64">
+              <Sidebar />
+              <div className="flex-1 flex flex-col">
                 <Header />
                 <main className="flex-1 overflow-auto">
                   {children}

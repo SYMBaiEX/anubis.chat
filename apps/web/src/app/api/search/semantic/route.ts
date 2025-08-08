@@ -5,7 +5,8 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getStorage } from '@/lib/database/storage';
+import { fetchQuery } from 'convex/nextjs';
+import { api } from '@convex/_generated/api';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { searchRateLimit } from '@/lib/middleware/rate-limit';
 import type { Document, DocumentSearchResult } from '@/lib/types/documents';
@@ -132,28 +133,26 @@ async function performSemanticSearch(
   // Expand query based on context and intent
   const expandedQuery = expandSearchQuery(options);
 
-  // Use storage layer for basic search
-  const storage = getStorage();
-  const searchOptions = {
+  // Use Convex documents.search for base retrieval
+  const docs = await fetchQuery(api.documents.search, {
+    ownerId: userWallet,
     query: expandedQuery,
     limit: options.limit,
-    filters: options.filters
-      ? {
-          type: options.filters.type as
-            | ('text' | 'markdown' | 'pdf' | 'url')[]
-            | undefined,
-          category: options.filters.category,
-          tags: options.filters.tags,
-        }
-      : undefined,
-    similarity: { threshold: 0.2, algorithm: 'cosine' as const }, // Higher threshold for semantic search
-  };
-
-  const results = await storage.searchDocuments(
-    userWallet,
-    expandedQuery,
-    searchOptions
-  );
+    type: options.filters?.type?.[0],
+  });
+  const results = (docs || []).map((doc: any) => ({
+    document: {
+      id: String(doc._id),
+      title: doc.title,
+      content: doc.content,
+      type: doc.type,
+      ownerId: doc.ownerId,
+      metadata: doc.metadata,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    },
+    score: 1,
+  }));
 
   // Enhance results with semantic context
   const enhancedResults = results

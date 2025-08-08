@@ -3,26 +3,16 @@
  */
 
 import { useCallback } from 'react';
+import { api } from '@convex/_generated/api';
 import type { Result } from '@/lib/utils/result';
 import { success } from '@/lib/utils/result';
+import { createModuleLogger } from '@/lib/utils/logger';
+const log = createModuleLogger('hooks/convex/useUsers');
 import {
   useConvexMutation,
   useConvexQuery,
   useOptimisticMutation,
 } from './useConvexResult';
-
-// Mock API structure - in real implementation this would be imported from Convex
-const api = {
-  users: {
-    getByWallet: 'users:getByWallet' as any,
-    getUsage: 'users:getUsage' as any,
-    upsert: 'users:upsert' as any,
-    updatePreferences: 'users:updatePreferences' as any,
-    updateProfile: 'users:updateProfile' as any,
-    trackUsage: 'users:trackUsage' as any,
-    deactivate: 'users:deactivate' as any,
-  },
-};
 
 // =============================================================================
 // User Queries
@@ -53,10 +43,10 @@ export function useUpsertUser() {
   return useOptimisticMutation(api.users.upsert, {
     rollbackOnError: true,
     onOptimisticSuccess: (user: any) => {
-      console.log('User profile updated successfully', user);
+      log.info('User profile updated successfully', { userId: user?._id });
     },
     onRollbackError: (error: Error) => {
-      console.error('Failed to update user profile', error);
+      log.error('Failed to update user profile', { error: error.message });
     },
   });
 }
@@ -68,10 +58,10 @@ export function useUpdateUserPreferences() {
   return useOptimisticMutation(api.users.updatePreferences, {
     rollbackOnError: true,
     onOptimisticSuccess: (user: any) => {
-      console.log('User preferences updated successfully', user);
+      log.info('User preferences updated successfully', { userId: user?._id });
     },
     onRollbackError: (error: Error) => {
-      console.error('Failed to update user preferences', error);
+      log.error('Failed to update user preferences', { error: error.message });
     },
   });
 }
@@ -83,10 +73,10 @@ export function useUpdateUserProfile() {
   return useOptimisticMutation(api.users.updateProfile, {
     rollbackOnError: true,
     onOptimisticSuccess: (user: any) => {
-      console.log('User profile updated successfully', user);
+      log.info('User profile updated successfully', { userId: user?._id });
     },
     onRollbackError: (error: Error) => {
-      console.error('Failed to update user profile', error);
+      log.error('Failed to update user profile', { error: error.message });
     },
   });
 }

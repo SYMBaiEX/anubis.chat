@@ -5,7 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getStorage } from '@/lib/database/storage';
+import { api, convex } from '@/lib/database/convex';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
 import type { Document, DocumentUpdateResponse } from '@/lib/types/documents';
@@ -66,13 +66,13 @@ export async function GET(
         const { walletAddress } = authReq.user;
         const { id: documentId } = await params;
         // Check if document exists and user can access it
-        const storage = getStorage();
-        if (!(await storage.canAccessDocument(walletAddress, documentId))) {
+        const document = await convex.query(api.documents.getById, {
+          id: documentId as any,
+        });
+        if (!document) {
           return notFoundResponse('Document not found');
         }
-
-        const document = await storage.getDocument(documentId);
-        if (!document) {
+        if (document.ownerId !== walletAddress) {
           return notFoundResponse('Document not found');
         }
 
@@ -113,8 +113,10 @@ export async function PUT(
         const { walletAddress } = authReq.user;
         const { id: documentId } = await params;
         // Check if document exists and user can access it
-        const storage = getStorage();
-        if (!(await storage.canAccessDocument(walletAddress, documentId))) {
+        const existing = await convex.query(api.documents.getById, {
+          id: documentId as any,
+        });
+        if (!existing || existing.ownerId !== walletAddress) {
           return notFoundResponse('Document not found');
         }
 
@@ -148,14 +150,13 @@ export async function PUT(
           updatedAt: Date.now(),
         };
 
-        // Update document using storage layer
-        const updatedDocument = await storage.updateDocument(
-          documentId,
-          updates
-        );
-        if (!updatedDocument) {
-          return notFoundResponse('Document not found');
-        }
+        const patched = await convex.mutation(api.documents.update, {
+          id: documentId as any,
+          ownerId: walletAddress,
+          title: updates.title,
+          content: updates.content,
+          metadata: updates.metadata,
+        });
 
         log.dbOperation('document_updated', {
           documentId,
@@ -168,7 +169,16 @@ export async function PUT(
         });
 
         const responseData: DocumentUpdateResponse = {
-          document: updatedDocument,
+          document: {
+            id: patched._id,
+            title: patched.title,
+            content: patched.content,
+            type: patched.type,
+            ownerId: patched.ownerId,
+            metadata: patched.metadata,
+            createdAt: patched.createdAt,
+            updatedAt: patched.updatedAt,
+          },
           message: 'Document updated successfully',
         };
 
@@ -203,14 +213,17 @@ export async function DELETE(
         const { walletAddress } = authReq.user;
         const { id: documentId } = await params;
         // Check if document exists and user can access it
-        const storage = getStorage();
-        if (!(await storage.canAccessDocument(walletAddress, documentId))) {
+        const existing = await convex.query(api.documents.getById, {
+          id: documentId as any,
+        });
+        if (!existing || existing.ownerId !== walletAddress) {
           return notFoundResponse('Document not found');
         }
 
-        // Remove document using storage layer
-        await storage.deleteDocument(documentId);
-        await storage.removeDocumentFromUser(walletAddress, documentId);
+        await convex.mutation(api.documents.remove, {
+          id: documentId as any,
+          ownerId: walletAddress,
+        });
 
         log.dbOperation('document_deleted', {
           documentId,

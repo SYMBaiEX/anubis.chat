@@ -134,10 +134,7 @@ export function ChatHeader({
             
             <DropdownMenuItem 
               className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
-              onClick={() => {
-                // This would typically be handled by parent component
-                console.log('Delete chat requested for:', chat._id);
-              }}
+              onClick={onClearHistory}
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete Chat

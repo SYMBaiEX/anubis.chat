@@ -12,8 +12,8 @@ import { useWallet } from '@/hooks/useWallet';
 import { useAuthContext } from './auth-provider';
 import { SolanaAgentKit } from 'solana-agent-kit';
 import { useQuery } from 'convex/react';
-import { api } from '@isis-chat/backend/convex/_generated/api';
-import type { Id } from '@isis-chat/backend/convex/_generated/dataModel';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 
 // Agent Types
 export interface Agent {
@@ -129,19 +129,19 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   // Fetch available agents
   const agents = useQuery(
     api.agents.list,
-    isAuthenticated ? { includePublic: true, userId: user?.walletAddress } : 'skip'
+    isAuthenticated && user?.walletAddress ? { includePublic: true, userId: user.walletAddress } : "skip"
   );
 
   // Fetch user's recent transactions
   const recentTransactions = useQuery(
     api.blockchainTransactions.listByUser,
-    isAuthenticated && user ? { userId: user.walletAddress, limit: 10 } : 'skip'
+    isAuthenticated && user?.walletAddress ? { userId: user.walletAddress, limit: 10 } : "skip"
   ) as BlockchainTransaction[] | undefined;
 
   // Fetch pending transactions
   const pendingTransactions = useQuery(
     api.blockchainTransactions.listPending,
-    isAuthenticated && user ? { userId: user.walletAddress } : 'skip'
+    isAuthenticated && user?.walletAddress ? { userId: user.walletAddress } : "skip"
   ) as BlockchainTransaction[] | undefined;
 
   // Initialize Solana Agent Kit when wallet connects

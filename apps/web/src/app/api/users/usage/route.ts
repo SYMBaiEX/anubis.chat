@@ -6,6 +6,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { fetchQuery } from 'convex/nextjs';
+import { api } from '@convex/_generated/api';
 
 // Initialize logger
 const log = createModuleLogger('api/users/usage');
@@ -96,71 +98,21 @@ export async function GET(request: NextRequest) {
 
         const { period, includeModels } = queryValidation.data;
 
-        // TODO: Fetch real usage data from Convex
-        // const usageData = await getUserUsage(walletAddress, period);
-
-        // Generate mock usage data based on period
-        const daysCount = period === '7d' ? 7 : period === '30d' ? 30 : 90;
-        const daily = Array.from({ length: daysCount }, (_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() - (daysCount - 1 - i));
-
-          return {
-            date: date.toISOString().split('T')[0],
-            tokensUsed: Math.floor(Math.random() * 500) + 50,
-            messagesCount: Math.floor(Math.random() * 20) + 5,
-            chatsCreated: Math.floor(Math.random() * 3),
-            documentsUploaded: Math.floor(Math.random() * 2),
-            searchesPerformed: Math.floor(Math.random() * 10) + 2,
-          };
-        });
-
-        const totalTokensUsed = daily.reduce(
-          (sum, day) => sum + day.tokensUsed,
-          0
-        );
-        const totalMessages = daily.reduce(
-          (sum, day) => sum + day.messagesCount,
-          0
-        );
+        const usageData = await fetchQuery(api.users.getUsage, { walletAddress });
 
         const usageStats: UsageStats = {
           current: {
-            tokensUsed: totalTokensUsed,
-            tokensLimit: 10_000,
-            messagesCount: totalMessages,
-            chatsCount: 12,
-            documentsCount: 3,
-            searchesCount: daily.reduce(
-              (sum, day) => sum + day.searchesPerformed,
-              0
-            ),
+            tokensUsed: usageData?.usage.currentMonth.tokens ?? 0,
+            tokensLimit: usageData?.usage.limit ?? 10_000,
+            messagesCount: usageData?.usage.currentMonth.requests ?? 0,
+            chatsCount: 0,
+            documentsCount: 0,
+            searchesCount: 0,
           },
-          daily,
-          models: includeModels
-            ? [
-                {
-                  model: 'gpt-4o',
-                  tokensUsed: Math.floor(totalTokensUsed * 0.6),
-                  messagesCount: Math.floor(totalMessages * 0.6),
-                  avgResponseTime: 1200,
-                },
-                {
-                  model: 'claude-3.5-sonnet',
-                  tokensUsed: Math.floor(totalTokensUsed * 0.3),
-                  messagesCount: Math.floor(totalMessages * 0.3),
-                  avgResponseTime: 950,
-                },
-                {
-                  model: 'deepseek-v3',
-                  tokensUsed: Math.floor(totalTokensUsed * 0.1),
-                  messagesCount: Math.floor(totalMessages * 0.1),
-                  avgResponseTime: 800,
-                },
-              ]
-            : [],
+          daily: [],
+          models: includeModels ? [] : [],
           subscription: {
-            tier: 'free',
+            tier: (usageData?.user ? 'free' : 'free'),
             features: ['basic_chat', 'document_upload', 'search'],
             limits: {
               messagesPerMinute: 30,

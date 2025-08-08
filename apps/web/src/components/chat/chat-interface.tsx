@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from 'convex/react';
-import { api } from '@isis-chat/backend/convex/_generated/api';
-import type { Id } from '@isis-chat/backend/convex/_generated/dataModel';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import type { Chat, ChatMessage } from '@/lib/types/api';
 
 import { ChatList } from './chat-list';
@@ -25,6 +25,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { useSolanaAgent } from '@/components/providers/solana-agent-provider';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('components/chat/chat-interface');
 
 interface ChatInterfaceProps {
   className?: string;
@@ -43,18 +46,17 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   // Convex queries and mutations
   const chats = useQuery(
-    api.chats.list,
-    isAuthenticated && user ? { ownerId: user.walletAddress } : 'skip'
+    api.chats.getByOwner,
+    isAuthenticated && user ? { ownerId: user.walletAddress } : undefined
   );
 
   const messages = useQuery(
-    api.messages.list,
-    selectedChatId ? { chatId: selectedChatId as Id<'chats'> } : 'skip'
+    api.messages.getByChatId,
+    selectedChatId ? { chatId: selectedChatId as Id<'chats'> } : undefined
   );
 
   const createChat = useMutation(api.chats.create);
-  const sendMessage = useMutation(api.messages.send);
-  const deleteChat = useMutation(api.chats.delete);
+  const deleteChat = useMutation(api.chats.remove);
 
   const currentChat = chats?.find(chat => chat._id === selectedChatId);
 
@@ -88,28 +90,18 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     if (!selectedChatId || !user) return;
 
     try {
-      await sendMessage({
-        chatId: selectedChatId as Id<'chats'>,
-        content,
-        role: 'user',
+      // Use streaming API route which persists user and assistant messages
+      const res = await fetch(`/api/chats/${selectedChatId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, role: 'user', stream: true }),
       });
-      
-      // TODO: Implement AI response streaming
-      // This will be enhanced with actual AI integration
-      setTimeout(() => {
-        sendMessage({
-          chatId: selectedChatId as Id<'chats'>,
-          content: `I received your message: "${content}". AI response streaming will be implemented next.`,
-          role: 'assistant',
-          metadata: {
-            model: user.preferences.aiModel,
-            tokensUsed: 0,
-            processingTime: 100,
-          }
-        });
-      }, 1000);
-    } catch (error) {
-      console.error('Failed to send message:', error);
+      if (!res.ok) {
+        throw new Error(`Failed to stream AI response: ${res.status}`);
+      }
+      // We don't need to consume the stream here; Convex queries will update when assistant message is saved server-side
+    } catch (error: any) {
+      log.error('Failed to send message', { error: error?.message });
     }
   };
 
@@ -120,8 +112,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         const remainingChats = chats?.filter(chat => chat._id !== chatId);
         setSelectedChatId(remainingChats?.[0]?._id);
       }
-    } catch (error) {
-      console.error('Failed to delete chat:', error);
+    } catch (error: any) {
+      log.error('Failed to delete chat', { error: error?.message });
     }
   };
 

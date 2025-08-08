@@ -267,8 +267,20 @@ export const togglePin = mutation({
 
 // Get chat statistics for user
 export const getStats = query({
-  args: { ownerId: v.string() },
+  args: { ownerId: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    // Return empty stats if no ownerId provided
+    if (!args.ownerId) {
+      return {
+        totalChats: 0,
+        activeChats: 0,
+        archivedChats: 0,
+        totalMessages: 0,
+        modelUsage: [],
+        recentActivity: [],
+      };
+    }
+
     const chats = await ctx.db
       .query('chats')
       .withIndex('by_owner', (q) => q.eq('ownerId', args.ownerId))

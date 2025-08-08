@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAuthContext } from '@/components/providers/auth-provider';
+import { AuthGuard } from '@/components/auth/auth-guard';
 import { useRouter } from 'next/navigation';
 import { ChatInterface } from '@/components/chat/chat-interface';
 import { Button } from '@/components/ui/button';
@@ -10,19 +11,15 @@ import { Badge } from '@/components/ui/badge';
 
 export default function ChatPage() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuthContext();
+  const { isAuthenticated, isLoading, user } = useAuthContext();
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/auth');
-    }
-  }, [isAuthenticated, router]);
+  // No imperative redirect here; handled by AuthGuard with `next` support
 
-  if (!isAuthenticated || !user) {
-    return null; // Will redirect in useEffect
-  }
+  if (isLoading) return null;
+  if (!isAuthenticated || !user) return null;
 
   return (
+    <AuthGuard>
     <div className="min-h-screen bg-background">
       {/* Background Gradient */}
       <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-background pointer-events-none" />
@@ -79,5 +76,6 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 }

@@ -4,63 +4,28 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import {
-  Home,
-  MessageSquare,
-  LayoutDashboard,
-  Settings,
-  Users,
-  FileText,
-  BarChart3,
-  Shield,
-  Wallet,
-  ChevronLeft,
-  ChevronRight,
-  Menu,
-  X,
-  Sparkles,
-  Bot,
-  History,
-  BookOpen,
-  Zap,
-  Moon,
-  Sun,
-} from 'lucide-react';
+import { useSidebar } from '@/contexts/SidebarContext';
+import { ChevronLeft, ChevronRight, Menu, X, Sparkles, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/lib/auth/hooks';
+import { useAuthContext } from '@/components/providers/auth-provider';
+import { getSidebarNav } from '@/constants/navigation';
+import type { NavItem } from '@/constants/navigation';
 
-interface SidebarItem {
-  name: string;
-  href: string;
-  icon: React.ElementType;
-  badge?: string;
-  requiresAuth?: boolean;
-}
+import { Settings, Shield, Wallet } from 'lucide-react';
 
-const sidebarItems: SidebarItem[] = [
-  { name: 'Home', href: '/', icon: Home },
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, requiresAuth: true },
-  { name: 'Chat', href: '/chat', icon: MessageSquare, badge: 'AI', requiresAuth: true },
-  { name: 'Agents', href: '/agents', icon: Bot, requiresAuth: true },
-  { name: 'History', href: '/history', icon: History, requiresAuth: true },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3, requiresAuth: true },
-  { name: 'Documents', href: '/documents', icon: FileText, requiresAuth: true },
-  { name: 'Team', href: '/team', icon: Users, requiresAuth: true },
-];
-
-const bottomItems: SidebarItem[] = [
-  { name: 'Settings', href: '/settings', icon: Settings, requiresAuth: true },
-  { name: 'Security', href: '/security', icon: Shield, requiresAuth: true },
-  { name: 'Wallet', href: '/wallet', icon: Wallet, requiresAuth: true },
+import type { ReactElement } from 'react';
+const bottomItems: Array<{ label: string; href: string; requiresAuth?: boolean; icon: ReactElement }>= [
+  { label: 'Settings', href: '/settings', requiresAuth: true, icon: <Settings className="h-5 w-5 flex-shrink-0" /> },
+  { label: 'Security', href: '/security', requiresAuth: true, icon: <Shield className="h-5 w-5 flex-shrink-0" /> },
+  { label: 'Wallet', href: '/wallet', requiresAuth: true, icon: <Wallet className="h-5 w-5 flex-shrink-0" /> },
 ];
 
 export default function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, toggleCollapsed } = useSidebar();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthContext();
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -78,9 +43,8 @@ export default function Sidebar() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
-  const filteredItems = sidebarItems.filter(
-    item => !item.requiresAuth || isAuthenticated
-  );
+  const isDev = process.env.NODE_ENV === 'development';
+  const filteredItems = getSidebarNav(isAuthenticated, isDev);
 
   const filteredBottomItems = bottomItems.filter(
     item => !item.requiresAuth || isAuthenticated
@@ -112,12 +76,13 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 h-full bg-sidebar-background border-r border-sidebar-border transition-all duration-300 z-40',
+          'fixed left-0 top-0 h-full bg-sidebar-background border-r border-sidebar-border transition-all duration-300 z-40 overflow-hidden',
           isCollapsed ? 'w-16' : 'w-64',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         <div className="flex h-full flex-col">
+          <div className="absolute inset-0 aurora aurora-gold" aria-hidden="true" />
           {/* Logo */}
           <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
             <Link
@@ -138,7 +103,7 @@ export default function Sidebar() {
             
             {/* Collapse Button - Desktop Only */}
             <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
+              onClick={toggleCollapsed}
               className="hidden lg:block p-1 rounded hover:bg-sidebar-accent transition-colors"
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
@@ -153,8 +118,7 @@ export default function Sidebar() {
           {/* Navigation Items */}
           <nav className="flex-1 overflow-y-auto py-4">
             <ul className="space-y-1 px-2">
-              {filteredItems.map((item) => {
-                const Icon = item.icon;
+               {filteredItems.map((item: NavItem) => {
                 const isActive = pathname === item.href;
                 
                 return (
@@ -169,13 +133,13 @@ export default function Sidebar() {
                         isCollapsed && 'justify-center'
                       )}
                     >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      {item.icon && <item.icon className="h-5 w-5 flex-shrink-0" />}
                       {!isCollapsed && (
                         <>
-                          <span className="flex-1">{item.name}</span>
-                          {item.badge && (
+                          <span className="flex-1">{item.label}</span>
+                          {item.devOnly && (
                             <span className="px-2 py-0.5 text-xs rounded-full bg-isis-accent text-white">
-                              {item.badge}
+                              DEV
                             </span>
                           )}
                         </>
@@ -212,7 +176,6 @@ export default function Sidebar() {
 
             {/* Bottom Navigation Items */}
             {filteredBottomItems.map((item) => {
-              const Icon = item.icon;
               const isActive = pathname === item.href;
               
               return (
@@ -227,8 +190,8 @@ export default function Sidebar() {
                     isCollapsed && 'justify-center'
                   )}
                 >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
-                  {!isCollapsed && <span>{item.name}</span>}
+                  {item.icon}
+                  {!isCollapsed && <span>{item.label}</span>}
                 </Link>
               );
             })}

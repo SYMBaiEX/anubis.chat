@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { useWallet } from '@/hooks/useWallet';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar } from '@/components/ui/avatar';
+import { useQuery } from 'convex/react';
+import { api } from '@convex/_generated/api';
 import { 
   MessageSquare, 
   Wallet, 
@@ -37,6 +39,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
+import IsisAurora from '@/components/IsisAurora';
+import { AuthGuard } from '@/components/auth/auth-guard';
 
 interface DashboardStats {
   totalChats: number;
@@ -66,92 +70,76 @@ interface Agent {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuthContext();
+  const { isAuthenticated, isLoading, user } = useAuthContext();
   const { publicKey, balance, formatAddress } = useWallet();
-  const [loading, setLoading] = useState(true);
   const [selectedTimeRange, setSelectedTimeRange] = useState('7d');
-  const [stats, setStats] = useState<DashboardStats>({
-    totalChats: 0,
-    messagesThisMonth: 0,
-    tokensUsed: 0,
-    activeAgents: 0,
-    walletBalance: balance || 0,
-    transactions: 0
-  });
-  const [recentChats, setRecentChats] = useState<RecentChat[]>([]);
-  const [agents, setAgents] = useState<Agent[]>([]);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/auth');
-      return;
-    }
-    
-    // Simulate loading data
-    setTimeout(() => {
-      setStats({
-        totalChats: 24,
-        messagesThisMonth: 156,
-        tokensUsed: 45230,
-        activeAgents: 3,
-        walletBalance: balance || 2.456,
-        transactions: 8
-      });
-      
-      setRecentChats([
-        {
-          id: '1',
-          title: 'DeFi Strategy Discussion',
-          lastMessage: 'Analyzed yield farming opportunities on Raydium...',
-          timestamp: '2 hours ago',
-          model: 'Claude 3.5'
-        },
-        {
-          id: '2',
-          title: 'NFT Market Analysis',
-          lastMessage: 'The floor price for DeGods has increased by 15%...',
-          timestamp: '5 hours ago',
-          model: 'GPT-4o'
-        },
-        {
-          id: '3',
-          title: 'Smart Contract Audit',
-          lastMessage: 'Found 2 medium severity issues in the token contract...',
-          timestamp: '1 day ago',
-          model: 'DeepSeek v3'
-        }
-      ]);
-      
-      setAgents([
-        {
-          id: '1',
-          name: 'Trading Bot Alpha',
-          type: 'trading',
-          status: 'active',
-          lastActive: '5 min ago',
-          tasksCompleted: 142
-        },
-        {
-          id: '2',
-          name: 'Portfolio Manager',
-          type: 'portfolio',
-          status: 'idle',
-          lastActive: '1 hour ago',
-          tasksCompleted: 89
-        },
-        {
-          id: '3',
-          name: 'DeFi Assistant',
-          type: 'defi',
-          status: 'active',
-          lastActive: 'Just now',
-          tasksCompleted: 256
-        }
-      ]);
-      
-      setLoading(false);
-    }, 1000);
-  }, [isAuthenticated, router, balance]);
+  // Convex data
+  const chatStats = useQuery(
+    api.chats.getStats,
+    isAuthenticated && user ? { ownerId: user.walletAddress } : { ownerId: undefined }
+  );
+  const userUsage = useQuery(
+    api.users.getUsage,
+    isAuthenticated && user ? { walletAddress: user.walletAddress } : undefined
+  );
+  const recentMessages = useQuery(
+    api.messages.getRecent,
+    isAuthenticated && user ? { userId: user.walletAddress, limit: 10 } : undefined
+  );
+  const agentsList = useQuery(
+    api.agents.getByOwner,
+    isAuthenticated && user ? { walletAddress: user.walletAddress, limit: 10 } : undefined
+  );
+  const txStats = useQuery(
+    api.blockchainTransactions.getStats,
+    isAuthenticated && user ? { userId: user.walletAddress } : undefined
+  );
+
+  const isDataLoading =
+    chatStats === undefined ||
+    userUsage === undefined ||
+    agentsList === undefined ||
+    txStats === undefined ||
+    recentMessages === undefined;
+
+  const stats: DashboardStats = useMemo(
+    () => ({
+      totalChats: chatStats?.totalChats ?? 0,
+      messagesThisMonth: userUsage?.usage.currentMonth.requests ?? 0,
+      tokensUsed: userUsage?.usage.currentMonth.tokens ?? 0,
+      activeAgents: (agentsList?.filter((a: any) => a.isActive).length ?? 0),
+      walletBalance: balance || 0,
+      transactions: txStats?.total ?? 0,
+    }),
+    [chatStats, userUsage, agentsList, txStats, balance]
+  );
+
+  const recentChats: RecentChat[] = useMemo(
+    () =>
+      (recentMessages || []).map((m: any) => ({
+        id: String(m.chatId),
+        title: m.chatTitle || 'Chat',
+        lastMessage: m.content,
+        timestamp: new Date(m.createdAt).toLocaleString(),
+        model: m.chatModel || 'unknown',
+      })),
+    [recentMessages]
+  );
+
+  const agents: Agent[] = useMemo(() => {
+    if (!agentsList) return [];
+    return agentsList.map((a: any) => ({
+      id: String(a._id),
+      name: a.name,
+      type: a.type,
+      status: a.isActive ? 'active' : 'idle',
+      lastActive: '—',
+      tasksCompleted: 0,
+    }));
+  }, [agentsList]);
+
+  // Route protection handled by AuthGuard
 
   const quickActions = [
     {
@@ -229,7 +217,7 @@ export default function DashboardPage() {
     }
   ];
 
-  if (loading) {
+  if (isLoading || isDataLoading) {
     return (
       <div className="container max-w-7xl mx-auto px-4 py-8">
         <div className="grid gap-6">
@@ -246,18 +234,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <AuthGuard>
+    <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-background pointer-events-none" />
+      <IsisAurora />
       
       <div className="relative container max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Dashboard
-              </h1>
+              <h1 className="text-4xl font-bold"><span className="egypt-text">Dashboard</span></h1>
               <p className="text-muted-foreground mt-2 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-isis-primary" />
                 Welcome back, {formatAddress(8)}
@@ -274,6 +262,9 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Divider */}
+        <div className="wing-divider mb-6" />
 
         {/* Quick Actions */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -665,5 +656,6 @@ export default function DashboardPage() {
         </Tabs>
       </div>
     </div>
+    </AuthGuard>
   );
 }

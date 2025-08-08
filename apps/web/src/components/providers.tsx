@@ -7,6 +7,7 @@ import { SolanaAgentProvider } from './providers/solana-agent-provider';
 import { ThemeProvider } from './theme-provider';
 import { Toaster } from './ui/sonner';
 import { WalletProvider } from './wallet/wallet-provider';
+import { SidebarProvider } from '@/contexts/SidebarContext';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('providers');
@@ -36,16 +37,18 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         disableTransitionOnChange
         enableSystem
       >
-        <ConvexProvider client={convex}>
-          <WalletProvider>
-            <AuthProvider>
-              <SolanaAgentProvider>
-                {children}
-              </SolanaAgentProvider>
-            </AuthProvider>
-          </WalletProvider>
-        </ConvexProvider>
-        <Toaster richColors />
+        <SidebarProvider>
+          <ConvexProvider client={convex}>
+            <WalletProvider>
+              <AuthProvider>
+                <SolanaAgentProvider>
+                  {children}
+                </SolanaAgentProvider>
+              </AuthProvider>
+            </WalletProvider>
+          </ConvexProvider>
+          <Toaster richColors />
+        </SidebarProvider>
       </ThemeProvider>
     </ConvexErrorBoundary>
   );

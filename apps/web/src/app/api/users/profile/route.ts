@@ -20,6 +20,8 @@ import {
   validationErrorResponse,
 } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import { api } from '@convex/_generated/api';
 
 const log = createModuleLogger('user-profile-api');
 
@@ -51,35 +53,58 @@ export async function GET(request: NextRequest) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress, publicKey } = authReq.user;
+        const user = await fetchQuery(api.users.getByWallet, { walletAddress });
+        let userProfile: UserProfile;
 
-        // TODO: Fetch user profile from Convex
-        // const userProfile = await getUserProfile(walletAddress);
-
-        // Mock response for now
-        const userProfile: UserProfile = {
-          walletAddress,
-          publicKey,
-          displayName: undefined,
-          avatar: undefined,
-          preferences: {
-            theme: Theme.DARK,
-            aiModel: 'gpt-4o',
-            notifications: true,
-            language: Language.EN,
-          },
-          subscription: {
-            tier: SubscriptionTier.FREE,
-            tokensUsed: 150,
-            tokensLimit: 10_000,
-            features: [
-              SubscriptionFeature.BASIC_CHAT,
-              SubscriptionFeature.DOCUMENT_UPLOAD,
-            ],
-          },
-          createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000, // 30 days ago
-          lastActiveAt: Date.now() - 5 * 60 * 1000, // 5 minutes ago
-          isActive: true,
-        };
+        if (user) {
+          userProfile = {
+            walletAddress: user.walletAddress,
+            publicKey: user.publicKey,
+            displayName: user.displayName,
+            avatar: user.avatar,
+            preferences: {
+              theme: user.preferences?.theme === 'light' ? Theme.LIGHT : Theme.DARK,
+              aiModel: user.preferences?.aiModel || 'gpt-4o',
+              notifications: user.preferences?.notifications ?? true,
+              language: (user.preferences?.language as any) || Language.EN,
+              temperature: user.preferences?.temperature,
+              maxTokens: user.preferences?.maxTokens,
+            },
+            subscription: {
+              tier: (user.subscription?.tier?.toLowerCase() as any) || SubscriptionTier.FREE,
+              tokensUsed: user.subscription?.tokensUsed ?? 0,
+              tokensLimit: user.subscription?.tokensLimit ?? 10000,
+              features: (user.subscription?.features as any[]) || [
+                SubscriptionFeature.BASIC_CHAT,
+              ],
+            },
+            createdAt: user.createdAt,
+            lastActiveAt: user.lastActiveAt,
+            isActive: user.isActive,
+          };
+        } else {
+          userProfile = {
+            walletAddress,
+            publicKey,
+            displayName: undefined,
+            avatar: undefined,
+            preferences: {
+              theme: Theme.DARK,
+              aiModel: 'gpt-4o',
+              notifications: true,
+              language: Language.EN,
+            },
+            subscription: {
+              tier: SubscriptionTier.FREE,
+              tokensUsed: 0,
+              tokensLimit: 10_000,
+              features: [SubscriptionFeature.BASIC_CHAT],
+            },
+            createdAt: Date.now(),
+            lastActiveAt: Date.now(),
+            isActive: true,
+          };
+        }
 
         const response = successResponse(userProfile);
         return addSecurityHeaders(response);
@@ -133,35 +158,58 @@ export async function PUT(request: NextRequest) {
 
         const updates = validation.data;
 
-        // TODO: Update user profile in Convex
-        // const updatedProfile = await updateUserProfile(walletAddress, updates);
+        // Update preferences/profile via Convex mutations
+        let updatedUser = null as any;
+        if (updates.displayName !== undefined || updates.avatar !== undefined) {
+          updatedUser = await fetchMutation(api.users.updateProfile, {
+            walletAddress,
+            displayName: updates.displayName,
+            avatar: updates.avatar,
+          });
+        }
 
-        // Mock updated profile
+        if (updates.preferences) {
+          updatedUser = await fetchMutation(api.users.updatePreferences, {
+            walletAddress,
+            preferences: {
+              theme: updates.preferences.theme === Theme.LIGHT ? 'light' : 'dark',
+              aiModel: updates.preferences.aiModel || 'gpt-4o',
+              notifications: updates.preferences.notifications ?? true,
+              language: updates.preferences.language as any,
+              temperature: updates.preferences.temperature,
+              maxTokens: updates.preferences.maxTokens,
+              streamResponses: undefined,
+              saveHistory: undefined,
+              compactMode: undefined,
+            },
+          });
+        }
+
+        const user = updatedUser || (await fetchQuery(api.users.getByWallet, { walletAddress }));
         const updatedProfile: UserProfile = {
-          walletAddress: authReq.user.walletAddress,
-          publicKey: authReq.user.publicKey,
-          displayName: updates.displayName,
-          avatar: updates.avatar,
+          walletAddress: user.walletAddress,
+          publicKey: user.publicKey,
+          displayName: user.displayName,
+          avatar: user.avatar,
           preferences: {
-            theme: updates.preferences?.theme || Theme.DARK,
-            aiModel: updates.preferences?.aiModel || 'gpt-4o',
-            notifications: updates.preferences?.notifications ?? true,
-            language: updates.preferences?.language || Language.EN,
-            temperature: updates.preferences?.temperature,
-            maxTokens: updates.preferences?.maxTokens,
+            theme: user.preferences?.theme === 'light' ? Theme.LIGHT : Theme.DARK,
+            aiModel: user.preferences?.aiModel || 'gpt-4o',
+            notifications: user.preferences?.notifications ?? true,
+            language: (user.preferences?.language as any) || Language.EN,
+            temperature: user.preferences?.temperature,
+            maxTokens: user.preferences?.maxTokens,
           },
           subscription: {
-            tier: SubscriptionTier.FREE,
-            tokensUsed: 150,
-            tokensLimit: 10_000,
-            features: [
+            tier: (user.subscription?.tier?.toLowerCase() as any) || SubscriptionTier.FREE,
+            tokensUsed: user.subscription?.tokensUsed ?? 0,
+            tokensLimit: user.subscription?.tokensLimit ?? 10000,
+            features: (user.subscription?.features as any[]) || [
               SubscriptionFeature.BASIC_CHAT,
-              SubscriptionFeature.DOCUMENT_UPLOAD,
             ],
           },
-          createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
-          lastActiveAt: Date.now(),
-          isActive: true,
+          createdAt: user.createdAt,
+          lastActiveAt: user.lastActiveAt,
+          isActive: user.isActive,
         };
 
         log.info('Profile updated for user', { walletAddress });

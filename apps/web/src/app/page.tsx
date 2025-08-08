@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth/hooks';
+import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -29,6 +29,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import IsisAurora from '@/components/IsisAurora';
 
 const features = [
   {
@@ -161,7 +162,7 @@ const testimonials = [
 
 export default function LandingPage() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user } = useAuthContext();
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -175,11 +176,12 @@ export default function LandingPage() {
         {/* Hero Section */}
         <section className="relative overflow-hidden py-20 lg:py-32">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-background" />
-          <div className="absolute inset-0 bg-center" style={{ backgroundImage: "url('/grid.svg')", maskImage: 'radial-gradient(white, transparent 70%)' }} />
+          <div className="absolute inset-0 golden-grid" />
+          <IsisAurora />
         
         <div className="container relative mx-auto px-4">
           <div className="mx-auto max-w-5xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium glass glass-border">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-primary">Ancient Wisdom • Modern Technology</span>
             </div>
@@ -187,7 +189,7 @@ export default function LandingPage() {
             <h1 className="mb-6 text-5xl font-bold tracking-tight lg:text-7xl">
               <span className="text-gradient">ISIS CHAT</span>
               <br />
-              <span className="text-foreground">Where AI Meets Blockchain</span>
+              <span className="egypt-text">Where AI Meets Blockchain</span>
             </h1>
             
             <p className="mb-8 text-xl text-muted-foreground lg:text-2xl">
@@ -198,13 +200,13 @@ export default function LandingPage() {
             
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
               <Link href="/auth">
-                <Button size="lg" className="button-press gap-2 min-w-[200px]">
+                <Button size="lg" className="button-press gap-2 min-w-[200px] glow-primary">
                   Get Started Free
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link href="#features">
-                <Button size="lg" variant="outline" className="button-press min-w-[200px]">
+                <Button size="lg" variant="outline" className="button-press min-w-[200px] glow-accent">
                   Learn More
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -235,11 +237,12 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 lg:py-32 bg-muted/30">
+      <section id="features" className="py-20 lg:py-32 bg-muted/30 relative overflow-hidden">
+        <IsisAurora variant="primary" />
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="mb-4 text-3xl font-bold lg:text-5xl">
-              Powerful Features
+              <span className="egypt-text">Powerful Features</span>
             </h2>
             <p className="mb-12 text-lg text-muted-foreground">
               Everything you need for intelligent AI-powered blockchain interactions
@@ -252,13 +255,13 @@ export default function LandingPage() {
               return (
                 <Card
                   key={index}
-                  className="card-hover group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur"
+                  className="card-hover group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur papyrus-surface"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity group-hover:opacity-10"
+                  <div 
+                    className={cn("absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity group-hover:opacity-10", feature.gradient)}
                     style={{
                       backgroundImage: `linear-gradient(to bottom right, var(--tw-gradient-stops))`,
                     }}
-                    className={cn(feature.gradient)}
                   />
                   <div className="relative p-6">
                     <div
@@ -314,11 +317,12 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 lg:py-32 bg-muted/30">
+      <section id="pricing" className="py-20 lg:py-32 bg-muted/30 relative overflow-hidden">
+        <IsisAurora variant="gold" />
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="mb-4 text-3xl font-bold lg:text-5xl">
-              Simple, Transparent Pricing
+              <span className="egypt-text">Simple, Transparent Pricing</span>
             </h2>
             <p className="mb-12 text-lg text-muted-foreground">
               Choose the plan that fits your needs. Upgrade or downgrade anytime.
@@ -330,8 +334,8 @@ export default function LandingPage() {
               <Card
                 key={index}
                 className={cn(
-                  \'relative overflow-hidden\',
-                  tier.highlighted && \'border-primary shadow-lg shadow-primary/20 scale-105\'
+                  'relative overflow-hidden',
+                  tier.highlighted && 'border-primary shadow-lg shadow-primary/20 scale-105'
                 )}
               >
                 {tier.highlighted && (
@@ -342,7 +346,7 @@ export default function LandingPage() {
                 <div className="p-6">
                   <h3 className="mb-2 text-2xl font-bold">{tier.name}</h3>
                   <div className="mb-2 flex items-baseline">
-                    {tier.price === \'Custom\' ? (
+                    {tier.price === 'Custom' ? (
                       <span className="text-3xl font-bold">{tier.price}</span>
                     ) : (
                       <>
@@ -365,10 +369,10 @@ export default function LandingPage() {
                   <Link href="/auth">
                     <Button
                       className={cn(
-                        \'w-full button-press\',
-                        tier.highlighted ? \'\' : \'\'
+                        'w-full button-press',
+                        tier.highlighted ? '' : ''
                       )}
-                      variant={tier.highlighted ? \'default\' : \'outline\'}
+                      variant={tier.highlighted ? 'default' : 'outline'}
                     >
                       {tier.cta}
                     </Button>

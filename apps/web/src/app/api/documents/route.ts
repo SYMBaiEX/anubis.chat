@@ -3,10 +3,8 @@
  * Handles document upload, storage, and retrieval for RAG system
  */
 
-import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getStorage } from '@/lib/database/storage';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
 import type {
@@ -20,6 +18,7 @@ import {
   validationErrorResponse,
 } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { api, convex } from '@/lib/database/convex';
 
 // =============================================================================
 // Logger
@@ -101,17 +100,36 @@ export async function GET(request: NextRequest) {
         const category = searchParams.get('category') || undefined;
         const search = searchParams.get('search') || undefined;
 
-        // Get user's documents using storage layer
-        const storage = getStorage();
-        const { documents: paginatedDocs, total } =
-          await storage.getUserDocuments(walletAddress, {
+        // Fetch documents from Convex
+        const { documents: docs, pagination } = await convex.query(
+          api.documents.getByOwner,
+          {
+            ownerId: walletAddress,
             page,
             limit,
-            category,
-            search,
-          });
+            category: category || undefined,
+          }
+        );
 
-        const totalPages = Math.ceil(total / limit);
+        // Basic search filter (Convex search endpoint is separate)
+        const filtered = search
+          ? (docs || []).filter(
+              (d) =>
+                d.title.toLowerCase().includes(search.toLowerCase()) ||
+                d.content.toLowerCase().includes(search.toLowerCase())
+            )
+          : docs || [];
+
+        const paginatedDocs: Document[] = filtered.map((d: any) => ({
+          id: d._id,
+          title: d.title,
+          content: d.content,
+          type: d.type,
+          ownerId: d.ownerId,
+          metadata: d.metadata,
+          createdAt: d.createdAt,
+          updatedAt: d.updatedAt,
+        }));
 
         log.apiRequest('GET /api/documents', {
           walletAddress,
@@ -126,12 +144,12 @@ export async function GET(request: NextRequest) {
         const responseData: DocumentListResponse = {
           documents: paginatedDocs,
           pagination: {
-            page,
-            limit,
-            total,
-            totalPages,
-            hasNext: page < totalPages,
-            hasPrev: page > 1,
+            page: pagination.page,
+            limit: pagination.limit,
+            total: pagination.total,
+            totalPages: pagination.totalPages,
+            hasNext: pagination.hasNext,
+            hasPrev: pagination.hasPrev,
           },
           filters: {
             category,
@@ -178,45 +196,37 @@ export async function POST(request: NextRequest) {
         }
 
         const { title, content, type, metadata } = validation.data;
-        const documentId = nanoid(16);
-        const now = Date.now();
 
-        // Create document
-        const document: Document = {
-          id: documentId,
+        // Create document in Convex
+        const created = await convex.mutation(api.documents.create, {
           title,
           content,
           type,
           ownerId: walletAddress,
-          metadata: {
-            ...metadata,
-            wordCount: content
-              .trim()
-              .split(/\s+/)
-              .filter((word) => word.length > 0).length,
-            characterCount: content.length,
-          },
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        // Store document using storage layer
-        const storage = getStorage();
-        await storage.createDocument(document);
-        await storage.addDocumentToUser(walletAddress, documentId);
+          metadata,
+        });
 
         log.dbOperation('document_created', {
-          documentId,
+          documentId: created._id,
           walletAddress,
           title,
           type,
           contentLength: content.length,
-          wordCount: document.metadata?.wordCount,
+          wordCount: created.metadata?.wordCount,
           hasMetadata: !!metadata,
         });
 
         const responseData: DocumentUploadResponse = {
-          document,
+          document: {
+            id: created._id,
+            title: created.title,
+            content: created.content,
+            type: created.type,
+            ownerId: created.ownerId,
+            metadata: created.metadata,
+            createdAt: created.createdAt,
+            updatedAt: created.updatedAt,
+          },
           message: 'Document uploaded successfully',
         };
 

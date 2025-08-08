@@ -3,21 +3,7 @@
  */
 
 import { useCallback } from 'react';
-// Note: In a real implementation, these would be imported from the generated Convex API
-// import { api } from '../../../packages/backend/convex/_generated/api';
-// For now, we'll mock the API structure
-const api = {
-  auth: {
-    isTokenBlacklisted: 'auth:isTokenBlacklisted' as any,
-    getUserBlacklistedTokens: 'auth:getUserBlacklistedTokens' as any,
-    getAuthStats: 'auth:getAuthStats' as any,
-    blacklistToken: 'auth:blacklistToken' as any,
-    storeNonce: 'auth:storeNonce' as any,
-    validateAndRemoveNonce: 'auth:validateAndRemoveNonce' as any,
-    cleanupExpiredTokens: 'auth:cleanupExpiredTokens' as any,
-    cleanupExpiredNonces: 'auth:cleanupExpiredNonces' as any,
-  },
-};
+import { api } from '@convex/_generated/api';
 import type { Result } from '@/lib/utils/result';
 import { failure, success } from '@/lib/utils/result';
 import { useConvexMutation, useConvexQuery } from './useConvexResult';

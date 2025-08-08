@@ -2,27 +2,22 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from "next/navigation";
-import { useAuthContext } from '@/components/providers/auth-provider';
 import { ModeToggle } from './mode-toggle';
+import { getHeaderNav } from '@/constants/navigation';
+import { useAuthContext } from '@/components/providers/auth-provider';
 import { WalletConnectButton } from './wallet/wallet-connect-button';
-import { Button } from './ui/button';
-import { MessageSquare, LayoutDashboard, Home } from 'lucide-react';
+
 
 export default function Header() {
   const pathname = usePathname();
   const { isAuthenticated } = useAuthContext();
+  const isDev = process.env.NODE_ENV === 'development';
+  const navItems = getHeaderNav(isAuthenticated, isDev);
   
-  // Define navigation links based on authentication status
-  const links = isAuthenticated ? [
-    { to: '/', label: 'Home', icon: <Home className="h-4 w-4" /> },
-    { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
-    { to: '/chat', label: 'Chat', icon: <MessageSquare className="h-4 w-4" /> }
-  ] : [
-    { to: '/', label: 'Home', icon: <Home className="h-4 w-4" /> }
-  ];
 
   return (
-    <div className="bg-card/80 backdrop-blur-sm border-b border-border/50 transition-all duration-300">
+    <div className="relative bg-card/80 backdrop-blur-sm border-b border-border/50 transition-all duration-300 overflow-hidden">
+      <div className="absolute inset-0 aurora aurora-primary" aria-hidden="true" />
       <div className="flex flex-row items-center justify-between px-4 py-3">
         <nav className="flex items-center gap-6">
           <Link className="flex items-center gap-2" href="/">
@@ -33,24 +28,24 @@ export default function Header() {
               src="/favicon.png"
               width={36}
             />
-            <h1 className="font-light text-xl tracking-wider">ISIS</h1>
+            <h1 className="font-light text-xl tracking-wider egypt-text">ISIS</h1>
           </Link>
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-4">
-            {links.map(({ to, label, icon }) => {
-              const isActive = pathname === to;
+            {navItems.map(({ href, label, icon: Icon }) => {
+              const isActive = pathname === href;
               return (
-                <Link 
-                  key={to} 
-                  href={to}
+                <Link
+                  key={href}
+                  href={href}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-all duration-300 hover:bg-primary/10 ${
-                    isActive 
-                      ? 'text-primary bg-primary/10' 
+                    isActive
+                      ? 'text-primary bg-primary/10'
                       : 'text-foreground/70 hover:text-foreground'
                   }`}
                 >
-                  {icon}
+                  {Icon && <Icon className="h-4 w-4" />}
                   <span>{label}</span>
                 </Link>
               );
@@ -59,19 +54,19 @@ export default function Header() {
           
           {/* Mobile Navigation */}
           <div className="flex md:hidden items-center gap-2">
-            {links.map(({ to, icon }) => {
-              const isActive = pathname === to;
+            {navItems.map(({ href, icon: Icon }) => {
+              const isActive = pathname === href;
               return (
                 <Link 
-                  key={to} 
-                  href={to}
+                  key={href}
+                  href={href}
                   className={`p-2 rounded-md transition-all duration-300 hover:bg-primary/10 ${
                     isActive 
                       ? 'text-primary bg-primary/10' 
                       : 'text-foreground/70 hover:text-foreground'
                   }`}
                 >
-                  {icon}
+                  {Icon && <Icon className="h-5 w-5" />}
                 </Link>
               );
             })}

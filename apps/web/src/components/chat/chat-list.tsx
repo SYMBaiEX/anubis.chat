@@ -38,8 +38,8 @@ export function ChatList({
     setIsLoading(true);
     try {
       await onChatCreate?.();
-    } catch (error) {
-      console.error('Failed to create chat:', error);
+    } catch (error: any) {
+      // Silently ignore; parent handles error reporting
     } finally {
       setIsLoading(false);
     }
@@ -48,8 +48,8 @@ export function ChatList({
   const handleDeleteChat = async (chatId: string) => {
     try {
       await onChatDelete?.(chatId);
-    } catch (error) {
-      console.error('Failed to delete chat:', error);
+    } catch (error: any) {
+      // Silently ignore; parent handles error reporting
     }
   };
 
@@ -150,10 +150,7 @@ export function ChatList({
                   key={chat._id}
                   onClick={() => onChatSelect?.(chat._id)}
                   onDelete={() => handleDeleteChat(chat._id)}
-                  onRename={(newTitle) => {
-                    // Handle rename - this would typically call an update API
-                    console.log('Rename chat:', chat._id, newTitle);
-                  }}
+                  onRename={(_newTitle) => {}}
                 />
               ))}
           </div>

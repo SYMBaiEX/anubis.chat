@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { useWallet } from '@/hooks/useWallet';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { RosettaHieroglyphs } from '@/components/effects/rosetta-hieroglyphs';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/data/empty-states';
@@ -28,6 +28,7 @@ import Link from 'next/link';
 
 export default function AuthPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     isConnected,
     publicKey,
@@ -47,9 +48,11 @@ export default function AuthPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      router.push('/dashboard');
+      const next = searchParams?.get('next');
+      const dest = next && next.startsWith('/') ? next : '/dashboard';
+      router.push(dest);
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, router, searchParams]);
 
   // Auto-sign in if wallet is connected but not authenticated
   useEffect(() => {

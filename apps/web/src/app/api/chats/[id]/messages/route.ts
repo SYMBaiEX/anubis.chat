@@ -5,7 +5,6 @@
 
 import { openai } from '@ai-sdk/openai';
 import { convertToModelMessages, streamText } from 'ai';
-import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
@@ -21,6 +20,8 @@ import {
   validationErrorResponse,
 } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import { api } from '@convex/_generated/api';
 
 // =============================================================================
 // Logger
@@ -53,19 +54,15 @@ const listMessagesSchema = z.object({
 // =============================================================================
 
 async function getChatById(chatId: string, walletAddress: string) {
-  // TODO: Implement Convex query to get chat
-  // return await getChat(chatId, walletAddress);
-
-  // Mock implementation
-  if (chatId.length < 10) return null;
-
+  const chat = await fetchQuery(api.chats.getById, { id: chatId as any });
+  if (!chat || chat.ownerId !== walletAddress) return null;
   return {
-    _id: chatId,
-    walletAddress,
-    model: 'gpt-4o',
-    systemPrompt: 'You are a helpful AI assistant.',
-    temperature: 0.7,
-    maxTokens: 2000,
+    _id: chat._id,
+    walletAddress: chat.ownerId,
+    model: chat.model,
+    systemPrompt: chat.systemPrompt,
+    temperature: chat.temperature ?? 0.7,
+    maxTokens: chat.maxTokens ?? 2000,
   };
 }
 
@@ -74,43 +71,24 @@ async function getChatMessages(
   walletAddress: string,
   options: { cursor?: string; limit: number }
 ) {
-  // TODO: Implement Convex query to get messages
-  // return await getMessages(chatId, walletAddress, options);
-
-  // Mock implementation
-  const mockMessages: ChatMessage[] = Array.from(
-    { length: Math.min(options.limit, 10) },
-    (_, i) => ({
-      _id: nanoid(12),
-      chatId,
-      walletAddress,
-      role: i % 2 === 0 ? MessageRole.USER : MessageRole.ASSISTANT,
-      content:
-        i % 2 === 0 ? 'User message content' : 'Assistant response content',
-      tokenCount: Math.floor(Math.random() * 100) + 20,
-      metadata:
-        i % 2 === 1
-          ? {
-              model: 'gpt-4o',
-              finishReason: 'stop',
-              usage: {
-                inputTokens: 50,
-                outputTokens: 75,
-                totalTokens: 125,
-              },
-            }
-          : undefined,
-      createdAt: Date.now() - i * 30 * 1000, // 30 seconds apart
-    })
-  );
-
+  const messages = await fetchQuery(api.messages.getByChatId, {
+    chatId: chatId as any,
+    limit: options.limit,
+  });
+  const normalized: ChatMessage[] = (messages || []).map((m: any) => ({
+    _id: m._id,
+    chatId,
+    walletAddress: m.walletAddress,
+    role: m.role,
+    content: m.content,
+    tokenCount: m.tokenCount ?? 0,
+    metadata: m.metadata,
+    createdAt: m.createdAt,
+  }));
   return {
-    messages: mockMessages,
-    hasMore: mockMessages.length === options.limit,
-    nextCursor:
-      mockMessages.length === options.limit
-        ? mockMessages[mockMessages.length - 1]._id
-        : undefined,
+    messages: normalized,
+    hasMore: false,
+    nextCursor: undefined,
   };
 }
 
@@ -215,29 +193,31 @@ export async function POST(
           validation.data;
 
         // Create user message
-        const userMessage: ChatMessage = {
-          _id: nanoid(12),
-          chatId,
+        const createdUserMessage = await fetchMutation(api.messages.create, {
+          chatId: chatId as any,
           walletAddress,
-          role,
+          role: role as any,
           content,
-          tokenCount: Math.floor(content.length / 4), // Rough token estimate
-          createdAt: Date.now(),
-        };
-
-        // TODO: Save user message to Convex
-        // await saveMessage(userMessage);
+        });
 
         // If not streaming, return the saved message
         if (!stream) {
           log.dbOperation('message_created', {
-            messageId: userMessage._id,
+            messageId: createdUserMessage._id,
             chatId,
             walletAddress,
             role,
-            tokenCount: userMessage.tokenCount,
+            tokenCount: createdUserMessage.tokenCount ?? 0,
           });
-          const response = createdResponse(userMessage);
+          const response = createdResponse({
+            _id: createdUserMessage._id,
+            chatId,
+            walletAddress,
+            role,
+            content,
+            tokenCount: createdUserMessage.tokenCount ?? 0,
+            createdAt: createdUserMessage.createdAt,
+          } satisfies ChatMessage);
           return addSecurityHeaders(response);
         }
 
@@ -256,9 +236,9 @@ export async function POST(
             parts: [{ type: 'text' as const, text: msg.content }],
           })),
           {
-            id: userMessage._id,
-            role: userMessage.role as 'user' | 'assistant' | 'system',
-            parts: [{ type: 'text' as const, text: userMessage.content }],
+            id: createdUserMessage._id,
+            role: createdUserMessage.role as 'user' | 'assistant' | 'system',
+            parts: [{ type: 'text' as const, text: createdUserMessage.content }],
           },
         ];
 
@@ -271,14 +251,11 @@ export async function POST(
           maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
           onFinish: async ({ text, finishReason, usage }) => {
             try {
-              // TODO: Save assistant message to Convex
-              const assistantMessage: ChatMessage = {
-                _id: nanoid(12),
-                chatId,
+              const saved = await fetchMutation(api.messages.create, {
+                chatId: chatId as any,
                 walletAddress,
-                role: MessageRole.ASSISTANT,
+                role: 'assistant' as any,
                 content: text,
-                tokenCount: usage.totalTokens || Math.floor(text.length / 4),
                 metadata: {
                   model: chat.model,
                   finishReason: finishReason || 'stop',
@@ -288,18 +265,14 @@ export async function POST(
                     totalTokens: usage.totalTokens || 0,
                   },
                 },
-                createdAt: Date.now(),
-              };
-
-              // await saveMessage(assistantMessage);
-              // await updateChatLastMessage(chatId, assistantMessage);
+              });
 
               log.dbOperation('ai_message_created', {
-                messageId: assistantMessage._id,
+                messageId: saved._id,
                 chatId,
                 walletAddress,
                 model: chat.model,
-                tokenCount: assistantMessage.tokenCount,
+                tokenCount: saved.tokenCount ?? 0,
                 finishReason,
                 usage,
               });

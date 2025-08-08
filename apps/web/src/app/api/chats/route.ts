@@ -7,6 +7,8 @@ import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import { api } from '@convex/_generated/api';
 
 // Initialize logger
 const log = createModuleLogger('api/chats');
@@ -83,48 +85,45 @@ export async function GET(request: NextRequest) {
 
         const { cursor, limit, archived, search } = queryValidation.data;
 
-        // TODO: Fetch chats from Convex with proper pagination
-        // const chats = await getChats(walletAddress, { cursor, limit, archived, search });
+        // Basic fetch from Convex; pagination can be added later (Convex supports take/skip via queries)
+        const chats = await fetchQuery(api.chats.getByOwner, {
+          ownerId: walletAddress,
+          limit,
+          isActive: archived === undefined ? undefined : !archived,
+        });
 
-        // Mock chat data
-        const mockChats: Chat[] = Array.from(
-          { length: Math.min(limit, 5) },
-          (_, i) => ({
-            _id: nanoid(12),
-            walletAddress,
-            title: search
-              ? `Search: ${search} - Chat ${i + 1}`
-              : `Chat ${i + 1}`,
-            description: 'A conversation about various topics',
-            model: i % 2 === 0 ? 'gpt-4o' : 'claude-3.5-sonnet',
-            systemPrompt: 'You are a helpful AI assistant.',
-            temperature: 0.7,
-            maxTokens: 2000,
-            isArchived: archived ?? false,
-            isPinned: i === 0,
-            messageCount: Math.floor(Math.random() * 50) + 5,
-            tokensUsed: Math.floor(Math.random() * 5000) + 500,
-            createdAt: Date.now() - i * 24 * 60 * 60 * 1000, // i days ago
-            updatedAt: Date.now() - Math.random() * 24 * 60 * 60 * 1000,
-            lastMessageAt: Date.now() - Math.random() * 24 * 60 * 60 * 1000,
-          })
+        const normalized: Chat[] = (chats || []).map((c: any) => ({
+          _id: c._id,
+          walletAddress,
+          title: c.title,
+          description: c.description,
+          model: c.model,
+          systemPrompt: c.systemPrompt,
+          temperature: c.temperature ?? 0.7,
+          maxTokens: c.maxTokens ?? 2000,
+          isArchived: c.isActive === false,
+          isPinned: c.isPinned ?? false,
+          messageCount: c.messageCount ?? 0,
+          tokensUsed: c.totalTokens ?? 0,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
+          lastMessageAt: c.lastMessageAt,
+        })).filter((c) =>
+          search ? c.title.toLowerCase().includes(search.toLowerCase()) : true
         );
 
-        // Mock pagination info
-        const hasMore = mockChats.length === limit;
-        const nextCursor = hasMore
-          ? mockChats[mockChats.length - 1]._id
-          : undefined;
+        const hasMore = normalized.length === limit; // approximate until proper cursor
+        const nextCursor = hasMore ? normalized[normalized.length - 1]._id : undefined;
 
         log.apiRequest('GET /api/chats', {
           walletAddress,
-          chatCount: mockChats.length,
+          chatCount: normalized.length,
           cursor,
           limit,
           hasMore,
         });
 
-        const response = paginatedResponse(mockChats, {
+        const response = paginatedResponse(normalized, {
           cursor,
           nextCursor,
           hasMore,
@@ -163,47 +162,50 @@ export async function POST(request: NextRequest) {
 
         const chatData = validation.data;
 
-        // TODO: Create chat in Convex
-        // const newChat = await createChat(walletAddress, chatData);
-
-        // Mock new chat creation
-        const newChat: Chat = {
-          _id: nanoid(12),
-          walletAddress,
+        const created = await fetchMutation(api.chats.create, {
           title: chatData.title,
-          description: undefined,
+          ownerId: walletAddress,
           model: chatData.model,
           systemPrompt: chatData.systemPrompt,
-          temperature: chatData.temperature || 0.7,
-          maxTokens: chatData.maxTokens || 2000,
-          isArchived: false,
-          isPinned: false,
-          messageCount: chatData.initialMessage ? 1 : 0,
-          tokensUsed: 0,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          lastMessageAt: chatData.initialMessage ? Date.now() : undefined,
-        };
+          temperature: chatData.temperature,
+          maxTokens: chatData.maxTokens,
+        });
 
-        // TODO: If initial message provided, create first message
         if (chatData.initialMessage) {
-          // await createMessage(newChat._id, {
-          //   role: 'user',
-          //   content: chatData.initialMessage,
-          //   walletAddress
-          // });
+          await fetchMutation(api.messages.create, {
+            chatId: created._id,
+            walletAddress,
+            role: 'user',
+            content: chatData.initialMessage,
+          });
         }
 
         log.dbOperation('chat_created', {
-          chatId: newChat._id,
+          chatId: created._id,
           walletAddress,
-          model: newChat.model,
-          title: newChat.title,
-          temperature: newChat.temperature,
-          maxTokens: newChat.maxTokens,
+          model: created.model,
+          title: created.title,
+          temperature: created.temperature,
+          maxTokens: created.maxTokens,
         });
 
-        const response = createdResponse(newChat);
+        const response = createdResponse({
+          _id: created._id,
+          walletAddress,
+          title: created.title,
+          description: created.description,
+          model: created.model,
+          systemPrompt: created.systemPrompt,
+          temperature: created.temperature ?? 0.7,
+          maxTokens: created.maxTokens ?? 2000,
+          isArchived: created.isActive === false,
+          isPinned: created.isPinned ?? false,
+          messageCount: created.messageCount ?? 0,
+          tokensUsed: created.totalTokens ?? 0,
+          createdAt: created.createdAt,
+          updatedAt: created.updatedAt,
+          lastMessageAt: created.lastMessageAt,
+        } as Chat);
         return addSecurityHeaders(response);
       } catch (error) {
         log.error('Failed to create chat', {

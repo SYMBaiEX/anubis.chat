@@ -1,9 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { LoadingStates } from '@/components/data/loading-states';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/components/providers/auth-provider';
 import type { AuthGuardProps } from '@/lib/types/components';
 
 /**
@@ -13,18 +13,21 @@ import type { AuthGuardProps } from '@/lib/types/components';
 export function AuthGuard({
   children,
   fallback,
-  redirectTo = '/auth/connect',
+  redirectTo = '/auth',
   requireAuth = true,
   className,
 }: AuthGuardProps) {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated } = useAuthContext();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!isLoading && requireAuth && !isAuthenticated) {
-      router.push(redirectTo);
+      const next = searchParams?.get('next') ?? window.location.pathname;
+      const url = `${redirectTo}?next=${encodeURIComponent(next)}`;
+      router.push(url);
     }
-  }, [isLoading, isAuthenticated, requireAuth, redirectTo, router]);
+  }, [isLoading, isAuthenticated, requireAuth, redirectTo, router, searchParams]);
 
   // Show loading state while checking authentication
   if (isLoading) {

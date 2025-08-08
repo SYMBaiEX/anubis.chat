@@ -147,10 +147,7 @@ export function MessageList({
                     onCopy={() => {
                       navigator.clipboard.writeText(message.content);
                     }}
-                    onEdit={(newContent) => {
-                      // TODO: Implement message editing
-                      console.log('Edit message:', message._id, newContent);
-                    }}
+                    onEdit={(_newContent) => {}}
                     onRegenerate={() => onMessageRegenerate?.(message._id)}
                     showActions={true}
                   />

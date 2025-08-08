@@ -3,7 +3,6 @@
  * Handles CRUD operations for specific chat sessions
  */
 
-import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
@@ -17,6 +16,8 @@ import {
   validationErrorResponse,
 } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import { api } from '@convex/_generated/api';
 
 // =============================================================================
 // Logger
@@ -45,28 +46,24 @@ async function getChatById(
   chatId: string,
   walletAddress: string
 ): Promise<Chat | null> {
-  // TODO: Implement Convex query
-  // return await getChat(chatId, walletAddress);
-
-  // Mock implementation
-  if (chatId.length < 10) return null;
-
+  const chat = await fetchQuery(api.chats.getById, { id: chatId as any });
+  if (!chat || chat.ownerId !== walletAddress) return null;
   return {
-    _id: chatId,
-    walletAddress,
-    title: 'Mock Chat',
-    description: 'A test conversation',
-    model: 'gpt-4o',
-    systemPrompt: 'You are a helpful AI assistant.',
-    temperature: 0.7,
-    maxTokens: 2000,
-    isArchived: false,
-    isPinned: false,
-    messageCount: 15,
-    tokensUsed: 2500,
-    createdAt: Date.now() - 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 60 * 60 * 1000,
-    lastMessageAt: Date.now() - 30 * 60 * 1000,
+    _id: chat._id,
+    walletAddress: chat.ownerId,
+    title: chat.title,
+    description: chat.description,
+    model: chat.model,
+    systemPrompt: chat.systemPrompt,
+    temperature: chat.temperature ?? 0.7,
+    maxTokens: chat.maxTokens ?? 2000,
+    isArchived: chat.isActive === false,
+    isPinned: chat.isPinned ?? false,
+    messageCount: chat.messageCount ?? 0,
+    tokensUsed: chat.totalTokens ?? 0,
+    createdAt: chat.createdAt,
+    updatedAt: chat.updatedAt,
+    lastMessageAt: chat.lastMessageAt,
   };
 }
 
@@ -138,19 +135,34 @@ export async function PUT(
 
         const updates = validation.data;
 
-        // TODO: Update chat in Convex
-        // const updatedChat = await updateChat(chatId, walletAddress, updates);
+        // Update chat in Convex
+        const patched = await fetchMutation(api.chats.update, {
+          id: chatId as any,
+          ownerId: walletAddress,
+          title: updates.title,
+          model: undefined,
+          systemPrompt: updates.systemPrompt,
+          temperature: updates.temperature,
+          maxTokens: updates.maxTokens,
+          isActive: updates.isArchived === undefined ? undefined : !updates.isArchived,
+        });
 
-        // Mock updated chat
         const updatedChat: Chat = {
-          ...existingChat,
-          title: updates.title || existingChat.title,
-          description: updates.description ?? existingChat.description,
-          systemPrompt: updates.systemPrompt ?? existingChat.systemPrompt,
-          temperature: updates.temperature ?? existingChat.temperature,
-          maxTokens: updates.maxTokens ?? existingChat.maxTokens,
-          isPinned: updates.isPinned ?? existingChat.isPinned,
-          updatedAt: Date.now(),
+          _id: patched._id,
+          walletAddress: patched.ownerId,
+          title: patched.title,
+          description: patched.description,
+          model: patched.model,
+          systemPrompt: patched.systemPrompt,
+          temperature: patched.temperature ?? 0.7,
+          maxTokens: patched.maxTokens ?? 2000,
+          isArchived: patched.isActive === false,
+          isPinned: patched.isPinned ?? false,
+          messageCount: patched.messageCount ?? 0,
+          tokensUsed: patched.totalTokens ?? 0,
+          createdAt: patched.createdAt,
+          updatedAt: patched.updatedAt,
+          lastMessageAt: patched.lastMessageAt,
         };
 
         log.dbOperation('chat_updated', {
@@ -194,8 +206,11 @@ export async function DELETE(
           return notFoundResponse('Chat not found');
         }
 
-        // TODO: Delete chat and all associated messages in Convex
-        // await deleteChat(chatId, walletAddress);
+        // Delete chat and all associated messages in Convex
+        await fetchMutation(api.chats.remove, {
+          id: chatId as any,
+          ownerId: walletAddress,
+        });
 
         log.dbOperation('chat_deleted', {
           chatId,

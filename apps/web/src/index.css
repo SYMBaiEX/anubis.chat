@@ -292,6 +292,83 @@
     box-shadow: 0 0 20px rgba(var(--isis-accent-rgb), 0.3);
   }
   
+  /* Futuristic Egyptian Aesthetic */
+  .golden-grid {
+    background-image:
+      linear-gradient(to right, rgba(255, 215, 0, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 215, 0, 0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse at 50% 30%, black 40%, transparent 75%);
+  }
+
+  .hieroglyphs-bg {
+    background-image: url('/patterns-hieroglyphs.svg');
+    background-size: 120px 120px;
+    background-repeat: repeat;
+    opacity: 0.25;
+  }
+
+  .papyrus-surface {
+    background-image:
+      radial-gradient(60% 40% at 50% 10%, rgba(205, 133, 63, 0.06), transparent 60%),
+      radial-gradient(40% 30% at 80% 20%, rgba(180, 135, 81, 0.05), transparent 60%),
+      radial-gradient(50% 30% at 20% 0%, rgba(240, 220, 180, 0.08), transparent 60%);
+  }
+
+  .basalt-surface {
+    background-image:
+      radial-gradient(60% 40% at 50% 10%, rgba(92, 69, 48, 0.12), transparent 60%),
+      radial-gradient(40% 30% at 80% 20%, rgba(41, 31, 22, 0.16), transparent 60%),
+      radial-gradient(50% 30% at 20% 0%, rgba(20, 20, 22, 0.2), transparent 60%);
+  }
+
+  /* Aurora layers for ethereal glow */
+  .aurora {
+    position: absolute;
+    inset: -20% -10% 0 -10%;
+    filter: blur(40px);
+    opacity: 0.5;
+    animation: aurora-move 20s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  .aurora-primary {
+    background: radial-gradient(30% 40% at 30% 20%, rgba(var(--isis-primary-rgb), 0.20), transparent 70%),
+                radial-gradient(25% 35% at 70% 30%, rgba(130, 71, 229, 0.20), transparent 70%);
+  }
+
+  .aurora-gold {
+    background: radial-gradient(30% 40% at 60% 10%, rgba(255, 215, 0, 0.18), transparent 70%),
+                radial-gradient(20% 25% at 20% 40%, rgba(180, 135, 81, 0.16), transparent 70%);
+  }
+
+  /* Wing divider using conic gradients */
+  .wing-divider {
+    position: relative;
+    height: 2px;
+    background: linear-gradient(to right, transparent, hsl(var(--ring)), transparent);
+  }
+  .wing-divider::before,
+  .wing-divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 120px;
+    height: 120px;
+    transform: translateY(-50%);
+    opacity: 0.6;
+    filter: blur(6px);
+    pointer-events: none;
+  }
+  .wing-divider::before {
+    left: -20px;
+    background: conic-gradient(from 200deg at 70% 50%, rgba(255, 215, 0, 0.18), transparent 40%);
+  }
+  .wing-divider::after {
+    right: -20px;
+    background: conic-gradient(from -20deg at 30% 50%, rgba(130, 71, 229, 0.18), transparent 40%);
+  }
+  
   /* Animation Utilities */
   .animate-in {
     animation: fadeIn 0.5s var(--ease-spring);
@@ -354,6 +431,18 @@
   }
   50% {
     opacity: 0.5;
+  }
+}
+
+@keyframes aurora-move {
+  0% {
+    transform: translate3d(-2%, -2%, 0) rotate(-1deg);
+  }
+  50% {
+    transform: translate3d(2%, 0%, 0) rotate(1deg);
+  }
+  100% {
+    transform: translate3d(0%, 2%, 0) rotate(-0.5deg);
   }
 }
 

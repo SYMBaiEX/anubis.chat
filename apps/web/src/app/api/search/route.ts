@@ -10,7 +10,8 @@ import { createModuleLogger } from '@/lib/utils/logger';
 // Initialize logger
 const log = createModuleLogger('api/search');
 
-import { getStorage } from '@/lib/database/storage';
+import { fetchQuery } from 'convex/nextjs';
+import { api } from '@convex/_generated/api';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { searchRateLimit } from '@/lib/middleware/rate-limit';
 import type {
@@ -138,13 +139,26 @@ export async function POST(request: NextRequest) {
 
         const searchRequest = validation.data;
 
-        // Perform search using storage layer
-        const storage = getStorage();
-        const results = await storage.searchDocuments(
-          walletAddress,
-          searchRequest.query,
-          searchRequest
-        );
+        // Perform search using Convex documents.search
+        const docs = await fetchQuery(api.documents.search, {
+          ownerId: walletAddress,
+          query: searchRequest.query,
+          limit: searchRequest.limit ?? 10,
+          type: searchRequest.filters?.type?.[0],
+        });
+        const results = (docs || []).map((doc: any) => ({
+          document: {
+            id: String(doc._id),
+            title: doc.title,
+            content: doc.content,
+            type: doc.type,
+            ownerId: doc.ownerId,
+            metadata: doc.metadata,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+          },
+          score: 1,
+        }));
         const processingTime = Date.now() - startTime;
 
         log.apiRequest('GET /api/search', {
@@ -207,18 +221,25 @@ export async function GET(request: NextRequest) {
           : 5;
 
         // Perform basic search (in production, this would use vector embeddings)
-        const searchOptions: DocumentSearchRequest = {
+        // Perform semantic search via Convex documents.search (basic)
+        const docs = await fetchQuery(api.documents.search, {
+          ownerId: walletAddress,
           query,
           limit,
-          similarity: { threshold: 0.3, algorithm: 'cosine' },
-        };
-
-        const storage = getStorage();
-        const results = await storage.searchDocuments(
-          walletAddress,
-          query,
-          searchOptions
-        );
+        });
+        const results = (docs || []).map((doc: any) => ({
+          document: {
+            id: String(doc._id),
+            title: doc.title,
+            content: doc.content,
+            type: doc.type,
+            ownerId: doc.ownerId,
+            metadata: doc.metadata,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+          },
+          score: 1,
+        }));
         const context = extractContext(results.slice(0, 3)); // Use top 3 for context
 
         log.apiRequest('POST /api/search - Semantic', {

@@ -3,28 +3,16 @@
  */
 
 import { useCallback } from 'react';
+import { api } from '@convex/_generated/api';
 import type { Result } from '@/lib/utils/result';
 import { success } from '@/lib/utils/result';
+import { createModuleLogger } from '@/lib/utils/logger';
+const log = createModuleLogger('hooks/convex/useChats');
 import {
   useConvexMutation,
   useConvexQuery,
   useOptimisticMutation,
 } from './useConvexResult';
-
-// Mock API structure and types
-const api = {
-  chats: {
-    getByOwner: 'chats:getByOwner' as any,
-    getById: 'chats:getById' as any,
-    getStats: 'chats:getStats' as any,
-    create: 'chats:create' as any,
-    update: 'chats:update' as any,
-    remove: 'chats:remove' as any,
-    archive: 'chats:archive' as any,
-    restore: 'chats:restore' as any,
-    updateLastMessageTime: 'chats:updateLastMessageTime' as any,
-  },
-};
 
 type Id<T> = string & { __tableName: T };
 
@@ -74,10 +62,10 @@ export function useCreateChat() {
   return useOptimisticMutation(api.chats.create, {
     rollbackOnError: true,
     onOptimisticSuccess: (chat: any) => {
-      console.log('Chat created:', chat);
+      log.info('Chat created', { chatId: chat?._id });
     },
     onRollbackError: (error: Error) => {
-      console.error('Chat creation failed:', error);
+      log.error('Chat creation failed', { error: error.message });
     },
   });
 }
@@ -89,10 +77,10 @@ export function useUpdateChat() {
   return useOptimisticMutation(api.chats.update, {
     rollbackOnError: true,
     onOptimisticSuccess: (chat: any) => {
-      console.log('Chat updated:', chat);
+      log.info('Chat updated', { chatId: chat?._id });
     },
     onRollbackError: (error: Error) => {
-      console.error('Chat update failed:', error);
+      log.error('Chat update failed', { error: error.message });
     },
   });
 }
@@ -104,10 +92,10 @@ export function useDeleteChat() {
   return useOptimisticMutation(api.chats.remove, {
     rollbackOnError: true,
     onOptimisticSuccess: (chat: any) => {
-      console.log('Chat deleted:', chat);
+      log.info('Chat deleted', { chatId: chat?.chatId });
     },
     onRollbackError: (error: Error) => {
-      console.error('Chat deletion failed:', error);
+      log.error('Chat deletion failed', { error: error.message });
     },
   });
 }
@@ -119,10 +107,10 @@ export function useArchiveChat() {
   return useOptimisticMutation(api.chats.archive, {
     rollbackOnError: true,
     onOptimisticSuccess: (chat: any) => {
-      console.log('Chat archived:', chat);
+      log.info('Chat archived', { chatId: chat?._id });
     },
     onRollbackError: (error: Error) => {
-      console.error('Chat archiving failed:', error);
+      log.error('Chat archiving failed', { error: error.message });
     },
   });
 }

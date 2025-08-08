@@ -6,7 +6,7 @@
 import { PublicKey } from '@solana/web3.js';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getStorage } from '@/lib/database/storage';
+// Removed storage; using Convex directly
 import {
   createJWTToken,
   validateNonce,
@@ -177,7 +177,6 @@ export async function POST(request: NextRequest) {
       const token = createJWTToken(walletAddress, publicKey);
 
       // Create or update user in Convex database
-      const storage = getStorage();
       let user;
 
       try {
