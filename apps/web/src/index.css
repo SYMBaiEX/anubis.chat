@@ -100,25 +100,25 @@
 }
 
 .dark, [data-theme="dark"] {
-  /* Dark Theme Colors */
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 8%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 10% 8%;
-  --popover-foreground: 0 0% 98%;
+  /* Dark Theme Colors (charcoal + cream) */
+  --background: 240 6% 10%; /* charcoal */
+  --foreground: 48 33% 94%; /* cream */
+  --card: 240 6% 12%;
+  --card-foreground: 48 33% 94%;
+  --popover: 240 6% 12%;
+  --popover-foreground: 48 33% 94%;
   --primary: 162 84% 51%;
   --primary-foreground: 0 0% 0%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
+  --secondary: 240 5% 18%;
+  --secondary-foreground: 48 33% 94%;
+  --muted: 240 6% 16%;
+  --muted-foreground: 48 15% 80%;
   --accent: 269 72% 56%;
   --accent-foreground: 0 0% 100%;
   --destructive: 3 100% 67%;
   --destructive-foreground: 0 0% 100%;
-  --border: 240 3.7% 20%;
-  --input: 240 3.7% 20%;
+  --border: 240 5% 22%;
+  --input: 240 5% 22%;
   --ring: 162 84% 51%;
   --chart-1: 162 84% 51%;
   --chart-2: 269 72% 56%;
@@ -258,6 +258,22 @@
 
 /* Utility Classes */
 @layer utilities {
+  /* Falling hieroglyphics animation */
+  .falling-hiero {
+    position: absolute;
+    top: -10%;
+    animation-name: hiero-fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
+  @keyframes hiero-fall {
+    0% { transform: translate3d(0, -10%, 0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translate3d(0, 120vh, 0); opacity: 0; }
+  }
   /* Text Gradient */
   .text-gradient {
     @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;

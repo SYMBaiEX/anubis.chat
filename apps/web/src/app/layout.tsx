@@ -4,6 +4,7 @@ import '../index.css';
 import { ErrorBoundary } from '@/components/error-boundary';
 import Providers from '@/components/providers';
 import ServiceWorkerManager from '@/components/service-worker-manager';
+import SiteBackground from '@/components/site-background';
 
 // PRD Typography: Inter for body, IBM Plex Mono for code
 // Note: Satoshi Variable for headers will be loaded via CSS for better Bun runtime performance
@@ -81,6 +82,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <ServiceWorkerManager />
+            <SiteBackground />
             <main className="min-h-screen">
               {children}
             </main>
