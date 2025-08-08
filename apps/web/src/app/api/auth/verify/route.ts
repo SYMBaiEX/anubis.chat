@@ -164,13 +164,17 @@ export async function POST(request: NextRequest) {
         };
       }
 
+      // Generate a refresh token (using a different secret or prefix for security)
+      const refreshToken = createJWTToken(walletAddress, publicKey);
+      const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+      
       // Create auth session response
       const authSession: AuthSession = {
         walletAddress,
         publicKey,
         token,
-        refreshToken: '', // TODO: Implement refresh tokens
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+        refreshToken,
+        expiresAt,
         user: user!, // We ensure user is always defined above
       };
 

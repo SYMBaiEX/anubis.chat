@@ -136,12 +136,6 @@ export const useWallet = (): UseWalletReturn => {
       error: null,
     }));
 
-    // Log wallet capabilities for debugging
-    if (connected && wallet) {
-      console.log('Wallet connected:', wallet.adapter.name);
-      console.log('Sign message capability:', !!walletSignMessage);
-      console.log('Wallet adapter:', wallet.adapter);
-    }
 
     // Start health checks when connected
     if (connected && walletPublicKey) {
@@ -308,16 +302,10 @@ export const useWallet = (): UseWalletReturn => {
         // Add a small delay to ensure wallet is ready
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        console.log('Attempting to sign message:', message);
-        console.log('Wallet adapter:', wallet?.adapter?.name);
-        console.log('SignMessage available:', !!walletSignMessage);
-        console.log('SignIn available:', !!signIn);
-        
         // Check if wallet supports message signing
         if (!walletSignMessage) {
           // Some wallets might not have signMessage but have signIn for SIWS
           if (signIn) {
-            console.log('Using signIn method instead of signMessage');
             const result = await signIn({
               domain: window.location.host,
               address: walletPublicKey.toString(),
@@ -332,7 +320,6 @@ export const useWallet = (): UseWalletReturn => {
         }
         
         const messageBytes = new TextEncoder().encode(message);
-        console.log('Message bytes length:', messageBytes.length);
         
         // Call the wallet's signMessage function
         const signature = await walletSignMessage(messageBytes);
@@ -342,8 +329,6 @@ export const useWallet = (): UseWalletReturn => {
         }
         
         const encodedSignature = bs58.encode(signature);
-        
-        console.log('Signature received:', encodedSignature);
         return encodedSignature;
       } catch (error) {
         const errorMessage =

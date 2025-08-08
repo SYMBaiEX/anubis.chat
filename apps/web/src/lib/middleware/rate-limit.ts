@@ -114,8 +114,8 @@ setInterval(() => store.cleanup(), 5 * 60 * 1000);
 export const rateLimitConfigs = {
   // Authentication endpoints
   auth: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 10, // 10 attempts per 15 minutes
+    windowMs: process.env.NODE_ENV === 'development' ? 60 * 1000 : 15 * 60 * 1000, // 1 minute in dev, 15 minutes in prod
+    maxRequests: process.env.NODE_ENV === 'development' ? 50 : 10, // 50 attempts in dev, 10 in prod
   },
 
   // Message sending

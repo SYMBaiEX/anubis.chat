@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import type { AuthSession, User, WalletAuthChallenge } from '@/lib/types/api';
 import { useWallet } from './useWallet';
 
@@ -29,6 +29,8 @@ const INITIAL_AUTH_STATE: AuthState = {
 
 const AUTH_TOKEN_KEY = 'isis-auth-token';
 const AUTH_USER_KEY = 'isis-auth-user';
+const AUTH_REFRESH_KEY = 'isis-auth-refresh';
+const AUTH_EXPIRES_KEY = 'isis-auth-expires';
 
 export const useAuth = (): UseAuthReturn => {
   const { publicKey, signMessage, isConnected } = useWallet();
@@ -37,6 +39,7 @@ export const useAuth = (): UseAuthReturn => {
     if (typeof window !== 'undefined') {
       const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
       const storedUser = localStorage.getItem(AUTH_USER_KEY);
+      const storedExpires = localStorage.getItem(AUTH_EXPIRES_KEY);
 
       if (storedToken && storedUser) {
         try {
@@ -45,6 +48,18 @@ export const useAuth = (): UseAuthReturn => {
           if (!(parsedUser?.id && parsedUser?.walletAddress)) {
             throw new Error('Invalid user data structure');
           }
+          
+          // Check if token is expired
+          const expiresAt = storedExpires ? parseInt(storedExpires, 10) : 0;
+          if (expiresAt && expiresAt < Date.now()) {
+            // Token expired, clear storage
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            localStorage.removeItem(AUTH_USER_KEY);
+            localStorage.removeItem(AUTH_REFRESH_KEY);
+            localStorage.removeItem(AUTH_EXPIRES_KEY);
+            return INITIAL_AUTH_STATE;
+          }
+          
           const user = parsedUser as User;
           return {
             isAuthenticated: true,
@@ -57,6 +72,8 @@ export const useAuth = (): UseAuthReturn => {
           // Clear corrupted data
           localStorage.removeItem(AUTH_TOKEN_KEY);
           localStorage.removeItem(AUTH_USER_KEY);
+          localStorage.removeItem(AUTH_REFRESH_KEY);
+          localStorage.removeItem(AUTH_EXPIRES_KEY);
         }
       }
     }
@@ -71,12 +88,26 @@ export const useAuth = (): UseAuthReturn => {
   const clearAuthState = useCallback(() => {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem(AUTH_REFRESH_KEY);
+    localStorage.removeItem(AUTH_EXPIRES_KEY);
+    sessionStorage.removeItem(AUTH_TOKEN_KEY); // Also clear session storage
     setAuthState(INITIAL_AUTH_STATE);
   }, []);
 
   const storeAuthSession = useCallback((session: AuthSession) => {
     localStorage.setItem(AUTH_TOKEN_KEY, session.token);
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(session.user));
+    
+    // Store refresh token and expiry if available
+    if (session.refreshToken) {
+      localStorage.setItem(AUTH_REFRESH_KEY, session.refreshToken);
+    }
+    if (session.expiresAt) {
+      localStorage.setItem(AUTH_EXPIRES_KEY, session.expiresAt.toString());
+    }
+    
+    // Also store in session storage for tab sync
+    sessionStorage.setItem(AUTH_TOKEN_KEY, session.token);
 
     setAuthState({
       isAuthenticated: true,
@@ -104,11 +135,18 @@ export const useAuth = (): UseAuthReturn => {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to get challenge');
+          console.error('Challenge endpoint error:', response.status, errorData);
+          
+          // Handle rate limit specifically
+          if (response.status === 429) {
+            const retryAfter = errorData.error?.details?.retryAfter || 60;
+            throw new Error(`Rate limited. Please wait ${retryAfter} seconds before trying again.`);
+          }
+          
+          throw new Error(errorData.error?.message || errorData.message || 'Failed to get challenge');
         }
 
         const apiResponse = await response.json();
-        console.log('Challenge API response:', apiResponse);
         
         // Handle API response wrapper structure
         if (apiResponse.success && apiResponse.data) {
@@ -117,13 +155,16 @@ export const useAuth = (): UseAuthReturn => {
           // Direct response (legacy format)
           return apiResponse;
         } else {
-          console.error('Unexpected challenge response format:', apiResponse);
           throw new Error('Invalid challenge response format');
         }
       } catch (error) {
         console.error('Failed to get auth challenge:', error);
+        // Check if it's a rate limit error
+        if (error instanceof Error && error.message.includes('Rate limited')) {
+          throw error; // Re-throw rate limit errors
+        }
         // Log to error tracking service instead of console in production
-        return null;
+        throw new Error('Failed to get authentication challenge');
       }
     },
     []
@@ -153,8 +194,19 @@ export const useAuth = (): UseAuthReturn => {
           throw new Error(errorData.message || 'Authentication failed');
         }
 
-        return await response.json();
+        const apiResponse = await response.json();
+        
+        // Handle API response wrapper structure (same as challenge)
+        if (apiResponse.success && apiResponse.data) {
+          return apiResponse.data;
+        } else if (apiResponse.token) {
+          // Direct response (legacy format)
+          return apiResponse;
+        } else {
+          throw new Error('Invalid authentication response format');
+        }
       } catch (error) {
+        console.error('Authentication verification failed:', error);
         // Log to error tracking service instead of console in production
         return null;
       }
@@ -173,28 +225,17 @@ export const useAuth = (): UseAuthReturn => {
 
     try {
       // Step 1: Get challenge from server
-      console.log('Getting auth challenge for:', publicKey.toString());
       const challenge = await getAuthChallenge(publicKey.toString());
       if (!challenge) {
         throw new Error('Failed to get authentication challenge');
       }
-      console.log('Challenge received:', challenge.challenge);
-
       // Step 2: Sign the challenge message
-      console.log('Requesting signature from wallet...');
-      console.log('Challenge object:', challenge);
-      console.log('Challenge message:', challenge.challenge);
-      
       // Ensure we have a valid challenge message
       if (!challenge.challenge || challenge.challenge.length === 0) {
         throw new Error('Invalid challenge message received from server');
       }
       
-      // Add a small delay to ensure wallet is ready
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
       const signature = await signMessage(challenge.challenge);
-      console.log('Signature received:', signature);
 
       // Step 3: Verify signature and get auth session
       const authSession = await verifyAuthentication(
@@ -254,7 +295,11 @@ export const useAuth = (): UseAuthReturn => {
   }, [authState.token, clearAuthState]);
 
   const refreshToken = useCallback(async (): Promise<string | null> => {
-    if (!authState.token) {
+    // First try to use refresh token, then fall back to current token
+    const refreshTokenStored = localStorage.getItem(AUTH_REFRESH_KEY);
+    const currentToken = authState.token || localStorage.getItem(AUTH_TOKEN_KEY);
+    
+    if (!refreshTokenStored && !currentToken) {
       return null;
     }
 
@@ -262,7 +307,7 @@ export const useAuth = (): UseAuthReturn => {
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${authState.token}`,
+          Authorization: `Bearer ${refreshTokenStored || currentToken}`,
           'Content-Type': 'application/json',
         },
       });
@@ -273,20 +318,72 @@ export const useAuth = (): UseAuthReturn => {
         return null;
       }
 
-      const data = await response.json();
+      const apiResponse = await response.json();
+      // Handle API response wrapper
+      const data = apiResponse.success && apiResponse.data ? apiResponse.data : apiResponse;
+      
       const newToken = data.token;
+      const newExpiry = data.expiresAt;
 
-      // Update stored token
+      // Update stored token and expiry
       localStorage.setItem(AUTH_TOKEN_KEY, newToken);
+      if (newExpiry) {
+        localStorage.setItem(AUTH_EXPIRES_KEY, newExpiry.toString());
+      }
+      if (data.refreshToken) {
+        localStorage.setItem(AUTH_REFRESH_KEY, data.refreshToken);
+      }
+      sessionStorage.setItem(AUTH_TOKEN_KEY, newToken);
+      
       setAuthState((prev) => ({ ...prev, token: newToken }));
 
       return newToken;
     } catch (error) {
+      console.error('Token refresh failed:', error);
       // Log to error tracking service instead of console in production
       clearAuthState();
       return null;
     }
   }, [authState.token, clearAuthState]);
+  
+  // Listen for storage events to sync auth across tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === AUTH_TOKEN_KEY) {
+        if (!e.newValue) {
+          // Token was removed, logout
+          setAuthState(INITIAL_AUTH_STATE);
+        } else if (e.newValue !== authState.token) {
+          // Token changed, reload auth state
+          const storedUser = localStorage.getItem(AUTH_USER_KEY);
+          const storedExpires = localStorage.getItem(AUTH_EXPIRES_KEY);
+          
+          if (storedUser) {
+            try {
+              const user = JSON.parse(storedUser) as User;
+              const expiresAt = storedExpires ? parseInt(storedExpires, 10) : 0;
+              
+              // Check if token is still valid
+              if (!expiresAt || expiresAt > Date.now()) {
+                setAuthState({
+                  isAuthenticated: true,
+                  isLoading: false,
+                  user,
+                  token: e.newValue,
+                  error: null,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to sync auth state:', error);
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [authState.token]);
 
   return {
     ...authState,

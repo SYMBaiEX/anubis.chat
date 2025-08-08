@@ -6,10 +6,16 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
+  useCallback,
 } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import type { AuthSession, User } from '@/lib/types/api';
+
+// Token refresh configuration
+const TOKEN_REFRESH_INTERVAL = 20 * 60 * 1000; // Refresh every 20 minutes
+const TOKEN_VALIDITY_CHECK_INTERVAL = 60 * 1000; // Check validity every minute
 
 interface AuthContextValue {
   // Auth state
@@ -24,6 +30,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   refreshToken: () => Promise<string | null>;
   clearError: () => void;
+  validateSession: () => Promise<boolean>;
 
   // Wallet integration
   isWalletConnected: boolean;
@@ -40,34 +47,118 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const auth = useAuth();
   const wallet = useWallet();
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const validityCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Validate session with backend
+  const validateSession = useCallback(async (): Promise<boolean> => {
+    if (!auth.token) {
+      return false;
+    }
+
+    try {
+      const response = await fetch('/api/auth/validate', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${auth.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        // Token is invalid, try to refresh
+        const newToken = await auth.refreshToken();
+        return !!newToken;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Session validation failed:', error);
+      return false;
+    }
+  }, [auth.token, auth.refreshToken]);
+
+  // Set up automatic token refresh
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.token) {
+      // Clear existing intervals
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+
+      // Set up new refresh interval
+      refreshIntervalRef.current = setInterval(async () => {
+        console.log('Auto-refreshing token...');
+        try {
+          await auth.refreshToken();
+        } catch (error) {
+          console.error('Auto-refresh failed:', error);
+        }
+      }, TOKEN_REFRESH_INTERVAL);
+
+      return () => {
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+          refreshIntervalRef.current = null;
+        }
+      };
+    }
+  }, [auth.isAuthenticated, auth.token, auth.refreshToken]);
+
+  // Set up periodic session validation
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.token) {
+      // Clear existing intervals
+      if (validityCheckIntervalRef.current) {
+        clearInterval(validityCheckIntervalRef.current);
+      }
+
+      // Set up validity check interval
+      validityCheckIntervalRef.current = setInterval(async () => {
+        const isValid = await validateSession();
+        if (!isValid) {
+          console.warn('Session validation failed, logging out');
+          await auth.logout();
+        }
+      }, TOKEN_VALIDITY_CHECK_INTERVAL);
+
+      return () => {
+        if (validityCheckIntervalRef.current) {
+          clearInterval(validityCheckIntervalRef.current);
+          validityCheckIntervalRef.current = null;
+        }
+      };
+    }
+  }, [auth.isAuthenticated, auth.token, validateSession, auth.logout]);
 
   // Auto-login if wallet connects and we don't have auth
   useEffect(() => {
+    // Skip if wallet is not connected or already authenticated
+    if (!wallet.isConnected || !wallet.publicKey || auth.isAuthenticated || auth.isLoading) {
+      return;
+    }
+
+    // Skip if there's a recent rate limit error
+    if (auth.error?.includes('Rate limited')) {
+      return;
+    }
+
     const autoLogin = async () => {
-      // Only attempt auto-login if:
-      // 1. Wallet is connected
-      // 2. We're not already authenticated
-      // 3. We're not currently loading
-      // 4. No auth errors
-      if (
-        wallet.isConnected &&
-        wallet.publicKey &&
-        !auth.isAuthenticated &&
-        !auth.isLoading &&
-        !auth.error
-      ) {
-        try {
-          await auth.login();
-        } catch (error) {
-          // Log to error tracking service instead of console in production
-          // Error is handled by the auth hook
-          // Error is handled by the auth hook, don't need to do anything here
-        }
+      // Clear any previous errors before attempting login
+      if (auth.error) {
+        auth.clearError();
+      }
+      
+      try {
+        await auth.login();
+      } catch (error) {
+        // Silent fail - error is already set in auth state
+        // User can manually retry with the button
       }
     };
 
-    // Small delay to allow wallet state to stabilize
-    const timeoutId = setTimeout(autoLogin, 500);
+    // Give wallet adapter time to fully initialize
+    const timeoutId = setTimeout(autoLogin, 1000);
     return () => clearTimeout(timeoutId);
   }, [
     wallet.isConnected,
@@ -76,6 +167,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     auth.isLoading,
     auth.error,
     auth.login,
+    auth.clearError,
   ]);
 
   // Auto-logout if wallet disconnects
@@ -110,6 +202,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logout: auth.logout,
       refreshToken: auth.refreshToken,
       clearError: auth.clearError,
+      validateSession,
 
       // Wallet integration
       isWalletConnected: wallet.isConnected,
@@ -126,6 +219,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       auth.logout,
       auth.refreshToken,
       auth.clearError,
+      validateSession,
       wallet.isConnecting,
       wallet.isConnected,
       wallet.publicKey,

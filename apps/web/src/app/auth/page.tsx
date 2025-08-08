@@ -54,20 +54,8 @@ export default function AuthPage() {
     }
   }, [isAuthenticated, user, router, searchParams]);
 
-  // Auto-sign in if wallet is connected but not authenticated
-  useEffect(() => {
-    if (isConnected && publicKey && !isAuthenticated && !authLoading && !authError) {
-      // Give wallet more time to fully initialize before attempting to sign
-      const timer = setTimeout(() => {
-        console.log('Auto-login triggered after wallet connection');
-        console.log('Public key:', publicKey);
-        login().catch(err => {
-          console.error('Auto-login failed:', err);
-        });
-      }, 2500); // Increased delay to 2.5 seconds for wallet initialization
-      return () => clearTimeout(timer);
-    }
-  }, [isConnected, publicKey, isAuthenticated, authLoading, authError, login]);
+  // The auth-provider handles auto-login, so we don't need to do it here
+  // This prevents race conditions and duplicate login attempts
 
   return (
     <div className="min-h-screen bg-background">
@@ -189,12 +177,12 @@ export default function AuthPage() {
                         </div>
                       </div>
                       <div>
-                        <p className="font-semibold text-sm flex items-center gap-2">
+                        <div className="font-semibold text-sm flex items-center gap-2">
                           Wallet Connected
                           <Badge className="bg-green-500/10 text-green-600 border-green-500/20" variant="outline">
                             Active
                           </Badge>
-                        </p>
+                        </div>
                         <p className="text-muted-foreground text-xs font-mono">
                           {formatAddress(8)}
                         </p>

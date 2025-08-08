@@ -22,7 +22,7 @@ const log = createModuleLogger('auth-refresh-api');
 // =============================================================================
 
 const refreshSchema = z.object({
-  token: z.string().min(1, 'Token is required'),
+  refreshToken: z.string().optional(), // Optional refresh token
 });
 
 // =============================================================================
@@ -32,18 +32,23 @@ const refreshSchema = z.object({
 export async function POST(request: NextRequest) {
   return authRateLimit(request, async (req) => {
     try {
-      // Parse and validate request body
-      const body = await req.json();
-      const validation = refreshSchema.safeParse(body);
-
-      if (!validation.success) {
-        return validationErrorResponse(
-          'Invalid request parameters',
-          validation.error.flatten().fieldErrors
-        );
+      // Try to get token from Authorization header first
+      const authHeader = req.headers.get('Authorization');
+      let token: string | null = null;
+      
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
       }
-
-      const { token } = validation.data;
+      
+      // If no token in header, check body for backward compatibility
+      if (!token) {
+        const body = await req.json();
+        token = body.token || body.refreshToken;
+      }
+      
+      if (!token) {
+        return unauthorizedResponse('No token provided');
+      }
 
       // Verify the current token
       const session = await verifyJWTToken(token);

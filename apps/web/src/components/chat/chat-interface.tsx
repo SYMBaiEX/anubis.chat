@@ -38,21 +38,26 @@ interface ChatInterfaceProps {
  * Provides modern AI chat experience with sidebar navigation and message handling
  */
 export function ChatInterface({ className }: ChatInterfaceProps) {
-  const { user, isAuthenticated } = useAuthContext();
+  const { user, isAuthenticated, token } = useAuthContext();
   const { selectedAgent, isInitialized } = useSolanaAgent();
   const [selectedChatId, setSelectedChatId] = useState<string | undefined>();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('ChatInterface - Auth state:', { isAuthenticated, user, walletAddress: user?.walletAddress });
+  }, [isAuthenticated, user]);
+
   // Convex queries and mutations
   const chats = useQuery(
     api.chats.getByOwner,
-    isAuthenticated && user ? { ownerId: user.walletAddress } : undefined
+    isAuthenticated && user?.walletAddress ? { ownerId: user.walletAddress } : 'skip'
   );
 
   const messages = useQuery(
     api.messages.getByChatId,
-    selectedChatId ? { chatId: selectedChatId as Id<'chats'> } : undefined
+    selectedChatId ? { chatId: selectedChatId as Id<'chats'> } : 'skip'
   );
 
   const createChat = useMutation(api.chats.create);
@@ -68,17 +73,23 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   }, [chats, selectedChatId]);
 
   const handleCreateChat = async () => {
-    if (!user) return;
+    if (!user?.walletAddress) {
+      console.error('Cannot create chat: User or wallet address is missing');
+      return;
+    }
     
     setIsCreatingChat(true);
     try {
-      const newChatId = await createChat({
+      const newChat = await createChat({
         title: `New Chat ${new Date().toLocaleTimeString()}`,
         ownerId: user.walletAddress,
-        model: selectedAgent?.model || user.preferences.aiModel,
+        model: selectedAgent?.model || user.preferences?.aiModel || 'gpt-4o',
         systemPrompt: selectedAgent?.systemPrompt || 'You are ISIS, a helpful AI assistant with access to Solana blockchain operations.',
       });
-      setSelectedChatId(newChatId);
+      // The create mutation returns the full chat document, extract the _id
+      if (newChat && newChat._id) {
+        setSelectedChatId(newChat._id);
+      }
     } catch (error) {
       console.error('Failed to create chat:', error);
     } finally {
@@ -87,16 +98,24 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!selectedChatId || !user) return;
+    if (!selectedChatId || !user || !token) {
+      console.error('Missing requirements for sending message:', { selectedChatId, user: !!user, token: !!token });
+      return;
+    }
 
     try {
       // Use streaming API route which persists user and assistant messages
       const res = await fetch(`/api/chats/${selectedChatId}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ content, role: 'user', stream: true }),
       });
       if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Failed to send message:', res.status, errorText);
         throw new Error(`Failed to stream AI response: ${res.status}`);
       }
       // We don't need to consume the stream here; Convex queries will update when assistant message is saved server-side

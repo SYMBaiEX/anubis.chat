@@ -68,33 +68,21 @@ interface Agent {
   tasksCompleted: number;
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const { isAuthenticated, isLoading, user } = useAuthContext();
-  const { publicKey, balance, formatAddress } = useWallet();
+  const { balance, formatAddress } = useWallet();
   const [selectedTimeRange, setSelectedTimeRange] = useState('7d');
 
-  // Convex data (skip until wallet is available)
+  // Only render queries for authenticated users
   const ownerWallet = isAuthenticated && user ? user.walletAddress : undefined;
-  const chatStats = useQuery(
-    api.chats.getStats,
-    ownerWallet ? { ownerId: ownerWallet } : undefined
-  );
-  const userUsage = ownerWallet
-    ? useQuery(api.users.getUsage, { walletAddress: ownerWallet })
-    : undefined;
-  const recentMessages = useQuery(
-    api.messages.getRecent,
-    ownerWallet ? { userId: ownerWallet, limit: 10 } : undefined
-  );
-  const agentsList = useQuery(
-    api.agents.getByOwner,
-    ownerWallet ? { walletAddress: ownerWallet, limit: 10 } : undefined
-  );
-  const txStats = useQuery(
-    api.blockchainTransactions.getStats,
-    ownerWallet ? { userId: ownerWallet } : undefined
-  );
+  const safeWallet = ownerWallet ?? 'NO_WALLET';
+
+  const chatStats = useQuery(api.chats.getStats, { ownerId: safeWallet });
+  const userUsage = useQuery(api.users.getUsage, { walletAddress: safeWallet });
+  const recentMessages = useQuery(api.messages.getRecent, { userId: safeWallet, limit: 10 });
+  const agentsList = useQuery(api.agents.getByOwner, { walletAddress: safeWallet, limit: 10 });
+  const txStats = useQuery(api.blockchainTransactions.getStats, { userId: safeWallet });
 
   const isDataLoading =
     chatStats === undefined ||
@@ -234,7 +222,6 @@ export default function DashboardPage() {
   }
 
   return (
-    <AuthGuard>
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-background pointer-events-none" />
@@ -555,7 +542,6 @@ export default function DashboardPage() {
               <Card className="p-6 bg-card/50 backdrop-blur">
                 <h3 className="font-semibold mb-6 flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-chart-2/10">
-                    <Brain className="h-4 w-4 text-chart-2" />
                   </div>
                   Model Usage Distribution
                 </h3>
@@ -656,6 +642,13 @@ export default function DashboardPage() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <AuthGuard>
+      <DashboardContent />
     </AuthGuard>
   );
 }

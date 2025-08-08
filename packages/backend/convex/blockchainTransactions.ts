@@ -145,11 +145,12 @@ export const listByUser = query({
       query = query.filter(q => q.eq(q.field('status'), args.status));
     }
 
+    // Take and collect must be done together
     if (args.limit) {
-      query = query.take(args.limit);
+      return await query.take(args.limit);
+    } else {
+      return await query.collect();
     }
-
-    return await query.collect();
   },
 });
 
@@ -202,11 +203,12 @@ export const listByType = query({
       query = query.filter(q => q.eq(q.field('userId'), args.userId));
     }
 
+    // Take and collect must be done together
     if (args.limit) {
-      query = query.take(args.limit);
+      return await query.take(args.limit);
+    } else {
+      return await query.collect();
     }
-
-    return await query.collect();
   },
 });
 

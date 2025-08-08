@@ -99,11 +99,10 @@ export default function Sidebar() {
               )}
             >
               <div className="relative">
-                <Sparkles className="h-8 w-8 text-isis-primary" />
                 <div className="absolute inset-0 h-8 w-8 text-isis-primary blur-lg opacity-50" />
               </div>
               {!isCollapsed && (
-                <span className="text-gradient">ISIS</span>
+                <span className="text-gradient">ISIS.chat</span>
               )}
             </Link>
             
