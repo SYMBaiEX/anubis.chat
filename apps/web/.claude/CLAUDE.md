@@ -158,7 +158,7 @@ Ultracite enforces strict type safety, accessibility standards, and consistent c
 - Prevent duplicate polyfills from Polyfill.io.
 - Don't use useless backreferences in regular expressions that always match empty strings.
 - Don't use unnecessary escapes in string literals.
-- Don't use useless undefined.
+- Don't use useless undefined types.
 - Make sure getters and setters for the same property are next to each other in class and object definitions.
 - Make sure object literals are declared consistently (defaults to explicit definitions).
 - Use static Response methods instead of new Response() constructor when possible.

@@ -12,7 +12,11 @@ import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('providers');
 
-const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!, {
+const convexUrl = (process.env.NEXT_PUBLIC_CONVEX_URL || '').replace(/\/+$/, '');
+if (!convexUrl) {
+  throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is required');
+}
+const convex = new ConvexReactClient(convexUrl, {
   // Enable verbose logging in development
   verbose: process.env.NODE_ENV === 'development',
 });

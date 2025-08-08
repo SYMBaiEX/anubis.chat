@@ -6,6 +6,15 @@
 import { z } from 'zod';
 import { createModuleLogger } from './utils/logger';
 
+// =============================================================================
+// Helpers
+// =============================================================================
+
+const TRAILING_SLASH_REGEX = /\/+$/;
+function stripTrailingSlash(value: string): string {
+  return value.replace(TRAILING_SLASH_REGEX, '');
+}
+
 const log = createModuleLogger('env');
 
 // Define the schema for environment variables
@@ -22,8 +31,16 @@ const envSchema = z.object({
 
   // Convex Backend
   CONVEX_DEPLOYMENT: z.string().optional(),
-  CONVEX_URL: z.string().url().optional(),
-  NEXT_PUBLIC_CONVEX_URL: z.string().url().optional(),
+  CONVEX_URL: z
+    .string()
+    .url()
+    .optional()
+    .transform((val) => (val ? stripTrailingSlash(val) : val)),
+  NEXT_PUBLIC_CONVEX_URL: z
+    .string()
+    .url()
+    .optional()
+    .transform((val) => (val ? stripTrailingSlash(val) : val)),
 
   // JWT and Authentication
   JWT_SECRET: z.string().min(32),
