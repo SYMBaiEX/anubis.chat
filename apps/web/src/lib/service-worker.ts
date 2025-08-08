@@ -47,7 +47,9 @@ export async function registerServiceWorker(config: ServiceWorkerConfig = {}) {
     }
 
     // Register our service worker
-    const registration = await navigator.serviceWorker.register('/sw.js', {
+    // In development, use dev-sw.js to prevent 404 errors
+    const swFile = process.env.NODE_ENV === 'development' ? '/dev-sw.js' : '/sw.js';
+    const registration = await navigator.serviceWorker.register(swFile, {
       scope: '/',
       updateViaCache: 'imports',
     });

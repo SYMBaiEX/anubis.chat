@@ -1,8 +1,9 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, IBM_Plex_Mono } from 'next/font/google';
 import '../index.css';
 import { ErrorBoundary } from '@/components/error-boundary';
 import Header from '@/components/header';
+import Sidebar from '@/components/sidebar';
 import Providers from '@/components/providers';
 import ServiceWorkerManager from '@/components/service-worker-manager';
 
@@ -22,37 +23,27 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-<<<<<<< HEAD
-  title: "isis.chat - Ancient Wisdom • Modern AI",
+  title: "ISIS Chat - Ancient Wisdom • Modern AI",
   description: "Solana-native AI chat platform with RAG capabilities. Authenticate with your wallet, chat with AI, and unlock the power of ancient wisdom through modern technology.",
-  keywords: ["AI chat", "Solana", "Web3", "RAG", "Ancient Egypt", "Blockchain", "Crypto"],
-  authors: [{ name: "SYMBaiEX" }],
-  creator: "isis.chat",
+  keywords: ["AI chat", "Solana", "Web3", "RAG", "Ancient Egypt", "Blockchain", "Crypto", "Claude", "GPT-4"],
+  authors: [{ name: "ISIS Chat Team" }],
+  creator: "ISIS Chat",
+  publisher: "ISIS Chat",
   openGraph: {
-    title: "isis.chat - Ancient Wisdom • Modern AI",
+    title: "ISIS Chat - Ancient Wisdom • Modern AI",
     description: "Solana-native AI chat platform with RAG capabilities",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "isis.chat - Ancient Wisdom • Modern AI",
+    title: "ISIS Chat - Ancient Wisdom • Modern AI",
     description: "Solana-native AI chat platform with RAG capabilities",
   },
   robots: {
     index: true,
     follow: true,
   },
-=======
-  title: 'ISIS Chat - AI Chat Platform with Web3',
-  description:
-    'Next-generation AI chat platform combining advanced RAG capabilities with Solana Web3 integration. Upload documents, create intelligent chatbots, and interact with multiple AI models.',
-  keywords:
-    'AI chat, Web3, Solana, RAG, document search, chatbot, Claude, GPT-4',
-  authors: [{ name: 'ISIS Chat Team' }],
-  creator: 'ISIS Chat',
-  publisher: 'ISIS Chat',
->>>>>>> upstream/main
   formatDetection: {
     email: false,
     address: false,
@@ -63,11 +54,12 @@ export const metadata: Metadata = {
     apple: '/favicon.png',
   },
   manifest: '/manifest.webmanifest',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -98,11 +90,14 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <ServiceWorkerManager />
-            <div className="grid h-svh grid-rows-[auto_1fr]">
-              <Header />
-              <main className="flex-1">
-                {children}
-              </main>
+            <Sidebar />
+            <div className="flex h-screen">
+              <div className="flex-1 flex flex-col lg:ml-64">
+                <Header />
+                <main className="flex-1 overflow-auto">
+                  {children}
+                </main>
+              </div>
             </div>
           </Providers>
         </ErrorBoundary>

@@ -3,12 +3,8 @@ import {
   Connection,
   clusterApiUrl,
   LAMPORTS_PER_SOL,
-<<<<<<< HEAD
   PublicKey,
   type PublicKey as PublicKeyType,
-=======
-  type PublicKey,
->>>>>>> upstream/main
 } from '@solana/web3.js';
 
 // Configure the network to use from environment variables
@@ -72,20 +68,15 @@ export const validateSolanaAddress = (address: string | null | undefined): boole
 
 // Create a sign-in message for wallet authentication
 export const createSignInMessage = (publicKey: string): string => {
-<<<<<<< HEAD
   // Validate public key format
   if (!publicKey || typeof publicKey !== 'string' || publicKey.length < 32) {
     throw new Error('Invalid public key provided');
   }
 
   const domain =
-    typeof window !== 'undefined' ? window.location.host : 'isis.chat';
-=======
-  const domain =
     typeof window !== 'undefined'
       ? window.location.host
       : process.env.NEXT_PUBLIC_APP_DOMAIN || 'isis.chat';
->>>>>>> upstream/main
   const now = new Date();
   // Generate cryptographically secure nonce
   const nonceArray = new Uint8Array(12);
@@ -104,12 +95,8 @@ ${publicKey}
 
 Domain: ${domain}
 Issued At: ${now.toISOString()}
-<<<<<<< HEAD
 Chain ID: ${NETWORK}
 Nonce: ${nonce}`;
-=======
-Chain ID: ${NETWORK}`;
->>>>>>> upstream/main
 
   return message;
 };

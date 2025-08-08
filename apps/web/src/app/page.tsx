@@ -1,183 +1,454 @@
 'use client';
-import { useAuthContext } from '@/components/providers/auth-provider';
-import { useWallet } from '@/hooks/useWallet';
-import { ChatInterface } from '@/components/chat/chat-interface';
-import { RosettaHieroglyphs } from '@/components/effects/rosetta-hieroglyphs';
+
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/lib/auth/hooks';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/data/empty-states';
-import { MessageSquare, Wallet } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import {
+  ArrowRight,
+  Sparkles,
+  Shield,
+  Zap,
+  Brain,
+  Globe,
+  Users,
+  Rocket,
+  Bot,
+  MessageSquare,
+  FileText,
+  BarChart3,
+  Star,
+  Check,
+  ChevronRight,
+  Database,
+  Network,
+  TrendingUp,
+  Wallet,
+  Lock,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export default function Home() {
-  const {
-    isConnected,
-    publicKey,
-    balance,
-    formatAddress,
-    connect: connectWallet,
-  } = useWallet();
-  const {
-    isAuthenticated,
-    isLoading: authLoading,
-    user,
-    error: authError,
-    login,
-    clearError,
-  } = useAuthContext();
+const features = [
+  {
+    icon: Brain,
+    title: 'Advanced AI Models',
+    description: 'Access Claude 3.5, GPT-4, and DeepSeek for unparalleled intelligence',
+    gradient: 'from-purple-500 to-pink-500',
+  },
+  {
+    icon: Shield,
+    title: 'Blockchain Security',
+    description: 'Solana-powered authentication and encrypted message storage',
+    gradient: 'from-green-500 to-emerald-500',
+  },
+  {
+    icon: Zap,
+    title: 'Lightning Fast',
+    description: 'Real-time responses with optimized streaming and caching',
+    gradient: 'from-yellow-500 to-orange-500',
+  },
+  {
+    icon: Globe,
+    title: 'RAG Integration',
+    description: 'Advanced retrieval system for contextual, accurate responses',
+    gradient: 'from-blue-500 to-cyan-500',
+  },
+  {
+    icon: Database,
+    title: 'Vector Search',
+    description: 'Semantic search powered by Qdrant for intelligent responses',
+    gradient: 'from-indigo-500 to-purple-500',
+  },
+  {
+    icon: Network,
+    title: 'Real-time Sync',
+    description: 'Instant updates across all devices with Convex backend',
+    gradient: 'from-rose-500 to-pink-500',
+  },
+];
 
-  // Show chat interface if authenticated
-  if (isAuthenticated && user) {
-    return <ChatInterface />;
-  }
+const useCases = [
+  {
+    icon: Bot,
+    title: 'AI Agents',
+    description: 'Deploy autonomous agents for trading, DeFi, and portfolio management',
+  },
+  {
+    icon: MessageSquare,
+    title: 'Smart Chat',
+    description: 'Context-aware conversations with memory and learning capabilities',
+  },
+  {
+    icon: FileText,
+    title: 'Document Analysis',
+    description: 'Process and understand complex documents with AI precision',
+  },
+  {
+    icon: TrendingUp,
+    title: 'DeFi Trading',
+    description: 'Execute swaps, provide liquidity, and manage positions',
+  },
+];
 
-  // Show welcome/login screen
+const pricingTiers = [
+  {
+    name: 'Free',
+    price: '0',
+    description: 'Perfect for trying out ISIS Chat',
+    features: [
+      '100 messages per month',
+      'Basic AI models',
+      'Wallet authentication',
+      'Community support',
+    ],
+    cta: 'Get Started',
+    highlighted: false,
+  },
+  {
+    name: 'Pro',
+    price: '29',
+    description: 'For professionals and traders',
+    features: [
+      'Unlimited messages',
+      'All AI models access',
+      'Priority response time',
+      'Advanced RAG system',
+      'Custom AI agents',
+      'API access',
+    ],
+    cta: 'Start Free Trial',
+    highlighted: true,
+  },
+  {
+    name: 'Enterprise',
+    price: 'Custom',
+    description: 'For teams and organizations',
+    features: [
+      'Everything in Pro',
+      'Custom deployment',
+      'SLA guarantee',
+      'Dedicated support',
+      'Custom integrations',
+      'Team management',
+    ],
+    cta: 'Contact Sales',
+    highlighted: false,
+  },
+];
+
+const testimonials = [
+  {
+    name: 'Sarah Chen',
+    role: 'DeFi Trader',
+    content: 'ISIS Chat has revolutionized my trading workflow. The AI agents execute strategies flawlessly.',
+    rating: 5,
+  },
+  {
+    name: 'Michael Roberts',
+    role: 'Data Scientist',
+    content: 'The RAG capabilities are incredible. It understands context better than any other platform.',
+    rating: 5,
+  },
+  {
+    name: 'Emma Wilson',
+    role: 'Product Manager',
+    content: 'Fast, secure, and intelligent. ISIS Chat is the future of Web3 AI integration.',
+    rating: 5,
+  },
+];
+
+export default function LandingPage() {
+  const router = useRouter();
+  const { isAuthenticated, user } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, user, router]);
+
   return (
     <>
-      <RosettaHieroglyphs />
-<<<<<<< HEAD
-      <div className="flex min-h-screen flex-col items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-8">
-          {/* Header */}
-          <div className="text-center">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-              <MessageSquare className="h-10 w-10 text-primary" />
-=======
-      <div className="container relative z-10 mx-auto max-w-6xl px-4 py-12">
-        <div className="mb-16 text-center">
-          <h1 className="mb-4 font-light text-6xl tracking-wider">ISIS CHAT</h1>
-          <p className="text-muted-foreground text-xl">
-            Ancient wisdom meets modern technology
-          </p>
-        </div>
-
-        <div className="grid gap-8 md:grid-cols-2">
-          {/* API Status Card */}
-          <section className="rounded-lg border-2 border-border bg-card p-6 transition-colors hover:border-primary">
-            <h2 className="mb-4 font-medium text-lg">System Status</h2>
-            <div className="flex items-center gap-3">
-              <div
-                className={`h-3 w-3 rounded-full ${
-                  healthCheck === 'OK'
-                    ? 'bg-primary shadow-[0_0_10px_rgba(96,165,250,0.5)]'
-                    : healthCheck === undefined
-                      ? 'bg-orange-400'
-                      : 'bg-red-500'
-                }`}
-              />
-              <span className="text-muted-foreground">
-                {healthCheck === undefined
-                  ? 'Initializing...'
-                  : healthCheck === 'OK'
-                    ? 'System operational'
-                    : 'Connection error'}
-              </span>
->>>>>>> upstream/main
+      <div className="min-h-screen bg-background">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden py-20 lg:py-32">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-background" />
+          <div className="absolute inset-0 bg-center" style={{ backgroundImage: "url('/grid.svg')", maskImage: 'radial-gradient(white, transparent 70%)' }} />
+        
+        <div className="container relative mx-auto px-4">
+          <div className="mx-auto max-w-5xl text-center">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-primary">Ancient Wisdom • Modern Technology</span>
             </div>
-            <h1 className="mb-2 font-bold text-3xl tracking-tight">ISIS Chat</h1>
-            <p className="text-muted-foreground">
-              Modern AI chat with Solana blockchain capabilities
+            
+            <h1 className="mb-6 text-5xl font-bold tracking-tight lg:text-7xl">
+              <span className="text-gradient">ISIS CHAT</span>
+              <br />
+              <span className="text-foreground">Where AI Meets Blockchain</span>
+            </h1>
+            
+            <p className="mb-8 text-xl text-muted-foreground lg:text-2xl">
+              Experience the future of decentralized AI with Solana security,
+              <br className="hidden lg:block" />
+              advanced RAG capabilities, and multi-model intelligence
+            </p>
+            
+            <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
+              <Link href="/auth">
+                <Button size="lg" className="button-press gap-2 min-w-[200px]">
+                  Get Started Free
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="#features">
+                <Button size="lg" variant="outline" className="button-press min-w-[200px]">
+                  Learn More
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Trust Indicators */}
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                <span>Bank-grade encryption</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                <span>Wallet-based auth</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span>10,000+ users</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4" />
+                <span>4.9/5 rating</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-20 lg:py-32 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="mb-4 text-3xl font-bold lg:text-5xl">
+              Powerful Features
+            </h2>
+            <p className="mb-12 text-lg text-muted-foreground">
+              Everything you need for intelligent AI-powered blockchain interactions
             </p>
           </div>
 
-<<<<<<< HEAD
-          {/* Auth Error Display */}
-          {authError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
-              <p className="text-red-600 text-sm dark:text-red-400">
-                {authError}
-              </p>
-              <Button
-                className="mt-2 text-red-600 dark:text-red-400"
-                onClick={clearError}
-                size="sm"
-                variant="ghost"
-              >
-                Clear Error
-              </Button>
-            </div>
-          )}
-
-          {/* Authentication Flow */}
-          <div className="space-y-4 rounded-lg border bg-card p-6">
-            {!isConnected ? (
-              <EmptyState
-                action={{
-                  label: "Connect Wallet",
-                  onClick: connectWallet,
-                }}
-                description="Connect your Solana wallet to access AI chat with blockchain capabilities"
-                icon={<Wallet className="h-12 w-12 text-muted-foreground" />}
-                title="Connect Your Wallet"
-              />
-=======
-          {/* Wallet Status Card */}
-          <section className="rounded-lg border-2 border-border bg-card p-6 transition-colors hover:border-primary">
-            <h2 className="mb-4 font-medium text-lg">Wallet Connection</h2>
-            {isConnected && publicKey ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-primary shadow-[0_0_10px_rgba(96,165,250,0.5)]" />
-                  <span className="text-muted-foreground">Connected</span>
-                </div>
-                <p className="text-muted-foreground text-sm">
-                  Address: {formatAddress(6)}
-                </p>
-                {balance !== null && (
-                  <p className="text-muted-foreground text-sm">
-                    Balance: {balance.toFixed(4)} SOL
-                  </p>
-                )}
-              </div>
->>>>>>> upstream/main
-            ) : (
-              <div className="space-y-4">
-                {/* Wallet Connected */}
-                <div className="flex items-center space-x-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
-                    <Wallet className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <Card
+                  key={index}
+                  className="card-hover group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity group-hover:opacity-10"
+                    style={{
+                      backgroundImage: `linear-gradient(to bottom right, var(--tw-gradient-stops))`,
+                    }}
+                    className={cn(feature.gradient)}
+                  />
+                  <div className="relative p-6">
+                    <div
+                      className={cn(
+                        'mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br',
+                        feature.gradient
+                      )}
+                    >
+                      <Icon className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="mb-2 text-xl font-semibold">{feature.title}</h3>
+                    <p className="text-muted-foreground">{feature.description}</p>
                   </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases */}
+      <section className="py-20 lg:py-32">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="mb-4 text-3xl font-bold lg:text-5xl">
+              Built for Web3
+            </h2>
+            <p className="mb-12 text-lg text-muted-foreground">
+              Seamlessly interact with the Solana ecosystem through natural language
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {useCases.map((useCase, index) => {
+              const Icon = useCase.icon;
+              return (
+                <div
+                  key={index}
+                  className="group flex flex-col items-center text-center"
+                >
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 transition-all group-hover:scale-110 group-hover:bg-primary/20">
+                    <Icon className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold">{useCase.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {useCase.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 lg:py-32 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="mb-4 text-3xl font-bold lg:text-5xl">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="mb-12 text-lg text-muted-foreground">
+              Choose the plan that fits your needs. Upgrade or downgrade anytime.
+            </p>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-3">
+            {pricingTiers.map((tier, index) => (
+              <Card
+                key={index}
+                className={cn(
+                  \'relative overflow-hidden\',
+                  tier.highlighted && \'border-primary shadow-lg shadow-primary/20 scale-105\'
+                )}
+              >
+                {tier.highlighted && (
+                  <div className="absolute -right-12 top-8 rotate-45 bg-primary px-12 py-1 text-xs font-semibold text-primary-foreground">
+                    POPULAR
+                  </div>
+                )}
+                <div className="p-6">
+                  <h3 className="mb-2 text-2xl font-bold">{tier.name}</h3>
+                  <div className="mb-2 flex items-baseline">
+                    {tier.price === \'Custom\' ? (
+                      <span className="text-3xl font-bold">{tier.price}</span>
+                    ) : (
+                      <>
+                        <span className="text-4xl font-bold">${tier.price}</span>
+                        <span className="ml-2 text-muted-foreground">/month</span>
+                      </>
+                    )}
+                  </div>
+                  <p className="mb-6 text-muted-foreground">{tier.description}</p>
+                  
+                  <ul className="mb-6 space-y-3">
+                    {tier.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span className="text-sm">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <Link href="/auth">
+                    <Button
+                      className={cn(
+                        \'w-full button-press\',
+                        tier.highlighted ? \'\' : \'\'
+                      )}
+                      variant={tier.highlighted ? \'default\' : \'outline\'}
+                    >
+                      {tier.cta}
+                    </Button>
+                  </Link>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 lg:py-32">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="mb-4 text-3xl font-bold lg:text-5xl">
+              Loved by Web3 Builders
+            </h2>
+            <p className="mb-12 text-lg text-muted-foreground">
+              See what our community is saying
+            </p>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-3">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="bg-card/50 backdrop-blur">
+                <div className="p-6">
+                  <div className="mb-4 flex gap-1">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className="h-4 w-4 fill-yellow-500 text-yellow-500"
+                      />
+                    ))}
+                  </div>
+                  <p className="mb-4 text-muted-foreground">
+                    "{testimonial.content}"
+                  </p>
                   <div>
-                    <p className="font-medium text-sm">Wallet Connected</p>
-                    <p className="text-muted-foreground text-xs">
-                      {formatAddress(6)} • {balance?.toFixed(4)} SOL
+                    <p className="font-semibold">{testimonial.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {testimonial.role}
                     </p>
                   </div>
                 </div>
-
-                {/* Sign In Button */}
-                <Button
-                  className="w-full"
-                  disabled={authLoading}
-                  onClick={login}
-                  size="lg"
-                >
-                  {authLoading ? 'Authenticating...' : 'Sign In to Chat'}
-                </Button>
-              </div>
-            )}
+              </Card>
+            ))}
           </div>
-
-<<<<<<< HEAD
-          {/* Features */}
-          <div className="space-y-3 text-center text-sm text-muted-foreground">
-            <p className="font-medium">Features:</p>
-            <ul className="space-y-1 text-xs">
-              <li>• AI-powered conversations with multiple models</li>
-              <li>• Solana blockchain operations and trading</li>
-              <li>• DeFi management and portfolio tracking</li>
-              <li>• NFT creation and marketplace interactions</li>
-              <li>• Voice input and file sharing</li>
-            </ul>
-          </div>
-=======
-        {/* Welcome Message */}
-        <div className="mx-auto mt-16 max-w-2xl text-center">
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            Welcome to ISIS Chat, where ancient Egyptian mystique meets
-            cutting-edge AI and blockchain technology. Connect your Solana
-            wallet to unlock the full potential of decentralized communication.
-          </p>
->>>>>>> upstream/main
         </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 lg:py-32">
+        <div className="container mx-auto px-4">
+          <Card className="overflow-hidden bg-gradient-to-br from-primary/20 via-accent/20 to-background border-primary/20">
+            <div className="p-12 text-center">
+              <h2 className="mb-4 text-3xl font-bold lg:text-5xl">
+                Ready to Experience the Future?
+              </h2>
+              <p className="mb-8 text-lg text-muted-foreground">
+                Join thousands leveraging AI for Web3 interactions
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/auth">
+                  <Button size="lg" className="button-press gap-2 min-w-[200px]">
+                    Connect Wallet
+                    <Wallet className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/chat">
+                  <Button size="lg" variant="outline" className="button-press gap-2 min-w-[200px]">
+                    Try Demo
+                    <Rocket className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </section>
       </div>
     </>
   );

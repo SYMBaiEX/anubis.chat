@@ -138,25 +138,28 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   }
 
   return (
-    <div className={cn("flex h-screen bg-background", className)}>
+    <div className={cn("flex h-full bg-background", className)}>
       {/* Sidebar */}
       <div 
         className={cn(
-          "flex-shrink-0 border-border border-r bg-muted/50 transition-all duration-300",
+          "flex-shrink-0 border-r border-border/50 bg-card/50 backdrop-blur transition-all duration-300",
           sidebarOpen ? "w-80" : "w-0"
         )}
       >
         <div className={cn("h-full overflow-hidden", sidebarOpen ? "block" : "hidden")}>
           {/* Sidebar Header */}
-          <div className="flex h-14 items-center justify-between border-border border-b px-4">
-            <div className="flex items-center space-x-2">
-              <Bot className="h-5 w-5 text-primary" />
-              <span className="font-semibold">ISIS Chat</span>
+          <div className="flex h-14 items-center justify-between border-b border-border/50 px-4 bg-gradient-to-r from-primary/5 to-accent/5">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20">
+                <Bot className="h-4 w-4 text-primary" />
+              </div>
+              <span className="font-semibold text-sm">Chat History</span>
             </div>
             <Button
               onClick={() => setSidebarOpen(false)}
               size="sm"
               variant="ghost"
+              className="h-8 w-8 p-0"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -182,13 +185,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       {/* Main Chat Area */}
       <div className="flex flex-1 flex-col">
         {/* Top Bar */}
-        <div className="flex h-14 items-center justify-between border-border border-b bg-background px-4">
-          <div className="flex items-center space-x-3">
+        <div className="flex h-14 items-center justify-between border-b border-border/50 bg-card/30 backdrop-blur px-4">
+          <div className="flex items-center gap-3">
             {!sidebarOpen && (
               <Button
                 onClick={() => setSidebarOpen(true)}
                 size="sm"
                 variant="ghost"
+                className="button-press"
               >
                 <Sidebar className="h-4 w-4" />
               </Button>
@@ -207,14 +211,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 }}
               />
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium text-muted-foreground">Select a chat</span>
+                <span className="font-medium text-muted-foreground">Select a chat to begin</span>
               </div>
             )}
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             {/* Agent Selector */}
             {isInitialized && (
               <AgentSelector />
@@ -225,12 +229,13 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               onClick={handleCreateChat}
               size="sm"
               variant="outline"
+              className="button-press"
             >
               <Plus className="h-4 w-4 mr-1" />
               New Chat
             </Button>
             
-            <Button size="sm" variant="ghost">
+            <Button size="sm" variant="ghost" className="button-press">
               <Settings className="h-4 w-4" />
             </Button>
           </div>
@@ -238,7 +243,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
         {/* Chat Content */}
         {!currentChat ? (
-          <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background">
             <EmptyState
               action={
                 chats?.length === 0 ? {
@@ -256,7 +261,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             />
           </div>
         ) : (
-          <div className="flex flex-1 flex-col">
+          <div className="flex flex-1 flex-col bg-gradient-to-br from-background via-muted/10 to-background">
             {/* Message List */}
             <div className="flex-1 overflow-hidden">
               {messages === undefined ? (
@@ -275,12 +280,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             </div>
 
             {/* Message Input */}
-            <div className="border-border border-t bg-background p-4">
-              <MessageInput
-                disabled={!selectedChatId || messages === undefined}
-                onSend={handleSendMessage}
-                placeholder="Type your message..."
-              />
+            <div className="border-t border-border/50 bg-card/30 backdrop-blur p-4">
+              <div className="max-w-4xl mx-auto">
+                <MessageInput
+                  disabled={!selectedChatId || messages === undefined}
+                  onSend={handleSendMessage}
+                  placeholder="Ask ISIS anything..."
+                />
+              </div>
             </div>
           </div>
         )}

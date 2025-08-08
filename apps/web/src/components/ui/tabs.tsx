@@ -1,114 +1,54 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+'use client';
+
 import * as React from 'react';
-import type { TabsProps } from '@/lib/types/components';
+import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { cn } from '@/lib/utils';
 
-const tabsListVariants = cva(
-  'inline-flex items-center justify-center rounded-lg p-1',
-  {
-    variants: {
-      variant: {
-        default: 'bg-muted text-muted-foreground',
-        pills: 'space-x-2 bg-transparent',
-        underline:
-          'border-gray-200 border-b bg-transparent dark:border-gray-800',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
+const Tabs = TabsPrimitive.Root;
 
-const tabsTriggerVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 font-medium text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
-  {
-    variants: {
-      variant: {
-        default:
-          'rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm',
-        pills:
-          'rounded-full bg-gray-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white dark:bg-gray-800',
-        underline:
-          'rounded-none border-transparent border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
+const TabsList = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.List>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.List
+    ref={ref}
+    className={cn(
+      'inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground',
+      className
+    )}
+    {...props}
+  />
+));
+TabsList.displayName = TabsPrimitive.List.displayName;
 
-/**
- * Tabs component - Provides tabbed navigation interface
- */
-export function Tabs({
-  tabs,
-  activeTab,
-  onTabChange,
-  variant = 'default',
-  className,
-  children,
-}: TabsProps) {
-  const [currentTab, setCurrentTab] = React.useState(
-    activeTab ?? tabs[0]?.id ?? ''
-  );
+const TabsTrigger = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm',
+      className
+    )}
+    {...props}
+  />
+));
+TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
 
-  React.useEffect(() => {
-    if (activeTab && activeTab !== currentTab) {
-      setCurrentTab(activeTab);
-    }
-  }, [activeTab, currentTab]);
+const TabsContent = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.Content
+    ref={ref}
+    className={cn(
+      'mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+      className
+    )}
+    {...props}
+  />
+));
+TabsContent.displayName = TabsPrimitive.Content.displayName;
 
-  const handleTabChange = (tabId: string) => {
-    setCurrentTab(tabId);
-    onTabChange?.(tabId);
-  };
-
-  const activeTabContent = tabs.find((tab) => tab.id === currentTab)?.content;
-
-  return (
-    <div className={cn('w-full', className)}>
-      {/* Tab List */}
-      <div className={cn(tabsListVariants({ variant }))}>
-        {tabs.map((tab) => (
-          <button
-            aria-controls={`tab-content-${tab.id}`}
-            aria-selected={currentTab === tab.id}
-            className={cn(tabsTriggerVariants({ variant }))}
-            data-state={currentTab === tab.id ? 'active' : 'inactive'}
-            disabled={tab.disabled}
-            key={tab.id}
-            onClick={() => handleTabChange(tab.id)}
-            role="tab"
-            type="button"
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      <div className="mt-4">
-        {tabs.map((tab) => (
-          <div
-            aria-labelledby={`tab-${tab.id}`}
-            className={cn(
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              currentTab === tab.id ? 'block' : 'hidden'
-            )}
-            id={`tab-content-${tab.id}`}
-            key={tab.id}
-            role="tabpanel"
-          >
-            {tab.content}
-          </div>
-        ))}
-      </div>
-
-      {children}
-    </div>
-  );
-}
-
-export default Tabs;
+export { Tabs, TabsList, TabsTrigger, TabsContent };

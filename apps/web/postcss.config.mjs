@@ -1,6 +1,8 @@
-// Simple PostCSS config for tests - disable tailwind for testing
+// PostCSS config for Tailwind CSS v4
 const config = {
-  plugins: [],
+  plugins: {
+    '@tailwindcss/postcss': {},
+  },
 };
 
 export default config;
