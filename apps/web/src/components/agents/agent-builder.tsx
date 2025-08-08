@@ -96,6 +96,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
       tone: 'professional',
       style: 'concise',
       traits: [],
+      customPrompts: [],
     },
     capabilities: initialAgent?.capabilities || [],
     tools: initialAgent?.tools || [],
@@ -307,7 +308,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                             id="name"
                             placeholder="e.g., Trading Pro, DeFi Helper"
                             value={agentData.name}
-                            onChange={(e) => setAgentData({ ...agentData, name: e.target.value })}
+                            onChange={(e) => setAgentData(prev => ({ ...prev, name: e.target.value }))}
                             className={errors.name ? 'border-destructive' : ''}
                           />
                           {errors.name && (
@@ -319,7 +320,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                           <Label htmlFor="type">Agent Type</Label>
                           <Select
                             value={agentData.type}
-                            onValueChange={(value) => setAgentData({ ...agentData, type: value })}
+                            onValueChange={(value) => setAgentData(prev => ({ ...prev, type: value }))}
                           >
                             <SelectTrigger id="type">
                               <SelectValue />
@@ -344,7 +345,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                           id="description"
                           placeholder="Describe what your agent does and its key capabilities..."
                           value={agentData.description}
-                          onChange={(e) => setAgentData({ ...agentData, description: e.target.value })}
+                          onChange={(e) => setAgentData(prev => ({ ...prev, description: e.target.value }))}
                           className={cn("min-h-[100px]", errors.description ? 'border-destructive' : '')}
                         />
                         {errors.description && (
@@ -359,7 +360,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                             id="avatar"
                             placeholder="https://example.com/avatar.png"
                             value={agentData.avatar}
-                            onChange={(e) => setAgentData({ ...agentData, avatar: e.target.value })}
+                            onChange={(e) => setAgentData(prev => ({ ...prev, avatar: e.target.value }))}
                           />
                           <Button variant="outline" size="icon">
                             <Upload className="h-4 w-4" />
@@ -374,7 +375,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                           <AgentTemplateGallery
                             onSelectTemplate={(template: AgentTemplate) => {
-                              setAgentData({ ...agentData, ...template.config });
+                              setAgentData(prev => ({ ...prev, ...template.config }));
                             }}
                           />
                         </div>
@@ -395,7 +396,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                     <CardContent>
                       <AgentCapabilitySelector
                         selected={agentData.capabilities}
-                        onChange={(capabilities) => setAgentData({ ...agentData, capabilities })}
+                        onChange={(capabilities) => setAgentData(prev => ({ ...prev, capabilities }))}
                       />
                       {errors.capabilities && (
                         <p className="mt-2 text-sm text-destructive">{errors.capabilities}</p>
@@ -416,7 +417,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                     <CardContent>
                       <AgentToolBuilder
                         tools={agentData.tools}
-                        onChange={(tools) => setAgentData({ ...agentData, tools })}
+                        onChange={(tools) => setAgentData(prev => ({ ...prev, tools }))}
                       />
                     </CardContent>
                   </Card>
@@ -434,7 +435,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                     <CardContent>
                       <AgentPersonalityEditor
                         personality={agentData.personality}
-                        onChange={(personality) => setAgentData({ ...agentData, personality })}
+                        onChange={(personality) => setAgentData(prev => ({ ...prev, personality }))}
                       />
                     </CardContent>
                   </Card>
@@ -486,10 +487,10 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                           <Switch
                             checked={agentData.permissions.canExecuteTrades}
                             onCheckedChange={(checked) => 
-                              setAgentData({
-                                ...agentData,
-                                permissions: { ...agentData.permissions, canExecuteTrades: checked }
-                              })
+                              setAgentData(prev => ({
+                                ...prev,
+                                permissions: { ...prev.permissions, canExecuteTrades: checked }
+                              }))
                             }
                           />
                         </div>
@@ -504,10 +505,10 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                           <Switch
                             checked={agentData.permissions.requiresApproval}
                             onCheckedChange={(checked) => 
-                              setAgentData({
-                                ...agentData,
-                                permissions: { ...agentData.permissions, requiresApproval: checked }
-                              })
+                              setAgentData(prev => ({
+                                ...prev,
+                                permissions: { ...prev.permissions, requiresApproval: checked }
+                              }))
                             }
                           />
                         </div>
@@ -518,10 +519,10 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                             <Slider
                               value={[agentData.permissions.maxTransactionValue]}
                               onValueChange={([value]) => 
-                                setAgentData({
-                                  ...agentData,
-                                  permissions: { ...agentData.permissions, maxTransactionValue: value }
-                                })
+                                setAgentData(prev => ({
+                                  ...prev,
+                                  permissions: { ...prev.permissions, maxTransactionValue: value }
+                                }))
                               }
                               max={1000}
                               step={10}

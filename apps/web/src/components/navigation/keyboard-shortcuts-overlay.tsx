@@ -222,30 +222,7 @@ export function KeyboardShortcutsOverlay({
   );
 }
 
-// Hook to use keyboard shortcuts
-export function useKeyboardShortcuts(shortcuts: Record<string, () => void>) {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      const ctrl = e.ctrlKey || e.metaKey;
-      const shift = e.shiftKey;
-      const alt = e.altKey;
-      
-      let shortcutKey = '';
-      if (ctrl) shortcutKey += 'cmd+';
-      if (shift) shortcutKey += 'shift+';
-      if (alt) shortcutKey += 'alt+';
-      shortcutKey += key;
-      
-      if (shortcuts[shortcutKey]) {
-        e.preventDefault();
-        shortcuts[shortcutKey]();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [shortcuts]);
-}
+// Re-export the hook from the dedicated hooks file
+export { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 
 export default KeyboardShortcutsOverlay;

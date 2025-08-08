@@ -107,8 +107,8 @@ export function WalletBalanceWidget({
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
-  const mainToken = balances.find(b => b.symbol === 'SOL') || balances[0];
-  const otherTokens = balances.filter(b => b.symbol !== 'SOL');
+  const mainToken = balances?.find(b => b.symbol === 'SOL') || balances?.[0];
+  const otherTokens = balances?.filter(b => b.symbol !== 'SOL') || [];
 
   if (variant === 'compact') {
     return (

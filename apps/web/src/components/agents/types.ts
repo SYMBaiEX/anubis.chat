@@ -69,7 +69,7 @@ export interface AgentTemplate {
 
 export interface TestMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
 }
