@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Result, ok, err } from '@/lib/types/result';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -140,14 +141,45 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = async () => {
-    if (!validateAgent()) return;
+  const handleSave = async (): Promise<Result<Agent, Error>> => {
+    if (!validateAgent()) {
+      return err(new Error('Validation failed. Please check all required fields.'));
+    }
     
     setIsSaving(true);
-    // Simulate save
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    onSave?.(agentData);
-    setIsSaving(false);
+    
+    try {
+      // Simulate save operation (replace with actual API call)
+      await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          // Simulate potential failure (5% chance)
+          if (Math.random() < 0.05) {
+            reject(new Error('Failed to save agent. Please try again.'));
+          } else {
+            resolve(true);
+          }
+        }, 1000);
+      });
+      
+      // Call the onSave callback if provided
+      onSave?.(agentData);
+      
+      setIsSaving(false);
+      
+      // Return success result with the saved agent data
+      return ok(agentData);
+    } catch (error) {
+      setIsSaving(false);
+      
+      // Handle different error types
+      if (error instanceof Error) {
+        return err(error);
+      } else if (typeof error === 'string') {
+        return err(new Error(error));
+      } else {
+        return err(new Error('An unexpected error occurred while saving the agent.'));
+      }
+    }
   };
 
   const getTypeIcon = (type: string) => {
@@ -210,7 +242,16 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
               <Button variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={isSaving}>
+              <Button 
+                onClick={async () => {
+                  const result = await handleSave();
+                  if (!result.ok) {
+                    // Handle error - you may want to show a toast or error message
+                    console.error('Failed to save agent:', result.error.message);
+                  }
+                }} 
+                disabled={isSaving}
+              >
                 {isSaving ? (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />

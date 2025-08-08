@@ -277,6 +277,31 @@ const templates: ExtendedAgentTemplate[] = [
 
 const categories = ['All', 'Trading', 'DeFi', 'NFT', 'Analytics', 'Security', 'Development', 'Research', 'Governance'];
 
+// Safe mapping from template categories to valid agent types
+const CATEGORY_TO_TYPE_MAP: Record<string, string> = {
+  'Trading': 'trading',
+  'DeFi': 'defi',
+  'NFT': 'nft',
+  'Analytics': 'portfolio',
+  'Security': 'general', // No specific security type, fallback to general
+  'Development': 'developer',
+  'Research': 'research',
+  'Governance': 'dao',
+  // Add any additional mappings as needed
+};
+
+// Default agent type for unmapped categories
+const DEFAULT_AGENT_TYPE = 'general';
+
+/**
+ * Safely maps a category to a valid agent type
+ * @param category - The template category
+ * @returns A valid agent type string
+ */
+function getCategoryAgentType(category: string): string {
+  return CATEGORY_TO_TYPE_MAP[category] || DEFAULT_AGENT_TYPE;
+}
+
 export function AgentTemplateGallery({ onSelectTemplate }: AgentTemplateGalleryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -290,13 +315,23 @@ export function AgentTemplateGallery({ onSelectTemplate }: AgentTemplateGalleryP
     return matchesSearch && matchesCategory;
   });
 
-  const handleSelectTemplate = (template: AgentTemplate) => {
+  const handleSelectTemplate = (template: ExtendedAgentTemplate) => {
     setSelectedTemplate(template);
     setShowPreview(true);
   };
 
   const handleUseTemplate = () => {
     if (selectedTemplate) {
+      // Safely map category to a valid agent type
+      const agentType = getCategoryAgentType(selectedTemplate.category);
+      
+      // Log warning if fallback was used
+      if (!CATEGORY_TO_TYPE_MAP[selectedTemplate.category]) {
+        console.warn(
+          `Template category "${selectedTemplate.category}" has no direct mapping. Using default type "${DEFAULT_AGENT_TYPE}".`
+        );
+      }
+      
       const templateForSelection: AgentTemplateType = {
         id: selectedTemplate.id,
         name: selectedTemplate.name,
@@ -306,7 +341,7 @@ export function AgentTemplateGallery({ onSelectTemplate }: AgentTemplateGalleryP
         config: {
           name: selectedTemplate.name,
           description: selectedTemplate.description,
-          type: selectedTemplate.category.toLowerCase(),
+          type: agentType, // Use the safely mapped type
           personality: selectedTemplate.personality,
           capabilities: selectedTemplate.capabilities,
           tools: selectedTemplate.tools.map(t => ({ 

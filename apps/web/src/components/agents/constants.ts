@@ -24,6 +24,7 @@ import {
   Brain,
   Eye,
   Mic,
+  type LucideIcon,
 } from 'lucide-react';
 
 interface Capability {
@@ -31,7 +32,7 @@ interface Capability {
   name: string;
   description: string;
   category: string;
-  icon: any;
+  icon: LucideIcon;
   premium?: boolean;
   beta?: boolean;
   dependencies?: string[];

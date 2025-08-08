@@ -161,7 +161,13 @@ export function AgentToolBuilder({ tools = [], onChange }: AgentToolBuilderProps
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTool, setEditingTool] = useState<Tool | null>(null);
   const [testingTool, setTestingTool] = useState<string | null>(null);
-  const [testResults, setTestResults] = useState<Record<string, any>>({});
+  const [testResults, setTestResults] = useState<Record<string, {
+    success: boolean;
+    response: {
+      data: string;
+      timestamp: number;
+    };
+  }>>({});
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
   const [newTool, setNewTool] = useState<Partial<Tool>>({

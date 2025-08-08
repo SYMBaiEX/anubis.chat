@@ -15,6 +15,7 @@ import {
   User,
   Menu,
   X,
+  type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
@@ -22,7 +23,7 @@ import { usePathname, useRouter } from 'next/navigation';
 interface NavItem {
   id: string;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   href: string;
   badge?: string | number;
   badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
@@ -88,6 +89,7 @@ export function MobileNavigation({
                     isActive && 'shadow-sm'
                   )}
                   onClick={() => handleNavigation(item.href)}
+                  aria-label={item.label}
                 >
                   <ItemIcon className="h-5 w-5" />
                   {item.badge && (
@@ -111,6 +113,7 @@ export function MobileNavigation({
               size="icon"
               className="h-10 w-10 rounded-full"
               onClick={() => setIsDrawerOpen(true)}
+              aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
             </Button>
@@ -132,6 +135,7 @@ export function MobileNavigation({
             className
           )}
           onClick={() => setIsDrawerOpen(true)}
+          aria-label="Open navigation menu"
         >
           <Menu className="h-6 w-6" />
         </Button>
@@ -165,6 +169,7 @@ export function MobileNavigation({
                       variant="ghost"
                       size="icon"
                       onClick={() => setIsDrawerOpen(false)}
+                      aria-label="Close menu"
                     >
                       <X className="h-5 w-5" />
                     </Button>
@@ -299,6 +304,7 @@ export function MobileNavigation({
             size="icon"
             className="h-14 w-14 rounded-full shadow-lg"
             onClick={onNewChat}
+            aria-label="Start new chat"
           >
             <Plus className="h-6 w-6" />
           </Button>

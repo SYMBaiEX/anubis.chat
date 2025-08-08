@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Tooltip,
@@ -23,11 +23,8 @@ import {
   Eye,
   EyeOff,
   Copy,
-  ExternalLink,
-  AlertCircle,
   CheckCircle,
   Coins,
-  DollarSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -132,25 +129,29 @@ export function WalletBalanceWidget({
         
         <div className="flex items-center gap-1">
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             className="h-7 w-7"
             onClick={() => setHideBalances(!hideBalances)}
+            aria-label="Toggle balance visibility"
           >
             {hideBalances ? (
-              <Eye className="h-3.5 w-3.5" />
-            ) : (
               <EyeOff className="h-3.5 w-3.5" />
+            ) : (
+              <Eye className="h-3.5 w-3.5" />
             )}
           </Button>
           
           {onRefresh && (
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               className="h-7 w-7"
               onClick={handleRefresh}
               disabled={isRefreshing}
+              aria-label="Refresh balances"
             >
               <RefreshCw className={cn(
                 "h-3.5 w-3.5",
@@ -179,6 +180,7 @@ export function WalletBalanceWidget({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
                       onClick={handleCopyAddress}
@@ -199,11 +201,13 @@ export function WalletBalanceWidget({
             )}
             
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               onClick={() => setHideBalances(!hideBalances)}
+              aria-label="Toggle balance visibility"
             >
-              {hideBalances ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              {hideBalances ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           </div>
         </div>
@@ -244,7 +248,13 @@ export function WalletBalanceWidget({
                 >
                   <div className="flex items-center gap-3">
                     {token.icon ? (
-                      <img src={token.icon} alt={token.symbol} className="h-8 w-8 rounded-full" />
+                      <Image 
+                        src={token.icon} 
+                        alt={token.symbol} 
+                        width={32} 
+                        height={32} 
+                        className="rounded-full" 
+                      />
                     ) : (
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                         <Coins className="h-4 w-4" />
@@ -290,23 +300,25 @@ export function WalletBalanceWidget({
         {/* Actions */}
         <div className="flex gap-2">
           {onSend && (
-            <Button className="flex-1" onClick={onSend}>
+            <Button type="button" className="flex-1" onClick={onSend}>
               <ArrowUpRight className="h-4 w-4 mr-2" />
               Send
             </Button>
           )}
           {onReceive && (
-            <Button className="flex-1" variant="outline" onClick={onReceive}>
+            <Button type="button" className="flex-1" variant="outline" onClick={onReceive}>
               <ArrowDownRight className="h-4 w-4 mr-2" />
               Receive
             </Button>
           )}
           {onRefresh && (
             <Button
+              type="button"
               variant="outline"
               size="icon"
               onClick={handleRefresh}
               disabled={isRefreshing}
+              aria-label="Refresh balances"
             >
               <RefreshCw className={cn(
                 "h-4 w-4",
@@ -331,21 +343,25 @@ export function WalletBalanceWidget({
           
           <div className="flex items-center gap-1">
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               className="h-8 w-8"
               onClick={() => setHideBalances(!hideBalances)}
+              aria-label="Toggle balance visibility"
             >
-              {hideBalances ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              {hideBalances ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
             
             {onRefresh && (
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
                 onClick={handleRefresh}
                 disabled={isRefreshing}
+                aria-label="Refresh balances"
               >
                 <RefreshCw className={cn(
                   "h-4 w-4",
@@ -363,6 +379,7 @@ export function WalletBalanceWidget({
           <div className="flex items-center justify-between p-2 rounded-lg bg-muted">
             <span className="text-sm text-muted-foreground">Address</span>
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               className="h-7 font-mono"
@@ -411,7 +428,7 @@ export function WalletBalanceWidget({
               </div>
             ))}
             {otherTokens.length > 3 && (
-              <Button variant="ghost" size="sm" className="w-full">
+              <Button type="button" variant="ghost" size="sm" className="w-full">
                 View all ({otherTokens.length} tokens)
               </Button>
             )}
@@ -421,13 +438,13 @@ export function WalletBalanceWidget({
         {/* Actions */}
         <div className="flex gap-2 pt-2">
           {onSend && (
-            <Button size="sm" className="flex-1" onClick={onSend}>
+            <Button type="button" size="sm" className="flex-1" onClick={onSend}>
               <ArrowUpRight className="h-3.5 w-3.5 mr-1" />
               Send
             </Button>
           )}
           {onReceive && (
-            <Button size="sm" variant="outline" className="flex-1" onClick={onReceive}>
+            <Button type="button" size="sm" variant="outline" className="flex-1" onClick={onReceive}>
               <ArrowDownRight className="h-3.5 w-3.5 mr-1" />
               Receive
             </Button>

@@ -1,25 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export function useHideOnScroll() {
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
+    // Guard for SSR
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      if (currentScrollY < lastScrollY || currentScrollY < 50) {
+      if (currentScrollY < lastScrollY.current || currentScrollY < 50) {
         setIsVisible(true);
       } else {
         setIsVisible(false);
       }
       
-      setLastScrollY(currentScrollY);
+      lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, []); // Empty dependency array - effect runs only once
 
   return isVisible;
 }

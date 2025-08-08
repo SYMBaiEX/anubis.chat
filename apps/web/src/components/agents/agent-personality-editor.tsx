@@ -60,6 +60,13 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgentPersonality } from './types';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface Personality extends AgentPersonality {
   customPrompt?: string;
@@ -576,51 +583,47 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
       </Tabs>
 
       {/* Add Example Dialog */}
-      {showExampleDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Add Example Conversation</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>User Input</Label>
-                <Textarea
-                  placeholder="What the user might say..."
-                  value={newExample.input}
-                  onChange={(e) => setNewExample({ ...newExample, input: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Agent Response</Label>
-                <Textarea
-                  placeholder="How the agent should respond..."
-                  value={newExample.output}
-                  onChange={(e) => setNewExample({ ...newExample, output: e.target.value })}
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowExampleDialog(false);
-                    setNewExample({ input: '', output: '' });
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleAddExample}>
-                  Add Example
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <Dialog open={showExampleDialog} onOpenChange={setShowExampleDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Example Conversation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>User Input</Label>
+              <Textarea
+                placeholder="What the user might say..."
+                value={newExample.input}
+                onChange={(e) => setNewExample({ ...newExample, input: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Agent Response</Label>
+              <Textarea
+                placeholder="How the agent should respond..."
+                value={newExample.output}
+                onChange={(e) => setNewExample({ ...newExample, output: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowExampleDialog(false);
+                setNewExample({ input: '', output: '' });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAddExample}>
+              Add Example
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 export default AgentPersonalityEditor;
-
-// Import missing icon

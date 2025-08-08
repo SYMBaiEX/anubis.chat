@@ -51,7 +51,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Agent, TestMessage as TestMessageType, TestScenario as TestScenarioType } from './types';
+import type { Agent, AgentTool, TestMessage as TestMessageType, TestScenario as TestScenarioType } from './types';
 
 interface TestMessage extends Omit<TestMessageType, 'role'> {
   role: 'user' | 'agent' | 'system';
@@ -159,7 +159,7 @@ export function AgentTestingPanel({ agent }: AgentTestingPanelProps) {
           tokensUsed: Math.floor(Math.random() * 100) + 50,
           responseTime: Math.floor(Math.random() * 2000) + 500,
           model: 'gpt-4',
-          tools: agent.tools?.slice(0, 2).map((t: any) => t.name),
+          tools: agent.tools?.slice(0, 2).map((t) => t.name),
         },
       };
 
