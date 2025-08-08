@@ -550,7 +550,10 @@ class SubworkflowNodeExecutor extends NodeExecutor {
     agents: Map<string, Agent>
   ): Promise<void> {
     // For subworkflow nodes, config should contain workflowId and inputs
-    const config = node.config as { workflowId?: string; inputs?: Record<string, unknown> };
+    const config = node.config as {
+      workflowId?: string;
+      inputs?: Record<string, unknown>;
+    };
     const subworkflowId = config?.workflowId;
     if (!subworkflowId) {
       throw new Error('Subworkflow node requires workflowId');

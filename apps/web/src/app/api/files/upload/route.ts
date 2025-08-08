@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { api, convex } from '@/lib/database/convex';
-import { withAuth, type AuthenticatedRequest } from '@/lib/middleware/auth';
+import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import type { FileUploadResponse } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';

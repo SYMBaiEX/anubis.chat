@@ -1,5 +1,5 @@
-import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
+import { mutation, query } from './_generated/server';
 
 /**
  * Create a new blockchain transaction record
@@ -35,12 +35,14 @@ export const create = mutation({
       priority: v.optional(v.number()),
     }),
     signature: v.optional(v.string()),
-    status: v.optional(v.union(
-      v.literal('pending'),
-      v.literal('confirmed'),
-      v.literal('failed'),
-      v.literal('cancelled')
-    )),
+    status: v.optional(
+      v.union(
+        v.literal('pending'),
+        v.literal('confirmed'),
+        v.literal('failed'),
+        v.literal('cancelled')
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -73,18 +75,28 @@ export const updateStatus = mutation({
     fee: v.optional(v.number()),
     blockTime: v.optional(v.number()),
     confirmations: v.optional(v.number()),
-    metadata: v.optional(v.object({
-      tokensBefore: v.optional(v.array(v.object({
-        mint: v.string(),
-        amount: v.string(),
-      }))),
-      tokensAfter: v.optional(v.array(v.object({
-        mint: v.string(),
-        amount: v.string(),
-      }))),
-      priceImpact: v.optional(v.number()),
-      executionTime: v.optional(v.number()),
-    })),
+    metadata: v.optional(
+      v.object({
+        tokensBefore: v.optional(
+          v.array(
+            v.object({
+              mint: v.string(),
+              amount: v.string(),
+            })
+          )
+        ),
+        tokensAfter: v.optional(
+          v.array(
+            v.object({
+              mint: v.string(),
+              amount: v.string(),
+            })
+          )
+        ),
+        priceImpact: v.optional(v.number()),
+        executionTime: v.optional(v.number()),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
@@ -116,7 +128,7 @@ export const getBySignature = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query('blockchainTransactions')
-      .withIndex('by_signature', q => q.eq('signature', args.signature))
+      .withIndex('by_signature', (q) => q.eq('signature', args.signature))
       .first();
   },
 });
@@ -125,32 +137,33 @@ export const getBySignature = query({
  * List transactions for a user
  */
 export const listByUser = query({
-  args: { 
+  args: {
     userId: v.string(),
     limit: v.optional(v.number()),
-    status: v.optional(v.union(
-      v.literal('pending'),
-      v.literal('confirmed'),
-      v.literal('failed'),
-      v.literal('cancelled')
-    )),
+    status: v.optional(
+      v.union(
+        v.literal('pending'),
+        v.literal('confirmed'),
+        v.literal('failed'),
+        v.literal('cancelled')
+      )
+    ),
   },
   handler: async (ctx, args) => {
     let query = ctx.db
       .query('blockchainTransactions')
-      .withIndex('by_user', q => q.eq('userId', args.userId))
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .order('desc');
 
     if (args.status) {
-      query = query.filter(q => q.eq(q.field('status'), args.status));
+      query = query.filter((q) => q.eq(q.field('status'), args.status));
     }
 
     // Take and collect must be done together
     if (args.limit) {
       return await query.take(args.limit);
-    } else {
-      return await query.collect();
     }
+    return await query.collect();
   },
 });
 
@@ -162,8 +175,8 @@ export const listPending = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query('blockchainTransactions')
-      .withIndex('by_status', q => q.eq('status', 'pending'))
-      .filter(q => q.eq(q.field('userId'), args.userId))
+      .withIndex('by_status', (q) => q.eq('status', 'pending'))
+      .filter((q) => q.eq(q.field('userId'), args.userId))
       .order('desc')
       .collect();
   },
@@ -173,7 +186,7 @@ export const listPending = query({
  * List transactions by type
  */
 export const listByType = query({
-  args: { 
+  args: {
     type: v.union(
       v.literal('transfer'),
       v.literal('swap'),
@@ -196,19 +209,18 @@ export const listByType = query({
   handler: async (ctx, args) => {
     let query = ctx.db
       .query('blockchainTransactions')
-      .withIndex('by_type', q => q.eq('type', args.type))
+      .withIndex('by_type', (q) => q.eq('type', args.type))
       .order('desc');
 
     if (args.userId) {
-      query = query.filter(q => q.eq(q.field('userId'), args.userId));
+      query = query.filter((q) => q.eq(q.field('userId'), args.userId));
     }
 
     // Take and collect must be done together
     if (args.limit) {
       return await query.take(args.limit);
-    } else {
-      return await query.collect();
     }
+    return await query.collect();
   },
 });
 
@@ -220,22 +232,22 @@ export const getStats = query({
   handler: async (ctx, args) => {
     const transactions = await ctx.db
       .query('blockchainTransactions')
-      .withIndex('by_user', q => q.eq('userId', args.userId))
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .collect();
 
     const stats = {
       total: transactions.length,
-      confirmed: transactions.filter(t => t.status === 'confirmed').length,
-      pending: transactions.filter(t => t.status === 'pending').length,
-      failed: transactions.filter(t => t.status === 'failed').length,
+      confirmed: transactions.filter((t) => t.status === 'confirmed').length,
+      pending: transactions.filter((t) => t.status === 'pending').length,
+      failed: transactions.filter((t) => t.status === 'failed').length,
       totalFees: transactions
-        .filter(t => t.status === 'confirmed' && t.fee)
+        .filter((t) => t.status === 'confirmed' && t.fee)
         .reduce((sum, t) => sum + (t.fee || 0), 0),
       byType: {} as Record<string, number>,
     };
 
     // Count by type
-    transactions.forEach(t => {
+    transactions.forEach((t) => {
       stats.byType[t.type] = (stats.byType[t.type] || 0) + 1;
     });
 
@@ -247,13 +259,13 @@ export const getStats = query({
  * Cancel a pending transaction
  */
 export const cancel = mutation({
-  args: { 
+  args: {
     id: v.id('blockchainTransactions'),
     userId: v.string(),
   },
   handler: async (ctx, args) => {
     const transaction = await ctx.db.get(args.id);
-    
+
     if (!transaction) {
       throw new Error('Transaction not found');
     }

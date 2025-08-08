@@ -1,10 +1,21 @@
 'use client';
 
+import { formatDistanceToNow } from 'date-fns';
+import {
+  AlertCircle,
+  Bot,
+  Check,
+  Clock,
+  Copy,
+  Edit,
+  MoreVertical,
+  RotateCcw,
+  User,
+} from 'lucide-react';
 import { useState } from 'react';
-import { createModuleLogger } from '@/lib/utils/logger';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,21 +23,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MarkdownRenderer } from './markdown-renderer';
 import type { MessageProps } from '@/lib/types/components';
-import {
-  Bot,
-  User,
-  Copy,
-  Edit,
-  RotateCcw,
-  MoreVertical,
-  Check,
-  Clock,
-  AlertCircle,
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
+import { createModuleLogger } from '@/lib/utils/logger';
+import { MarkdownRenderer } from './markdown-renderer';
 
 // Initialize logger
 const log = createModuleLogger('message-bubble');
@@ -59,13 +59,13 @@ export function MessageBubble({
       setTimeout(() => setCopied(false), 2000);
       log.debug('Message copied to clipboard', {
         operation: 'copy_message',
-        messageRole: message.role
+        messageRole: message.role,
       });
     } catch (error) {
       log.error('Failed to copy message to clipboard', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        operation: 'copy_message'
+        operation: 'copy_message',
       });
     }
   };
@@ -82,8 +82,10 @@ export function MessageBubble({
   };
 
   const getAvatarBg = () => {
-    if (isUser) return 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400';
-    if (isSystem) return 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400';
+    if (isUser)
+      return 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400';
+    if (isSystem)
+      return 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400';
     return 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400';
   };
 
@@ -94,7 +96,7 @@ export function MessageBubble({
   // Don't show system messages in chat bubbles
   if (isSystem) {
     return (
-      <div className={cn("flex justify-center py-2", className)}>
+      <div className={cn('flex justify-center py-2', className)}>
         <Badge className="bg-muted text-muted-foreground" variant="secondary">
           <AlertCircle className="mr-1 h-3 w-3" />
           {message.content}
@@ -106,38 +108,46 @@ export function MessageBubble({
   return (
     <div
       className={cn(
-        "group flex gap-3 py-4",
-        isUser ? "flex-row-reverse" : "flex-row",
+        'group flex gap-3 py-4',
+        isUser ? 'flex-row-reverse' : 'flex-row',
         className
       )}
     >
       {/* Avatar */}
       <div className="flex-shrink-0">
         <Avatar className="h-8 w-8">
-          <AvatarFallback className={cn("text-xs", getAvatarBg())}>
+          <AvatarFallback className={cn('text-xs', getAvatarBg())}>
             {getAvatarIcon()}
           </AvatarFallback>
         </Avatar>
       </div>
 
       {/* Message Content */}
-      <div className={cn("flex flex-col space-y-2", isUser ? "items-end" : "items-start")}>
+      <div
+        className={cn(
+          'flex flex-col space-y-2',
+          isUser ? 'items-end' : 'items-start'
+        )}
+      >
         {/* Message Header */}
-        <div className={cn("flex items-center gap-2 text-xs text-muted-foreground", 
-          isUser ? "flex-row-reverse" : "flex-row"
-        )}>
+        <div
+          className={cn(
+            'flex items-center gap-2 text-muted-foreground text-xs',
+            isUser ? 'flex-row-reverse' : 'flex-row'
+          )}
+        >
           <span className="font-medium">
             {isUser ? 'You' : message.metadata?.model || 'Assistant'}
           </span>
           <span>{formatTimestamp(message.createdAt)}</span>
-          
+
           {message.metadata?.tokensUsed && (
             <>
               <span>•</span>
               <span>{message.metadata.tokensUsed} tokens</span>
             </>
           )}
-          
+
           {message.metadata?.processingTime && (
             <>
               <span>•</span>
@@ -153,14 +163,12 @@ export function MessageBubble({
         <div className="relative max-w-2xl">
           <div
             className={cn(
-              "rounded-2xl px-4 py-3 shadow-sm",
-              isUser
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted border"
+              'rounded-2xl px-4 py-3 shadow-sm',
+              isUser ? 'bg-primary text-primary-foreground' : 'border bg-muted'
             )}
           >
             {/* Message Content */}
-            <div className="prose prose-sm max-w-none dark:prose-invert">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
               {isUser ? (
                 <p className="whitespace-pre-wrap">{message.content}</p>
               ) : (
@@ -169,32 +177,31 @@ export function MessageBubble({
             </div>
 
             {/* Citations */}
-            {message.metadata?.citations && message.metadata.citations.length > 0 && (
-              <div className="mt-3 border-t pt-2">
-                <div className="text-xs text-muted-foreground">
-                  <span className="font-medium">Sources:</span>
-                  {message.metadata.citations.map((citation, index) => (
-                    <span key={citation} className="ml-1">
-                      [{index + 1}]
-                    </span>
-                  ))}
+            {message.metadata?.citations &&
+              message.metadata.citations.length > 0 && (
+                <div className="mt-3 border-t pt-2">
+                  <div className="text-muted-foreground text-xs">
+                    <span className="font-medium">Sources:</span>
+                    {message.metadata.citations.map((citation, index) => (
+                      <span className="ml-1" key={citation}>
+                        [{index + 1}]
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
 
           {/* Message Actions */}
           {showActions && (
-            <div className={cn(
-              "absolute top-0 opacity-0 transition-opacity group-hover:opacity-100",
-              isUser ? "left-0 -translate-x-full" : "right-0 translate-x-full"
-            )}>
+            <div
+              className={cn(
+                'absolute top-0 opacity-0 transition-opacity group-hover:opacity-100',
+                isUser ? '-translate-x-full left-0' : 'right-0 translate-x-full'
+              )}
+            >
               <div className="flex items-center gap-1 p-1">
-                <Button
-                  onClick={handleCopy}
-                  size="sm"
-                  variant="ghost"
-                >
+                <Button onClick={handleCopy} size="sm" variant="ghost">
                   {copied ? (
                     <Check className="h-3 w-3" />
                   ) : (
@@ -203,11 +210,7 @@ export function MessageBubble({
                 </Button>
 
                 {isAssistant && onRegenerate && (
-                  <Button
-                    onClick={onRegenerate}
-                    size="sm"
-                    variant="ghost"
-                  >
+                  <Button onClick={onRegenerate} size="sm" variant="ghost">
                     <RotateCcw className="h-3 w-3" />
                   </Button>
                 )}
@@ -218,20 +221,20 @@ export function MessageBubble({
                       <MoreVertical className="h-3 w-3" />
                     </Button>
                   </DropdownMenuTrigger>
-                  
+
                   <DropdownMenuContent align="end" className="w-40">
                     <DropdownMenuItem onClick={handleCopy}>
                       <Copy className="mr-2 h-3 w-3" />
                       Copy
                     </DropdownMenuItem>
-                    
+
                     {isUser && (
                       <DropdownMenuItem onClick={handleEdit}>
                         <Edit className="mr-2 h-3 w-3" />
                         Edit
                       </DropdownMenuItem>
                     )}
-                    
+
                     {isAssistant && onRegenerate && (
                       <>
                         <DropdownMenuSeparator />
@@ -249,12 +252,13 @@ export function MessageBubble({
         </div>
 
         {/* Message Status */}
-        {message.metadata?.finishReason && message.metadata.finishReason !== 'stop' && (
-          <div className="text-xs text-muted-foreground">
-            <AlertCircle className="inline h-3 w-3 mr-1" />
-            Response stopped: {message.metadata.finishReason}
-          </div>
-        )}
+        {message.metadata?.finishReason &&
+          message.metadata.finishReason !== 'stop' && (
+            <div className="text-muted-foreground text-xs">
+              <AlertCircle className="mr-1 inline h-3 w-3" />
+              Response stopped: {message.metadata.finishReason}
+            </div>
+          )}
       </div>
 
       {children}

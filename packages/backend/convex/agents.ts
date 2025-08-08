@@ -31,7 +31,7 @@ export const get = query({
 // List all available agents for a user
 // Includes both public agents and user's custom agents
 export const list = query({
-  args: { 
+  args: {
     includePublic: v.optional(v.boolean()),
     userId: v.optional(v.string()),
   },
@@ -42,7 +42,9 @@ export const list = query({
     if (args.includePublic !== false) {
       const publicAgents = await ctx.db
         .query('agents')
-        .withIndex('by_public', q => q.eq('isPublic', true).eq('isActive', true))
+        .withIndex('by_public', (q) =>
+          q.eq('isPublic', true).eq('isActive', true)
+        )
         .collect();
       agents.push(...publicAgents);
     }
@@ -51,8 +53,8 @@ export const list = query({
     if (args.userId) {
       const customAgents = await ctx.db
         .query('agents')
-        .withIndex('by_creator', q => q.eq('createdBy', args.userId))
-        .filter(q => q.eq(q.field('isActive'), true))
+        .withIndex('by_creator', (q) => q.eq('createdBy', args.userId))
+        .filter((q) => q.eq(q.field('isActive'), true))
         .collect();
       agents.push(...customAgents);
     }
@@ -107,12 +109,14 @@ export const create = mutation({
     model: v.string(),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
-    config: v.optional(v.object({
-      rpcUrl: v.optional(v.string()),
-      priorityFee: v.optional(v.number()),
-      slippage: v.optional(v.number()),
-      gasBudget: v.optional(v.number()),
-    })),
+    config: v.optional(
+      v.object({
+        rpcUrl: v.optional(v.string()),
+        priorityFee: v.optional(v.number()),
+        slippage: v.optional(v.number()),
+        gasBudget: v.optional(v.number()),
+      })
+    ),
     isPublic: v.optional(v.boolean()),
     createdBy: v.string(), // walletAddress
     tools: v.optional(v.array(v.string())), // For upstream compatibility
@@ -153,12 +157,14 @@ export const update = mutation({
     model: v.optional(v.string()),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
-    config: v.optional(v.object({
-      rpcUrl: v.optional(v.string()),
-      priorityFee: v.optional(v.number()),
-      slippage: v.optional(v.number()),
-      gasBudget: v.optional(v.number()),
-    })),
+    config: v.optional(
+      v.object({
+        rpcUrl: v.optional(v.string()),
+        priorityFee: v.optional(v.number()),
+        slippage: v.optional(v.number()),
+        gasBudget: v.optional(v.number()),
+      })
+    ),
     isActive: v.optional(v.boolean()),
     walletAddress: v.optional(v.string()), // For permission check
     tools: v.optional(v.array(v.string())), // For upstream compatibility
@@ -166,7 +172,7 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const agent = await ctx.db.get(args.id);
-    
+
     if (!agent) {
       throw new Error('Agent not found');
     }
@@ -177,7 +183,7 @@ export const update = mutation({
     }
 
     const { id, walletAddress, ...updates } = args;
-    
+
     await ctx.db.patch(id, {
       ...updates,
       updatedAt: Date.now(),
@@ -189,14 +195,14 @@ export const update = mutation({
 
 // Delete agent
 export const remove = mutation({
-  args: { 
+  args: {
     id: v.id('agents'),
     userId: v.string(), // walletAddress - only allow user to delete their own custom agents
     walletAddress: v.optional(v.string()), // Alias for upstream compatibility
   },
   handler: async (ctx, args) => {
     const agent = await ctx.db.get(args.id);
-    
+
     if (!agent) {
       throw new Error('Agent not found');
     }
@@ -243,7 +249,7 @@ export const initializeDefaults = mutation({
     // Check if agents already exist
     const existingAgents = await ctx.db
       .query('agents')
-      .withIndex('by_public', q => q.eq('isPublic', true))
+      .withIndex('by_public', (q) => q.eq('isPublic', true))
       .take(1);
 
     if (existingAgents.length > 0) {
@@ -255,9 +261,18 @@ export const initializeDefaults = mutation({
       {
         name: 'ISIS General Assistant',
         type: 'general' as const,
-        description: 'General-purpose AI assistant with comprehensive Solana blockchain capabilities',
-        systemPrompt: 'You are ISIS, a helpful AI assistant with access to Solana blockchain operations. You can help users with trading, DeFi, NFTs, and general blockchain interactions. Always be helpful, accurate, and secure in your responses.',
-        capabilities: ['chat', 'getBalance', 'transfer', 'deployToken', 'swapTokens', 'getTokenPrice'],
+        description:
+          'General-purpose AI assistant with comprehensive Solana blockchain capabilities',
+        systemPrompt:
+          'You are ISIS, a helpful AI assistant with access to Solana blockchain operations. You can help users with trading, DeFi, NFTs, and general blockchain interactions. Always be helpful, accurate, and secure in your responses.',
+        capabilities: [
+          'chat',
+          'getBalance',
+          'transfer',
+          'deployToken',
+          'swapTokens',
+          'getTokenPrice',
+        ],
         model: 'gpt-4',
         temperature: 0.7,
         maxTokens: 4000,
@@ -265,9 +280,17 @@ export const initializeDefaults = mutation({
       {
         name: 'Trading Specialist',
         type: 'trading' as const,
-        description: 'Specialized in token trading, swaps, and market analysis on Solana',
-        systemPrompt: 'You are a specialized trading agent for Solana. You excel at token analysis, executing swaps, monitoring prices, and providing market insights. Always consider risk management and help users make informed trading decisions.',
-        capabilities: ['swapTokens', 'getTokenPrice', 'getTrendingTokens', 'getMarketData', 'analyzeToken'],
+        description:
+          'Specialized in token trading, swaps, and market analysis on Solana',
+        systemPrompt:
+          'You are a specialized trading agent for Solana. You excel at token analysis, executing swaps, monitoring prices, and providing market insights. Always consider risk management and help users make informed trading decisions.',
+        capabilities: [
+          'swapTokens',
+          'getTokenPrice',
+          'getTrendingTokens',
+          'getMarketData',
+          'analyzeToken',
+        ],
         model: 'gpt-4',
         temperature: 0.3,
         maxTokens: 3000,
@@ -275,9 +298,17 @@ export const initializeDefaults = mutation({
       {
         name: 'DeFi Expert',
         type: 'defi' as const,
-        description: 'Expert in DeFi protocols, lending, staking, and yield farming',
-        systemPrompt: 'You are a DeFi specialist focused on Solana protocols. You can help with lending, borrowing, staking, liquidity provision, and yield farming. Always explain risks and help users understand protocol mechanics.',
-        capabilities: ['lendAssets', 'stake', 'restake', 'provideLiquidity', 'getDeFiPositions'],
+        description:
+          'Expert in DeFi protocols, lending, staking, and yield farming',
+        systemPrompt:
+          'You are a DeFi specialist focused on Solana protocols. You can help with lending, borrowing, staking, liquidity provision, and yield farming. Always explain risks and help users understand protocol mechanics.',
+        capabilities: [
+          'lendAssets',
+          'stake',
+          'restake',
+          'provideLiquidity',
+          'getDeFiPositions',
+        ],
         model: 'gpt-4',
         temperature: 0.5,
         maxTokens: 3500,
@@ -285,9 +316,17 @@ export const initializeDefaults = mutation({
       {
         name: 'NFT Creator',
         type: 'nft' as const,
-        description: 'Handles NFT creation, trading, and marketplace operations',
-        systemPrompt: 'You are an NFT specialist for Solana. You can help with creating NFT collections, minting NFTs, trading on marketplaces, and managing NFT portfolios. Always consider authenticity and market dynamics.',
-        capabilities: ['deployCollection', 'mintNFT', 'getNFTsByOwner', 'listNFT', 'buyNFT'],
+        description:
+          'Handles NFT creation, trading, and marketplace operations',
+        systemPrompt:
+          'You are an NFT specialist for Solana. You can help with creating NFT collections, minting NFTs, trading on marketplaces, and managing NFT portfolios. Always consider authenticity and market dynamics.',
+        capabilities: [
+          'deployCollection',
+          'mintNFT',
+          'getNFTsByOwner',
+          'listNFT',
+          'buyNFT',
+        ],
         model: 'gpt-4',
         temperature: 0.6,
         maxTokens: 3000,
@@ -296,8 +335,15 @@ export const initializeDefaults = mutation({
         name: 'DAO Governance Agent',
         type: 'dao' as const,
         description: 'Manages DAO governance, voting, and proposal creation',
-        systemPrompt: 'You are a DAO governance specialist. You help users participate in decentralized governance, create proposals, vote on initiatives, and understand governance mechanisms. Always promote democratic participation.',
-        capabilities: ['createProposal', 'vote', 'getDaoInfo', 'getProposals', 'delegateVote'],
+        systemPrompt:
+          'You are a DAO governance specialist. You help users participate in decentralized governance, create proposals, vote on initiatives, and understand governance mechanisms. Always promote democratic participation.',
+        capabilities: [
+          'createProposal',
+          'vote',
+          'getDaoInfo',
+          'getProposals',
+          'delegateVote',
+        ],
         model: 'gpt-4',
         temperature: 0.4,
         maxTokens: 3000,
@@ -306,8 +352,15 @@ export const initializeDefaults = mutation({
         name: 'Portfolio Tracker',
         type: 'portfolio' as const,
         description: 'Tracks portfolio performance and provides analytics',
-        systemPrompt: 'You are a portfolio management specialist. You help users track their Solana assets, analyze performance, understand market exposure, and make portfolio optimization decisions. Focus on data-driven insights.',
-        capabilities: ['getBalance', 'getTokenBalances', 'getPortfolioValue', 'analyzePerformance', 'getAssetAllocation'],
+        systemPrompt:
+          'You are a portfolio management specialist. You help users track their Solana assets, analyze performance, understand market exposure, and make portfolio optimization decisions. Focus on data-driven insights.',
+        capabilities: [
+          'getBalance',
+          'getTokenBalances',
+          'getPortfolioValue',
+          'analyzePerformance',
+          'getAssetAllocation',
+        ],
         model: 'gpt-4',
         temperature: 0.3,
         maxTokens: 3500,

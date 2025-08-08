@@ -5,6 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { api, convex } from '@/lib/database/convex';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
 import type {
@@ -18,7 +19,6 @@ import {
   validationErrorResponse,
 } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { api, convex } from '@/lib/database/convex';
 
 // =============================================================================
 // Logger

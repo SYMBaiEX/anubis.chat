@@ -3,12 +3,12 @@
  * Handles CRUD operations for chat sessions
  */
 
+import { api } from '@convex/_generated/api';
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { fetchMutation, fetchQuery } from 'convex/nextjs';
-import { api } from '@convex/_generated/api';
 
 // Initialize logger
 const log = createModuleLogger('api/chats');
@@ -92,28 +92,32 @@ export async function GET(request: NextRequest) {
           isActive: archived === undefined ? undefined : !archived,
         });
 
-        const normalized: Chat[] = (chats || []).map((c: any) => ({
-          _id: c._id,
-          walletAddress,
-          title: c.title,
-          description: c.description,
-          model: c.model,
-          systemPrompt: c.systemPrompt,
-          temperature: c.temperature ?? 0.7,
-          maxTokens: c.maxTokens ?? 2000,
-          isArchived: c.isActive === false,
-          isPinned: c.isPinned ?? false,
-          messageCount: c.messageCount ?? 0,
-          tokensUsed: c.totalTokens ?? 0,
-          createdAt: c.createdAt,
-          updatedAt: c.updatedAt,
-          lastMessageAt: c.lastMessageAt,
-        })).filter((c) =>
-          search ? c.title.toLowerCase().includes(search.toLowerCase()) : true
-        );
+        const normalized: Chat[] = (chats || [])
+          .map((c: any) => ({
+            _id: c._id,
+            walletAddress,
+            title: c.title,
+            description: c.description,
+            model: c.model,
+            systemPrompt: c.systemPrompt,
+            temperature: c.temperature ?? 0.7,
+            maxTokens: c.maxTokens ?? 2000,
+            isArchived: c.isActive === false,
+            isPinned: c.isPinned ?? false,
+            messageCount: c.messageCount ?? 0,
+            tokensUsed: c.totalTokens ?? 0,
+            createdAt: c.createdAt,
+            updatedAt: c.updatedAt,
+            lastMessageAt: c.lastMessageAt,
+          }))
+          .filter((c) =>
+            search ? c.title.toLowerCase().includes(search.toLowerCase()) : true
+          );
 
         const hasMore = normalized.length === limit; // approximate until proper cursor
-        const nextCursor = hasMore ? normalized[normalized.length - 1]._id : undefined;
+        const nextCursor = hasMore
+          ? normalized[normalized.length - 1]._id
+          : undefined;
 
         log.apiRequest('GET /api/chats', {
           walletAddress,

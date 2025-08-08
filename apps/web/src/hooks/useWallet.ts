@@ -136,7 +136,6 @@ export const useWallet = (): UseWalletReturn => {
       error: null,
     }));
 
-
     // Start health checks when connected
     if (connected && walletPublicKey) {
       performHealthCheck();
@@ -158,7 +157,14 @@ export const useWallet = (): UseWalletReturn => {
         clearInterval(healthCheckRef.current);
       }
     };
-  }, [connected, connecting, walletPublicKey, wallet, walletSignMessage, performHealthCheck]);
+  }, [
+    connected,
+    connecting,
+    walletPublicKey,
+    wallet,
+    walletSignMessage,
+    performHealthCheck,
+  ]);
 
   // Fetch balance when wallet connects
   const fetchBalance = useCallback(
@@ -248,10 +254,14 @@ export const useWallet = (): UseWalletReturn => {
         error: `Connection failed: ${errorMessage}`,
         isConnecting: false,
       }));
-      
+
       // Don't throw error if user cancelled or wallet not found
-      if (!errorMessage.includes('User rejected') && 
-          !errorMessage.includes('Wallet not found')) {
+      if (
+        !(
+          errorMessage.includes('User rejected') ||
+          errorMessage.includes('Wallet not found')
+        )
+      ) {
         throw error;
       }
     } finally {
@@ -292,7 +302,7 @@ export const useWallet = (): UseWalletReturn => {
       if (!walletPublicKey) {
         throw new Error('Wallet not connected');
       }
-      
+
       // Validate message
       if (!message || typeof message !== 'string') {
         throw new Error('Invalid message to sign');
@@ -300,8 +310,8 @@ export const useWallet = (): UseWalletReturn => {
 
       try {
         // Add a small delay to ensure wallet is ready
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
         // Check if wallet supports message signing
         if (!walletSignMessage) {
           // Some wallets might not have signMessage but have signIn for SIWS
@@ -316,18 +326,20 @@ export const useWallet = (): UseWalletReturn => {
               return bs58.encode(result.signature);
             }
           }
-          throw new Error('Wallet does not support message signing. Please try a different wallet.');
+          throw new Error(
+            'Wallet does not support message signing. Please try a different wallet.'
+          );
         }
-        
+
         const messageBytes = new TextEncoder().encode(message);
-        
+
         // Call the wallet's signMessage function
         const signature = await walletSignMessage(messageBytes);
-        
+
         if (!signature) {
           throw new Error('No signature returned from wallet');
         }
-        
+
         const encodedSignature = bs58.encode(signature);
         return encodedSignature;
       } catch (error) {

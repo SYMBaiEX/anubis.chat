@@ -212,7 +212,6 @@ async function handleCreate(req: AuthenticatedRequest, vectorStoreId: string) {
   }
 }
 
-
 // =============================================================================
 // Main Handler
 // =============================================================================
@@ -283,4 +282,3 @@ export async function POST(
     });
   });
 }
-

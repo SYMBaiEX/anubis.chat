@@ -3,6 +3,8 @@
  * Handles CRUD operations for specific chat sessions
  */
 
+import { api } from '@convex/_generated/api';
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
@@ -16,8 +18,6 @@ import {
   validationErrorResponse,
 } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { fetchMutation, fetchQuery } from 'convex/nextjs';
-import { api } from '@convex/_generated/api';
 
 // =============================================================================
 // Logger
@@ -144,7 +144,8 @@ export async function PUT(
           systemPrompt: updates.systemPrompt,
           temperature: updates.temperature,
           maxTokens: updates.maxTokens,
-          isActive: updates.isArchived === undefined ? undefined : !updates.isArchived,
+          isActive:
+            updates.isArchived === undefined ? undefined : !updates.isArchived,
         });
 
         const updatedChat: Chat = {

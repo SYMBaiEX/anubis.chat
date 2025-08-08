@@ -63,22 +63,22 @@ export const WalletProvider: FC<WalletProviderProps> = ({
       new TorusWalletAdapter(),
       new LedgerWalletAdapter(),
     ];
-    
+
     // Combine standard and explicit adapters, avoiding duplicates
     const walletMap = new Map();
-    
+
     // Add standard adapters first
-    standardAdapters.forEach(adapter => {
+    standardAdapters.forEach((adapter) => {
       walletMap.set(adapter.name, adapter);
     });
-    
+
     // Add explicit adapters (will override if duplicate)
-    explicitWallets.forEach(adapter => {
+    explicitWallets.forEach((adapter) => {
       walletMap.set(adapter.name, adapter);
     });
-    
+
     const walletList = Array.from(walletMap.values());
-    
+
     // Log available wallets for debugging
     log.info('Solana wallets configured', {
       wallets: walletList.map((w) => ({
@@ -89,31 +89,31 @@ export const WalletProvider: FC<WalletProviderProps> = ({
       network: selectedNetwork,
       endpoint,
     });
-    
+
     return walletList;
   }, [standardAdapters, selectedNetwork]);
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <SolanaWalletProvider 
-        wallets={wallets}
-        autoConnect={true} // Enable auto-connect for better UX
+      <SolanaWalletProvider
+        autoConnect={true}
         onError={(error) => {
           // Silently handle expected errors
           const errorMessage = error?.message || '';
-          const isExpectedError = 
-            errorMessage.includes('User rejected') || 
+          const isExpectedError =
+            errorMessage.includes('User rejected') ||
             errorMessage.includes('Wallet not found') ||
             errorMessage.includes('Unexpected error') ||
             errorMessage.includes('wallet not installed') ||
             errorMessage.includes('connection cancelled');
-            
+
           if (!isExpectedError && errorMessage) {
             log.error('Wallet error', { error: errorMessage });
           } else {
             log.debug('Wallet connection attempt', { message: errorMessage });
           }
-        }}
+        }} // Enable auto-connect for better UX
+        wallets={wallets}
       >
         <WalletModalProvider>{children}</WalletModalProvider>
       </SolanaWalletProvider>

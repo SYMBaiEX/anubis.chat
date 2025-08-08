@@ -48,9 +48,7 @@ export const list = query({
     // Build query
     let query = ctx.db
       .query('vectorStoreFiles')
-      .withIndex('by_vector_store', (q) =>
-        q.eq('vectorStoreId', vectorStoreId)
-      )
+      .withIndex('by_vector_store', (q) => q.eq('vectorStoreId', vectorStoreId))
       .order(order === 'desc' ? 'desc' : 'asc');
 
     // Apply filter if provided

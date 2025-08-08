@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useAuthContext } from '@/components/providers/auth-provider';
-import { AuthGuard } from '@/components/auth/auth-guard';
+import { Bot, Home, LayoutDashboard } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { AuthGuard } from '@/components/auth/auth-guard';
 import { ChatInterface } from '@/components/chat/chat-interface';
-import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Home, Bot } from 'lucide-react';
+import { useAuthContext } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export default function ChatPage() {
   const router = useRouter();
@@ -16,9 +16,9 @@ export default function ChatPage() {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="text-muted-foreground">Loading chat...</p>
         </div>
       </div>
@@ -30,44 +30,48 @@ export default function ChatPage() {
     <AuthGuard>
       <div className="min-h-screen bg-background">
         {/* Background Gradient */}
-        <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-background pointer-events-none" />
-        
+        <div className="pointer-events-none fixed inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-background" />
+
         <div className="relative">
           {/* Header Bar */}
-          <div className="border-b border-border/50 bg-background/80 backdrop-blur sticky top-0 z-10">
-            <div className="container max-w-7xl mx-auto px-4 py-3">
-              <div className="flex justify-between items-center">
+          <div className="sticky top-0 z-10 border-border/50 border-b bg-background/80 backdrop-blur">
+            <div className="container mx-auto max-w-7xl px-4 py-3">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20">
-                    </div>
+                    <div className="rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 p-2" />
                     <div>
-                      <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      <h1 className="bg-gradient-to-r from-primary to-accent bg-clip-text font-bold text-transparent text-xl">
                         AI Chat
                       </h1>
-                      <p className="text-xs text-muted-foreground">Powered by ISIS Intelligence</p>
+                      <p className="text-muted-foreground text-xs">
+                        Powered by ISIS Intelligence
+                      </p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="hidden sm:flex items-center gap-1">
+                  <Badge
+                    className="hidden items-center gap-1 sm:flex"
+                    variant="outline"
+                  >
                     <Bot className="h-3 w-3" />
                     Multi-Model AI
                   </Badge>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => router.push('/')}
+                  <Button
                     className="button-press"
+                    onClick={() => router.push('/')}
+                    size="sm"
+                    variant="ghost"
                   >
                     <Home className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Home</span>
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => router.push('/dashboard')}
+                  <Button
                     className="button-press"
+                    onClick={() => router.push('/dashboard')}
+                    size="sm"
+                    variant="ghost"
                   >
                     <LayoutDashboard className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Dashboard</span>
@@ -86,5 +90,3 @@ export default function ChatPage() {
     </AuthGuard>
   );
 }
-
-

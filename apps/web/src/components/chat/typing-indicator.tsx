@@ -1,8 +1,8 @@
 'use client';
 
+import { Bot } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { TypingIndicatorProps } from '@/lib/types/components';
-import { Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -18,7 +18,7 @@ export function TypingIndicator({
   if (!isTyping) return null;
 
   return (
-    <div className={cn("flex gap-3 py-4", className)}>
+    <div className={cn('flex gap-3 py-4', className)}>
       {/* Avatar */}
       <div className="flex-shrink-0">
         <Avatar className="h-8 w-8">
@@ -31,9 +31,11 @@ export function TypingIndicator({
       {/* Typing Content */}
       <div className="flex flex-col space-y-2">
         {/* Typing Status */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-muted-foreground text-xs">
           <span className="font-medium">
-            {userNames && userNames.length > 0 ? userNames.join(', ') : 'Assistant'}
+            {userNames && userNames.length > 0
+              ? userNames.join(', ')
+              : 'Assistant'}
           </span>
           <span>is typing...</span>
         </div>
@@ -42,15 +44,15 @@ export function TypingIndicator({
         <div className="max-w-16 rounded-2xl border bg-muted px-4 py-3 shadow-sm">
           <div className="flex items-center space-x-1">
             <div className="flex space-x-1">
-              <div 
+              <div
                 className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60"
                 style={{ animationDelay: '0ms' }}
               />
-              <div 
+              <div
                 className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60"
                 style={{ animationDelay: '150ms' }}
               />
-              <div 
+              <div
                 className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60"
                 style={{ animationDelay: '300ms' }}
               />

@@ -97,5 +97,5 @@ export function isCodeSafe(code: string): boolean {
     /<embed[^>]*>/gi,
   ];
 
-  return !dangerousPatterns.some(pattern => pattern.test(code));
+  return !dangerousPatterns.some((pattern) => pattern.test(code));
 }

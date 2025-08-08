@@ -7,7 +7,6 @@
 
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
-import { createModuleLogger } from '@/lib/utils/logger';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('convex-error-boundary');
@@ -76,7 +76,7 @@ export class ConvexErrorBoundary extends Component<Props, State> {
       },
       errorCode: (error as ConvexError).code,
       errorDetails: (error as ConvexError).details,
-      operation: 'error_boundary_catch'
+      operation: 'error_boundary_catch',
     });
   }
 

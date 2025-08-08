@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import { cn } from '@/lib/utils';
@@ -10,7 +10,10 @@ interface IsisAuroraProps {
 
 export function IsisAurora({ className, variant = 'both' }: IsisAuroraProps) {
   return (
-    <div className={cn('pointer-events-none absolute inset-0', className)} aria-hidden="true">
+    <div
+      aria-hidden="true"
+      className={cn('pointer-events-none absolute inset-0', className)}
+    >
       {(variant === 'primary' || variant === 'both') && (
         <div className="aurora aurora-primary" />
       )}
@@ -22,5 +25,3 @@ export function IsisAurora({ className, variant = 'both' }: IsisAuroraProps) {
 }
 
 export default IsisAurora;
-
-

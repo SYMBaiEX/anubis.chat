@@ -3,6 +3,8 @@
  * Handles user profile updates and retrieval
  */
 
+import { api } from '@convex/_generated/api';
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
@@ -20,8 +22,6 @@ import {
   validationErrorResponse,
 } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { fetchMutation, fetchQuery } from 'convex/nextjs';
-import { api } from '@convex/_generated/api';
 
 const log = createModuleLogger('user-profile-api');
 
@@ -63,7 +63,8 @@ export async function GET(request: NextRequest) {
             displayName: user.displayName,
             avatar: user.avatar,
             preferences: {
-              theme: user.preferences?.theme === 'light' ? Theme.LIGHT : Theme.DARK,
+              theme:
+                user.preferences?.theme === 'light' ? Theme.LIGHT : Theme.DARK,
               aiModel: user.preferences?.aiModel || 'gpt-4o',
               notifications: user.preferences?.notifications ?? true,
               language: (user.preferences?.language as any) || Language.EN,
@@ -71,9 +72,11 @@ export async function GET(request: NextRequest) {
               maxTokens: user.preferences?.maxTokens,
             },
             subscription: {
-              tier: (user.subscription?.tier?.toLowerCase() as any) || SubscriptionTier.FREE,
+              tier:
+                (user.subscription?.tier?.toLowerCase() as any) ||
+                SubscriptionTier.FREE,
               tokensUsed: user.subscription?.tokensUsed ?? 0,
-              tokensLimit: user.subscription?.tokensLimit ?? 10000,
+              tokensLimit: user.subscription?.tokensLimit ?? 10_000,
               features: (user.subscription?.features as any[]) || [
                 SubscriptionFeature.BASIC_CHAT,
               ],
@@ -172,7 +175,8 @@ export async function PUT(request: NextRequest) {
           updatedUser = await fetchMutation(api.users.updatePreferences, {
             walletAddress,
             preferences: {
-              theme: updates.preferences.theme === Theme.LIGHT ? 'light' : 'dark',
+              theme:
+                updates.preferences.theme === Theme.LIGHT ? 'light' : 'dark',
               aiModel: updates.preferences.aiModel || 'gpt-4o',
               notifications: updates.preferences.notifications ?? true,
               language: updates.preferences.language as any,
@@ -185,14 +189,17 @@ export async function PUT(request: NextRequest) {
           });
         }
 
-        const user = updatedUser || (await fetchQuery(api.users.getByWallet, { walletAddress }));
+        const user =
+          updatedUser ||
+          (await fetchQuery(api.users.getByWallet, { walletAddress }));
         const updatedProfile: UserProfile = {
           walletAddress: user.walletAddress,
           publicKey: user.publicKey,
           displayName: user.displayName,
           avatar: user.avatar,
           preferences: {
-            theme: user.preferences?.theme === 'light' ? Theme.LIGHT : Theme.DARK,
+            theme:
+              user.preferences?.theme === 'light' ? Theme.LIGHT : Theme.DARK,
             aiModel: user.preferences?.aiModel || 'gpt-4o',
             notifications: user.preferences?.notifications ?? true,
             language: (user.preferences?.language as any) || Language.EN,
@@ -200,9 +207,11 @@ export async function PUT(request: NextRequest) {
             maxTokens: user.preferences?.maxTokens,
           },
           subscription: {
-            tier: (user.subscription?.tier?.toLowerCase() as any) || SubscriptionTier.FREE,
+            tier:
+              (user.subscription?.tier?.toLowerCase() as any) ||
+              SubscriptionTier.FREE,
             tokensUsed: user.subscription?.tokensUsed ?? 0,
-            tokensLimit: user.subscription?.tokensLimit ?? 10000,
+            tokensLimit: user.subscription?.tokensLimit ?? 10_000,
             features: (user.subscription?.features as any[]) || [
               SubscriptionFeature.BASIC_CHAT,
             ],

@@ -26,33 +26,36 @@ export function ValidatedInput({
   const [error, setError] = useState<string | undefined>();
   const [touched, setTouched] = useState(false);
 
-  const validateValue = useCallback((val: string) => {
-    if (required && (!val || val.trim() === '')) {
-      return `${label ?? name} is required`;
-    }
-
-    if (type === 'email' && val) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(val)) {
-        return 'Please enter a valid email address';
+  const validateValue = useCallback(
+    (val: string) => {
+      if (required && (!val || val.trim() === '')) {
+        return `${label ?? name} is required`;
       }
-    }
 
-    if (type === 'url' && val) {
-      try {
-        new URL(val);
-      } catch {
-        return 'Please enter a valid URL';
+      if (type === 'email' && val) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(val)) {
+          return 'Please enter a valid email address';
+        }
       }
-    }
 
-    return undefined;
-  }, [required, type, label, name]);
+      if (type === 'url' && val) {
+        try {
+          new URL(val);
+        } catch {
+          return 'Please enter a valid URL';
+        }
+      }
+
+      return;
+    },
+    [required, type, label, name]
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setValue(newValue);
-    
+
     if (touched) {
       setError(validateValue(newValue));
     }
@@ -60,7 +63,10 @@ export function ValidatedInput({
     // Try to update parent form data
     try {
       const formContext = JSON.parse(
-        e.target.closest('form')?.querySelector('[data-form-context]')?.getAttribute('data-form-context') || '{}'
+        e.target
+          .closest('form')
+          ?.querySelector('[data-form-context]')
+          ?.getAttribute('data-form-context') || '{}'
       );
       if (formContext.updateField) {
         formContext.updateField(name, newValue);

@@ -2,9 +2,9 @@
 
 import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { CodeBlock } from './code-block';
 import type { BaseComponentProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
+import { CodeBlock } from './code-block';
 
 interface MarkdownRendererProps extends BaseComponentProps {
   content: string;
@@ -24,11 +24,19 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
   children,
 }: MarkdownRendererProps) {
   return (
-    <div className={cn("prose prose-sm max-w-none dark:prose-invert", className)}>
+    <div
+      className={cn('prose prose-sm dark:prose-invert max-w-none', className)}
+    >
       <ReactMarkdown
         components={{
           // Code blocks with syntax highlighting
-          code: ({ node, inline, className: codeClassName, children, ...props }) => {
+          code: ({
+            node,
+            inline,
+            className: codeClassName,
+            children,
+            ...props
+          }) => {
             const match = /language-(\w+)/.exec(codeClassName || '');
             const language = match ? match[1] : '';
 
@@ -44,7 +52,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
             return (
               <code
                 className={cn(
-                  "relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm",
+                  'relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm',
                   codeClassName
                 )}
                 {...props}
@@ -61,13 +69,19 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 
           // Custom heading styling
           h1: ({ children }) => (
-            <h1 className="mb-4 font-bold text-2xl tracking-tight">{children}</h1>
+            <h1 className="mb-4 font-bold text-2xl tracking-tight">
+              {children}
+            </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="mb-3 font-semibold text-xl tracking-tight">{children}</h2>
+            <h2 className="mb-3 font-semibold text-xl tracking-tight">
+              {children}
+            </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="mb-3 font-semibold text-lg tracking-tight">{children}</h3>
+            <h3 className="mb-3 font-semibold text-lg tracking-tight">
+              {children}
+            </h3>
           ),
           h4: ({ children }) => (
             <h4 className="mb-2 font-semibold text-base">{children}</h4>
@@ -80,13 +94,11 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
           ol: ({ children }) => (
             <ol className="mb-4 ml-6 list-decimal space-y-1">{children}</ol>
           ),
-          li: ({ children }) => (
-            <li className="leading-6">{children}</li>
-          ),
+          li: ({ children }) => <li className="leading-6">{children}</li>,
 
           // Custom blockquote styling
           blockquote: ({ children }) => (
-            <blockquote className="mb-4 border-l-4 border-muted-foreground/25 pl-4 italic">
+            <blockquote className="mb-4 border-muted-foreground/25 border-l-4 pl-4 italic">
               {children}
             </blockquote>
           ),
@@ -117,15 +129,17 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
             ),
             tbody: ({ children }) => <tbody>{children}</tbody>,
             tr: ({ children }) => (
-              <tr className="border-b border-muted">{children}</tr>
+              <tr className="border-muted border-b">{children}</tr>
             ),
             th: ({ children }) => (
-              <th className="border-r border-muted p-2 text-left font-semibold last:border-r-0">
+              <th className="border-muted border-r p-2 text-left font-semibold last:border-r-0">
                 {children}
               </th>
             ),
             td: ({ children }) => (
-              <td className="border-r border-muted p-2 last:border-r-0">{children}</td>
+              <td className="border-muted border-r p-2 last:border-r-0">
+                {children}
+              </td>
             ),
           }),
 
@@ -134,7 +148,9 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 
           // Custom strong/bold styling
           strong: ({ children }) => (
-            <strong className="font-semibold text-foreground">{children}</strong>
+            <strong className="font-semibold text-foreground">
+              {children}
+            </strong>
           ),
 
           // Custom emphasis/italic styling
@@ -153,7 +169,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
       >
         {content}
       </ReactMarkdown>
-      
+
       {children}
     </div>
   );

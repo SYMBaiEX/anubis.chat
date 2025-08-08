@@ -87,9 +87,10 @@ const pinoConfig: pino.LoggerOptions = {
 
 // Create logger without transport for browser compatibility
 // Transports with workers don't work well with Next.js/Turbopack
-const logger: Logger = isBrowser || isDevelopment
-  ? pino(pinoConfig)
-  : pino(pinoConfig, pino.destination({ sync: false }));
+const logger: Logger =
+  isBrowser || isDevelopment
+    ? pino(pinoConfig)
+    : pino(pinoConfig, pino.destination({ sync: false }));
 
 // Export logger interface with enhanced methods
 export interface AppLogger {

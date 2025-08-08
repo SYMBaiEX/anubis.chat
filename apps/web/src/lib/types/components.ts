@@ -235,7 +235,9 @@ export interface PageHeaderProps extends BaseComponentProps {
 // Data Display Component Types
 // =============================================================================
 
-export interface DataTableProps<T extends Record<string, unknown> = Record<string, unknown>> extends BaseComponentProps {
+export interface DataTableProps<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> extends BaseComponentProps {
   data: T[];
   columns: DataTableColumn<T>[];
   loading?: boolean;
@@ -252,7 +254,9 @@ export interface DataTableProps<T extends Record<string, unknown> = Record<strin
   };
 }
 
-export interface DataTableColumn<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface DataTableColumn<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> {
   id: string;
   header: string;
   accessor: keyof T | ((row: T) => unknown);
@@ -303,7 +307,9 @@ export interface ErrorDisplayProps extends BaseComponentProps {
 // Form Component Types
 // =============================================================================
 
-export interface FormWrapperProps<T extends Record<string, unknown> = Record<string, unknown>> extends BaseComponentProps {
+export interface FormWrapperProps<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> extends BaseComponentProps {
   onSubmit: (data: T) => void | Promise<void>;
   validationSchema?: unknown; // Zod schema - use unknown instead of any
   defaultValues?: T;

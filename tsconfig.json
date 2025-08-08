@@ -4,8 +4,5 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "exclude": [
-    "apps/fumadocs/**/*",
-    "node_modules"
-  ]
+  "exclude": ["apps/fumadocs/**/*", "node_modules"]
 }

@@ -48,7 +48,10 @@ export const solToLamports = (sol: number): number => {
 };
 
 // Format Solana address for display
-export const formatSolanaAddress = (address: string | null | undefined, length = 4): string => {
+export const formatSolanaAddress = (
+  address: string | null | undefined,
+  length = 4
+): string => {
   if (!address) return '';
   if (address.length <= length * 2 + 3) return address;
   if (length === 0) return '...';
@@ -56,7 +59,9 @@ export const formatSolanaAddress = (address: string | null | undefined, length =
 };
 
 // Validate Solana address
-export const validateSolanaAddress = (address: string | null | undefined): boolean => {
+export const validateSolanaAddress = (
+  address: string | null | undefined
+): boolean => {
   if (!address) return false;
   try {
     new PublicKey(address);

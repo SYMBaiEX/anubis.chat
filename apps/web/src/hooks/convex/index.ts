@@ -34,9 +34,9 @@ export {
 } from '@/lib/utils/result';
 export * from './useAuth';
 export * from './useChats';
-// Core Result utilities
-export * from './useConvexResult';
 // Performance hooks
 export * from './useConvexPerformance';
+// Core Result utilities
+export * from './useConvexResult';
 // Entity-specific hooks
 export * from './useUsers';

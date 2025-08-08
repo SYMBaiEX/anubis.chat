@@ -477,7 +477,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
           description: workflowData.description || '',
           walletAddress: workflowData.walletAddress,
           steps: (workflowData.steps || []).map((step: any) => ({
-            id: step.stepId || step._id || step.id || `step-${Math.random().toString(36).substr(2, 9)}`,
+            id:
+              step.stepId ||
+              step._id ||
+              step.id ||
+              `step-${Math.random().toString(36).substr(2, 9)}`,
             name: step.name || 'Unnamed Step',
             type: step.type,
             agentId: step.agentId,
@@ -487,7 +491,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
             requiresApproval: step.requiresApproval,
           })),
           triggers: (workflowData.triggers || []).map((trigger: any) => ({
-            id: trigger.triggerId || trigger._id || trigger.id || `trigger-${Math.random().toString(36).substr(2, 9)}`,
+            id:
+              trigger.triggerId ||
+              trigger._id ||
+              trigger.id ||
+              `trigger-${Math.random().toString(36).substr(2, 9)}`,
             type: trigger.type || 'manual',
             condition: trigger.condition || '',
             parameters: trigger.parameters,

@@ -3,10 +3,7 @@
  * Provides type-safe error handling for all Convex operations
  */
 
-import {
-  useMutation,
-  useQuery,
-} from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import type { FunctionReference, OptionalRestArgs } from 'convex/server';
 import { useCallback, useMemo, useState } from 'react';
 import type { Result } from '@/lib/utils/result';
@@ -44,7 +41,12 @@ export function useConvexQuery<Query extends FunctionReference<'query'>>(
     }
 
     // Handle potential Convex errors (they come as thrown errors)
-    if (data && typeof data === 'object' && 'message' in data && 'stack' in data) {
+    if (
+      data &&
+      typeof data === 'object' &&
+      'message' in data &&
+      'stack' in data
+    ) {
       const error = data as Error;
       return {
         data: undefined,

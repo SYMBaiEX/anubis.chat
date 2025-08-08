@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Copy, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { BaseComponentProps } from '@/lib/types/components';
-import { sanitizeCodeHTML, sanitizeText, isCodeSafe } from '@/lib/security/sanitize-client';
-import { createModuleLogger } from '@/lib/utils/logger';
-
+import { Check, Copy } from 'lucide-react';
 // Import Prism.js and themes
 import Prism from 'prismjs';
+import { useEffect, useMemo, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  isCodeSafe,
+  sanitizeCodeHTML,
+  sanitizeText,
+} from '@/lib/security/sanitize-client';
+import type { BaseComponentProps } from '@/lib/types/components';
+import { cn } from '@/lib/utils';
+import { createModuleLogger } from '@/lib/utils/logger';
 import 'prismjs/themes/prism-tomorrow.css';
 
 // Import common language definitions
@@ -59,10 +62,13 @@ export function CodeBlock({
     try {
       // First check if the code is safe
       if (!isCodeSafe(code)) {
-        log.warn('Potentially unsafe code detected, falling back to plain text', { 
-          language,
-          codeLength: code.length 
-        });
+        log.warn(
+          'Potentially unsafe code detected, falling back to plain text',
+          {
+            language,
+            codeLength: code.length,
+          }
+        );
         setHighlightError('Code contains potentially unsafe content');
         return sanitizeText(code);
       }
@@ -73,28 +79,31 @@ export function CodeBlock({
         Prism.languages[language] || Prism.languages.text,
         language
       );
-      
+
       // Sanitize the highlighted code to prevent XSS
       const sanitized = sanitizeCodeHTML(highlighted);
-      
+
       // If sanitization returned empty string, fall back to plain text
       if (!sanitized && code.length > 0) {
-        log.warn('Code sanitization returned empty result, falling back to plain text', {
-          language,
-          originalLength: code.length,
-          highlightedLength: highlighted.length
-        });
+        log.warn(
+          'Code sanitization returned empty result, falling back to plain text',
+          {
+            language,
+            originalLength: code.length,
+            highlightedLength: highlighted.length,
+          }
+        );
         setHighlightError('Code highlighting failed, displaying as plain text');
         return sanitizeText(code);
       }
-      
+
       setHighlightError(null);
       return sanitized;
     } catch (error) {
-      log.error('Failed to highlight code', { 
+      log.error('Failed to highlight code', {
         error: error instanceof Error ? error.message : String(error),
         language,
-        codeLength: code.length 
+        codeLength: code.length,
       });
       setHighlightError('Syntax highlighting unavailable');
       return sanitizeText(code);
@@ -107,8 +116,8 @@ export function CodeBlock({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      log.error('Failed to copy code', { 
-        error: error instanceof Error ? error.message : String(error) 
+      log.error('Failed to copy code', {
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   };
@@ -147,20 +156,22 @@ export function CodeBlock({
       dart: 'Dart',
       text: 'Text',
     };
-    
+
     return languageMap[lang] || lang.toUpperCase();
   };
 
   const lines = code.split('\n');
 
   return (
-    <div className={cn("group relative my-4", className)}>
+    <div className={cn('group relative my-4', className)}>
       {/* Header */}
       {(title || language !== 'text' || showCopyButton || highlightError) && (
-        <div className="flex items-center justify-between rounded-t-lg border border-b-0 border-muted bg-muted/50 px-4 py-2">
+        <div className="flex items-center justify-between rounded-t-lg border border-muted border-b-0 bg-muted/50 px-4 py-2">
           <div className="flex items-center space-x-2">
             {title && (
-              <span className="font-medium text-sm text-foreground">{title}</span>
+              <span className="font-medium text-foreground text-sm">
+                {title}
+              </span>
             )}
             {language !== 'text' && (
               <Badge className="text-xs" variant="secondary">
@@ -173,7 +184,7 @@ export function CodeBlock({
               </Badge>
             )}
           </div>
-          
+
           {showCopyButton && (
             <Button
               className="opacity-0 transition-opacity group-hover:opacity-100"
@@ -186,9 +197,7 @@ export function CodeBlock({
               ) : (
                 <Copy className="h-4 w-4" />
               )}
-              <span className="ml-1 text-xs">
-                {copied ? 'Copied' : 'Copy'}
-              </span>
+              <span className="ml-1 text-xs">{copied ? 'Copied' : 'Copy'}</span>
             </Button>
           )}
         </div>
@@ -198,15 +207,17 @@ export function CodeBlock({
       <div className="relative">
         <pre
           className={cn(
-            "overflow-x-auto rounded-lg border border-muted bg-[#2d3748] p-4 text-sm",
-            title || language !== 'text' || highlightError ? "rounded-t-none border-t-0" : ""
+            'overflow-x-auto rounded-lg border border-muted bg-[#2d3748] p-4 text-sm',
+            title || language !== 'text' || highlightError
+              ? 'rounded-t-none border-t-0'
+              : ''
           )}
         >
           <code
             className={cn(
-              "block text-gray-100",
+              'block text-gray-100',
               `language-${language}`,
-              showLineNumbers && "grid grid-cols-[min-content_1fr] gap-4"
+              showLineNumbers && 'grid grid-cols-[min-content_1fr] gap-4'
             )}
           >
             {showLineNumbers ? (
@@ -214,16 +225,14 @@ export function CodeBlock({
               <>
                 <div className="select-none text-right text-gray-500">
                   {lines.map((_, index) => (
-                    <div key={index + 1} className="leading-6">
+                    <div className="leading-6" key={index + 1}>
                       {index + 1}
                     </div>
                   ))}
                 </div>
                 {highlightError ? (
                   // Show plain text if there was an error
-                  <div className="leading-6 whitespace-pre-wrap">
-                    {code}
-                  </div>
+                  <div className="whitespace-pre-wrap leading-6">{code}</div>
                 ) : (
                   // Show highlighted/sanitized HTML
                   <div
@@ -232,20 +241,16 @@ export function CodeBlock({
                   />
                 )}
               </>
+            ) : // Without line numbers
+            highlightError ? (
+              // Show plain text if there was an error
+              <div className="whitespace-pre-wrap leading-6">{code}</div>
             ) : (
-              // Without line numbers
-              highlightError ? (
-                // Show plain text if there was an error  
-                <div className="leading-6 whitespace-pre-wrap">
-                  {code}
-                </div>
-              ) : (
-                // Show highlighted/sanitized HTML
-                <div
-                  className="leading-6"
-                  dangerouslySetInnerHTML={{ __html: highlightedCode }}
-                />
-              )
+              // Show highlighted/sanitized HTML
+              <div
+                className="leading-6"
+                dangerouslySetInnerHTML={{ __html: highlightedCode }}
+              />
             )}
           </code>
         </pre>

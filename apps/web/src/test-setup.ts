@@ -1,24 +1,28 @@
-import { expect, afterEach, vi, beforeAll } from 'vitest'
-import { cleanup } from '@testing-library/react'
-import * as matchers from '@testing-library/jest-dom/matchers'
-import { setupWindowMock, mockNextNavigation, mockSolanaWalletAdapter } from './test-utils/mocks'
+import * as matchers from '@testing-library/jest-dom/matchers';
+import { cleanup } from '@testing-library/react';
+import { afterEach, beforeAll, expect, vi } from 'vitest';
+import {
+  mockNextNavigation,
+  mockSolanaWalletAdapter,
+  setupWindowMock,
+} from './test-utils/mocks';
 
-expect.extend(matchers)
+expect.extend(matchers);
 
 // Setup environment variables before all tests
 beforeAll(() => {
-  process.env.NEXT_PUBLIC_CONVEX_URL = 'https://test-convex.cloud'
-  process.env.JWT_SECRET = 'test-secret'
+  process.env.NEXT_PUBLIC_CONVEX_URL = 'https://test-convex.cloud';
+  process.env.JWT_SECRET = 'test-secret';
   // NODE_ENV is read-only in some environments
   // process.env.NODE_ENV = 'test'
-})
+});
 
 afterEach(() => {
-  cleanup()
-})
+  cleanup();
+});
 
 // Setup global window and localStorage for jsdom using shared utilities
-setupWindowMock()
+setupWindowMock();
 
 // Add additional window properties needed for testing
 Object.defineProperty(window, 'navigator', {
@@ -30,10 +34,10 @@ Object.defineProperty(window, 'navigator', {
     userAgent: 'test-user-agent',
   },
   writable: true,
-})
+});
 
 // Mock Next.js navigation using shared utilities
-mockNextNavigation()
+mockNextNavigation();
 
 // Mock Solana wallet adapters using shared utilities
-mockSolanaWalletAdapter()
+mockSolanaWalletAdapter();

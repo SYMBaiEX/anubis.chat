@@ -1,12 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
 import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
-import { useWallet } from '@/hooks/useWallet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
 import Loader from '@/components/loader';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useWallet } from '@/hooks/useWallet';
 
 interface WalletInfo {
   name: string;
@@ -27,7 +38,7 @@ export function WalletModal({ open, onClose }: WalletModalProps) {
   const handleWalletSelect = async (walletName: string) => {
     try {
       setSelectedWallet(walletName);
-      const wallet = wallets.find(w => w.adapter.name === walletName);
+      const wallet = wallets.find((w) => w.adapter.name === walletName);
       if (wallet) {
         select(wallet.adapter.name);
         await connect();
@@ -44,38 +55,39 @@ export function WalletModal({ open, onClose }: WalletModalProps) {
     {
       name: 'Phantom',
       icon: 'https://phantom.app/img/phantom-logo.png',
-      adapter: wallets.find(w => w.adapter.name === 'Phantom')?.adapter
+      adapter: wallets.find((w) => w.adapter.name === 'Phantom')?.adapter,
     },
     {
       name: 'Backpack',
       icon: 'https://backpack.app/backpack.png',
-      adapter: wallets.find(w => w.adapter.name === 'Backpack')?.adapter
+      adapter: wallets.find((w) => w.adapter.name === 'Backpack')?.adapter,
     },
     {
       name: 'Solflare',
       icon: 'https://solflare.com/img/logo.svg',
-      adapter: wallets.find(w => w.adapter.name === 'Solflare')?.adapter
+      adapter: wallets.find((w) => w.adapter.name === 'Solflare')?.adapter,
     },
     {
       name: 'Torus',
       icon: 'https://tor.us/img/favicon.png',
-      adapter: wallets.find(w => w.adapter.name === 'Torus')?.adapter
+      adapter: wallets.find((w) => w.adapter.name === 'Torus')?.adapter,
     },
     {
       name: 'Ledger',
       icon: 'https://www.ledger.com/favicon.ico',
-      adapter: wallets.find(w => w.adapter.name === 'Ledger')?.adapter
-    }
-  ].filter(wallet => wallet.adapter);
+      adapter: wallets.find((w) => w.adapter.name === 'Ledger')?.adapter,
+    },
+  ].filter((wallet) => wallet.adapter);
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog onOpenChange={onClose} open={open}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle 
+          <DialogTitle
             className="text-center"
             style={{
-              background: 'linear-gradient(135deg, #FFD700 0%, #14F195 50%, #FFD700 100%)',
+              background:
+                'linear-gradient(135deg, #FFD700 0%, #14F195 50%, #FFD700 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -86,48 +98,52 @@ export function WalletModal({ open, onClose }: WalletModalProps) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <p className="text-center text-sm text-amber-200/80">
+          <p className="text-center text-amber-200/80 text-sm">
             Choose your preferred wallet to connect to isis.chat
           </p>
 
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3">
+              <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
 
           <div className="grid gap-3">
             {supportedWallets.map((wallet) => (
-              <Card 
+              <Card
+                className="cursor-pointer border-amber-600/20 transition-all hover:bg-amber-600/5"
                 key={wallet.name}
-                className="cursor-pointer transition-all hover:bg-amber-600/5 border-amber-600/20"
                 onClick={() => handleWalletSelect(wallet.name)}
               >
                 <CardContent className="flex items-center justify-between p-4">
                   <div className="flex items-center space-x-3">
                     <img
-                      src={wallet.icon}
                       alt={`${wallet.name} icon`}
-                      className="w-8 h-8 rounded"
+                      className="h-8 w-8 rounded"
                       onError={(e) => {
                         e.currentTarget.src = '/favicon/favicon.svg';
                       }}
+                      src={wallet.icon}
                     />
                     <div>
-                      <p className="font-medium text-amber-200">{wallet.name}</p>
-                      <p className="text-xs text-amber-200/60">
-                        {wallet.adapter?.readyState === 'Installed' ? 'Installed' : 'Not Installed'}
+                      <p className="font-medium text-amber-200">
+                        {wallet.name}
+                      </p>
+                      <p className="text-amber-200/60 text-xs">
+                        {wallet.adapter?.readyState === 'Installed'
+                          ? 'Installed'
+                          : 'Not Installed'}
                       </p>
                     </div>
                   </div>
-                  
+
                   {selectedWallet === wallet.name && isConnecting ? (
                     <Loader className="h-4 w-4" />
                   ) : (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
+                    <Button
                       className="border-amber-600/30 text-amber-200 hover:bg-amber-600/10"
+                      size="sm"
+                      variant="outline"
                     >
                       Connect
                     </Button>
@@ -137,14 +153,14 @@ export function WalletModal({ open, onClose }: WalletModalProps) {
             ))}
           </div>
 
-          <div className="pt-4 border-t border-amber-600/20">
-            <p className="text-xs text-center text-amber-200/60">
+          <div className="border-amber-600/20 border-t pt-4">
+            <p className="text-center text-amber-200/60 text-xs">
               New to Solana wallets?{' '}
               <a
-                href="https://phantom.app"
-                target="_blank"
-                rel="noopener noreferrer"
                 className="text-[#14F195] hover:underline"
+                href="https://phantom.app"
+                rel="noopener noreferrer"
+                target="_blank"
               >
                 Download Phantom
               </a>

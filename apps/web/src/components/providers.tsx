@@ -1,24 +1,24 @@
 'use client';
 
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
+import { SidebarProvider } from '@/contexts/SidebarContext';
+import { convexConfig, isDevelopment } from '@/lib/env';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { ConvexErrorBoundary } from './error/ConvexErrorBoundary';
 import { AuthProvider } from './providers/auth-provider';
 import { SolanaAgentProvider } from './providers/solana-agent-provider';
 import { ThemeProvider } from './theme-provider';
 import { Toaster } from './ui/sonner';
 import { WalletProvider } from './wallet/wallet-provider';
-import { SidebarProvider } from '@/contexts/SidebarContext';
-import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('providers');
 
-const convexUrl = (process.env.NEXT_PUBLIC_CONVEX_URL || '').replace(/\/+$/, '');
-if (!convexUrl) {
+if (!convexConfig.publicUrl) {
   throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is required');
 }
-const convex = new ConvexReactClient(convexUrl, {
+const convex = new ConvexReactClient(convexConfig.publicUrl, {
   // Enable verbose logging in development
-  verbose: process.env.NODE_ENV === 'development',
+  verbose: isDevelopment,
 });
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -30,10 +30,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
           errorInfo,
-          operation: 'convex_error_boundary'
+          operation: 'convex_error_boundary',
         });
       }}
-      showDetails={process.env.NODE_ENV === 'development'}
+      showDetails={isDevelopment}
     >
       <ThemeProvider
         attribute="class"
@@ -45,9 +45,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <ConvexProvider client={convex}>
             <WalletProvider>
               <AuthProvider>
-                <SolanaAgentProvider>
-                  {children}
-                </SolanaAgentProvider>
+                <SolanaAgentProvider>{children}</SolanaAgentProvider>
               </AuthProvider>
             </WalletProvider>
           </ConvexProvider>

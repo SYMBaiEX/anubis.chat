@@ -2,8 +2,8 @@
  * Authentication-related Convex hooks with Result pattern
  */
 
-import { useCallback } from 'react';
 import { api } from '@convex/_generated/api';
+import { useCallback } from 'react';
 import type { Result } from '@/lib/utils/result';
 import { failure, success } from '@/lib/utils/result';
 import { useConvexMutation, useConvexQuery } from './useConvexResult';

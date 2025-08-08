@@ -7,7 +7,7 @@ import type { Id } from '@convex/_generated/dataModel';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { api, convex } from '@/lib/database/convex';
-import { withAuth, type AuthenticatedRequest } from '@/lib/middleware/auth';
+import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import { createModuleLogger } from '@/lib/utils/logger';
 
@@ -100,7 +100,7 @@ function generateMarkdown(chat: Chat, messages: Message[]): string {
 async function generatePDF(markdown: string, title: string): Promise<Buffer> {
   // Import jsPDF dynamically to avoid issues with SSR
   const { jsPDF } = await import('jspdf');
-  
+
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -109,7 +109,7 @@ async function generatePDF(markdown: string, title: string): Promise<Buffer> {
 
   // Set up document properties
   doc.setProperties({
-    title: title,
+    title,
     creator: 'ISIS Chat',
     subject: 'Chat Export',
     keywords: 'chat, export, pdf',
@@ -131,51 +131,79 @@ async function generatePDF(markdown: string, title: string): Promise<Buffer> {
   }
 
   // Helper function to wrap text
-  function addWrappedText(text: string, x: number, y: number, maxWidth: number, fontSize: number, fontStyle: string = 'normal') {
+  function addWrappedText(
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    fontSize: number,
+    fontStyle = 'normal'
+  ) {
     doc.setFontSize(fontSize);
     doc.setFont('helvetica', fontStyle);
-    
+
     const lines = doc.splitTextToSize(text, maxWidth);
     const lineHeight = fontSize * 0.4; // Approximate line height in mm
-    
+
     for (const line of lines) {
       checkPageBreak(lineHeight);
       doc.text(line, x, currentY);
       currentY += lineHeight;
     }
-    
+
     return currentY;
   }
 
   // Parse and render markdown content
   const lines = markdown.split('\n');
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    
+
     if (line === '') {
       currentY += 3; // Small spacing for empty lines
       continue;
     }
-    
+
     // Handle different markdown elements
     if (line.startsWith('# ')) {
       // H1 - Title
       checkPageBreak(12);
       currentY += 5;
-      addWrappedText(line.substring(2), margin, currentY, maxLineWidth, 18, 'bold');
+      addWrappedText(
+        line.substring(2),
+        margin,
+        currentY,
+        maxLineWidth,
+        18,
+        'bold'
+      );
       currentY += 8;
     } else if (line.startsWith('## ')) {
       // H2 - Section headers
       checkPageBreak(10);
       currentY += 4;
-      addWrappedText(line.substring(3), margin, currentY, maxLineWidth, 14, 'bold');
+      addWrappedText(
+        line.substring(3),
+        margin,
+        currentY,
+        maxLineWidth,
+        14,
+        'bold'
+      );
       currentY += 6;
     } else if (line.startsWith('### ')) {
       // H3 - Message headers (User, Assistant, etc.)
       checkPageBreak(8);
       currentY += 3;
-      addWrappedText(line.substring(4), margin, currentY, maxLineWidth, 12, 'bold');
+      addWrappedText(
+        line.substring(4),
+        margin,
+        currentY,
+        maxLineWidth,
+        12,
+        'bold'
+      );
       currentY += 4;
     } else if (line.startsWith('**') && line.endsWith('**')) {
       // Bold text (metadata)
@@ -183,7 +211,11 @@ async function generatePDF(markdown: string, title: string): Promise<Buffer> {
       const text = line.substring(2, line.length - 2);
       addWrappedText(text, margin, currentY, maxLineWidth, 10, 'bold');
       currentY += 2;
-    } else if (line.startsWith('*') && line.endsWith('*') && !line.startsWith('**')) {
+    } else if (
+      line.startsWith('*') &&
+      line.endsWith('*') &&
+      !line.startsWith('**')
+    ) {
       // Italic text (timestamps, model info)
       checkPageBreak(6);
       const text = line.substring(1, line.length - 1);
@@ -206,10 +238,10 @@ async function generatePDF(markdown: string, title: string): Promise<Buffer> {
 
   // Add footer with generation info
   const totalPages = doc.internal.pages.length - 1; // Subtract 1 because pages array includes a null first element
-  
+
   for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
     doc.setPage(pageNum);
-    
+
     // Add page number
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
@@ -220,7 +252,7 @@ async function generatePDF(markdown: string, title: string): Promise<Buffer> {
       pageHeight - 10,
       { align: 'right' }
     );
-    
+
     // Add generation timestamp on first page
     if (pageNum === 1) {
       doc.text(
@@ -271,9 +303,9 @@ async function handleGet(
       queryValidation.data;
 
     // Get chat from Convex
-    const chat = await convex.query(api.chats.getById, {
+    const chat = (await convex.query(api.chats.getById, {
       id: chatId as Id<'chats'>,
-    }) as Chat | null;
+    })) as Chat | null;
 
     if (!chat || chat.ownerId !== walletAddress) {
       return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
@@ -300,7 +332,7 @@ async function handleGet(
     }
 
     log.info('Exporting chat', {
-      chatId: chatId,
+      chatId,
       format,
       messageCount: messages.length,
       walletAddress,
@@ -382,6 +414,8 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   return authRateLimit(request, async (req) =>
-    withAuth(req, async (authReq: AuthenticatedRequest) => handleGet(authReq, context))
+    withAuth(req, async (authReq: AuthenticatedRequest) =>
+      handleGet(authReq, context)
+    )
   );
 }

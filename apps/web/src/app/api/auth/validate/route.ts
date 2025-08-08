@@ -5,10 +5,10 @@
 
 import type { NextRequest } from 'next/server';
 import { verifyJWTToken } from '@/lib/middleware/auth';
-import { 
-  successResponse, 
+import {
+  internalErrorResponse,
+  successResponse,
   unauthorizedResponse,
-  internalErrorResponse 
 } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
 
@@ -27,17 +27,17 @@ export async function POST(request: NextRequest) {
   try {
     // Extract token from Authorization header
     const authHeader = request.headers.get('Authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+
+    if (!(authHeader && authHeader.startsWith('Bearer '))) {
       log.warn('Invalid authorization header');
       return unauthorizedResponse('Missing or invalid authorization header');
     }
 
     const token = authHeader.substring(7);
-    
+
     // Verify the token
     const session = await verifyJWTToken(token);
-    
+
     if (!session) {
       log.info('Token validation failed');
       return successResponse<ValidateResponse>({ valid: false });
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     log.error('Token validation error', {
       error: error instanceof Error ? error.message : String(error),
     });
-    
+
     return internalErrorResponse('Failed to validate token');
   }
 }

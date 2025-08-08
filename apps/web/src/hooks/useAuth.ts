@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { AuthSession, User, WalletAuthChallenge } from '@/lib/types/api';
 import { useWallet } from './useWallet';
 
@@ -48,9 +48,11 @@ export const useAuth = (): UseAuthReturn => {
           if (!(parsedUser?.id && parsedUser?.walletAddress)) {
             throw new Error('Invalid user data structure');
           }
-          
+
           // Check if token is expired
-          const expiresAt = storedExpires ? parseInt(storedExpires, 10) : 0;
+          const expiresAt = storedExpires
+            ? Number.parseInt(storedExpires, 10)
+            : 0;
           if (expiresAt && expiresAt < Date.now()) {
             // Token expired, clear storage
             localStorage.removeItem(AUTH_TOKEN_KEY);
@@ -59,7 +61,7 @@ export const useAuth = (): UseAuthReturn => {
             localStorage.removeItem(AUTH_EXPIRES_KEY);
             return INITIAL_AUTH_STATE;
           }
-          
+
           const user = parsedUser as User;
           return {
             isAuthenticated: true,
@@ -97,7 +99,7 @@ export const useAuth = (): UseAuthReturn => {
   const storeAuthSession = useCallback((session: AuthSession) => {
     localStorage.setItem(AUTH_TOKEN_KEY, session.token);
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(session.user));
-    
+
     // Store refresh token and expiry if available
     if (session.refreshToken) {
       localStorage.setItem(AUTH_REFRESH_KEY, session.refreshToken);
@@ -105,7 +107,7 @@ export const useAuth = (): UseAuthReturn => {
     if (session.expiresAt) {
       localStorage.setItem(AUTH_EXPIRES_KEY, session.expiresAt.toString());
     }
-    
+
     // Also store in session storage for tab sync
     sessionStorage.setItem(AUTH_TOKEN_KEY, session.token);
 
@@ -135,28 +137,38 @@ export const useAuth = (): UseAuthReturn => {
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.error('Challenge endpoint error:', response.status, errorData);
-          
+          console.error(
+            'Challenge endpoint error:',
+            response.status,
+            errorData
+          );
+
           // Handle rate limit specifically
           if (response.status === 429) {
             const retryAfter = errorData.error?.details?.retryAfter || 60;
-            throw new Error(`Rate limited. Please wait ${retryAfter} seconds before trying again.`);
+            throw new Error(
+              `Rate limited. Please wait ${retryAfter} seconds before trying again.`
+            );
           }
-          
-          throw new Error(errorData.error?.message || errorData.message || 'Failed to get challenge');
+
+          throw new Error(
+            errorData.error?.message ||
+              errorData.message ||
+              'Failed to get challenge'
+          );
         }
 
         const apiResponse = await response.json();
-        
+
         // Handle API response wrapper structure
         if (apiResponse.success && apiResponse.data) {
           return apiResponse.data;
-        } else if (apiResponse.challenge) {
+        }
+        if (apiResponse.challenge) {
           // Direct response (legacy format)
           return apiResponse;
-        } else {
-          throw new Error('Invalid challenge response format');
         }
+        throw new Error('Invalid challenge response format');
       } catch (error) {
         console.error('Failed to get auth challenge:', error);
         // Check if it's a rate limit error
@@ -195,16 +207,16 @@ export const useAuth = (): UseAuthReturn => {
         }
 
         const apiResponse = await response.json();
-        
+
         // Handle API response wrapper structure (same as challenge)
         if (apiResponse.success && apiResponse.data) {
           return apiResponse.data;
-        } else if (apiResponse.token) {
+        }
+        if (apiResponse.token) {
           // Direct response (legacy format)
           return apiResponse;
-        } else {
-          throw new Error('Invalid authentication response format');
         }
+        throw new Error('Invalid authentication response format');
       } catch (error) {
         console.error('Authentication verification failed:', error);
         // Log to error tracking service instead of console in production
@@ -234,7 +246,7 @@ export const useAuth = (): UseAuthReturn => {
       if (!challenge.challenge || challenge.challenge.length === 0) {
         throw new Error('Invalid challenge message received from server');
       }
-      
+
       const signature = await signMessage(challenge.challenge);
 
       // Step 3: Verify signature and get auth session
@@ -297,9 +309,10 @@ export const useAuth = (): UseAuthReturn => {
   const refreshToken = useCallback(async (): Promise<string | null> => {
     // First try to use refresh token, then fall back to current token
     const refreshTokenStored = localStorage.getItem(AUTH_REFRESH_KEY);
-    const currentToken = authState.token || localStorage.getItem(AUTH_TOKEN_KEY);
-    
-    if (!refreshTokenStored && !currentToken) {
+    const currentToken =
+      authState.token || localStorage.getItem(AUTH_TOKEN_KEY);
+
+    if (!(refreshTokenStored || currentToken)) {
       return null;
     }
 
@@ -320,8 +333,11 @@ export const useAuth = (): UseAuthReturn => {
 
       const apiResponse = await response.json();
       // Handle API response wrapper
-      const data = apiResponse.success && apiResponse.data ? apiResponse.data : apiResponse;
-      
+      const data =
+        apiResponse.success && apiResponse.data
+          ? apiResponse.data
+          : apiResponse;
+
       const newToken = data.token;
       const newExpiry = data.expiresAt;
 
@@ -334,7 +350,7 @@ export const useAuth = (): UseAuthReturn => {
         localStorage.setItem(AUTH_REFRESH_KEY, data.refreshToken);
       }
       sessionStorage.setItem(AUTH_TOKEN_KEY, newToken);
-      
+
       setAuthState((prev) => ({ ...prev, token: newToken }));
 
       return newToken;
@@ -345,7 +361,7 @@ export const useAuth = (): UseAuthReturn => {
       return null;
     }
   }, [authState.token, clearAuthState]);
-  
+
   // Listen for storage events to sync auth across tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -357,12 +373,14 @@ export const useAuth = (): UseAuthReturn => {
           // Token changed, reload auth state
           const storedUser = localStorage.getItem(AUTH_USER_KEY);
           const storedExpires = localStorage.getItem(AUTH_EXPIRES_KEY);
-          
+
           if (storedUser) {
             try {
               const user = JSON.parse(storedUser) as User;
-              const expiresAt = storedExpires ? parseInt(storedExpires, 10) : 0;
-              
+              const expiresAt = storedExpires
+                ? Number.parseInt(storedExpires, 10)
+                : 0;
+
               // Check if token is still valid
               if (!expiresAt || expiresAt > Date.now()) {
                 setAuthState({

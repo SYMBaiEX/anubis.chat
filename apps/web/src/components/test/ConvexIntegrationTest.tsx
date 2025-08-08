@@ -22,8 +22,8 @@ import {
   isFailure,
   isSuccess,
   type Result,
-  useUser,
   useCreateChat,
+  useUser,
 } from '@/hooks/convex';
 
 interface IntegrationTestProps {

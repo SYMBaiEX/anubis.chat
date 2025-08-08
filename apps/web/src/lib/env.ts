@@ -42,8 +42,8 @@ const envSchema = z.object({
     .optional()
     .transform((val) => (val ? stripTrailingSlash(val) : val)),
 
-  // JWT and Authentication
-  JWT_SECRET: z.string().min(32),
+  // JWT and Authentication (server-side only)
+  JWT_SECRET: z.string().min(32).optional(),
   JWT_EXPIRES_IN: z.string().default('24h'),
 
   // CORS and Security
@@ -207,10 +207,14 @@ export function getEnv(
 
 // Environment validation on import (fail fast)
 if (isProduction) {
-  // Ensure critical production variables are set
-  const requiredProdVars = ['JWT_SECRET'] as const;
+  // Server-side critical variables (JWT_SECRET is validated in server modules that use it)
+  // Client-side required production variables
+  const requiredProdVars: string[] = [
+    // Add any required client-side production variables here
+  ];
+
   for (const varName of requiredProdVars) {
-    if (!env[varName]) {
+    if (!env[varName as keyof Env]) {
       throw new Error(
         `Required production environment variable ${varName} is not set`
       );
@@ -221,11 +225,18 @@ if (isProduction) {
   const recommendedVars = [
     { name: 'OPENAI_API_KEY', purpose: 'AI functionality' },
     { name: 'CONVEX_URL', purpose: 'Backend database' },
+    { name: 'JWT_SECRET', purpose: 'Authentication (server-side)' },
   ] as const;
 
   for (const { name, purpose } of recommendedVars) {
     if (!env[name as keyof Env]) {
       log.warn('Environment variable not set', { name, purpose });
     }
+  }
+
+  // Special validation for JWT_SECRET (warning only in client context)
+  if (typeof window === 'undefined' && !env.JWT_SECRET) {
+    // We're in a server context without JWT_SECRET
+    log.warn('JWT_SECRET not configured - authentication will not work');
   }
 }

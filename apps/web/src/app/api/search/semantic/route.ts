@@ -3,10 +3,10 @@
  * Handles RAG-based semantic search with context generation for AI chat
  */
 
+import { api } from '@convex/_generated/api';
+import { fetchQuery } from 'convex/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { fetchQuery } from 'convex/nextjs';
-import { api } from '@convex/_generated/api';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { searchRateLimit } from '@/lib/middleware/rate-limit';
 import type { Document, DocumentSearchResult } from '@/lib/types/documents';

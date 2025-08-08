@@ -35,17 +35,17 @@ export async function POST(request: NextRequest) {
       // Try to get token from Authorization header first
       const authHeader = req.headers.get('Authorization');
       let token: string | null = null;
-      
+
       if (authHeader && authHeader.startsWith('Bearer ')) {
         token = authHeader.substring(7);
       }
-      
+
       // If no token in header, check body for backward compatibility
       if (!token) {
         const body = await req.json();
         token = body.token || body.refreshToken;
       }
-      
+
       if (!token) {
         return unauthorizedResponse('No token provided');
       }

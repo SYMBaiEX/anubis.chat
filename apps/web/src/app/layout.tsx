@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, IBM_Plex_Mono } from 'next/font/google';
+import { IBM_Plex_Mono, Inter } from 'next/font/google';
 import '../index.css';
 import { ErrorBoundary } from '@/components/error-boundary';
 import Providers from '@/components/providers';
@@ -8,35 +8,46 @@ import ServiceWorkerManager from '@/components/service-worker-manager';
 // PRD Typography: Inter for body, IBM Plex Mono for code
 // Note: Satoshi Variable for headers will be loaded via CSS for better Bun runtime performance
 const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
+  variable: '--font-inter',
+  subsets: ['latin'],
+  display: 'swap',
 });
 
 const ibmPlexMono = IBM_Plex_Mono({
-  variable: "--font-ibm-plex-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  display: "swap",
+  variable: '--font-ibm-plex-mono',
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "ISIS Chat - Ancient Wisdom • Modern AI",
-  description: "Solana-native AI chat platform with RAG capabilities. Authenticate with your wallet, chat with AI, and unlock the power of ancient wisdom through modern technology.",
-  keywords: ["AI chat", "Solana", "Web3", "RAG", "Ancient Egypt", "Blockchain", "Crypto", "Claude", "GPT-4"],
-  authors: [{ name: "ISIS Chat Team" }],
-  creator: "ISIS Chat",
-  publisher: "ISIS Chat",
+  title: 'ISIS Chat - Ancient Wisdom • Modern AI',
+  description:
+    'Solana-native AI chat platform with RAG capabilities. Authenticate with your wallet, chat with AI, and unlock the power of ancient wisdom through modern technology.',
+  keywords: [
+    'AI chat',
+    'Solana',
+    'Web3',
+    'RAG',
+    'Ancient Egypt',
+    'Blockchain',
+    'Crypto',
+    'Claude',
+    'GPT-4',
+  ],
+  authors: [{ name: 'ISIS Chat Team' }],
+  creator: 'ISIS Chat',
+  publisher: 'ISIS Chat',
   openGraph: {
-    title: "ISIS Chat - Ancient Wisdom • Modern AI",
-    description: "Solana-native AI chat platform with RAG capabilities",
-    type: "website",
-    locale: "en_US",
+    title: 'ISIS Chat - Ancient Wisdom • Modern AI',
+    description: 'Solana-native AI chat platform with RAG capabilities',
+    type: 'website',
+    locale: 'en_US',
   },
   twitter: {
-    card: "summary_large_image",
-    title: "ISIS Chat - Ancient Wisdom • Modern AI",
-    description: "Solana-native AI chat platform with RAG capabilities",
+    card: 'summary_large_image',
+    title: 'ISIS Chat - Ancient Wisdom • Modern AI',
+    description: 'Solana-native AI chat platform with RAG capabilities',
   },
   robots: {
     index: true,
@@ -69,10 +80,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Load Satoshi font stylesheet without client event handlers */}
-        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
         <link
-          rel="stylesheet"
+          crossOrigin="anonymous"
+          href="https://api.fontshare.com"
+          rel="preconnect"
+        />
+        <link
           href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap"
+          rel="stylesheet"
         />
       </head>
       <body
@@ -81,9 +96,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <ServiceWorkerManager />
-            <main className="min-h-screen">
-              {children}
-            </main>
+            <main className="min-h-screen">{children}</main>
           </Providers>
         </ErrorBoundary>
       </body>

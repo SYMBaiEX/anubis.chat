@@ -1,31 +1,23 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useQuery, useMutation } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
-import type { Chat, ChatMessage } from '@/lib/types/api';
-
-import { ChatList } from './chat-list';
-import { MessageList } from './message-list';
-import { MessageInput } from './message-input';
-import { ChatHeader } from './chat-header';
-import { AgentSelector } from './agent-selector';
-import { LoadingStates } from '@/components/data/loading-states';
+import { useMutation, useQuery } from 'convex/react';
+import { Bot, MessageSquare, Plus, Settings, Sidebar, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { EmptyState } from '@/components/data/empty-states';
-import { Button } from '@/components/ui/button';
-import { 
-  MessageSquare, 
-  Sidebar, 
-  X,
-  Plus,
-  Settings,
-  Bot
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { LoadingStates } from '@/components/data/loading-states';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { useSolanaAgent } from '@/components/providers/solana-agent-provider';
+import { Button } from '@/components/ui/button';
+import type { Chat, ChatMessage } from '@/lib/types/api';
+import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { AgentSelector } from './agent-selector';
+import { ChatHeader } from './chat-header';
+import { ChatList } from './chat-list';
+import { MessageInput } from './message-input';
+import { MessageList } from './message-list';
 
 const log = createModuleLogger('components/chat/chat-interface');
 
@@ -46,13 +38,19 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   // Debug logging
   useEffect(() => {
-    console.log('ChatInterface - Auth state:', { isAuthenticated, user, walletAddress: user?.walletAddress });
+    console.log('ChatInterface - Auth state:', {
+      isAuthenticated,
+      user,
+      walletAddress: user?.walletAddress,
+    });
   }, [isAuthenticated, user]);
 
   // Convex queries and mutations
   const chats = useQuery(
     api.chats.getByOwner,
-    isAuthenticated && user?.walletAddress ? { ownerId: user.walletAddress } : 'skip'
+    isAuthenticated && user?.walletAddress
+      ? { ownerId: user.walletAddress }
+      : 'skip'
   );
 
   const messages = useQuery(
@@ -63,7 +61,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const createChat = useMutation(api.chats.create);
   const deleteChat = useMutation(api.chats.remove);
 
-  const currentChat = chats?.find(chat => chat._id === selectedChatId);
+  const currentChat = chats?.find((chat) => chat._id === selectedChatId);
 
   // Auto-select first chat on load
   useEffect(() => {
@@ -77,14 +75,16 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       console.error('Cannot create chat: User or wallet address is missing');
       return;
     }
-    
+
     setIsCreatingChat(true);
     try {
       const newChat = await createChat({
         title: `New Chat ${new Date().toLocaleTimeString()}`,
         ownerId: user.walletAddress,
         model: selectedAgent?.model || user.preferences?.aiModel || 'gpt-4o',
-        systemPrompt: selectedAgent?.systemPrompt || 'You are ISIS, a helpful AI assistant with access to Solana blockchain operations.',
+        systemPrompt:
+          selectedAgent?.systemPrompt ||
+          'You are ISIS, a helpful AI assistant with access to Solana blockchain operations.',
       });
       // The create mutation returns the full chat document, extract the _id
       if (newChat && newChat._id) {
@@ -98,8 +98,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!selectedChatId || !user || !token) {
-      console.error('Missing requirements for sending message:', { selectedChatId, user: !!user, token: !!token });
+    if (!(selectedChatId && user && token)) {
+      console.error('Missing requirements for sending message:', {
+        selectedChatId,
+        user: !!user,
+        token: !!token,
+      });
       return;
     }
 
@@ -107,9 +111,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       // Use streaming API route which persists user and assistant messages
       const res = await fetch(`/api/chats/${selectedChatId}/messages`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ content, role: 'user', stream: true }),
       });
@@ -128,7 +132,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     try {
       await deleteChat({ id: chatId as Id<'chats'> });
       if (selectedChatId === chatId) {
-        const remainingChats = chats?.filter(chat => chat._id !== chatId);
+        const remainingChats = chats?.filter((chat) => chat._id !== chatId);
         setSelectedChatId(remainingChats?.[0]?._id);
       }
     } catch (error: any) {
@@ -140,37 +144,42 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <EmptyState
+          description="Please connect your wallet and sign in to access the chat interface"
           icon={<MessageSquare className="h-12 w-12 text-muted-foreground" />}
           title="Authentication Required"
-          description="Please connect your wallet and sign in to access the chat interface"
         />
       </div>
     );
   }
 
   return (
-    <div className={cn("flex h-full bg-background", className)}>
+    <div className={cn('flex h-full bg-background', className)}>
       {/* Sidebar */}
-      <div 
+      <div
         className={cn(
-          "flex-shrink-0 border-r border-border/50 bg-card/50 backdrop-blur transition-all duration-300",
-          sidebarOpen ? "w-80" : "w-0"
+          'flex-shrink-0 border-border/50 border-r bg-card/50 backdrop-blur transition-all duration-300',
+          sidebarOpen ? 'w-80' : 'w-0'
         )}
       >
-        <div className={cn("h-full overflow-hidden", sidebarOpen ? "block" : "hidden")}>
+        <div
+          className={cn(
+            'h-full overflow-hidden',
+            sidebarOpen ? 'block' : 'hidden'
+          )}
+        >
           {/* Sidebar Header */}
-          <div className="flex h-14 items-center justify-between border-b border-border/50 px-4 bg-gradient-to-r from-primary/5 to-accent/5">
+          <div className="flex h-14 items-center justify-between border-border/50 border-b bg-gradient-to-r from-primary/5 to-accent/5 px-4">
             <div className="flex items-center gap-3">
-              <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20">
+              <div className="rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 p-1.5">
                 <Bot className="h-4 w-4 text-primary" />
               </div>
               <span className="font-semibold text-sm">Chat History</span>
             </div>
             <Button
+              className="h-8 w-8 p-0"
               onClick={() => setSidebarOpen(false)}
               size="sm"
               variant="ghost"
-              className="h-8 w-8 p-0"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -196,19 +205,19 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       {/* Main Chat Area */}
       <div className="flex flex-1 flex-col">
         {/* Top Bar */}
-        <div className="flex h-14 items-center justify-between border-b border-border/50 bg-card/30 backdrop-blur px-4">
+        <div className="flex h-14 items-center justify-between border-border/50 border-b bg-card/30 px-4 backdrop-blur">
           <div className="flex items-center gap-3">
             {!sidebarOpen && (
               <Button
+                className="button-press"
                 onClick={() => setSidebarOpen(true)}
                 size="sm"
                 variant="ghost"
-                className="button-press"
               >
                 <Sidebar className="h-4 w-4" />
               </Button>
             )}
-            
+
             {currentChat ? (
               <ChatHeader
                 chat={currentChat}
@@ -224,60 +233,46 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             ) : (
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium text-muted-foreground">Select a chat to begin</span>
+                <span className="font-medium text-muted-foreground">
+                  Select a chat to begin
+                </span>
               </div>
             )}
           </div>
 
           <div className="flex items-center gap-2">
             {/* Agent Selector */}
-            {isInitialized && (
-              <AgentSelector />
-            )}
-            
+            {isInitialized && <AgentSelector />}
+
             <Button
+              className="button-press"
               disabled={isCreatingChat}
               onClick={handleCreateChat}
               size="sm"
               variant="outline"
-              className="button-press"
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="mr-1 h-4 w-4" />
               New Chat
             </Button>
-            
-            <Button size="sm" variant="ghost" className="button-press">
+
+            <Button className="button-press" size="sm" variant="ghost">
               <Settings className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
         {/* Chat Content */}
-        {!currentChat ? (
-          <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background">
-            <EmptyState
-              action={
-                chats?.length === 0 ? {
-                  label: "Start Your First Chat",
-                  onClick: handleCreateChat,
-                } : undefined
-              }
-              description={
-                chats?.length === 0
-                  ? "Create your first chat to start conversing with AI agents"
-                  : "Select a chat from the sidebar to continue"
-              }
-              icon={<MessageSquare className="h-12 w-12 text-muted-foreground" />}
-              title={chats?.length === 0 ? "Welcome to ISIS Chat" : "No Chat Selected"}
-            />
-          </div>
-        ) : (
+        {currentChat ? (
           <div className="flex flex-1 flex-col bg-gradient-to-br from-background via-muted/10 to-background">
             {/* Message List */}
             <div className="flex-1 overflow-hidden">
               {messages === undefined ? (
                 <div className="flex h-full items-center justify-center">
-                  <LoadingStates size="lg" variant="spinner" text="Loading messages..." />
+                  <LoadingStates
+                    size="lg"
+                    text="Loading messages..."
+                    variant="spinner"
+                  />
                 </div>
               ) : (
                 <MessageList
@@ -291,8 +286,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             </div>
 
             {/* Message Input */}
-            <div className="border-t border-border/50 bg-card/30 backdrop-blur p-4">
-              <div className="max-w-4xl mx-auto">
+            <div className="border-border/50 border-t bg-card/30 p-4 backdrop-blur">
+              <div className="mx-auto max-w-4xl">
                 <MessageInput
                   disabled={!selectedChatId || messages === undefined}
                   onSend={handleSendMessage}
@@ -300,6 +295,32 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 />
               </div>
             </div>
+          </div>
+        ) : (
+          <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background">
+            <EmptyState
+              action={
+                chats?.length === 0
+                  ? {
+                      label: 'Start Your First Chat',
+                      onClick: handleCreateChat,
+                    }
+                  : undefined
+              }
+              description={
+                chats?.length === 0
+                  ? 'Create your first chat to start conversing with AI agents'
+                  : 'Select a chat from the sidebar to continue'
+              }
+              icon={
+                <MessageSquare className="h-12 w-12 text-muted-foreground" />
+              }
+              title={
+                chats?.length === 0
+                  ? 'Welcome to ISIS Chat'
+                  : 'No Chat Selected'
+              }
+            />
           </div>
         )}
       </div>

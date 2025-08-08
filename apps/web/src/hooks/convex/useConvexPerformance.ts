@@ -122,7 +122,7 @@ export function useMutationQueue<T>() {
       }
 
       setQueue((prev) => prev.slice(1));
-      
+
       // Add small delay between mutations
       await new Promise((resolve) => setTimeout(resolve, 100));
     }

@@ -1,7 +1,16 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { createModuleLogger } from '@/lib/utils/logger';
+import {
+  FileText,
+  Image,
+  Mic,
+  MicOff,
+  Paperclip,
+  Send,
+  Smile,
+  Square,
+} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -11,17 +20,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { MessageInputProps } from '@/lib/types/components';
-import {
-  Send,
-  Mic,
-  MicOff,
-  Paperclip,
-  Image,
-  FileText,
-  Smile,
-  Square,
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('message-input');
@@ -33,7 +33,7 @@ const log = createModuleLogger('message-input');
 export function MessageInput({
   onSend,
   disabled = false,
-  placeholder = "Type your message...",
+  placeholder = 'Type your message...',
   maxLength = 4000,
   className,
   children,
@@ -49,7 +49,8 @@ export function MessageInput({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
+      textareaRef.current.style.height =
+        Math.min(textareaRef.current.scrollHeight, 200) + 'px';
     }
   }, [message]);
 
@@ -73,17 +74,17 @@ export function MessageInput({
       // Stop recording
       setIsRecording(false);
       // TODO: Implement actual voice recording logic
-      log.debug('Voice recording stopped', { 
+      log.debug('Voice recording stopped', {
         operation: 'voice_recording_stop',
-        wasRecording: true
+        wasRecording: true,
       });
     } else {
       // Start recording
       setIsRecording(true);
       // TODO: Implement actual voice recording logic
-      log.debug('Voice recording started', { 
+      log.debug('Voice recording started', {
         operation: 'voice_recording_start',
-        wasRecording: false
+        wasRecording: false,
       });
     }
   };
@@ -94,7 +95,7 @@ export function MessageInput({
       // TODO: Implement file upload logic
       log.info('Files selected for upload', {
         operation: 'file_upload_selection',
-        fileCount: files.length
+        fileCount: files.length,
       });
       // Reset input
       event.target.value = '';
@@ -107,23 +108,24 @@ export function MessageInput({
       // TODO: Implement image upload logic
       log.info('Images selected for upload', {
         operation: 'image_upload_selection',
-        imageCount: files.length
+        imageCount: files.length,
       });
       // Reset input
       event.target.value = '';
     }
   };
 
-  const isMessageValid = message.trim().length > 0 && message.length <= maxLength;
+  const isMessageValid =
+    message.trim().length > 0 && message.length <= maxLength;
   const isAtMaxLength = message.length >= maxLength;
 
   return (
     <TooltipProvider>
-      <div className={cn("flex flex-col space-y-2", className)}>
+      <div className={cn('flex flex-col space-y-2', className)}>
         {/* Character Count */}
         {message.length > maxLength * 0.8 && (
-          <div className="text-right text-xs text-muted-foreground">
-            <span className={cn(isAtMaxLength && "text-red-500")}>
+          <div className="text-right text-muted-foreground text-xs">
+            <span className={cn(isAtMaxLength && 'text-red-500')}>
               {message.length}/{maxLength}
             </span>
           </div>
@@ -163,20 +165,20 @@ export function MessageInput({
           </div>
 
           {/* Main Input Area */}
-          <div className="flex-1 relative">
+          <div className="relative flex-1">
             <Textarea
-              className="min-h-[44px] max-h-[200px] resize-none pr-20"
+              className="max-h-[200px] min-h-[44px] resize-none pr-20"
               disabled={disabled}
               maxLength={maxLength}
-              onKeyDown={handleKeyDown}
               onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder={placeholder}
               ref={textareaRef}
               value={message}
             />
 
             {/* Emoji Button */}
-            <div className="absolute bottom-2 right-16">
+            <div className="absolute right-16 bottom-2">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -200,12 +202,12 @@ export function MessageInput({
               <TooltipTrigger asChild>
                 <Button
                   className={cn(
-                    isRecording && "bg-red-500 text-white hover:bg-red-600"
+                    isRecording && 'bg-red-500 text-white hover:bg-red-600'
                   )}
                   disabled={disabled}
                   onClick={handleVoiceToggle}
                   size="sm"
-                  variant={isRecording ? "default" : "ghost"}
+                  variant={isRecording ? 'default' : 'ghost'}
                 >
                   {isRecording ? (
                     <Square className="h-4 w-4" />
@@ -240,21 +242,17 @@ export function MessageInput({
           <div className="flex items-center justify-center space-x-2 rounded-lg bg-red-50 p-2 text-red-600 dark:bg-red-900/20 dark:text-red-400">
             <div className="flex space-x-1">
               <div className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-              <div 
+              <div
                 className="h-2 w-2 animate-pulse rounded-full bg-red-500"
                 style={{ animationDelay: '0.5s' }}
               />
-              <div 
+              <div
                 className="h-2 w-2 animate-pulse rounded-full bg-red-500"
                 style={{ animationDelay: '1s' }}
               />
             </div>
-            <span className="text-sm font-medium">Recording...</span>
-            <Button
-              onClick={handleVoiceToggle}
-              size="sm"
-              variant="ghost"
-            >
+            <span className="font-medium text-sm">Recording...</span>
+            <Button onClick={handleVoiceToggle} size="sm" variant="ghost">
               <MicOff className="h-4 w-4" />
             </Button>
           </div>

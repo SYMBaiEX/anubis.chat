@@ -1,19 +1,19 @@
 'use client';
 
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
+import { useQuery } from 'convex/react';
 import {
   createContext,
+  type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useState,
-  useCallback,
-  ReactNode,
 } from 'react';
+import { SolanaAgentKit } from 'solana-agent-kit';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuthContext } from './auth-provider';
-import { SolanaAgentKit } from 'solana-agent-kit';
-import { useQuery } from 'convex/react';
-import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
 
 // Agent Types
 export interface Agent {
@@ -46,7 +46,21 @@ export interface BlockchainTransaction {
   agentId?: Id<'agents'>;
   userId: string;
   signature?: string;
-  type: 'transfer' | 'swap' | 'stake' | 'unstake' | 'lend' | 'borrow' | 'mint_nft' | 'buy_nft' | 'sell_nft' | 'vote' | 'create_token' | 'liquidity_add' | 'liquidity_remove' | 'other';
+  type:
+    | 'transfer'
+    | 'swap'
+    | 'stake'
+    | 'unstake'
+    | 'lend'
+    | 'borrow'
+    | 'mint_nft'
+    | 'buy_nft'
+    | 'sell_nft'
+    | 'vote'
+    | 'create_token'
+    | 'liquidity_add'
+    | 'liquidity_remove'
+    | 'other';
   operation: string;
   parameters: {
     amount?: string;
@@ -73,7 +87,14 @@ export interface BlockchainTransaction {
 export interface ToolExecution {
   toolName: string;
   parameters?: any;
-  category: 'wallet' | 'trading' | 'defi' | 'nft' | 'governance' | 'social' | 'utility';
+  category:
+    | 'wallet'
+    | 'trading'
+    | 'defi'
+    | 'nft'
+    | 'governance'
+    | 'social'
+    | 'utility';
 }
 
 // Context Types
@@ -81,33 +102,38 @@ interface SolanaAgentContextType {
   // Agent Kit Instance
   agentKit: SolanaAgentKit | null;
   isInitialized: boolean;
-  
+
   // Available Agents
   agents: Agent[] | null;
   selectedAgent: Agent | null;
-  
+
   // Agent Management
   selectAgent: (agentId: string) => void;
   createCustomAgent: (config: Partial<Agent>) => Promise<string | null>;
-  
+
   // Tool Execution
   executeTool: (execution: ToolExecution) => Promise<any>;
-  
+
   // Transaction Management
   pendingTransactions: BlockchainTransaction[];
   recentTransactions: BlockchainTransaction[];
-  
+
   // Utilities
   getBalance: () => Promise<number | null>;
-  getTokenBalances: () => Promise<Array<{ mint: string; amount: string }> | null>;
+  getTokenBalances: () => Promise<Array<{
+    mint: string;
+    amount: string;
+  }> | null>;
   refreshData: () => void;
-  
+
   // Error Handling
   error: string | null;
   clearError: () => void;
 }
 
-const SolanaAgentContext = createContext<SolanaAgentContextType | undefined>(undefined);
+const SolanaAgentContext = createContext<SolanaAgentContextType | undefined>(
+  undefined
+);
 
 interface SolanaAgentProviderProps {
   children: ReactNode;
@@ -129,25 +155,31 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   // Fetch available agents
   const agents = useQuery(
     api.agents.list,
-    isAuthenticated && user?.walletAddress ? { includePublic: true, userId: user.walletAddress } : "skip"
+    isAuthenticated && user?.walletAddress
+      ? { includePublic: true, userId: user.walletAddress }
+      : 'skip'
   );
 
   // Fetch user's recent transactions
   const recentTransactions = useQuery(
     api.blockchainTransactions.listByUser,
-    isAuthenticated && user?.walletAddress ? { userId: user.walletAddress, limit: 10 } : "skip"
+    isAuthenticated && user?.walletAddress
+      ? { userId: user.walletAddress, limit: 10 }
+      : 'skip'
   ) as BlockchainTransaction[] | undefined;
 
   // Fetch pending transactions
   const pendingTransactions = useQuery(
     api.blockchainTransactions.listPending,
-    isAuthenticated && user?.walletAddress ? { userId: user.walletAddress } : "skip"
+    isAuthenticated && user?.walletAddress
+      ? { userId: user.walletAddress }
+      : 'skip'
   ) as BlockchainTransaction[] | undefined;
 
   // Initialize Solana Agent Kit when wallet connects
   useEffect(() => {
     const initializeAgentKit = async () => {
-      if (!wallet || !publicKey || !isAuthenticated) {
+      if (!(wallet && publicKey && isAuthenticated)) {
         setAgentKit(null);
         setIsInitialized(false);
         return;
@@ -157,15 +189,13 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
         // Get the private key from wallet adapter
         // Note: This is a simplified example. In production, you'd need proper key management
         const privateKey = 'your-private-key-here'; // This needs to be handled securely
-        const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
-        
-        const kit = new SolanaAgentKit(
-          privateKey,
-          rpcUrl,
-          {
-            OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-          }
-        );
+        const rpcUrl =
+          process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
+          'https://api.mainnet-beta.solana.com';
+
+        const kit = new SolanaAgentKit(privateKey, rpcUrl, {
+          OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+        });
 
         setAgentKit(kit);
         setIsInitialized(true);
@@ -183,72 +213,82 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   // Auto-select first agent when available
   useEffect(() => {
     if (agents && agents.length > 0 && !selectedAgent) {
-      const generalAgent = agents.find(agent => agent.type === 'general') || agents[0];
+      const generalAgent =
+        agents.find((agent) => agent.type === 'general') || agents[0];
       setSelectedAgent(generalAgent);
     }
   }, [agents, selectedAgent]);
 
-  const selectAgent = useCallback((agentId: string) => {
-    const agent = agents?.find(a => a._id === agentId);
-    if (agent) {
-      setSelectedAgent(agent);
-    }
-  }, [agents]);
-
-  const createCustomAgent = useCallback(async (config: Partial<Agent>): Promise<string | null> => {
-    if (!user) return null;
-
-    try {
-      // This would call a Convex mutation to create the agent
-      // const agentId = await createAgent({ ...config, createdBy: user.walletAddress });
-      // return agentId;
-      console.log('Creating custom agent:', config);
-      return null;
-    } catch (err) {
-      console.error('Failed to create custom agent:', err);
-      setError('Failed to create custom agent');
-      return null;
-    }
-  }, [user]);
-
-  const executeTool = useCallback(async (execution: ToolExecution): Promise<any> => {
-    if (!agentKit || !selectedAgent) {
-      throw new Error('Agent kit not initialized or no agent selected');
-    }
-
-    try {
-      // Execute the tool based on its name
-      // This is a simplified example - you'd have a proper tool registry
-      switch (execution.toolName) {
-        case 'getBalance':
-          return await agentKit.getBalance();
-        
-        case 'deployToken':
-          return await agentKit.deployToken(
-            execution.parameters.decimals,
-            execution.parameters.initialSupply
-          );
-          
-        case 'transfer':
-          return await agentKit.transfer(
-            execution.parameters.to,
-            execution.parameters.amount,
-            execution.parameters.mint
-          );
-          
-        // Add more tools as needed
-        default:
-          throw new Error(`Unknown tool: ${execution.toolName}`);
+  const selectAgent = useCallback(
+    (agentId: string) => {
+      const agent = agents?.find((a) => a._id === agentId);
+      if (agent) {
+        setSelectedAgent(agent);
       }
-    } catch (err) {
-      console.error('Tool execution failed:', err);
-      throw err;
-    }
-  }, [agentKit, selectedAgent]);
+    },
+    [agents]
+  );
+
+  const createCustomAgent = useCallback(
+    async (config: Partial<Agent>): Promise<string | null> => {
+      if (!user) return null;
+
+      try {
+        // This would call a Convex mutation to create the agent
+        // const agentId = await createAgent({ ...config, createdBy: user.walletAddress });
+        // return agentId;
+        console.log('Creating custom agent:', config);
+        return null;
+      } catch (err) {
+        console.error('Failed to create custom agent:', err);
+        setError('Failed to create custom agent');
+        return null;
+      }
+    },
+    [user]
+  );
+
+  const executeTool = useCallback(
+    async (execution: ToolExecution): Promise<any> => {
+      if (!(agentKit && selectedAgent)) {
+        throw new Error('Agent kit not initialized or no agent selected');
+      }
+
+      try {
+        // Execute the tool based on its name
+        // This is a simplified example - you'd have a proper tool registry
+        switch (execution.toolName) {
+          case 'getBalance':
+            return await agentKit.getBalance();
+
+          case 'deployToken':
+            return await agentKit.deployToken(
+              execution.parameters.decimals,
+              execution.parameters.initialSupply
+            );
+
+          case 'transfer':
+            return await agentKit.transfer(
+              execution.parameters.to,
+              execution.parameters.amount,
+              execution.parameters.mint
+            );
+
+          // Add more tools as needed
+          default:
+            throw new Error(`Unknown tool: ${execution.toolName}`);
+        }
+      } catch (err) {
+        console.error('Tool execution failed:', err);
+        throw err;
+      }
+    },
+    [agentKit, selectedAgent]
+  );
 
   const getBalance = useCallback(async (): Promise<number | null> => {
     if (!agentKit) return null;
-    
+
     try {
       const balance = await agentKit.getBalance();
       return balance;
@@ -259,9 +299,12 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
     }
   }, [agentKit]);
 
-  const getTokenBalances = useCallback(async (): Promise<Array<{ mint: string; amount: string }> | null> => {
+  const getTokenBalances = useCallback(async (): Promise<Array<{
+    mint: string;
+    amount: string;
+  }> | null> => {
     if (!agentKit) return null;
-    
+
     try {
       // This would call the appropriate method to get token balances
       // const balances = await agentKit.getTokenBalances();
@@ -288,27 +331,27 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
     // Agent Kit Instance
     agentKit,
     isInitialized,
-    
+
     // Available Agents
     agents: agents || null,
     selectedAgent,
-    
+
     // Agent Management
     selectAgent,
     createCustomAgent,
-    
+
     // Tool Execution
     executeTool,
-    
+
     // Transaction Management
     pendingTransactions: pendingTransactions || [],
     recentTransactions: recentTransactions || [],
-    
+
     // Utilities
     getBalance,
     getTokenBalances,
     refreshData,
-    
+
     // Error Handling
     error,
     clearError,

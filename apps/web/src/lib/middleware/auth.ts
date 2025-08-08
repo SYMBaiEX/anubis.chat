@@ -3,6 +3,7 @@
  * Based on latest Solana wallet patterns and August 2025 best practices
  */
 
+import 'server-only'; // Ensure this module is never imported on the client side
 import { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { sign, verify } from 'jsonwebtoken';
@@ -42,8 +43,17 @@ export interface WalletSession {
 const JWT_SECRET = jwtConfig.secret;
 const JWT_EXPIRES_IN = jwtConfig.expiresIn;
 
-// Validate JWT secret in production
-if (isProduction && JWT_SECRET.length < 32) {
+// Validate JWT secret - required for server-side operations
+if (!JWT_SECRET) {
+  if (isProduction) {
+    throw new Error('JWT_SECRET is required in production environment');
+  }
+  // In development, warn but allow fallback for testing
+  log.warn('JWT_SECRET not configured - authentication will not work properly');
+}
+
+// Validate JWT secret strength in production
+if (isProduction && JWT_SECRET && JWT_SECRET.length < 32) {
   throw new Error('JWT_SECRET must be at least 32 characters in production');
 }
 
@@ -51,6 +61,12 @@ export function createJWTToken(
   walletAddress: string,
   publicKey: string
 ): string {
+  if (!JWT_SECRET) {
+    throw new Error(
+      'JWT_SECRET is not configured - cannot create authentication tokens'
+    );
+  }
+
   const payload: WalletSession & { jti: string } = {
     walletAddress,
     publicKey,
@@ -68,6 +84,13 @@ export function createJWTToken(
 export async function verifyJWTToken(
   token: string
 ): Promise<WalletSession | null> {
+  if (!JWT_SECRET) {
+    log.error(
+      'JWT_SECRET is not configured - cannot verify authentication tokens'
+    );
+    return null;
+  }
+
   try {
     const decoded = verify(token, JWT_SECRET, {
       algorithms: ['HS256'],
@@ -361,6 +384,11 @@ export function addWeb3CorsHeaders(response: Response): Response {
 // =============================================================================
 
 export async function blacklistToken(token: string): Promise<boolean> {
+  if (!JWT_SECRET) {
+    log.error('JWT_SECRET is not configured - cannot blacklist tokens');
+    return false;
+  }
+
   try {
     const decoded = verify(token, JWT_SECRET, {
       algorithms: ['HS256'],

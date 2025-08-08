@@ -27,7 +27,14 @@ export function AuthGuard({
       const url = `${redirectTo}?next=${encodeURIComponent(next)}`;
       router.push(url);
     }
-  }, [isLoading, isAuthenticated, requireAuth, redirectTo, router, searchParams]);
+  }, [
+    isLoading,
+    isAuthenticated,
+    requireAuth,
+    redirectTo,
+    router,
+    searchParams,
+  ]);
 
   // Show loading state while checking authentication
   if (isLoading) {

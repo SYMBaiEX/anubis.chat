@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React from 'react';
-import { Moon, Sun, Monitor } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
+import { Monitor, Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,12 +13,25 @@ import {
 
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null; // Prevent hydration mismatch
+  }
 
   const getIcon = () => {
     if (resolvedTheme === 'dark') {
-      return <Moon className="h-[1.2rem] w-[1.2rem] text-isis-primary transition-all" />;
+      return (
+        <Moon className="h-[1.2rem] w-[1.2rem] text-isis-primary transition-all" />
+      );
     }
-    return <Sun className="h-[1.2rem] w-[1.2rem] text-isis-accent transition-all" />;
+    return (
+      <Sun className="h-[1.2rem] w-[1.2rem] text-isis-accent transition-all" />
+    );
   };
 
   const getThemeLabel = (themeValue: string) => {
@@ -38,42 +51,42 @@ export function ThemeToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
-          size="icon"
-          className="border-border/50 bg-card/80 backdrop-blur-sm hover:bg-card/90 hover:border-primary/50 transition-all duration-300"
           aria-label="Toggle theme"
+          className="border-border/50 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:border-primary/50 hover:bg-card/90"
+          size="icon"
+          variant="outline"
         >
           {getIcon()}
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent 
-        align="end" 
-        className="bg-card/95 backdrop-blur-sm border-border/50 shadow-xl"
+      <DropdownMenuContent
+        align="end"
+        className="border-border/50 bg-card/95 shadow-xl backdrop-blur-sm"
       >
         <DropdownMenuItem
-          onClick={() => setTheme('light')}
-          className={`cursor-pointer flex items-center gap-2 ${
+          className={`flex cursor-pointer items-center gap-2 ${
             theme === 'light' ? 'bg-primary/10 text-primary' : ''
           }`}
+          onClick={() => setTheme('light')}
         >
           <Sun className="h-4 w-4" />
           Light
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() => setTheme('dark')}
-          className={`cursor-pointer flex items-center gap-2 ${
+          className={`flex cursor-pointer items-center gap-2 ${
             theme === 'dark' ? 'bg-primary/10 text-primary' : ''
           }`}
+          onClick={() => setTheme('dark')}
         >
           <Moon className="h-4 w-4" />
           Dark
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() => setTheme('system')}
-          className={`cursor-pointer flex items-center gap-2 ${
+          className={`flex cursor-pointer items-center gap-2 ${
             theme === 'system' ? 'bg-primary/10 text-primary' : ''
           }`}
+          onClick={() => setTheme('system')}
         >
           <Monitor className="h-4 w-4" />
           System
@@ -85,18 +98,35 @@ export function ThemeToggle() {
 
 // Simple toggle button without dropdown (for space-constrained areas)
 export function SimpleThemeToggle() {
-  const { toggleTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null; // Prevent hydration mismatch
+  }
+
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+  };
 
   return (
     <Button
-      variant="outline"
-      size="icon"
-      onClick={toggleTheme}
-      className="border-border/50 bg-card/80 backdrop-blur-sm hover:bg-card/90 hover:border-primary/50 transition-all duration-300"
       aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
+      className="border-border/50 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:border-primary/50 hover:bg-card/90"
+      onClick={toggleTheme}
+      size="icon"
+      variant="outline"
     >
-      <Sun className={`h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all ${resolvedTheme === 'dark' ? '-rotate-90 scale-0' : ''}`} />
-      <Moon className={`absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all ${resolvedTheme === 'dark' ? 'rotate-0 scale-100' : ''}`} />
+      <Sun
+        className={`h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all ${resolvedTheme === 'dark' ? '-rotate-90 scale-0' : ''}`}
+      />
+      <Moon
+        className={`absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all ${resolvedTheme === 'dark' ? 'rotate-0 scale-100' : ''}`}
+      />
     </Button>
   );
 }

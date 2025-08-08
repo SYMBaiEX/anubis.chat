@@ -446,7 +446,7 @@ export class OrchestratorAgent extends Agent {
       dependencies?: string[];
       priority?: number;
     }
-    
+
     interface DecomposedTask {
       subtasks: Subtask[];
     }

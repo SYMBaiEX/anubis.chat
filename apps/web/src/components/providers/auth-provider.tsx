@@ -3,11 +3,11 @@
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useRef,
-  useCallback,
 } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await fetch('/api/auth/validate', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${auth.token}`,
+          Authorization: `Bearer ${auth.token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -134,7 +134,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Auto-login if wallet connects and we don't have auth
   useEffect(() => {
     // Skip if wallet is not connected or already authenticated
-    if (!wallet.isConnected || !wallet.publicKey || auth.isAuthenticated || auth.isLoading) {
+    if (
+      !(wallet.isConnected && wallet.publicKey) ||
+      auth.isAuthenticated ||
+      auth.isLoading
+    ) {
       return;
     }
 
@@ -148,7 +152,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (auth.error) {
         auth.clearError();
       }
-      
+
       try {
         await auth.login();
       } catch (error) {

@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { useWallet } from '@/hooks/useWallet';
-import { Button } from '@/components/ui/button';
+import React from 'react';
 import Loader from '@/components/loader';
+import { Button } from '@/components/ui/button';
+import { useWallet } from '@/hooks/useWallet';
 
 interface WalletButtonProps {
   className?: string;
@@ -12,19 +12,19 @@ interface WalletButtonProps {
   size?: 'sm' | 'default' | 'lg';
 }
 
-export function WalletButton({ 
+export function WalletButton({
   className,
   variant = 'default',
-  size = 'default'
+  size = 'default',
 }: WalletButtonProps) {
   const { setVisible } = useWalletModal();
-  const { 
-    isConnected, 
-    isConnecting, 
-    publicKey, 
-    balance, 
+  const {
+    isConnected,
+    isConnecting,
+    publicKey,
+    balance,
     formatAddress,
-    disconnect 
+    disconnect,
   } = useWallet();
 
   const handleClick = () => {
@@ -39,20 +39,20 @@ export function WalletButton({
     return (
       <div className="flex items-center gap-3">
         <div className="text-right">
-          <div className="text-sm font-medium text-foreground">
+          <div className="font-medium text-foreground text-sm">
             {formatAddress()}
           </div>
           {balance !== null && (
-            <div className="text-xs text-muted-foreground">
+            <div className="text-muted-foreground text-xs">
               {balance.toFixed(4)} SOL
             </div>
           )}
         </div>
         <Button
+          className={`${className} border-destructive/20 bg-destructive/10 text-destructive transition-all duration-300 hover:border-destructive/40 hover:bg-destructive/20`}
           onClick={handleClick}
-          variant={variant}
           size={size}
-          className={`${className} bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20 hover:border-destructive/40 transition-all duration-300`}
+          variant={variant}
         >
           Disconnect
         </Button>
@@ -62,11 +62,11 @@ export function WalletButton({
 
   return (
     <Button
-      onClick={handleClick}
+      className={`${className} border-primary/30 bg-primary/10 font-medium text-primary transition-all duration-300 hover:border-primary/50 hover:bg-primary/20`}
       disabled={isConnecting}
-      variant={variant}
+      onClick={handleClick}
       size={size}
-      className={`${className} bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:border-primary/50 transition-all duration-300 font-medium`}
+      variant={variant}
     >
       {isConnecting ? (
         <>

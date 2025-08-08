@@ -21,7 +21,7 @@ if (typeof window !== 'undefined') {
     const window = new JSDOM('').window;
     return DOMPurify(window as unknown as Window);
   };
-  
+
   // For server-side, we'll create a simple fallback that just escapes HTML
   // The actual DOMPurify instance will be created on demand
   isomorphicDOMPurify = {
@@ -35,7 +35,7 @@ if (typeof window !== 'undefined') {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#x27;')
         .replace(/\//g, '&#x2F;');
-    }
+    },
   } as typeof DOMPurify;
 }
 
@@ -129,7 +129,7 @@ export function isCodeSafe(code: string): boolean {
     /<embed[^>]*>/gi,
   ];
 
-  return !dangerousPatterns.some(pattern => pattern.test(code));
+  return !dangerousPatterns.some((pattern) => pattern.test(code));
 }
 
 // Export the isomorphic instance for advanced use cases

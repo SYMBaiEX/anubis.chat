@@ -1,15 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  BarChart3,
+  Bot,
+  ChevronDown,
+  Coins,
+  Image,
+  Plus,
+  Settings,
+  TrendingUp,
+  Vote,
+  Zap,
+} from 'lucide-react';
+import { useState } from 'react';
+import { LoadingStates } from '@/components/data/loading-states';
+import {
+  type Agent,
+  useSolanaAgent,
+} from '@/components/providers/solana-agent-provider';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -18,20 +28,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { LoadingStates } from '@/components/data/loading-states';
-import { useSolanaAgent, type Agent } from '@/components/providers/solana-agent-provider';
 import {
-  Bot,
-  ChevronDown,
-  TrendingUp,
-  Coins,
-  Image,
-  Vote,
-  BarChart3,
-  Plus,
-  Settings,
-  Zap,
-} from 'lucide-react';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 interface AgentSelectorProps {
@@ -92,7 +95,7 @@ export function AgentSelector({ className }: AgentSelectorProps) {
 
   const getAgentDescription = (agent: Agent) => {
     if (agent.description) return agent.description;
-    
+
     // Fallback descriptions
     switch (agent.type) {
       case 'trading':
@@ -112,27 +115,31 @@ export function AgentSelector({ className }: AgentSelectorProps) {
 
   if (!isInitialized) {
     return (
-      <div className={cn("flex items-center space-x-2", className)}>
+      <div className={cn('flex items-center space-x-2', className)}>
         <LoadingStates size="sm" variant="spinner" />
-        <span className="text-muted-foreground text-sm">Initializing agents...</span>
+        <span className="text-muted-foreground text-sm">
+          Initializing agents...
+        </span>
       </div>
     );
   }
 
   if (!agents || agents.length === 0) {
     return (
-      <div className={cn("flex items-center space-x-2", className)}>
+      <div className={cn('flex items-center space-x-2', className)}>
         <Bot className="h-4 w-4 text-muted-foreground" />
-        <span className="text-muted-foreground text-sm">No agents available</span>
+        <span className="text-muted-foreground text-sm">
+          No agents available
+        </span>
       </div>
     );
   }
 
   return (
-    <div className={cn("flex items-center space-x-2", className)}>
+    <div className={cn('flex items-center space-x-2', className)}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="justify-between min-w-[200px]" variant="outline">
+          <Button className="min-w-[200px] justify-between" variant="outline">
             <div className="flex items-center space-x-2">
               {selectedAgent && getAgentIcon(selectedAgent.type)}
               <span className="truncate">
@@ -142,35 +149,37 @@ export function AgentSelector({ className }: AgentSelectorProps) {
             <ChevronDown className="h-4 w-4 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        
-        <DropdownMenuContent className="w-80" align="start">
+
+        <DropdownMenuContent align="start" className="w-80">
           {/* Current Agent */}
           {selectedAgent && (
             <>
               <div className="p-3">
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
-                    <div className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-lg",
-                      getAgentColor(selectedAgent.type)
-                    )}>
+                    <div
+                      className={cn(
+                        'flex h-10 w-10 items-center justify-center rounded-lg',
+                        getAgentColor(selectedAgent.type)
+                      )}
+                    >
                       {getAgentIcon(selectedAgent.type)}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-2">
-                      <h4 className="font-medium text-sm truncate">
+                      <h4 className="truncate font-medium text-sm">
                         {selectedAgent.name}
                       </h4>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge className="text-xs" variant="secondary">
                         Active
                       </Badge>
                     </div>
-                    <p className="text-muted-foreground text-xs mt-1">
+                    <p className="mt-1 text-muted-foreground text-xs">
                       {getAgentDescription(selectedAgent)}
                     </p>
-                    <div className="flex items-center mt-2 text-xs text-muted-foreground">
-                      <Zap className="h-3 w-3 mr-1" />
+                    <div className="mt-2 flex items-center text-muted-foreground text-xs">
+                      <Zap className="mr-1 h-3 w-3" />
                       {selectedAgent.capabilities.length} capabilities
                     </div>
                   </div>
@@ -183,34 +192,36 @@ export function AgentSelector({ className }: AgentSelectorProps) {
           {/* Available Agents */}
           <div className="max-h-60 overflow-y-auto">
             {agents
-              .filter(agent => agent._id !== selectedAgent?._id)
+              .filter((agent) => agent._id !== selectedAgent?._id)
               .map((agent) => (
                 <DropdownMenuItem
+                  className="cursor-pointer p-3"
                   key={agent._id}
                   onClick={() => selectAgent(agent._id)}
-                  className="p-3 cursor-pointer"
                 >
-                  <div className="flex items-start space-x-3 w-full">
+                  <div className="flex w-full items-start space-x-3">
                     <div className="flex-shrink-0">
-                      <div className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-md text-xs",
-                        getAgentColor(agent.type)
-                      )}>
+                      <div
+                        className={cn(
+                          'flex h-8 w-8 items-center justify-center rounded-md text-xs',
+                          getAgentColor(agent.type)
+                        )}
+                      >
                         {getAgentIcon(agent.type)}
                       </div>
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium text-sm truncate">
+                        <span className="truncate font-medium text-sm">
                           {agent.name}
                         </span>
                         {!agent.isPublic && (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge className="text-xs" variant="secondary">
                             Custom
                           </Badge>
                         )}
                       </div>
-                      <p className="text-muted-foreground text-xs mt-1 line-clamp-2">
+                      <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
                         {getAgentDescription(agent)}
                       </p>
                     </div>
@@ -220,7 +231,7 @@ export function AgentSelector({ className }: AgentSelectorProps) {
           </div>
 
           <DropdownMenuSeparator />
-          
+
           {/* Create Custom Agent */}
           <DropdownMenuItem onClick={() => setShowAgentDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -231,16 +242,17 @@ export function AgentSelector({ className }: AgentSelectorProps) {
 
       {/* Agent Info Badge */}
       {selectedAgent && (
-        <Badge 
-          className={cn("text-xs", getAgentColor(selectedAgent.type))}
+        <Badge
+          className={cn('text-xs', getAgentColor(selectedAgent.type))}
           variant="secondary"
         >
-          {selectedAgent.type.charAt(0).toUpperCase() + selectedAgent.type.slice(1)}
+          {selectedAgent.type.charAt(0).toUpperCase() +
+            selectedAgent.type.slice(1)}
         </Badge>
       )}
 
       {/* Create Agent Dialog */}
-      <Dialog open={showAgentDialog} onOpenChange={setShowAgentDialog}>
+      <Dialog onOpenChange={setShowAgentDialog} open={showAgentDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Create Custom Agent</DialogTitle>
@@ -248,20 +260,28 @@ export function AgentSelector({ className }: AgentSelectorProps) {
               Create a specialized agent tailored to your specific needs.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <p className="text-muted-foreground text-sm">
-              Custom agent creation will be available soon. You can currently use our pre-configured agents:
+              Custom agent creation will be available soon. You can currently
+              use our pre-configured agents:
             </p>
-            
+
             <div className="space-y-2">
-              {agents.filter(agent => agent.isPublic).map((agent) => (
-                <div key={agent._id} className="flex items-center space-x-2 text-sm">
-                  {getAgentIcon(agent.type)}
-                  <span className="font-medium">{agent.name}</span>
-                  <span className="text-muted-foreground">- {getAgentDescription(agent)}</span>
-                </div>
-              ))}
+              {agents
+                .filter((agent) => agent.isPublic)
+                .map((agent) => (
+                  <div
+                    className="flex items-center space-x-2 text-sm"
+                    key={agent._id}
+                  >
+                    {getAgentIcon(agent.type)}
+                    <span className="font-medium">{agent.name}</span>
+                    <span className="text-muted-foreground">
+                      - {getAgentDescription(agent)}
+                    </span>
+                  </div>
+                ))}
             </div>
           </div>
         </DialogContent>

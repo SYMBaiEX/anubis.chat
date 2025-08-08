@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { createModuleLogger } from '@/lib/utils/logger';
 import type { FormWrapperProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('form-wrapper');
@@ -25,7 +25,7 @@ export function FormWrapper({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     setIsSubmitting(true);
     try {
       await onSubmit(formData);
@@ -36,7 +36,7 @@ export function FormWrapper({
       log.error('Form submission failed', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        operation: 'form_submission'
+        operation: 'form_submission',
       });
       throw error;
     } finally {
@@ -45,15 +45,18 @@ export function FormWrapper({
   };
 
   const updateField = (name: string, value: unknown) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
-    <form
-      className={cn('space-y-6', className)}
-      onSubmit={handleSubmit}
-    >
-      <div data-form-context={JSON.stringify({ formData, updateField, isSubmitting })}>
+    <form className={cn('space-y-6', className)} onSubmit={handleSubmit}>
+      <div
+        data-form-context={JSON.stringify({
+          formData,
+          updateField,
+          isSubmitting,
+        })}
+      >
         {children}
       </div>
     </form>

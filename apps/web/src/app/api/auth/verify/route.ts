@@ -6,6 +6,7 @@
 import { PublicKey } from '@solana/web3.js';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { convexConfig } from '@/lib/env';
 // Removed storage; using Convex directly
 import {
   createJWTToken,
@@ -22,7 +23,6 @@ import {
   validationErrorResponse,
 } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { convexConfig } from '@/lib/env';
 
 const log = createModuleLogger('auth-verify-api');
 
@@ -53,8 +53,8 @@ function parseSignInMessage(message: string): {
   try {
     // Parse the simplified message format: "ISIS Chat Authentication\n\nNonce: {nonce}"
     const nonceMatch = message.match(/Nonce: ([\w-]+)/);
-    
-    if (!nonceMatch || !nonceMatch[1]) {
+
+    if (!(nonceMatch && nonceMatch[1])) {
       log.error('Failed to parse nonce from message', { message });
       return null;
     }
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
       // Generate a refresh token (using a different secret or prefix for security)
       const refreshToken = createJWTToken(walletAddress, publicKey);
       const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-      
+
       // Create auth session response
       const authSession: AuthSession = {
         walletAddress,

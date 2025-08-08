@@ -2,7 +2,6 @@
 
 import { Bell, Palette, Settings, User, Wallet } from 'lucide-react';
 import { useState } from 'react';
-import { createModuleLogger } from '@/lib/utils/logger';
 import { FormWrapper } from '@/components/forms/form-wrapper';
 import { ValidatedInput } from '@/components/forms/validated-input';
 import { Avatar } from '@/components/ui/avatar';
@@ -12,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs } from '@/components/ui/tabs';
 import type { UserProfileProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { SubscriptionStatus } from './subscription-status';
 
 // Initialize logger
@@ -35,14 +35,14 @@ export function UserProfile({
     try {
       await onUpdate?.(data);
       setIsEditing(false);
-      log.info('Profile updated successfully', { 
-        operation: 'profile_update'
+      log.info('Profile updated successfully', {
+        operation: 'profile_update',
       });
     } catch (error) {
       log.error('Failed to update profile', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        operation: 'profile_update'
+        operation: 'profile_update',
       });
       // Handle error (show toast, etc.)
     }

@@ -3,11 +3,11 @@
  * Provides usage statistics and analytics for authenticated users
  */
 
+import { api } from '@convex/_generated/api';
+import { fetchQuery } from 'convex/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { fetchQuery } from 'convex/nextjs';
-import { api } from '@convex/_generated/api';
 
 // Initialize logger
 const log = createModuleLogger('api/users/usage');
@@ -98,7 +98,9 @@ export async function GET(request: NextRequest) {
 
         const { period, includeModels } = queryValidation.data;
 
-        const usageData = await fetchQuery(api.users.getUsage, { walletAddress });
+        const usageData = await fetchQuery(api.users.getUsage, {
+          walletAddress,
+        });
 
         const usageStats: UsageStats = {
           current: {
@@ -112,7 +114,7 @@ export async function GET(request: NextRequest) {
           daily: [],
           models: includeModels ? [] : [],
           subscription: {
-            tier: (usageData?.user ? 'free' : 'free'),
+            tier: usageData?.user ? 'free' : 'free',
             features: ['basic_chat', 'document_upload', 'search'],
             limits: {
               messagesPerMinute: 30,

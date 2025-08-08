@@ -436,12 +436,14 @@ export default defineSchema({
     model: v.string(),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
-    config: v.optional(v.object({
-      rpcUrl: v.optional(v.string()),
-      priorityFee: v.optional(v.number()),
-      slippage: v.optional(v.number()),
-      gasBudget: v.optional(v.number()),
-    })),
+    config: v.optional(
+      v.object({
+        rpcUrl: v.optional(v.string()),
+        priorityFee: v.optional(v.number()),
+        slippage: v.optional(v.number()),
+        gasBudget: v.optional(v.number()),
+      })
+    ),
     isActive: v.boolean(),
     isPublic: v.boolean(), // Whether available to all users or custom
     createdBy: v.optional(v.string()), // walletAddress for custom agents
@@ -457,17 +459,23 @@ export default defineSchema({
     chatId: v.id('chats'),
     agentId: v.id('agents'),
     userId: v.string(), // walletAddress
-    context: v.optional(v.object({
-      lastAction: v.optional(v.string()),
-      pendingTransactions: v.optional(v.array(v.string())),
-      walletBalance: v.optional(v.number()),
-      activePositions: v.optional(v.array(v.string())),
-      preferences: v.optional(v.object({
-        riskLevel: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
-        maxSlippage: v.optional(v.number()),
-        autoConfirm: v.optional(v.boolean()),
-      })),
-    })),
+    context: v.optional(
+      v.object({
+        lastAction: v.optional(v.string()),
+        pendingTransactions: v.optional(v.array(v.string())),
+        walletBalance: v.optional(v.number()),
+        activePositions: v.optional(v.array(v.string())),
+        preferences: v.optional(
+          v.object({
+            riskLevel: v.optional(
+              v.union(v.literal('low'), v.literal('medium'), v.literal('high'))
+            ),
+            maxSlippage: v.optional(v.number()),
+            autoConfirm: v.optional(v.boolean()),
+          })
+        ),
+      })
+    ),
     isActive: v.boolean(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -517,18 +525,28 @@ export default defineSchema({
     fee: v.optional(v.number()), // Transaction fee in SOL
     blockTime: v.optional(v.number()),
     confirmations: v.optional(v.number()),
-    metadata: v.optional(v.object({
-      tokensBefore: v.optional(v.array(v.object({
-        mint: v.string(),
-        amount: v.string(),
-      }))),
-      tokensAfter: v.optional(v.array(v.object({
-        mint: v.string(),
-        amount: v.string(),
-      }))),
-      priceImpact: v.optional(v.number()),
-      executionTime: v.optional(v.number()),
-    })),
+    metadata: v.optional(
+      v.object({
+        tokensBefore: v.optional(
+          v.array(
+            v.object({
+              mint: v.string(),
+              amount: v.string(),
+            })
+          )
+        ),
+        tokensAfter: v.optional(
+          v.array(
+            v.object({
+              mint: v.string(),
+              amount: v.string(),
+            })
+          )
+        ),
+        priceImpact: v.optional(v.number()),
+        executionTime: v.optional(v.number()),
+      })
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

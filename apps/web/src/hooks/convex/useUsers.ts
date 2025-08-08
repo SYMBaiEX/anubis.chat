@@ -2,12 +2,14 @@
  * User-related Convex hooks with Result pattern and real-time updates
  */
 
-import { useCallback } from 'react';
 import { api } from '@convex/_generated/api';
+import { useCallback } from 'react';
+import { createModuleLogger } from '@/lib/utils/logger';
 import type { Result } from '@/lib/utils/result';
 import { success } from '@/lib/utils/result';
-import { createModuleLogger } from '@/lib/utils/logger';
+
 const log = createModuleLogger('hooks/convex/useUsers');
+
 import {
   useConvexMutation,
   useConvexQuery,

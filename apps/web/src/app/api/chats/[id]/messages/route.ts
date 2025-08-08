@@ -4,7 +4,9 @@
  */
 
 import { openai } from '@ai-sdk/openai';
+import { api } from '@convex/_generated/api';
 import { convertToModelMessages, streamText } from 'ai';
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
@@ -20,8 +22,6 @@ import {
   validationErrorResponse,
 } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { fetchMutation, fetchQuery } from 'convex/nextjs';
-import { api } from '@convex/_generated/api';
 
 // =============================================================================
 // Logger
@@ -238,7 +238,9 @@ export async function POST(
           {
             id: createdUserMessage._id,
             role: createdUserMessage.role as 'user' | 'assistant' | 'system',
-            parts: [{ type: 'text' as const, text: createdUserMessage.content }],
+            parts: [
+              { type: 'text' as const, text: createdUserMessage.content },
+            ],
           },
         ];
 

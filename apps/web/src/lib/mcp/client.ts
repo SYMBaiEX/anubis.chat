@@ -9,7 +9,12 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 // We'll store MCP tool definitions, not AI SDK tools
-import type { CallToolRequest, CallToolResult, ListToolsResult, Tool as MCPServerTool } from '@modelcontextprotocol/sdk/types.js';
+import type {
+  CallToolRequest,
+  CallToolResult,
+  ListToolsResult,
+  Tool as MCPServerTool,
+} from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import type { MCPTransportConfig as MCPTransportConfigType } from '@/lib/types/mcp';
 import { MCPTransportType } from '@/lib/types/mcp';
@@ -115,7 +120,7 @@ export class MCPClientManager {
       throw new Error(`Client ${serverName} not found`);
     }
 
-    const serverTools = await client.listTools() as ListToolsResult;
+    const serverTools = (await client.listTools()) as ListToolsResult;
     const tools: Record<string, MCPTool> = {};
 
     for (const serverTool of serverTools.tools) {
@@ -127,10 +132,10 @@ export class MCPClientManager {
         description: serverTool.description || '',
         schema: schema || z.record(z.string(), z.unknown()),
         execute: async (input: Record<string, unknown>) => {
-          const result = await client.callTool({
+          const result = (await client.callTool({
             name: serverTool.name,
             arguments: input,
-          }) as CallToolResult;
+          })) as CallToolResult;
           return result.content;
         },
       };
@@ -175,17 +180,27 @@ export class MCPClientManager {
       throw new Error(`Client ${serverName} not found`);
     }
 
-    const result = await client.callTool({
+    const result = (await client.callTool({
       name: toolName,
       arguments: args,
-    }) as CallToolResult;
+    })) as CallToolResult;
     return result.content;
   }
 
   /**
    * List available prompts from a server
    */
-  async listPrompts(serverName: string): Promise<Array<{ name: string; description?: string; arguments?: Array<{ name: string; description?: string; required?: boolean }> }>> {
+  async listPrompts(serverName: string): Promise<
+    Array<{
+      name: string;
+      description?: string;
+      arguments?: Array<{
+        name: string;
+        description?: string;
+        required?: boolean;
+      }>;
+    }>
+  > {
     const client = this.clients.get(serverName);
     if (!client) {
       throw new Error(`Client ${serverName} not found`);
@@ -223,7 +238,14 @@ export class MCPClientManager {
   /**
    * List available resources from a server
    */
-  async listResources(serverName: string): Promise<Array<{ uri: string; name?: string; description?: string; mimeType?: string }>> {
+  async listResources(serverName: string): Promise<
+    Array<{
+      uri: string;
+      name?: string;
+      description?: string;
+      mimeType?: string;
+    }>
+  > {
     const client = this.clients.get(serverName);
     if (!client) {
       throw new Error(`Client ${serverName} not found`);
@@ -236,7 +258,12 @@ export class MCPClientManager {
   /**
    * Read a resource from a server
    */
-  async readResource(serverName: string, uri: string): Promise<Array<{ uri: string; mimeType?: string; text?: string; blob?: string }>> {
+  async readResource(
+    serverName: string,
+    uri: string
+  ): Promise<
+    Array<{ uri: string; mimeType?: string; text?: string; blob?: string }>
+  > {
     const client = this.clients.get(serverName);
     if (!client) {
       throw new Error(`Client ${serverName} not found`);

@@ -1,6 +1,7 @@
-"use client";
+'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import type React from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 type ResolvedTheme = 'light' | 'dark';
@@ -38,7 +39,7 @@ const STORAGE_KEY = 'isis-chat-theme';
 // ISIS.chat brand colors from PRD
 const colors = {
   primary: '#14F195',
-  accent: '#8247E5', 
+  accent: '#8247E5',
   error: '#FF5F56',
   background: {
     light: '#F8F9FB',
@@ -53,7 +54,7 @@ const colors = {
     dark: '#1A1A1A',
   },
   cardForeground: {
-    light: '#1A1A1A', 
+    light: '#1A1A1A',
     dark: '#F1F1F1',
   },
   border: {
@@ -84,11 +85,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Initialize theme from localStorage or system preference
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    
+    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
+      .matches
+      ? 'dark'
+      : 'light';
+
     if (stored && ['light', 'dark', 'system'].includes(stored)) {
       setThemeState(stored);
-      setResolvedTheme(stored === 'system' ? systemTheme : stored as ResolvedTheme);
+      setResolvedTheme(
+        stored === 'system' ? systemTheme : (stored as ResolvedTheme)
+      );
     } else {
       setThemeState('system');
       setResolvedTheme(systemTheme);
@@ -98,7 +104,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Listen for system theme changes
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
+
     const handleChange = (e: MediaQueryListEvent) => {
       if (theme === 'system') {
         setResolvedTheme(e.matches ? 'dark' : 'light');
@@ -112,26 +118,34 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Apply theme to document
   useEffect(() => {
     const root = document.documentElement;
-    
+
     // Remove existing theme classes
     root.classList.remove('light', 'dark');
-    
+
     // Add resolved theme class
     root.classList.add(resolvedTheme);
-    
+
     // Update meta theme-color for mobile browsers
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
     if (themeColorMeta) {
-      themeColorMeta.setAttribute('content', resolvedTheme === 'dark' ? colors.background.dark : colors.background.light);
+      themeColorMeta.setAttribute(
+        'content',
+        resolvedTheme === 'dark'
+          ? colors.background.dark
+          : colors.background.light
+      );
     }
   }, [resolvedTheme]);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem(STORAGE_KEY, newTheme);
-    
+
     if (newTheme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
+        .matches
+        ? 'dark'
+        : 'light';
       setResolvedTheme(systemTheme);
     } else {
       setResolvedTheme(newTheme as ResolvedTheme);
@@ -186,10 +200,12 @@ export function useTheme() {
 // Backward compatibility with next-themes
 export function useThemeCompat() {
   const { theme, setTheme, resolvedTheme } = useTheme();
-  return { 
+  return {
     theme: resolvedTheme,
     setTheme,
     resolvedTheme,
-    systemTheme: window?.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    systemTheme: window?.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light',
   };
 }

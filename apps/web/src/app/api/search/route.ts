@@ -10,8 +10,8 @@ import { createModuleLogger } from '@/lib/utils/logger';
 // Initialize logger
 const log = createModuleLogger('api/search');
 
-import { fetchQuery } from 'convex/nextjs';
 import { api } from '@convex/_generated/api';
+import { fetchQuery } from 'convex/nextjs';
 import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { searchRateLimit } from '@/lib/middleware/rate-limit';
 import type {

@@ -1,9 +1,15 @@
 'use client';
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { createModuleLogger } from '@/lib/utils/logger';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('error-boundary');
@@ -76,27 +82,34 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle className="text-destructive">Something went wrong</CardTitle>
+              <CardTitle className="text-destructive">
+                Something went wrong
+              </CardTitle>
               <CardDescription>
-                An unexpected error occurred. This has been logged and will be investigated.
+                An unexpected error occurred. This has been logged and will be
+                investigated.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {process.env.NODE_ENV === 'development' && this.state.error && (
-                <div className="p-3 bg-muted rounded-md text-sm">
+                <div className="rounded-md bg-muted p-3 text-sm">
                   <pre className="whitespace-pre-wrap text-destructive">
                     {this.state.error.message}
                   </pre>
                 </div>
               )}
               <div className="flex gap-2">
-                <Button onClick={this.handleReset} variant="outline" className="flex-1">
+                <Button
+                  className="flex-1"
+                  onClick={this.handleReset}
+                  variant="outline"
+                >
                   Try Again
                 </Button>
-                <Button onClick={this.handleReload} className="flex-1">
+                <Button className="flex-1" onClick={this.handleReload}>
                   Reload Page
                 </Button>
               </div>
