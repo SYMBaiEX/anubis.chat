@@ -12,6 +12,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuthContext, useSubscriptionStatus } from '@/components/providers/auth-provider';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import { getModelsForTier, isPremiumModel, getModelById } from '@/lib/constants/ai-models';
@@ -44,7 +51,7 @@ const AGENT_CONFIG = {
   ] as const,
   defaults: {
     template: 'custom' as const,
-    model: 'gpt-4o-mini' as const,
+    model: 'gpt-5-nano' as const,
     temperature: 0.7,
     maxTokens: 4096,
     maxSteps: 10,
@@ -79,7 +86,7 @@ const createAgentFormSchema = z.object({
     .enum(['general', 'research', 'analysis', 'blockchain', 'custom'])
     .default(AGENT_CONFIG.defaults.template),
   model: z
-    .enum(['gpt-4o', 'gpt-4o-mini', 'claude-3-5-sonnet', 'gemini-2.0-flash'])
+    .enum(['gpt-5-nano', 'gpt-4o', 'gpt-4o-mini', 'claude-3-5-sonnet', 'gemini-2.0-flash'])
     .default(AGENT_CONFIG.defaults.model),
   temperature: z
     .number()
@@ -429,52 +436,100 @@ export default function NewAgentPage() {
 
           {/* AI Model Selection */}
           <form.Field name="model">
-            {(field) => (
-              <div>
-                <Label htmlFor={field.name}>AI Model</Label>
-                <div className="mt-2 space-y-2">
-                  {availableModels.map((model) => (
-                    <div
-                      key={model.value}
-                      className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                        field.state.value === model.value
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                      onClick={() => field.handleChange(model.value)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            id={model.value}
-                            name={field.name}
-                            checked={field.state.value === model.value}
-                            onChange={() => field.handleChange(model.value)}
-                            className="text-primary"
-                          />
-                          <label htmlFor={model.value} className="font-medium cursor-pointer">
-                            {model.label}
-                          </label>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {model.isPremium && (
-                            <Badge variant="outline" className="gap-1 text-xs">
-                              <Zap className="h-3 w-3" />
-                              Premium
-                            </Badge>
-                          )}
-                          <Badge variant="secondary" className="text-xs capitalize">
-                            {model.tier}
-                          </Badge>
-                        </div>
-                      </div>
+            {(field) => {
+              const selectedModel = availableModels.find(m => m.value === field.state.value);
+              return (
+                <div className="space-y-2">
+                  <Label htmlFor={field.name}>
+                    AI Model <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  >
+                    <option value="">Select an AI model</option>
+                    {availableModels.map((model) => (
+                      <option key={model.value} value={model.value}>
+                        {model.label}
+                      </option>
+                    ))}
+                  </Select>
+                  {selectedModel && (
+                    <div className="flex items-center gap-2">
+                      {selectedModel.isPremium && (
+                        <Badge variant="outline" className="gap-1 text-xs">
+                          <Zap className="h-3 w-3" />
+                          Premium
+                        </Badge>
+                      )}
+                      <Badge variant="secondary" className="text-xs capitalize">
+                        {selectedModel.tier}
+                      </Badge>
                     </div>
-                  ))}
+                  )}
+                  <p className="text-muted-foreground text-sm">
+                    {field.state.value === 'gpt-5-nano' && 'Ultra-efficient nano model with GPT-5 intelligence'}
+                    {field.state.value === 'gpt-4o' && 'Optimized GPT-4 with enhanced capabilities'}
+                    {field.state.value === 'gpt-4o-mini' && 'Fast and cost-effective for simple tasks'}
+                    {field.state.value === 'claude-3-5-sonnet' && 'Fast, intelligent, and cost-effective'}
+                    {field.state.value === 'gemini-2.0-flash' && 'Superior speed with native tool use'}
+                    {subscription.tier === 'free' && !field.state.value && 'Free tier has access to basic models. Upgrade for premium models.'}
+                  </p>
                 </div>
-                {subscription.tier === 'free' && (
-                  <p className="mt-2 text-muted-foreground text-sm">
-                    Upgrade to Pro or Pro+ to access premium models with advanced capabilities.
+              );
+            }}
+          </form.Field>
+
+          {/* Temperature Slider */}
+          <form.Field name="temperature">
+            {(field) => (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={field.name}>Temperature</Label>
+                  <span className="text-muted-foreground text-sm">{field.state.value}</span>
+                </div>
+                <Input
+                  type="range"
+                  id={field.name}
+                  name={field.name}
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(parseFloat(e.target.value))}
+                  className="w-full"
+                />
+                <p className="text-muted-foreground text-xs">
+                  Controls randomness: 0 = focused, 2 = creative
+                </p>
+              </div>
+            )}
+          </form.Field>
+
+          {/* Max Tokens */}
+          <form.Field name="maxTokens">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor={field.name}>Max Tokens</Label>
+                <Input
+                  type="number"
+                  id={field.name}
+                  name={field.name}
+                  min={1}
+                  max={128000}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(parseInt(e.target.value, 10))}
+                  placeholder="4096"
+                />
+                <p className="text-muted-foreground text-xs">
+                  Maximum response length (1 token ≈ 4 characters)
+                </p>
+                {field.state.meta.errors.length > 0 && (
+                  <p className="mt-1 text-red-600 text-sm">
+                    {field.state.meta.errors[0]}
                   </p>
                 )}
               </div>

@@ -22,7 +22,7 @@ export default function ChatPage() {
     <div className="h-full bg-background">
       {/* Background Gradient */}
       <div className="pointer-events-none fixed inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-background" />
-      
+
       {/* Chat Interface takes full height */}
       <div className="relative h-full">
         <ChatInterface />

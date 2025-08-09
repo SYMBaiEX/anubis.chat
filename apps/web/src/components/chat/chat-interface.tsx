@@ -84,7 +84,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const { typingUsers, startTyping, stopTyping, isAnyoneTyping } =
     useTypingIndicator(selectedChatId, user?.walletAddress);
 
-  const currentChat = chats?.find((chat) => chat._id === selectedChatId);
+  const currentChat = chats?.find((chat) => chat._id === selectedChatId) as
+    | (Pick<Chat, 'title' | 'model' | 'lastMessageAt' | 'updatedAt' | 'systemPrompt' | 'temperature'> & {
+        _id: string;
+      })
+    | undefined;
 
   // Sync URL parameter with selected chat ID
   useEffect(() => {
@@ -205,7 +209,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-full items-center justify-center bg-background">
         <EmptyState
           description="Please connect your wallet and sign in to access the chat interface"
           icon={<MessageSquare className="h-12 w-12 text-muted-foreground" />}
@@ -216,10 +220,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   }
 
   return (
-    <div className={cn('flex h-full bg-background', className)}>
+    <div className={cn('flex h-full min-h-0 bg-background', className)}>
 
       {/* Main Chat Area */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 min-h-0 flex-col">
         {/* Top Bar */}
         <div className="flex h-14 items-center justify-between border-border/50 border-b bg-card/30 px-4 backdrop-blur">
           <div className="flex items-center gap-3">
@@ -290,7 +294,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
         {/* Chat Content */}
         {currentChat ? (
-          <div className="flex flex-1 flex-col bg-gradient-to-br from-background via-muted/10 to-background">
+          <div className="flex flex-1 min-h-0 flex-col bg-gradient-to-br from-background via-muted/10 to-background">
             {/* Message List */}
             <div className="flex-1 overflow-hidden">
               {messages === undefined ? (

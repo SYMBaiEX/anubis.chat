@@ -77,8 +77,13 @@ export const streamChat = httpAction(async (ctx, request) => {
     );
   }
 
-  // Check message limits
-  if (subscription.messagesUsed >= subscription.messagesLimit) {
+  // Check if user is an admin - admins have unlimited access
+  const adminStatus = await ctx.runQuery(api.adminAuth.checkAdminStatusByWallet, {
+    walletAddress,
+  });
+
+  // Check message limits (skip for admins)
+  if (!adminStatus.isAdmin && subscription.messagesUsed >= subscription.messagesLimit) {
     return new Response(
       JSON.stringify({ 
         error: 'Monthly message limit reached. Please upgrade your subscription.',
@@ -104,7 +109,7 @@ export const streamChat = httpAction(async (ctx, request) => {
   }
 
   // Select AI model based on chat configuration (move this up to fix reference error)
-  const modelName = model || chat.model || 'gpt-5';
+  const modelName = model || chat.model || 'gpt-5-nano';
   
   // Create user message
   const userMessage = await ctx.runMutation(api.messages.create, {
@@ -131,10 +136,11 @@ export const streamChat = httpAction(async (ctx, request) => {
   // Prepare AI model
   let aiModel;
   
-  // Check premium model access
+  // Check premium model access (gpt-5-nano is not premium, it's an efficient nano model)
   const isPremiumModel = ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4', 'gpt-5', 'gpt-5-pro', 'o3'].includes(modelName);
   
-  if (isPremiumModel) {
+  // Skip premium checks for admins - they have unlimited access
+  if (isPremiumModel && !adminStatus.isAdmin) {
     if (subscription.tier === 'free') {
       return new Response(
         JSON.stringify({ 
@@ -237,6 +243,7 @@ export const streamChat = httpAction(async (ctx, request) => {
         apiModelName = 'gpt-4o';
         console.warn(`Model ${modelName} not yet available, using gpt-4o`);
       }
+      // gpt-5-nano is now available and will be used directly
 
       aiModel = openai(apiModelName);
     }
@@ -335,11 +342,13 @@ export const streamChat = httpAction(async (ctx, request) => {
         },
       });
       
-      // Track message usage for subscription
-      await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
-        walletAddress,
-        isPremiumModel,
-      });
+      // Track message usage for subscription (skip for admins)
+      if (!adminStatus.isAdmin) {
+        await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
+          walletAddress,
+          isPremiumModel,
+        });
+      }
     },
   });
   } catch (error) {

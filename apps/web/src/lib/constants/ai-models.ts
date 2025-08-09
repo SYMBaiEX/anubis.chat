@@ -46,6 +46,21 @@ function createOpenRouterModel(params: {
 }
 
 export const AI_MODELS: AIModel[] = [
+  // GPT-5 Nano - Latest flagship nano model
+  {
+    id: 'gpt-5-nano',
+    name: 'GPT-5 Nano',
+    provider: 'openai',
+    description: 'Ultra-efficient nano model with GPT-5 intelligence',
+    contextWindow: 128_000,
+    maxOutput: 4_096,
+    pricing: { input: 0.5, output: 1.5 },
+    capabilities: ['general', 'coding', 'reasoning', 'analysis'],
+    speed: 'fast',
+    intelligence: 'advanced',
+    released: 'January 2025',
+    default: true,
+  },
   // OpenRouter (Primary) - curated free/popular models (as of Aug 9, 2025)
   createOpenRouterModel({
     id: 'openrouter/openai/gpt-oss-20b:free',
@@ -99,7 +114,7 @@ export const AI_MODELS: AIModel[] = [
     speed: 'medium',
     intelligence: 'expert',
     released: 'August 2025',
-    default: true,
+    default: false,
   },
   {
     id: 'openrouter/openai/gpt-4o-mini',
@@ -237,7 +252,7 @@ export const AI_MODELS: AIModel[] = [
     capabilities: ['general', 'coding', 'analysis'],
     speed: 'fast',
     intelligence: 'advanced',
-    default: true,
+    default: false,
   },
 
   // Anthropic Models (August 2025)

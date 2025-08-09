@@ -9,6 +9,7 @@ import type {
   AIModel,
   Chat,
   ChatMessage,
+  StreamingMessage,
   Document,
   MessageMetadata,
   SearchResult,
@@ -76,13 +77,15 @@ export interface ChatItemProps extends BaseComponentProps {
 }
 
 export interface ChatHeaderProps extends BaseComponentProps {
-  chat: Chat;
+  chat: Pick<Chat, 'title' | 'model' | 'lastMessageAt' | 'updatedAt' | 'systemPrompt' | 'temperature'> & {
+    _id: string;
+  };
   onSettingsClick?: () => void;
   onClearHistory?: () => void;
 }
 
 export interface MessageListProps extends BaseComponentProps {
-  messages: ChatMessage[];
+  messages: Array<ChatMessage | StreamingMessage>;
   loading?: boolean;
   onMessageRegenerate?: (messageId: string) => void;
 }

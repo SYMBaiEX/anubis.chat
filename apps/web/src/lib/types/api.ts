@@ -218,6 +218,14 @@ export interface ChatMessage {
   editedAt?: number;
 }
 
+// Lightweight message used during UI streaming before persistence
+export type StreamingMessage = {
+  id: string;
+  content: string;
+  role: MessageRole;
+  isStreaming?: boolean;
+};
+
 export interface MessageMetadata {
   model?: string;
   finishReason?: string;

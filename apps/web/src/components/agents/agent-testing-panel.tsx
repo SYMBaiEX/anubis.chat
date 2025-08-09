@@ -171,7 +171,7 @@ export function AgentTestingPanel({ agent }: AgentTestingPanelProps) {
         metadata: {
           tokensUsed: Math.floor(Math.random() * 100) + 50,
           responseTime: Math.floor(Math.random() * 2000) + 500,
-          model: 'gpt-4',
+          model: 'gpt-4o',
           tools: agent.tools?.slice(0, 2).map((t) => t.name),
         },
       };

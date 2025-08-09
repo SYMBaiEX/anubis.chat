@@ -7,6 +7,7 @@ import { LoadingStates } from '@/components/data/loading-states';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { MessageListProps } from '@/lib/types/components';
+import type { StreamingMessage } from '@/lib/types/api';
 import { cn } from '@/lib/utils';
 import { MessageBubble } from './message-bubble';
 import { StreamingMessage } from './streaming-message';
@@ -64,7 +65,8 @@ export function MessageList({
     }> = [];
 
     messages.forEach((message) => {
-      const messageDate = new Date(message.createdAt).toDateString();
+      const createdAt = 'createdAt' in message ? message.createdAt : Date.now();
+      const messageDate = new Date(createdAt).toDateString();
       const lastGroup = groups[groups.length - 1];
 
       if (lastGroup && lastGroup.date === messageDate) {
