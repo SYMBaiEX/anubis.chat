@@ -17,14 +17,12 @@ function CTA() {
       dustIntensity="medium"
       edgeMask
       allowOverlap
+      softEdges
       data-bg-variant="primary"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <Card className="relative overflow-hidden border-border/60 bg-card/70 p-10">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_80%_20%,rgba(20,241,149,0.12)_0%,transparent_60%)]"
-          />
+        <Card className="relative overflow-hidden bg-[radial-gradient(60%_60%_at_80%_20%,rgba(20,241,149,0.12)_0%,transparent_60%)] p-10">
+          <div aria-hidden className="pointer-events-none absolute inset-0" />
           <div className="relative text-center">
             <h2 className="mb-3 font-bold text-3xl md:text-5xl">
               <span className="bg-gradient-to-r from-primary via-foreground to-accent bg-clip-text text-transparent">

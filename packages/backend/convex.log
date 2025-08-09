@@ -264,3 +264,10 @@ View the Convex dashboard at https://dashboard.convex.dev/d/veracious-capybara-7
 ✔ 12:42:52 Convex functions ready! (2.78s)
 8/9/2025, 12:48:10 PM [CONVEX H(POST /stream-chat)] [LOG] 'User message created, preparing AI response with model:' 'gpt-5-nano'
 8/9/2025, 12:48:10 PM [CONVEX H(POST /stream-chat)] [LOG] 'Creating streaming response with AI model...'
+- Preparing Convex functions...
+
+✔ 12:52:20 Convex functions ready! (2.75s)
+- Preparing Convex functions...
+
+✔ 12:52:35 Convex functions ready! (2.7s)
+8/9/2025, 12:58:55 PM [CONVEX M(auth:store)] [INFO] '`auth:store` type: signOut'

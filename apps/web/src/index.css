@@ -215,11 +215,11 @@
   }
 
   html {
-    @apply scroll-smooth overflow-x-hidden;
+    @apply h-full scroll-smooth overflow-x-hidden overflow-y-auto;
   }
 
   body {
-    @apply bg-background text-foreground overflow-x-hidden;
+    @apply min-h-screen bg-background text-foreground overflow-x-hidden overflow-y-visible;
     font-feature-settings:
       "rlig" 1,
       "calt" 1;

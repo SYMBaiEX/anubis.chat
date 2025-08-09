@@ -25,7 +25,7 @@ export default function LandingPage() {
   }, [isAuthenticated, user, router]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <LandingHeader />
       <Hero />
       <Features />

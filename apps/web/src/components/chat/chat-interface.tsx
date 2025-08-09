@@ -16,7 +16,9 @@ import { Button } from '@/components/ui/button';
 import { useConvexChat } from '@/hooks/use-convex-chat';
 import { useTypingIndicator } from '@/hooks/use-typing-indicator';
 import { DEFAULT_MODEL } from '@/lib/constants/ai-models';
-import type { Chat, ChatMessage } from '@/lib/types/api';
+import type { Chat } from '@/lib/types/api';
+import type { StreamingMessage } from '@/lib/types/api';
+import type { MinimalMessage } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
 import { AgentSelector } from './agent-selector';
@@ -308,7 +310,25 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               ) : (
                 <MessageList
                   isTyping={isAnyoneTyping}
-                  messages={messages}
+                  messages={(messages || []).map((m) => {
+                    if ((m as StreamingMessage).isStreaming) {
+                      return m as StreamingMessage;
+                    }
+                    const doc = m as {
+                      _id: unknown;
+                      content: string;
+                      role: 'user' | 'assistant' | 'system';
+                      createdAt?: number;
+                      _creationTime?: number;
+                    };
+                    const normalized: MinimalMessage = {
+                      _id: String(doc._id),
+                      content: doc.content,
+                      role: doc.role,
+                      createdAt: doc.createdAt ?? doc._creationTime ?? Date.now(),
+                    };
+                    return normalized;
+                  })}
                   onMessageRegenerate={(messageId) => {
                     // TODO: Implement message regeneration
                     console.log('Regenerate message:', messageId);

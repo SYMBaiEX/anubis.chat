@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { MessageListProps } from '@/lib/types/components';
+import type { MessageListProps, MinimalMessage } from '@/lib/types/components';
 import type { StreamingMessage } from '@/lib/types/api';
 import { cn } from '@/lib/utils';
 import { MessageBubble } from './message-bubble';
@@ -65,7 +65,9 @@ export function MessageList({
     }> = [];
 
     messages.forEach((message) => {
-      const createdAt = 'createdAt' in message ? message.createdAt : Date.now();
+      const createdAt = 'createdAt' in message && message.createdAt
+        ? message.createdAt
+        : Date.now();
       const messageDate = new Date(createdAt).toDateString();
       const lastGroup = groups[groups.length - 1];
 
@@ -147,26 +149,26 @@ export function MessageList({
 
               {/* Messages for this date */}
               <div className="space-y-4">
-                {group.messages.map((message, messageIndex) => {
+                 {group.messages.map((message, messageIndex) => {
                   // Check if this is a streaming message
-                  if ('isStreaming' in message && message.isStreaming) {
+                   if ('isStreaming' in message && (message as StreamingMessage).isStreaming) {
                     return (
                       <StreamingMessage
-                        content={message.content}
-                        key={message.id}
+                         content={(message as StreamingMessage).content}
+                         key={(message as StreamingMessage).id}
                       />
                     );
                   }
 
                   return (
                     <MessageBubble
-                      key={message._id}
-                      message={message}
+                       key={(message as ChatMessage | MinimalMessage)._id}
+                       message={message as ChatMessage}
                       onCopy={() => {
-                        navigator.clipboard.writeText(message.content);
+                         navigator.clipboard.writeText((message as ChatMessage | MinimalMessage).content);
                       }}
                       onEdit={(_newContent) => {}}
-                      onRegenerate={() => onMessageRegenerate?.(message._id)}
+                       onRegenerate={() => onMessageRegenerate?.((message as ChatMessage | MinimalMessage)._id)}
                       showActions={true}
                     />
                   );

@@ -85,9 +85,17 @@ export interface ChatHeaderProps extends BaseComponentProps {
 }
 
 export interface MessageListProps extends BaseComponentProps {
-  messages: Array<ChatMessage | StreamingMessage>;
+  messages: Array<ChatMessage | StreamingMessage | MinimalMessage>;
   loading?: boolean;
   onMessageRegenerate?: (messageId: string) => void;
+}
+
+// Minimal message shape to support Convex docs in UI without tight coupling
+export interface MinimalMessage {
+  _id: string;
+  content: string;
+  role: 'user' | 'assistant' | 'system';
+  createdAt?: number;
 }
 
 export interface MessageProps extends BaseComponentProps {

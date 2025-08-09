@@ -96,7 +96,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <ServiceWorkerManager />
-            <main className="min-h-screen">{children}</main>
+            <main className="min-h-screen overflow-x-hidden">{children}</main>
           </Providers>
         </ErrorBoundary>
       </body>

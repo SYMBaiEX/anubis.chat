@@ -37,6 +37,7 @@ function HowItWorks() {
       includeHieroglyphs={false}
       dustIntensity="low"
       allowOverlap
+      softEdges
       data-bg-variant="primary"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -54,7 +55,7 @@ function HowItWorks() {
             const Icon = s.icon;
             return (
               <li key={s.title + i} className="relative">
-                <Card className="h-full border-border/60 bg-card/70 p-6">
+                <Card className="h-full bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6">
                   <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <Icon aria-hidden className="h-6 w-6 text-primary" />
                   </div>

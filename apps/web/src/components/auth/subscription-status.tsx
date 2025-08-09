@@ -49,8 +49,10 @@ export function SubscriptionStatus({
   const premiumMessagesUsed = subscription.premiumMessagesUsed ?? 0;
   const premiumMessagesLimit = subscription.premiumMessagesLimit ?? 0;
   
-  const usagePercentage = messagesLimit > 0 ? Math.round((messagesUsed / messagesLimit) * 100) : 0;
-  const premiumUsagePercentage = premiumMessagesLimit > 0 ? Math.round((premiumMessagesUsed / premiumMessagesLimit) * 100) : 0;
+  // Handle admin unlimited access (Infinity values)
+  const isAdmin = subscription.tier === 'admin' || subscription.isAdmin;
+  const usagePercentage = isAdmin ? 0 : (messagesLimit > 0 ? Math.round((messagesUsed / messagesLimit) * 100) : 0);
+  const premiumUsagePercentage = isAdmin ? 0 : (premiumMessagesLimit > 0 ? Math.round((premiumMessagesUsed / premiumMessagesLimit) * 100) : 0);
 
   // Use limits from the hook if available, otherwise calculate from subscription
   const canSendMessage = limits?.canSendMessage ?? (messagesUsed < messagesLimit);
@@ -60,6 +62,8 @@ export function SubscriptionStatus({
 
   const getTierIcon = (tier: string) => {
     switch (tier) {
+      case 'admin':
+        return <Shield className="h-5 w-5" />;
       case 'pro_plus':
         return <Shield className="h-5 w-5" />;
       case 'pro':
@@ -71,6 +75,8 @@ export function SubscriptionStatus({
 
   const getTierColor = (tier: string) => {
     switch (tier) {
+      case 'admin':
+        return 'text-red-600 dark:text-red-400';
       case 'pro_plus':
         return 'text-purple-600 dark:text-purple-400';
       case 'pro':
@@ -103,13 +109,17 @@ export function SubscriptionStatus({
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
-                {subscription.tier === 'pro_plus' 
+                {subscription.tier === 'admin'
+                  ? 'Administrator'
+                  : subscription.tier === 'pro_plus' 
                   ? 'Pro+' 
                   : subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1)}{' '}
-                Plan
+                {subscription.tier !== 'admin' && 'Plan'}
               </h3>
               <p className="text-gray-600 text-sm dark:text-gray-400">
-                Current subscription tier
+                {subscription.tier === 'admin' 
+                  ? 'Unlimited access to all features'
+                  : 'Current subscription tier'}
               </p>
             </div>
           </div>
@@ -131,9 +141,11 @@ export function SubscriptionStatus({
               </span>
               <div className="flex items-center space-x-2">
                 <span className="text-gray-600 text-sm dark:text-gray-400">
-                  {formatNumber(messagesUsed)} / {formatNumber(messagesLimit)}
+                  {isAdmin 
+                    ? 'Unlimited' 
+                    : `${formatNumber(messagesUsed)} / ${formatNumber(messagesLimit)}`}
                 </span>
-                {!canSendMessage && (
+                {!isAdmin && !canSendMessage && (
                   <Badge size="sm" variant="error">
                     Limit Reached
                   </Badge>
@@ -173,9 +185,11 @@ export function SubscriptionStatus({
                 </span>
                 <div className="flex items-center space-x-2">
                   <span className="text-gray-600 text-sm dark:text-gray-400">
-                    {formatNumber(premiumMessagesUsed)} / {formatNumber(premiumMessagesLimit)}
+                    {isAdmin 
+                      ? 'Unlimited' 
+                      : `${formatNumber(premiumMessagesUsed)} / ${formatNumber(premiumMessagesLimit)}`}
                   </span>
-                  {!canUsePremiumModel && subscription.tier !== 'free' && (
+                  {!isAdmin && !canUsePremiumModel && subscription.tier !== 'free' && (
                     <Badge size="sm" variant="error">
                       Limit Reached
                     </Badge>
@@ -269,8 +283,8 @@ export function SubscriptionStatus({
         </Card>
       )}
 
-      {/* Usage Recommendations - Use upgradePrompt if available */}
-      {(upgradePrompt?.shouldShow || usagePercentage >= 75) && (
+      {/* Usage Recommendations - Use upgradePrompt if available (hide for admins) */}
+      {!isAdmin && (upgradePrompt?.shouldShow || usagePercentage >= 75) && (
         <Card className="border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
           <div className="flex items-start space-x-3">
             <Zap className="mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-600 dark:text-yellow-400" />

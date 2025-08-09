@@ -88,7 +88,12 @@ export function ModelSelector({
   const selectedModel = AI_MODELS.find((model) => model.id === value);
 
   // Filter models based on subscription
+  const isAdmin = subscription?.tier === 'admin' || subscription?.isAdmin;
   const availableModels = AI_MODELS.filter((model) => {
+    // Admins see all models
+    if (isAdmin) {
+      return true;
+    }
     if (subscription?.tier === 'free') {
       return !isPremiumModel(model);
     }

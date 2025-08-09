@@ -73,6 +73,7 @@ function Pricing() {
       includeHieroglyphs={false}
       dustIntensity="low"
       allowOverlap
+      softEdges
       data-bg-variant="gold"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -87,7 +88,7 @@ function Pricing() {
         <div className="grid gap-6 lg:grid-cols-3">
           {tiers.map((t) => (
             <Card
-              className={`relative border-border/60 bg-card/70 p-6 ${t.highlighted ? 'ring-1 ring-primary/40 shadow-xl' : ''}`}
+              className={`relative bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6 ${t.highlighted ? 'ring-1 ring-primary/40 shadow-xl' : ''}`}
               key={t.name}
             >
               {t.popular ? (

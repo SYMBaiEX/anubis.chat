@@ -38,6 +38,8 @@ interface AnimatedSectionProps
   edgeMask?: boolean;
   /** Allow background visuals to bleed beyond section bounds */
   allowOverlap?: boolean;
+  /** Adds soft top/bottom gradient fades to avoid hard seams between sections (default: true) */
+  softEdges?: boolean;
 }
 
 export default function AnimatedSection({
@@ -51,6 +53,7 @@ export default function AnimatedSection({
   dustIntensity = 'low',
   edgeMask = false,
   allowOverlap = false,
+  softEdges = true,
   ...rest
 }: AnimatedSectionProps) {
   const ref = useRef<HTMLElement | null>(null);
@@ -100,7 +103,8 @@ export default function AnimatedSection({
 
   return (
     <section
-      className={`relative ${allowOverlap ? 'overflow-visible' : 'overflow-hidden'} ${className ?? ''}`}
+      className={`relative ${allowOverlap ? 'overflow-visible' : 'overflow-hidden'} bg-background light:papyrus-surface dark:basalt-surface ${className ?? ''}`}
+      style={{ contain: 'paint' }}
       ref={ref}
       {...rest}
     >
@@ -133,6 +137,20 @@ export default function AnimatedSection({
         ) : (
           <IsisAurora />
         ))}
+
+      {/* Soft section transitions to avoid hard seams */}
+      {softEdges ? (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-background via-background/60 to-transparent"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background via-background/60 to-transparent"
+          />
+        </>
+      ) : null}
 
       {/* Foreground content */}
       <div className="relative z-10">{children}</div>

@@ -32,6 +32,7 @@ function FAQ() {
       includeHieroglyphs={false}
       dustIntensity="low"
       allowOverlap
+      softEdges
       data-bg-variant="primary"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,7 +45,7 @@ function FAQ() {
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           {faqs.map((f) => (
-            <Card key={f.q} className="border-border/60 bg-card/70 p-6">
+            <Card key={f.q} className="bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6">
               <h3 className="mb-1 font-semibold">{f.q}</h3>
               <p className="text-sm text-muted-foreground">{f.a}</p>
             </Card>

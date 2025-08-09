@@ -36,6 +36,7 @@ function Testimonials() {
       includeHieroglyphs={false}
       dustIntensity="low"
       allowOverlap
+      softEdges
       data-bg-variant="gold"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,7 +50,7 @@ function Testimonials() {
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((t) => (
-            <Card key={t.name} className="border-border/60 bg-card/70 p-6">
+            <Card key={t.name} className="bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6">
               <div className="mb-3 flex gap-1">
                 {Array.from({ length: t.rating }).map((_, i) => (
                   <Star className="h-4 w-4 fill-egypt-gold text-egypt-gold" key={i} />

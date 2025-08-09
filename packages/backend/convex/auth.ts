@@ -148,11 +148,32 @@ export const verifyAndSignIn = internalMutation({
       .unique();
 
     if (existingUser) {
-      // User exists - update activity and return their ID
-      await ctx.db.patch(existingUser._id, {
+      // User exists - update activity and check if they should be admin
+      const adminWallets = process.env.ADMIN_WALLETS?.split(',').map(w => w.trim()) || [];
+      const shouldBeAdmin = adminWallets.includes(publicKey);
+      
+      // Update user status and role if needed
+      const updates: any = {
         lastActiveAt: Date.now(),
         isActive: true,
-      });
+      };
+      
+      // If user is in ADMIN_WALLETS but not currently an admin, promote them
+      if (shouldBeAdmin && (!existingUser.role || existingUser.role === 'user')) {
+        updates.role = 'super_admin';
+        updates.permissions = [
+          'user_management',
+          'subscription_management', 
+          'content_moderation',
+          'system_settings',
+          'financial_data',
+          'usage_analytics',
+          'admin_management'
+        ];
+        console.log(`Promoting user ${publicKey} to super_admin based on ADMIN_WALLETS`);
+      }
+      
+      await ctx.db.patch(existingUser._id, updates);
       
       return {
         userId: existingUser._id,

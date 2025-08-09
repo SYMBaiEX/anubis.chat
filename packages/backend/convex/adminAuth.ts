@@ -482,6 +482,65 @@ export const getSubscriptionAnalytics = query({
   },
 });
 
+/**
+ * Sync existing users with ADMIN_WALLETS environment variable
+ * Promotes users who are in ADMIN_WALLETS to super_admin role
+ */
+export const syncAdminWallets = mutation({
+  handler: async (ctx) => {
+    // Get admin wallets from environment variable
+    const adminWalletsEnv = process.env.ADMIN_WALLETS;
+    if (!adminWalletsEnv) {
+      return {
+        success: false,
+        message: 'ADMIN_WALLETS environment variable not configured',
+        promoted: [],
+      };
+    }
+
+    // Parse comma-separated wallet addresses
+    const adminWallets = adminWalletsEnv.split(',').map(wallet => wallet.trim()).filter(Boolean);
+    
+    const promoted: string[] = [];
+    
+    // Check each admin wallet
+    for (const walletAddress of adminWallets) {
+      const user = await ctx.db
+        .query('users')
+        .withIndex('by_wallet', (q) => q.eq('walletAddress', walletAddress))
+        .unique();
+      
+      if (user) {
+        // If user exists but is not an admin, promote them
+        if (!user.role || user.role === 'user') {
+          await ctx.db.patch(user._id, {
+            role: 'super_admin',
+            permissions: [
+              'user_management',
+              'subscription_management', 
+              'content_moderation',
+              'system_settings',
+              'financial_data',
+              'usage_analytics',
+              'admin_management'
+            ],
+            updatedAt: Date.now(),
+          });
+          promoted.push(walletAddress);
+          console.log(`Promoted existing user ${walletAddress} to super_admin`);
+        }
+      }
+    }
+    
+    return {
+      success: true,
+      message: `Synced ${adminWallets.length} admin wallets`,
+      promoted,
+      totalAdminWallets: adminWallets.length,
+    };
+  },
+});
+
 // =============================================================================
 // System Management Functions (Admin Only)
 // =============================================================================

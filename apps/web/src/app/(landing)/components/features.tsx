@@ -62,6 +62,7 @@ function Features() {
       includeHieroglyphs={false}
       dustIntensity="low"
       allowOverlap
+      softEdges
       data-bg-variant="primary"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -80,7 +81,7 @@ function Features() {
             const Icon = f.icon;
             return (
               <Card
-                className="group relative overflow-hidden border-border/60 bg-card/70 p-6 backdrop-blur hover:shadow-lg"
+                className="group relative overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6 backdrop-blur hover:shadow-lg"
                 key={f.title + i}
               >
                 <div

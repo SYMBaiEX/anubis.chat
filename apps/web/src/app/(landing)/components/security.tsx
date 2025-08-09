@@ -14,6 +14,7 @@ function Security() {
       includeHieroglyphs={false}
       dustIntensity="low"
       allowOverlap
+      softEdges
       data-bg-variant="gold"
     >
       <div className="container mx-auto grid items-stretch gap-8 px-4 sm:px-6 md:grid-cols-2 lg:px-8">
@@ -33,22 +34,22 @@ function Security() {
             <li className="inline-flex items-center gap-2"><KeySquare className="h-4 w-4 text-primary" /> Wallet‑scoped data isolation</li>
           </ul>
         </div>
-        <Card aria-label="Security panel" className="relative overflow-hidden border-border/60 bg-card/70 p-8">
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_30%_20%,rgba(20,241,149,0.08)_0%,transparent_60%)]" />
+        <Card aria-label="Security panel" className="relative overflow-hidden bg-[radial-gradient(60%_60%_at_30%_20%,rgba(20,241,149,0.08)_0%,transparent_60%)] p-8">
+          <div aria-hidden className="pointer-events-none absolute inset-0" />
           <div className="relative grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border border-border/60 bg-background/60 p-4">
+            <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4">
               <h3 className="mb-1 font-semibold">JWT + Convex</h3>
               <p className="text-sm text-muted-foreground">Edge‑secure sessions with reactive data.</p>
             </div>
-            <div className="rounded-lg border border-border/60 bg-background/60 p-4">
+            <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4">
               <h3 className="mb-1 font-semibold">Sanitized Inputs</h3>
               <p className="text-sm text-muted-foreground">XSS‑safe chat and uploads by default.</p>
             </div>
-            <div className="rounded-lg border border-border/60 bg-background/60 p-4">
+            <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4">
               <h3 className="mb-1 font-semibold">Rate Limits</h3>
               <p className="text-sm text-muted-foreground">Protection against abuse and spam.</p>
             </div>
-            <div className="rounded-lg border border-border/60 bg-background/60 p-4">
+            <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4">
               <h3 className="mb-1 font-semibold">On‑chain Receipts</h3>
               <p className="text-sm text-muted-foreground">Subscription proof recorded on Solana.</p>
             </div>

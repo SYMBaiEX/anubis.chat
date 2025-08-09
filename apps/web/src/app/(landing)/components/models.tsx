@@ -21,6 +21,7 @@ function Models() {
       includeHieroglyphs={false}
       dustIntensity="low"
       allowOverlap
+      softEdges
       data-bg-variant="primary"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,7 +36,7 @@ function Models() {
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {models.map((m) => (
-            <Card key={m.name} className="border-border/60 bg-card/70 p-6">
+            <Card key={m.name} className="bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6">
               <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
                 <BrainCircuit aria-hidden className="h-6 w-6 text-accent" />
               </div>
