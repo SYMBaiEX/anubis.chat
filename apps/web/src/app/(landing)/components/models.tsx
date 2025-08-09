@@ -1,8 +1,9 @@
 'use client';
 
 import React, { memo } from 'react';
-import { BrainCircuit, Sparkles } from 'lucide-react';
+import { BrainCircuit } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import AnimatedSection from '@/components/landing/animated-section';
 
 const models = [
   { name: 'GPT‑5', provider: 'OpenAI' },
@@ -13,11 +14,19 @@ const models = [
 
 function Models() {
   return (
-    <section className="relative bg-[linear-gradient(180deg,rgba(17,24,21,1)_0%,rgba(12,16,14,1)_100%)] py-20 md:py-28">
-      <div className="container mx-auto px-4">
+    <AnimatedSection
+      className="py-20 md:py-28 lg:py-32"
+      auroraVariant="primary"
+      includeRosetta={false}
+      includeHieroglyphs={false}
+      dustIntensity="low"
+      allowOverlap
+      data-bg-variant="primary"
+    >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <h2 className="mb-3 font-bold text-3xl md:text-5xl">
-            <span className="bg-gradient-to-r from-accent via-white to-primary bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-accent via-foreground to-primary bg-clip-text text-transparent">
               Best‑in‑class models
             </span>
           </h2>
@@ -26,7 +35,7 @@ function Models() {
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {models.map((m) => (
-            <Card key={m.name} className="border-white/10 bg-card/70 p-6">
+            <Card key={m.name} className="border-border/60 bg-card/70 p-6">
               <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
                 <BrainCircuit aria-hidden className="h-6 w-6 text-accent" />
               </div>
@@ -37,11 +46,10 @@ function Models() {
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Sparkles className="h-4 w-4 text-primary" />
           <span>Hot‑swap models anytime during a conversation.</span>
         </div>
       </div>
-    </section>
+    </AnimatedSection>
   );
 }
 

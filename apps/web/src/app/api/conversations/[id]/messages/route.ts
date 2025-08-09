@@ -7,7 +7,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
 import { api, convex } from '@/lib/database/convex';
-import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
+import { requireMessagesRemaining } from '@/lib/middleware/subscription-auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import { MessageRole } from '@/lib/types/api';
 import {
@@ -78,7 +78,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   return aiRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+    return requireMessagesRemaining(req, async (authReq) => {
       try {
         const { walletAddress } = authReq.user;
         const { id: conversationId } = await params;
@@ -128,7 +128,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   return aiRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+    return requireMessagesRemaining(req, async (authReq) => {
       try {
         const { walletAddress } = authReq.user;
         const { id: conversationId } = await params;

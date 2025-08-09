@@ -12,7 +12,7 @@ import { createModuleLogger } from '@/lib/utils/logger';
 // Initialize logger
 const log = createModuleLogger('api/users/usage');
 
-import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
+import { withSubscriptionAuth } from '@/lib/middleware/subscription-auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
 import {
   addSecurityHeaders,
@@ -78,8 +78,8 @@ const usageQuerySchema = z.object({
 
 export async function GET(request: NextRequest) {
   return generalRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
-      const { walletAddress } = authReq.user;
+    return withSubscriptionAuth(req, async (authReq) => {
+      const { walletAddress, subscription, limits } = authReq.user;
 
       try {
         // Parse query parameters
@@ -104,23 +104,28 @@ export async function GET(request: NextRequest) {
 
         const usageStats: UsageStats = {
           current: {
-            tokensUsed: usageData?.usage.currentMonth.tokens ?? 0,
-            tokensLimit: usageData?.usage.limit ?? 10_000,
-            messagesCount: usageData?.usage.currentMonth.requests ?? 0,
-            chatsCount: 0,
-            documentsCount: 0,
-            searchesCount: 0,
+            tokensUsed: 0, // Not tracked yet
+            tokensLimit: 0, // Not tracked yet
+            messagesCount: subscription.messagesUsed,
+            chatsCount: 0, // Could be fetched from chats table
+            documentsCount: 0, // Could be fetched from files table
+            searchesCount: 0, // Not tracked yet
           },
-          daily: [],
-          models: includeModels ? [] : [],
+          daily: [], // Could implement daily breakdowns
+          models: includeModels ? [] : [], // Could implement model-specific stats
           subscription: {
-            tier: usageData?.user ? 'free' : 'free',
-            features: ['basic_chat', 'document_upload', 'search'],
+            tier: subscription.tier === 'pro_plus' ? 'enterprise' : subscription.tier,
+            expiresAt: subscription.currentPeriodEnd,
+            features: [
+              'basic_chat',
+              ...(subscription.tier !== 'free' ? ['premium_models'] : []),
+              ...(subscription.tier === 'pro_plus' ? ['api_access', 'large_files', 'advanced_features'] : []),
+            ],
             limits: {
-              messagesPerMinute: 30,
-              aiRequestsPerMinute: 20,
-              documentsPerMinute: 5,
-              searchesPerMinute: 50,
+              messagesPerMinute: subscription.tier === 'free' ? 10 : subscription.tier === 'pro' ? 30 : 60,
+              aiRequestsPerMinute: subscription.tier === 'free' ? 5 : subscription.tier === 'pro' ? 20 : 50,
+              documentsPerMinute: subscription.tier === 'pro_plus' ? 20 : 5,
+              searchesPerMinute: subscription.tier === 'free' ? 10 : subscription.tier === 'pro' ? 30 : 100,
             },
           },
         };

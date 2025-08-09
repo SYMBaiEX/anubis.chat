@@ -5,9 +5,12 @@ import type { Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import { Bot, MessageSquare, Plus, Settings, Sidebar, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
-import { useAuthContext } from '@/components/providers/auth-provider';
+import { useAuthContext, useSubscriptionLimits, useUpgradePrompt, useCanSendMessage } from '@/components/providers/auth-provider';
+import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
+import { FeatureGate } from '@/components/auth/feature-gate';
 import { useSolanaAgent } from '@/components/providers/solana-agent-provider';
 import { Button } from '@/components/ui/button';
 import { useConvexChat } from '@/hooks/use-convex-chat';
@@ -23,6 +26,7 @@ import { ChatWelcome } from './chat-welcome';
 import { MessageInput } from './message-input';
 import { MessageList } from './message-list';
 import { ModelSelector } from './model-selector';
+import { UsageIndicator } from './usage-indicator';
 
 const log = createModuleLogger('components/chat/chat-interface');
 
@@ -36,11 +40,20 @@ interface ChatInterfaceProps {
  */
 export function ChatInterface({ className }: ChatInterfaceProps) {
   const { user, isAuthenticated, token } = useAuthContext();
+  const limits = useSubscriptionLimits();
+  const upgradePrompt = useUpgradePrompt();
+  const canSendMessage = useCanSendMessage();
   const { selectedAgent, isInitialized } = useSolanaAgent();
-  const [selectedChatId, setSelectedChatId] = useState<string | undefined>();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  // Get chat ID from URL
+  const urlChatId = searchParams.get('chatId');
+  const [selectedChatId, setSelectedChatId] = useState<string | undefined>(urlChatId || undefined);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL.id);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   // Debug logging
   useEffect(() => {
@@ -73,12 +86,22 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   const currentChat = chats?.find((chat) => chat._id === selectedChatId);
 
-  // Auto-select first chat on load
+  // Sync URL parameter with selected chat ID
+  useEffect(() => {
+    if (urlChatId && urlChatId !== selectedChatId) {
+      setSelectedChatId(urlChatId);
+    }
+  }, [urlChatId]);
+
+  // Auto-select first chat on load if no chat is selected
   useEffect(() => {
     if (chats && chats.length > 0 && !selectedChatId) {
-      setSelectedChatId(chats[0]._id);
+      const firstChatId = chats[0]._id;
+      setSelectedChatId(firstChatId);
+      // Update URL to include the chat ID
+      router.push(`/chat?chatId=${firstChatId}`);
     }
-  }, [chats, selectedChatId]);
+  }, [chats, selectedChatId, router]);
 
   // Update selected model when chat changes
   useEffect(() => {
@@ -86,6 +109,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       setSelectedModel(currentChat.model);
     }
   }, [currentChat]);
+
+  const handleChatSelect = (chatId: string) => {
+    setSelectedChatId(chatId);
+    router.push(`/chat?chatId=${chatId}`);
+  };
 
   const handleCreateChat = async () => {
     if (!user?.walletAddress) {
@@ -106,6 +134,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       // The create mutation returns the full chat document, extract the _id
       if (newChat && newChat._id) {
         setSelectedChatId(newChat._id);
+        // Update URL to include the new chat ID
+        router.push(`/chat?chatId=${newChat._id}`);
       }
     } catch (error) {
       console.error('Failed to create chat:', error);
@@ -123,11 +153,21 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       return;
     }
 
+    // Check if user can send messages
+    if (!canSendMessage) {
+      setShowUpgradePrompt(true);
+      return;
+    }
+
     try {
       // Use the new Convex streaming function with selected model
       await sendMessage(content, user.walletAddress, selectedModel);
     } catch (error: any) {
       log.error('Failed to send message', { error: error?.message });
+      // If error is about limits, show upgrade prompt
+      if (error?.message?.includes('limit') || error?.message?.includes('quota')) {
+        setShowUpgradePrompt(true);
+      }
     }
   };
 
@@ -177,53 +217,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   return (
     <div className={cn('flex h-full bg-background', className)}>
-      {/* Sidebar */}
-      <div
-        className={cn(
-          'flex-shrink-0 border-border/50 border-r bg-card/50 backdrop-blur transition-all duration-300',
-          sidebarOpen ? 'w-80' : 'w-0'
-        )}
-      >
-        <div
-          className={cn(
-            'h-full overflow-hidden',
-            sidebarOpen ? 'block' : 'hidden'
-          )}
-        >
-          {/* Sidebar Header */}
-          <div className="flex h-14 items-center justify-between border-border/50 border-b bg-gradient-to-r from-primary/5 to-accent/5 px-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 p-1.5">
-                <Bot className="h-4 w-4 text-primary" />
-              </div>
-              <span className="font-semibold text-sm">Chat History</span>
-            </div>
-            <Button
-              className="h-8 w-8 p-0"
-              onClick={() => setSidebarOpen(false)}
-              size="sm"
-              variant="ghost"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Chat List */}
-          {chats === undefined ? (
-            <div className="p-4">
-              <LoadingStates variant="skeleton" />
-            </div>
-          ) : (
-            <ChatList
-              chats={chats}
-              onChatCreate={handleCreateChat}
-              onChatDelete={handleDeleteChat}
-              onChatSelect={setSelectedChatId}
-              selectedChatId={selectedChatId}
-            />
-          )}
-        </div>
-      </div>
 
       {/* Main Chat Area */}
       <div className="flex flex-1 flex-col">
@@ -320,17 +313,35 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               )}
             </div>
 
+            {/* Upgrade Prompt */}
+            {upgradePrompt.shouldShow && upgradePrompt.urgency === 'high' && (
+              <div className="border-border/50 border-t bg-card/30 p-4">
+                <div className="mx-auto max-w-4xl">
+                  <UpgradePrompt 
+                    prompt={upgradePrompt}
+                    variant="inline"
+                    onDismiss={() => setShowUpgradePrompt(false)}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Message Input */}
             <div className="border-border/50 border-t bg-card/30 p-4 backdrop-blur">
               <div className="mx-auto max-w-4xl">
                 <MessageInput
                   disabled={
-                    !selectedChatId || messages === undefined || isStreaming
+                    !selectedChatId || 
+                    messages === undefined || 
+                    isStreaming || 
+                    !canSendMessage
                   }
                   onSend={handleSendMessage}
                   onTyping={startTyping}
                   placeholder={
-                    isStreaming
+                    !canSendMessage
+                      ? 'Message limit reached - Upgrade to continue'
+                      : isStreaming
                       ? 'ISIS is responding...'
                       : 'Ask ISIS anything...'
                   }
@@ -341,9 +352,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         ) : (
           <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background">
             {chats?.length === 0 ? (
-              <ChatWelcome 
-                onCreateChat={handleCreateChat} 
-                isCreating={isCreatingChat} 
+              <ChatWelcome
+                isCreating={isCreatingChat}
+                onCreateChat={handleCreateChat}
               />
             ) : (
               <EmptyState
@@ -357,6 +368,15 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           </div>
         )}
       </div>
+
+      {/* Upgrade Prompt Modal */}
+      {showUpgradePrompt && upgradePrompt.suggestedTier && (
+        <UpgradePrompt
+          prompt={upgradePrompt}
+          variant="modal"
+          onDismiss={() => setShowUpgradePrompt(false)}
+        />
+      )}
     </div>
   );
 }

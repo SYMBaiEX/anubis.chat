@@ -8,7 +8,7 @@ import { z } from 'zod';
 import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
 import { agenticEngine } from '@/lib/agentic/engine';
 import { api, convex } from '@/lib/database/convex';
-import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
+import { trackMessageUsage } from '@/lib/middleware/subscription-auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import type { Agent, ExecuteAgentRequest } from '@/lib/types/agentic';
 import { convexAgentToApiFormat } from '@/lib/utils/agent-conversion';
@@ -51,7 +51,10 @@ export const maxDuration = 300; // 5 minutes for streaming
 
 export async function POST(request: NextRequest, context: RouteContext) {
   return aiRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+    // Agent streaming likely uses premium models, so mark as premium
+    const isPremiumModel = true;
+    
+    return trackMessageUsage(req, isPremiumModel, async (authReq) => {
       const { walletAddress } = authReq.user;
       const { agentId } = await context.params;
       const origin = req.headers.get('origin');

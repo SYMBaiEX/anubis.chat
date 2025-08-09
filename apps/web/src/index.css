@@ -215,11 +215,11 @@
   }
 
   html {
-    @apply scroll-smooth;
+    @apply scroll-smooth overflow-x-hidden;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
     font-feature-settings:
       "rlig" 1,
       "calt" 1;
@@ -484,6 +484,16 @@
   }
   to {
     transform: translateX(0);
+  }
+}
+
+/* Global spin animation utility */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

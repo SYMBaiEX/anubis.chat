@@ -10,6 +10,8 @@ import {
   Plus,
   Trash2,
   Workflow,
+  Crown,
+  AlertTriangle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -26,6 +28,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuthContext, useSubscriptionStatus } from '@/components/providers/auth-provider';
+import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import WorkflowCanvas from '@/components/workflows/WorkflowCanvas';
 import {
   useWorkflows,
@@ -42,9 +48,19 @@ export default function WorkflowsPage() {
   const [newWorkflowDialog, setNewWorkflowDialog] = useState(false);
   const [newWorkflow, setNewWorkflow] = useState({ name: '', description: '' });
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
+  const { user } = useAuthContext();
+  const subscription = useSubscriptionStatus();
+  
   // TODO: Replace with actual wallet address from auth
   const walletAddress = 'demo-user';
+
+  // Workflow creation limits based on subscription tier
+  const canCreateWorkflows = subscription?.tier === 'pro_plus';
+  const maxWorkflows = subscription?.tier === 'free' ? 0 : 
+                      subscription?.tier === 'pro' ? 0 : 
+                      999; // Pro+ gets unlimited
 
   // Use workflows hook
   const {
@@ -63,6 +79,19 @@ export default function WorkflowsPage() {
   const handleCreateWorkflow = async () => {
     if (!newWorkflow.name.trim()) {
       toast.error('Please enter a workflow name');
+      return;
+    }
+
+    // Check subscription restrictions
+    if (!canCreateWorkflows) {
+      toast.error('Workflows require Pro+ subscription');
+      setShowUpgradePrompt(true);
+      return;
+    }
+
+    if (workflows.length >= maxWorkflows) {
+      toast.error(`Maximum workflow limit (${maxWorkflows}) reached for your plan`);
+      setShowUpgradePrompt(true);
       return;
     }
 
@@ -190,24 +219,73 @@ export default function WorkflowsPage() {
     );
   }
 
+  if (!subscription) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <h2 className="font-semibold text-xl">Loading subscription...</h2>
+          <p className="text-muted-foreground">Please wait while we load your subscription details.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="mb-2 font-bold text-3xl">
-          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            AI Workflow Builder
-          </span>
-        </h1>
-        <p className="text-muted-foreground">
-          Create and manage automated multi-step workflows with AI agents
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="mb-2 font-bold text-3xl">
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                AI Workflow Builder
+              </span>
+            </h1>
+            <p className="text-muted-foreground">
+              Create and manage automated multi-step workflows with AI agents
+            </p>
+          </div>
+          <Badge variant={subscription.tier === 'pro_plus' ? 'default' : 'secondary'} className="gap-1">
+            <Crown className="h-3 w-3" />
+            {subscription.tier} Plan
+          </Badge>
+        </div>
+
+        {/* Tier restrictions alert */}
+        {subscription.tier !== 'pro_plus' && (
+          <Alert className="mt-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              AI Workflow Builder is a Pro+ exclusive feature. 
+              {subscription.tier === 'free' 
+                ? ' Upgrade to Pro+ to create and manage automated workflows.'
+                : ' Upgrade from Pro to Pro+ to unlock workflow automation capabilities.'
+              }
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
       {/* Toolbar */}
       <div className="mb-6 flex items-center justify-between">
-        <Button className="gap-2" onClick={() => setNewWorkflowDialog(true)}>
+        <Button 
+          className="gap-2" 
+          onClick={() => {
+            if (canCreateWorkflows) {
+              setNewWorkflowDialog(true);
+            } else {
+              setShowUpgradePrompt(true);
+            }
+          }}
+          disabled={subscription.tier !== 'pro_plus'}
+        >
           <Plus className="h-4 w-4" />
           Create New Workflow
+          {subscription.tier !== 'pro_plus' && (
+            <Badge variant="outline" className="ml-2 gap-1">
+              <Crown className="h-3 w-3" />
+              Pro+
+            </Badge>
+          )}
         </Button>
         <div className="flex gap-2">
           <Button
@@ -237,11 +315,24 @@ export default function WorkflowsPage() {
           <Workflow className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <h3 className="mb-2 font-semibold text-lg">No workflows yet</h3>
           <p className="mb-4 text-muted-foreground">
-            Create your first AI-powered workflow to automate complex processes
+            {subscription.tier === 'pro_plus' 
+              ? 'Create your first AI-powered workflow to automate complex processes'
+              : 'AI Workflow Builder is available with Pro+ subscription'
+            }
           </p>
-          <Button className="gap-2" onClick={() => setNewWorkflowDialog(true)}>
+          <Button 
+            className="gap-2" 
+            onClick={() => {
+              if (canCreateWorkflows) {
+                setNewWorkflowDialog(true);
+              } else {
+                setShowUpgradePrompt(true);
+              }
+            }}
+            disabled={subscription.tier !== 'pro_plus'}
+          >
             <Plus className="h-4 w-4" />
-            Create Your First Workflow
+            {subscription.tier === 'pro_plus' ? 'Create Your First Workflow' : 'Upgrade to Pro+'}
           </Button>
         </Card>
       ) : viewMode === 'grid' ? (
@@ -390,6 +481,25 @@ export default function WorkflowsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Upgrade Prompt Modal */}
+      {showUpgradePrompt && (
+        <UpgradePrompt
+          prompt={{
+            title: 'Upgrade to Pro+',
+            message: 'AI Workflow Builder requires a Pro+ subscription to create and manage automated multi-step workflows.',
+            features: [
+              'Unlimited workflow creation',
+              'Advanced automation tools',
+              'Multi-step AI agent coordination',
+              'Custom workflow templates'
+            ],
+            tier: 'pro_plus' as const,
+          }}
+          variant="modal"
+          onDismiss={() => setShowUpgradePrompt(false)}
+        />
+      )}
     </div>
   );
 }

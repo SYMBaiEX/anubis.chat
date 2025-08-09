@@ -12,7 +12,7 @@ const log = createModuleLogger('api/search');
 
 import { api } from '@convex/_generated/api';
 import { fetchQuery } from 'convex/nextjs';
-import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
+import { withSubscriptionAuth } from '@/lib/middleware/subscription-auth';
 import { searchRateLimit } from '@/lib/middleware/rate-limit';
 import type {
   Document,
@@ -120,7 +120,7 @@ function extractContext(results: DocumentSearchResult[]): string {
  */
 export async function POST(request: NextRequest) {
   return searchRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+    return withSubscriptionAuth(req, async (authReq) => {
       const { walletAddress } = authReq.user;
 
       try {
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   return searchRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+    return withSubscriptionAuth(req, async (authReq) => {
       const { walletAddress } = authReq.user;
 
       try {

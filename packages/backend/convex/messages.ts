@@ -35,7 +35,7 @@ export const getById = query({
   },
 });
 
-// Create new message
+// Create new message with subscription checking
 export const create = mutation({
   args: {
     chatId: v.id('chats'),
@@ -84,6 +84,34 @@ export const create = mutation({
     parentMessageId: v.optional(v.id('messages')),
   },
   handler: async (ctx, args) => {
+    // For user messages, check subscription limits (assistant/system messages bypass limits)
+    if (args.role === 'user') {
+      const user = await ctx.db
+        .query('users')
+        .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
+        .unique();
+
+      if (user) {
+        // Check if user has reached message limits
+        if (user.subscription.messagesUsed >= user.subscription.messagesLimit) {
+          throw new Error('Monthly message limit reached. Please upgrade your subscription.');
+        }
+
+        // Check premium model limits if this is a premium model
+        const isPremiumModel = args.metadata?.model && 
+          ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4'].includes(args.metadata.model);
+        
+        if (isPremiumModel && user.subscription.tier === 'free') {
+          throw new Error('Premium models require Pro or Pro+ subscription.');
+        }
+
+        if (isPremiumModel && 
+            user.subscription.premiumMessagesUsed >= user.subscription.premiumMessagesLimit) {
+          throw new Error('Premium message quota exhausted. Please upgrade or wait for next billing cycle.');
+        }
+      }
+    }
+
     const now = Date.now();
 
     const messageId = await ctx.db.insert('messages', {

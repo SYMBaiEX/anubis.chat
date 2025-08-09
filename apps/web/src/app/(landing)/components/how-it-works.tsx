@@ -3,6 +3,7 @@
 import React, { memo } from 'react';
 import { Check, Upload, Wallet, MessagesSquare, Rocket } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import AnimatedSection from '@/components/landing/animated-section';
 
 const steps = [
   {
@@ -29,11 +30,19 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <section className="relative bg-[linear-gradient(180deg,rgba(12,16,14,1)_0%,rgba(10,12,12,1)_100%)] py-20 md:py-28">
-      <div className="container mx-auto px-4">
+    <AnimatedSection
+      className="py-20 md:py-28 lg:py-32"
+      auroraVariant="primary"
+      includeRosetta={false}
+      includeHieroglyphs={false}
+      dustIntensity="low"
+      allowOverlap
+      data-bg-variant="primary"
+    >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <h2 className="mb-3 font-bold text-3xl md:text-5xl">
-            <span className="bg-gradient-to-r from-emerald-300 via-white to-accent bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-foreground to-accent bg-clip-text text-transparent">
               How it works
             </span>
           </h2>
@@ -45,7 +54,7 @@ function HowItWorks() {
             const Icon = s.icon;
             return (
               <li key={s.title + i} className="relative">
-                <Card className="h-full border-white/10 bg-card/70 p-6">
+                <Card className="h-full border-border/60 bg-card/70 p-6">
                   <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <Icon aria-hidden className="h-6 w-6 text-primary" />
                   </div>
@@ -63,7 +72,7 @@ function HowItWorks() {
           <li className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Export anytime</li>
         </ul>
       </div>
-    </section>
+    </AnimatedSection>
   );
 }
 

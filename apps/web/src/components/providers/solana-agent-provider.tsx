@@ -144,7 +144,7 @@ interface SolanaAgentProviderProps {
  * Provides access to blockchain operations and AI agents
  */
 export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
-  const { wallet, publicKey } = useWallet();
+  const wallet = useWallet();
   const { user, isAuthenticated } = useAuthContext();
 
   const [agentKit, setAgentKit] = useState<SolanaAgentKit | null>(null);
@@ -179,27 +179,42 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   // Initialize Solana Agent Kit when wallet connects
   useEffect(() => {
     const initializeAgentKit = async () => {
-      if (!(wallet && publicKey && isAuthenticated)) {
+      if (!(wallet.isConnected && wallet.publicKey && isAuthenticated && user)) {
         setAgentKit(null);
         setIsInitialized(false);
         return;
       }
 
       try {
-        // Get the private key from wallet adapter
-        // Note: This is a simplified example. In production, you'd need proper key management
-        const privateKey = 'your-private-key-here'; // This needs to be handled securely
-        const rpcUrl =
-          process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
-          'https://api.mainnet-beta.solana.com';
+        // In production, the private key should NOT be stored on the frontend
+        // Instead, the agent operations should be executed on the backend
+        // For now, we'll create the kit without the private key and use it for read-only operations
+        const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 
+          process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta'
+            ? 'https://api.mainnet-beta.solana.com'
+            : process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'testnet'
+            ? 'https://api.testnet.solana.com'
+            : 'https://api.devnet.solana.com';
 
-        const kit = new SolanaAgentKit(privateKey, rpcUrl, {
-          OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-        });
+        // Create a minimal agent kit for read operations
+        // In a production environment, transaction operations should be handled server-side
+        const kit = new SolanaAgentKit(
+          '', // Empty private key for read-only operations
+          rpcUrl,
+          {
+            OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+          }
+        );
 
         setAgentKit(kit);
         setIsInitialized(true);
         setError(null);
+        
+        console.log('Solana Agent Kit initialized for read-only operations', {
+          publicKey: wallet.publicKey?.toString(),
+          network: process.env.NEXT_PUBLIC_SOLANA_NETWORK,
+          userId: user.walletAddress,
+        });
       } catch (err) {
         console.error('Failed to initialize Solana Agent Kit:', err);
         setError('Failed to initialize blockchain agent');
@@ -208,7 +223,7 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
     };
 
     initializeAgentKit();
-  }, [wallet, publicKey, isAuthenticated]);
+  }, [wallet.isConnected, wallet.publicKey, isAuthenticated, user]);
 
   // Auto-select first agent when available
   useEffect(() => {
@@ -250,8 +265,8 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
 
   const executeTool = useCallback(
     async (execution: ToolExecution): Promise<any> => {
-      if (!(agentKit && selectedAgent)) {
-        throw new Error('Agent kit not initialized or no agent selected');
+      if (!(agentKit && selectedAgent && wallet.isConnected)) {
+        throw new Error('Agent kit not initialized, no agent selected, or wallet not connected');
       }
 
       try {
@@ -259,22 +274,23 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
         // This is a simplified example - you'd have a proper tool registry
         switch (execution.toolName) {
           case 'getBalance':
-            return await agentKit.getBalance();
+            // Use wallet balance since we have access to it
+            return wallet.balance || 0;
 
+          case 'getAddress':
+            return wallet.publicKey;
+
+          case 'getTokenBalances':
+            // For now, return empty array - would need to implement token balance fetching
+            return [];
+
+          // Transaction-based tools should be executed server-side with proper security
           case 'deployToken':
-            return await agentKit.deployToken(
-              execution.parameters.decimals,
-              execution.parameters.initialSupply
-            );
-
           case 'transfer':
-            return await agentKit.transfer(
-              execution.parameters.to,
-              execution.parameters.amount,
-              execution.parameters.mint
-            );
+          case 'swap':
+            throw new Error(`Tool '${execution.toolName}' requires server-side execution for security`);
 
-          // Add more tools as needed
+          // Add more read-only tools as needed
           default:
             throw new Error(`Unknown tool: ${execution.toolName}`);
         }
@@ -283,39 +299,40 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
         throw err;
       }
     },
-    [agentKit, selectedAgent]
+    [agentKit, selectedAgent, wallet]
   );
 
   const getBalance = useCallback(async (): Promise<number | null> => {
-    if (!agentKit) return null;
+    if (!wallet.isConnected) return null;
 
     try {
-      const balance = await agentKit.getBalance();
-      return balance;
+      // Use the balance from the wallet hook
+      await wallet.refreshBalance();
+      return wallet.balance;
     } catch (err) {
       console.error('Failed to get balance:', err);
       setError('Failed to get wallet balance');
       return null;
     }
-  }, [agentKit]);
+  }, [wallet]);
 
   const getTokenBalances = useCallback(async (): Promise<Array<{
     mint: string;
     amount: string;
   }> | null> => {
-    if (!agentKit) return null;
+    if (!wallet.isConnected) return null;
 
     try {
-      // This would call the appropriate method to get token balances
-      // const balances = await agentKit.getTokenBalances();
-      // return balances;
+      // For now, return empty array
+      // In production, this would fetch token balances from the RPC
+      // using the connection and wallet's public key
       return [];
     } catch (err) {
       console.error('Failed to get token balances:', err);
       setError('Failed to get token balances');
       return null;
     }
-  }, [agentKit]);
+  }, [wallet.isConnected]);
 
   const refreshData = useCallback(() => {
     // Trigger data refresh for queries

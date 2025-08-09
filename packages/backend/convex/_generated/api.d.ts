@@ -9,8 +9,10 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as adminAuth from "../adminAuth.js";
 import type * as agents from "../agents.js";
 import type * as auth from "../auth.js";
+import type * as authHelpers from "../authHelpers.js";
 import type * as blockchainTransactions from "../blockchainTransactions.js";
 import type * as chats from "../chats.js";
 import type * as documents from "../documents.js";
@@ -21,6 +23,7 @@ import type * as http from "../http.js";
 import type * as memories from "../memories.js";
 import type * as messages from "../messages.js";
 import type * as streaming from "../streaming.js";
+import type * as subscriptions from "../subscriptions.js";
 import type * as typing from "../typing.js";
 import type * as users from "../users.js";
 import type * as vectorStoreFiles from "../vectorStoreFiles.js";
@@ -43,8 +46,10 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  adminAuth: typeof adminAuth;
   agents: typeof agents;
   auth: typeof auth;
+  authHelpers: typeof authHelpers;
   blockchainTransactions: typeof blockchainTransactions;
   chats: typeof chats;
   documents: typeof documents;
@@ -55,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   memories: typeof memories;
   messages: typeof messages;
   streaming: typeof streaming;
+  subscriptions: typeof subscriptions;
   typing: typeof typing;
   users: typeof users;
   vectorStoreFiles: typeof vectorStoreFiles;

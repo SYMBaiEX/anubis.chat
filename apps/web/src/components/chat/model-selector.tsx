@@ -1,6 +1,6 @@
 'use client';
 
-import { Brain, Check, ChevronDown, Cpu, Sparkles, Zap } from 'lucide-react';
+import { Brain, Check, ChevronDown, Cpu, Lock, Sparkles, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { AI_MODELS, type AIModel } from '@/lib/constants/ai-models';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useSubscriptionStatus, useSubscriptionLimits, useCanUsePremiumModel } from '@/components/providers/auth-provider';
+import { AI_MODELS, type AIModel, isPremiumModel } from '@/lib/constants/ai-models';
 import { cn } from '@/lib/utils';
 
 interface ModelSelectorProps {
@@ -35,6 +37,8 @@ const getProviderIcon = (provider: AIModel['provider']) => {
       return <Brain className="h-3 w-3" />;
     case 'google':
       return <Cpu className="h-3 w-3" />;
+    case 'openrouter':
+      return <Sparkles className="h-3 w-3" />;
   }
 };
 
@@ -76,8 +80,20 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  
+  const subscription = useSubscriptionStatus();
+  const limits = useSubscriptionLimits();
+  const canUsePremium = useCanUsePremiumModel();
 
   const selectedModel = AI_MODELS.find((model) => model.id === value);
+
+  // Filter models based on subscription
+  const availableModels = AI_MODELS.filter((model) => {
+    if (subscription?.tier === 'free') {
+      return !isPremiumModel(model);
+    }
+    return true; // Pro and Pro+ users can see all models
+  });
 
   const groupedModels = AI_MODELS.reduce(
     (acc, model) => {
@@ -90,10 +106,70 @@ export function ModelSelector({
     {} as Record<string, AIModel[]>
   );
 
+  // Check if a model is accessible to current user
+  const isModelAccessible = (model: AIModel) => {
+    if (subscription?.tier === 'free') {
+      return !isPremiumModel(model);
+    }
+    if (subscription?.tier === 'pro' && isPremiumModel(model)) {
+      return canUsePremium;
+    }
+    return true;
+  };
+
+  // Get premium badge for model
+  const getPremiumBadge = (model: AIModel) => {
+    if (!isPremiumModel(model)) return null;
+    
+    if (subscription?.tier === 'free') {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Badge className="gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                <Lock className="h-3 w-3" />
+                Pro
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Requires Pro or Pro+ subscription</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    
+    if (subscription?.tier === 'pro' && !canUsePremium) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Badge className="gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                <Lock className="h-3 w-3" />
+                Limit
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Premium message quota exhausted</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    
+    return (
+      <Badge className="gap-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+        <Sparkles className="h-3 w-3" />
+        Premium
+      </Badge>
+    );
+  };
+
   const providerLabels = {
     openai: 'OpenAI',
     anthropic: 'Anthropic',
     google: 'Google',
+    openrouter: 'OpenRouter',
   };
 
   return (
@@ -149,20 +225,30 @@ export function ModelSelector({
                         .toLowerCase()
                         .includes(search.toLowerCase())
                   )
-                  .map((model) => (
-                    <CommandItem
-                      className="flex flex-col items-start gap-1 py-2"
-                      key={model.id}
-                      onSelect={() => {
-                        onValueChange(model.id);
-                        setOpen(false);
-                      }}
-                      value={model.id}
-                    >
+                  .map((model) => {
+                    const accessible = isModelAccessible(model);
+                    
+                    return (
+                      <CommandItem
+                        className={cn(
+                          "flex flex-col items-start gap-1 py-2",
+                          !accessible && "opacity-50 cursor-not-allowed"
+                        )}
+                        key={model.id}
+                        onSelect={() => {
+                          if (accessible) {
+                            onValueChange(model.id);
+                            setOpen(false);
+                          }
+                        }}
+                        value={model.id}
+                        disabled={!accessible}
+                      >
                       <div className="flex w-full items-center justify-between">
                         <div className="flex items-center gap-2">
                           {getProviderIcon(model.provider)}
                           <span className="font-medium">{model.name}</span>
+                          {getPremiumBadge(model)}
                           {model.default && (
                             <Badge className="px-1 text-xs" variant="secondary">
                               Default
@@ -205,7 +291,8 @@ export function ModelSelector({
                         </div>
                       </div>
                     </CommandItem>
-                  ))}
+                  );
+                  })}
               </CommandGroup>
             ))}
           </CommandList>

@@ -14,7 +14,8 @@ import { createModuleLogger } from '@/lib/utils/logger';
 const log = createModuleLogger('api/ai/completions');
 
 import { openaiConfig } from '@/lib/env';
-import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
+import { AI_MODELS, isPremiumModel } from '@/lib/constants/ai-models';
+import { trackMessageUsage } from '@/lib/middleware/subscription-auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import {
   addSecurityHeaders,
@@ -68,20 +69,26 @@ export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   return aiRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+    // Parse request to determine if premium model is being used
+    const body = await req.json();
+    const validation = completionSchema.safeParse(body);
+    
+    if (!validation.success) {
+      return validationErrorResponse(
+        'Invalid completion request',
+        validation.error.flatten().fieldErrors
+      );
+    }
+
+    const { model } = validation.data;
+    
+    // Check if model is premium
+    const aiModelConfig = AI_MODELS.find(m => m.id === model);
+    const isUsingPremiumModel = aiModelConfig ? isPremiumModel(aiModelConfig) : false;
+    
+    return trackMessageUsage(req, isUsingPremiumModel, async (authReq) => {
       try {
         const { walletAddress } = authReq.user;
-
-        // Parse and validate request body
-        const body = await req.json();
-        const validation = completionSchema.safeParse(body);
-
-        if (!validation.success) {
-          return validationErrorResponse(
-            'Invalid completion request',
-            validation.error.flatten().fieldErrors
-          );
-        }
 
         const { prompt, model, temperature, maxTokens, stream, systemPrompt } =
           validation.data;

@@ -3,14 +3,23 @@
 import React, { memo } from 'react';
 import { Shield, Lock, KeySquare } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import AnimatedSection from '@/components/landing/animated-section';
 
 function Security() {
   return (
-    <section className="relative bg-[linear-gradient(180deg,rgba(10,12,12,1)_0%,rgba(10,12,12,1)_40%,rgba(17,24,21,1)_100%)] py-20 md:py-28">
-      <div className="container mx-auto grid items-stretch gap-8 px-4 md:grid-cols-2">
+    <AnimatedSection
+      className="py-20 md:py-28 lg:py-32"
+      auroraVariant="gold"
+      includeRosetta={false}
+      includeHieroglyphs={false}
+      dustIntensity="low"
+      allowOverlap
+      data-bg-variant="gold"
+    >
+      <div className="container mx-auto grid items-stretch gap-8 px-4 sm:px-6 md:grid-cols-2 lg:px-8">
         <div className="self-center">
           <h2 className="mb-4 font-bold text-3xl md:text-5xl">
-            <span className="bg-gradient-to-r from-emerald-300 via-white to-primary bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
               Security and Privacy by Default
             </span>
           </h2>
@@ -24,8 +33,8 @@ function Security() {
             <li className="inline-flex items-center gap-2"><KeySquare className="h-4 w-4 text-primary" /> Wallet‑scoped data isolation</li>
           </ul>
         </div>
-        <Card aria-label="Security panel" className="relative overflow-hidden border-white/10 bg-card/70 p-8">
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_30%_20%,rgba(20,241,149,0.08)_0%,rgba(20,241,149,0)_60%)]" />
+        <Card aria-label="Security panel" className="relative overflow-hidden border-border/60 bg-card/70 p-8">
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_30%_20%,rgba(20,241,149,0.08)_0%,transparent_60%)]" />
           <div className="relative grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border border-border/60 bg-background/60 p-4">
               <h3 className="mb-1 font-semibold">JWT + Convex</h3>
@@ -46,7 +55,7 @@ function Security() {
           </div>
         </Card>
       </div>
-    </section>
+    </AnimatedSection>
   );
 }
 

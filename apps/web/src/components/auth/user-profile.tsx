@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { UserProfileProps } from '@/lib/types/components';
+import type { SubscriptionStatus as SubscriptionData, SubscriptionLimits, UpgradePrompt } from '@/hooks/use-subscription';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
 import { SubscriptionStatus } from './subscription-status';
@@ -21,13 +22,22 @@ const log = createModuleLogger('user-profile');
  * UserProfile component - Display and edit user profile information
  * Includes wallet info, preferences, and subscription details
  */
+interface ExtendedUserProfileProps extends UserProfileProps {
+  subscription?: SubscriptionData | null;
+  limits?: SubscriptionLimits | null;
+  upgradePrompt?: UpgradePrompt;
+}
+
 export function UserProfile({
   user,
   onUpdate,
   editable = true,
   className,
   children,
-}: UserProfileProps) {
+  subscription,
+  limits,
+  upgradePrompt,
+}: ExtendedUserProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -71,30 +81,30 @@ export function UserProfile({
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
             <Avatar
-              fallback={user.displayName?.[0] ?? 'U'}
+              fallback={user?.displayName?.[0] ?? 'U'}
               size="xl"
-              src={user.avatar}
+              src={user?.avatar}
             />
             <div className="flex-1">
               <h3 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
-                {user.displayName ?? 'Anonymous User'}
+                {user?.displayName ?? 'Anonymous User'}
               </h3>
               <p className="text-gray-600 text-sm dark:text-gray-400">
-                {formatWalletAddress(user.walletAddress)}
+                {user?.walletAddress ? formatWalletAddress(user.walletAddress) : 'No wallet connected'}
               </p>
               <div className="mt-2 flex items-center space-x-2">
                 <Badge
                   size="sm"
-                  variant={user.isActive ? 'success' : 'default'}
+                  variant={user?.isActive ? 'success' : 'default'}
                 >
-                  {user.isActive ? 'Active' : 'Inactive'}
+                  {user?.isActive ? 'Active' : 'Inactive'}
                 </Badge>
                 <Badge
-                  className={getSubscriptionTierColor(user.subscription.tier)}
+                  className={getSubscriptionTierColor(subscription?.tier || user?.subscription?.tier || 'free')}
                   size="sm"
                 >
-                  {user.subscription.tier.charAt(0).toUpperCase() +
-                    user.subscription.tier.slice(1)}
+                  {(subscription?.tier || user?.subscription?.tier || 'free').charAt(0).toUpperCase() +
+                    (subscription?.tier || user?.subscription?.tier || 'free').slice(1)}
                 </Badge>
               </div>
             </div>
@@ -113,8 +123,8 @@ export function UserProfile({
           {isEditing ? (
             <FormWrapper
               defaultValues={{
-                displayName: user.displayName ?? '',
-                avatar: user.avatar ?? '',
+                displayName: user?.displayName ?? '',
+                avatar: user?.avatar ?? '',
               }}
               onSubmit={handleProfileUpdate}
             >
@@ -152,7 +162,7 @@ export function UserProfile({
                       Wallet Address
                     </h4>
                     <p className="font-mono text-gray-600 text-sm dark:text-gray-400">
-                      {user.walletAddress}
+                      {user?.walletAddress || 'Not available'}
                     </p>
                   </div>
                 </div>
@@ -166,7 +176,7 @@ export function UserProfile({
                       Account Created
                     </h4>
                     <p className="text-gray-600 text-sm dark:text-gray-400">
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
                     </p>
                   </div>
                 </div>
@@ -190,8 +200,9 @@ export function UserProfile({
                     Theme
                   </h4>
                   <p className="text-gray-600 text-sm dark:text-gray-400">
-                    {user.preferences.theme.charAt(0).toUpperCase() +
-                      user.preferences.theme.slice(1)}
+                    {user.preferences?.theme 
+                      ? user.preferences.theme.charAt(0).toUpperCase() + user.preferences.theme.slice(1)
+                      : 'Not set'}
                   </p>
                 </div>
               </div>
@@ -205,7 +216,9 @@ export function UserProfile({
                     Notifications
                   </h4>
                   <p className="text-gray-600 text-sm dark:text-gray-400">
-                    {user.preferences.notifications ? 'Enabled' : 'Disabled'}
+                    {user.preferences?.notifications !== undefined 
+                      ? (user.preferences.notifications ? 'Enabled' : 'Disabled')
+                      : 'Not set'}
                   </p>
                 </div>
               </div>
@@ -217,7 +230,7 @@ export function UserProfile({
               AI Model Preference
             </h4>
             <p className="text-gray-600 text-sm dark:text-gray-400">
-              {user.preferences.aiModel}
+              {user.preferences?.aiModel || 'Not set'}
             </p>
           </Card>
         </div>
@@ -228,8 +241,10 @@ export function UserProfile({
       label: 'Subscription',
       content: (
         <SubscriptionStatus
-          showUpgrade={user.subscription.tier === 'free'}
-          subscription={user.subscription}
+          subscription={subscription || user?.subscription}
+          limits={limits}
+          upgradePrompt={upgradePrompt}
+          showUpgrade={(subscription?.tier || user?.subscription?.tier) === 'free'}
         />
       ),
     },

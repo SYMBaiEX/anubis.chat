@@ -4,7 +4,6 @@ import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { RosettaHieroglyphs } from '@/components/effects/rosetta-hieroglyphs';
 import IsisAurora from '@/components/IsisAurora';
-import { DustParticles } from '@/components/landing/dust-particles';
 import { HieroglyphicAnimations } from '@/components/landing/hieroglyphic-animations';
 import { TombBackground } from '@/components/landing/tomb-background';
 
@@ -21,6 +20,9 @@ export type AnimationIntensity = 'low' | 'medium' | 'high';
  * Notes:
  * - Respects prefers-reduced-motion and disables animations when enabled
  * - Uses IntersectionObserver to pause animations when section is off-screen
+ * - Decorative layers can be toggled via props:
+ *   - includeRosetta (default false) shows subtle Rosetta Stone overlay
+ *   - includeHieroglyphs (default true) renders ambient hieroglyphic animations
  */
 interface AnimatedSectionProps
   extends Omit<React.HTMLAttributes<HTMLElement>, 'children' | 'className'> {
@@ -29,9 +31,13 @@ interface AnimatedSectionProps
   auroraVariant?: 'primary' | 'gold' | undefined;
   includeTomb?: boolean;
   includeRosetta?: boolean;
+  /** Toggle decorative hieroglyphic effects (default: true) */
+  includeHieroglyphs?: boolean;
   glyphIntensity?: AnimationIntensity;
   dustIntensity?: AnimationIntensity;
   edgeMask?: boolean;
+  /** Allow background visuals to bleed beyond section bounds */
+  allowOverlap?: boolean;
 }
 
 export default function AnimatedSection({
@@ -40,9 +46,11 @@ export default function AnimatedSection({
   auroraVariant,
   includeTomb = false,
   includeRosetta = false,
+  includeHieroglyphs = false,
   glyphIntensity = 'low',
   dustIntensity = 'low',
   edgeMask = false,
+  allowOverlap = false,
   ...rest
 }: AnimatedSectionProps) {
   const ref = useRef<HTMLElement | null>(null);
@@ -92,7 +100,7 @@ export default function AnimatedSection({
 
   return (
     <section
-      className={`relative overflow-hidden ${className ?? ''}`}
+      className={`relative ${allowOverlap ? 'overflow-visible' : 'overflow-hidden'} ${className ?? ''}`}
       ref={ref}
       {...rest}
     >
@@ -112,14 +120,12 @@ export default function AnimatedSection({
       >
         {includeTomb && <TombBackground showAccentGlow={false} />}
         {includeRosetta && <RosettaHieroglyphs />}
-        <HieroglyphicAnimations
-          intensity={effectiveIntensity.glyph}
-          shouldAnimate={active}
-        />
-        <DustParticles
-          intensity={effectiveIntensity.dust}
-          shouldAnimate={active}
-        />
+        {includeHieroglyphs && (
+          <HieroglyphicAnimations
+            intensity={effectiveIntensity.glyph}
+            shouldAnimate={active}
+          />
+        )}
       </div>
       {auroraVariant !== undefined &&
         (auroraVariant ? (

@@ -3,6 +3,7 @@
 import React, { memo } from 'react';
 import { Star } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import AnimatedSection from '@/components/landing/animated-section';
 
 const testimonials = [
   {
@@ -28,11 +29,19 @@ const testimonials = [
 
 function Testimonials() {
   return (
-    <section className="relative bg-[linear-gradient(180deg,rgba(10,12,12,1)_0%,rgba(17,24,21,1)_100%)] py-20 md:py-28">
-      <div className="container mx-auto px-4">
+    <AnimatedSection
+      className="py-20 md:py-28 lg:py-32"
+      auroraVariant="gold"
+      includeRosetta={false}
+      includeHieroglyphs={false}
+      dustIntensity="low"
+      allowOverlap
+      data-bg-variant="gold"
+    >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <h2 className="mb-3 font-bold text-3xl md:text-5xl">
-            <span className="bg-gradient-to-r from-primary via-white to-accent bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-foreground to-accent bg-clip-text text-transparent">
               Loved by builders
             </span>
           </h2>
@@ -40,7 +49,7 @@ function Testimonials() {
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((t) => (
-            <Card key={t.name} className="border-white/10 bg-card/70 p-6">
+            <Card key={t.name} className="border-border/60 bg-card/70 p-6">
               <div className="mb-3 flex gap-1">
                 {Array.from({ length: t.rating }).map((_, i) => (
                   <Star className="h-4 w-4 fill-egypt-gold text-egypt-gold" key={i} />
@@ -55,7 +64,7 @@ function Testimonials() {
           ))}
         </div>
       </div>
-    </section>
+    </AnimatedSection>
   );
 }
 

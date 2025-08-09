@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { api, convex } from '@/lib/database/convex';
-import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
+import { requireProPlusAccess } from '@/lib/middleware/subscription-auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import type { FileUploadResponse } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -19,6 +19,7 @@ const log = createModuleLogger('api/files/upload');
 // =============================================================================
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const LARGE_FILE_SIZE = 5 * 1024 * 1024; // 5MB - requires Pro+ for larger files
 const ALLOWED_FILE_TYPES: Record<string, string> = {
   // Documents
   'application/pdf': '.pdf',
@@ -200,9 +201,20 @@ async function handlePost(req: AuthenticatedRequest) {
 // =============================================================================
 
 export async function POST(request: NextRequest) {
-  return authRateLimit(request, async (req) =>
-    withAuth(req, async (authReq: AuthenticatedRequest) => handlePost(authReq))
-  );
+  return authRateLimit(request, async (req) => {
+    // Check if this is a large file upload that requires Pro+ access
+    const formData = await req.clone().formData();
+    const file = formData.get('file') as File | null;
+    const isLargeFile = file && file.size > LARGE_FILE_SIZE;
+    
+    if (isLargeFile) {
+      return requireProPlusAccess(req, 'large_files', async (authReq) => handlePost(authReq));
+    } else {
+      // For smaller files, use basic subscription auth (all tiers can upload small files)
+      const { withSubscriptionAuth } = await import('@/lib/middleware/subscription-auth');
+      return withSubscriptionAuth(req, async (authReq) => handlePost(authReq));
+    }
+  });
 }
 
 // OPTIONS for CORS

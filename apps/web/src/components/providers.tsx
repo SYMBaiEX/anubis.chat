@@ -1,6 +1,7 @@
 'use client';
 
-import { ConvexProvider, ConvexReactClient } from 'convex/react';
+import { ConvexReactClient } from 'convex/react';
+import { ConvexAuthProvider } from '@convex-dev/auth/react';
 import { SidebarProvider } from '@/contexts/SidebarContext';
 import { convexConfig, isDevelopment } from '@/lib/env';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -11,6 +12,7 @@ import { SolanaAgentProvider } from './providers/solana-agent-provider';
 import { ThemeProvider } from './theme-provider';
 import { Toaster } from './ui/sonner';
 import { WalletProvider } from './wallet/wallet-provider';
+import { UpgradeProvider } from './auth/upgrade-wrapper';
 
 const log = createModuleLogger('providers');
 
@@ -43,15 +45,17 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         enableSystem
       >
         <SidebarProvider>
-          <ConvexProvider client={convex}>
+          <ConvexAuthProvider client={convex}>
             <ClientOnlyWrapper>
               <WalletProvider>
                 <AuthProvider>
-                  <SolanaAgentProvider>{children}</SolanaAgentProvider>
+                  <UpgradeProvider>
+                    <SolanaAgentProvider>{children}</SolanaAgentProvider>
+                  </UpgradeProvider>
                 </AuthProvider>
               </WalletProvider>
             </ClientOnlyWrapper>
-          </ConvexProvider>
+          </ConvexAuthProvider>
           <Toaster richColors />
         </SidebarProvider>
       </ThemeProvider>

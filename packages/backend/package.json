@@ -15,7 +15,9 @@
     "@ai-sdk/anthropic": "^2.0.1",
     "@ai-sdk/google": "^2.0.3",
     "@ai-sdk/openai": "^2.0.7",
+    "@convex-dev/auth": "^0.0.88",
     "@convex-dev/persistent-text-streaming": "^0.2.3",
+    "@openrouter/ai-sdk-provider": "1.1.1",
     "ai": "^5.0.8",
     "convex": "^1.25.4"
   }

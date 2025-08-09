@@ -1,10 +1,26 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText } from 'ai';
 import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { httpAction } from './_generated/server';
+
+// Allowed OpenRouter model allowlist for security
+const ALLOWED_OPENROUTER_MODELS = new Set<string>([
+  // Newly requested free models
+  'openai/gpt-oss-20b:free',
+  'z-ai/glm-4.5-air:free',
+  'qwen/qwen3-coder:free',
+  'moonshotai/kimi-k2:free',
+  // Existing curated models used in UI
+  'anthropic/claude-3.7-sonnet:thinking',
+  'openai/gpt-4o-mini',
+  'deepseek/deepseek-chat',
+  'qwen/qwen2.5-coder:32b',
+  'meta/llama-3.1-70b-instruct',
+]);
 
 export const streamChat = httpAction(async (ctx, request) => {
   // Parse request body
@@ -32,8 +48,54 @@ export const streamChat = httpAction(async (ctx, request) => {
         headers: { 
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      }
+    );
+  }
+
+  // Check subscription status
+  const subscription = await ctx.runQuery(api.subscriptions.getSubscriptionStatus, {});
+  
+  if (!subscription) {
+    return new Response(
+      JSON.stringify({ error: 'Subscription not found. Please sign up.' }),
+      {
+        status: 403,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      }
+    );
+  }
+
+  // Check message limits
+  if (subscription.messagesUsed >= subscription.messagesLimit) {
+    return new Response(
+      JSON.stringify({ 
+        error: 'Monthly message limit reached. Please upgrade your subscription.',
+        code: 'QUOTA_EXCEEDED',
+        details: {
+          messagesUsed: subscription.messagesUsed,
+          messagesLimit: subscription.messagesLimit,
+          tier: subscription.tier,
+          nextReset: subscription.currentPeriodEnd,
+        }
+      }),
+      {
+        status: 429,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Credentials': 'true',
         },
       }
     );
@@ -62,9 +124,62 @@ export const streamChat = httpAction(async (ctx, request) => {
   // Select AI model based on chat configuration
   let aiModel;
   const modelName = model || chat.model || 'gpt-5';
+  
+  // Check premium model access
+  const isPremiumModel = ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4', 'gpt-5', 'gpt-5-pro', 'o3'].includes(modelName);
+  
+  if (isPremiumModel) {
+    if (subscription.tier === 'free') {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Premium models require Pro or Pro+ subscription.',
+          code: 'FEATURE_RESTRICTED',
+          details: {
+            currentTier: subscription.tier,
+            requiredTier: 'pro',
+            model: modelName,
+          }
+        }),
+        {
+          status: 403,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          },
+        }
+      );
+    }
+    
+    if (subscription.premiumMessagesUsed >= subscription.premiumMessagesLimit) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Premium message quota exhausted. Please upgrade or wait for next billing cycle.',
+          code: 'QUOTA_EXCEEDED',
+          details: {
+            premiumMessagesUsed: subscription.premiumMessagesUsed,
+            premiumMessagesLimit: subscription.premiumMessagesLimit,
+            tier: subscription.tier,
+            nextReset: subscription.currentPeriodEnd,
+          }
+        }),
+        {
+          status: 429,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          },
+        }
+      );
+    }
+  }
 
   // Determine provider and create appropriate model
   if (
+    modelName.startsWith('openrouter/') ||
     modelName.startsWith('gpt') ||
     modelName.startsWith('o3') ||
     modelName.startsWith('o4') ||
@@ -73,26 +188,52 @@ export const streamChat = httpAction(async (ctx, request) => {
     modelName === 'gpt-4.1' ||
     modelName === 'gpt-4o'
   ) {
-    // OpenAI models
-    const openai = createOpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    if (modelName.startsWith('openrouter/')) {
+      const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY!,
+      });
+      const orModel = modelName.replace(/^openrouter\//, '');
 
-    // Map our custom model IDs to actual API model names if needed
-    let apiModelName = modelName;
-    if (modelName === 'gpt-5' || modelName === 'gpt-5-pro') {
-      // GPT-5 might not be available yet, fallback to gpt-4o
-      apiModelName = 'gpt-4o';
-      console.warn(`Model ${modelName} not yet available, using gpt-4o`);
-    } else if (modelName === 'gpt-4.1') {
-      apiModelName = 'gpt-4-turbo-preview';
-    } else if (modelName === 'o3' || modelName === 'o4-mini') {
-      // O3/O4 models may not be available yet
-      apiModelName = 'gpt-4o';
-      console.warn(`Model ${modelName} not yet available, using gpt-4o`);
+      if (!ALLOWED_OPENROUTER_MODELS.has(orModel)) {
+        return new Response(
+          JSON.stringify({
+            error: 'Model not allowed',
+            code: 'MODEL_NOT_ALLOWED',
+            details: { provider: 'openrouter', model: orModel },
+          }),
+          {
+            status: 400,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'POST, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type',
+            },
+          }
+        );
+      }
+
+      aiModel = openrouter(orModel);
+    } else {
+      // OpenAI models
+      const openai = createOpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+
+      // Map our custom model IDs to actual API model names if needed
+      let apiModelName = modelName;
+      if (modelName === 'gpt-5' || modelName === 'gpt-5-pro') {
+        apiModelName = 'gpt-4o';
+        console.warn(`Model ${modelName} not yet available, using gpt-4o`);
+      } else if (modelName === 'gpt-4.1') {
+        apiModelName = 'gpt-4-turbo-preview';
+      } else if (modelName === 'o3' || modelName === 'o4-mini') {
+        apiModelName = 'gpt-4o';
+        console.warn(`Model ${modelName} not yet available, using gpt-4o`);
+      }
+
+      aiModel = openai(apiModelName);
     }
-
-    aiModel = openai(apiModelName);
   } else if (
     modelName.startsWith('claude') ||
     modelName === 'claude-opus-4.1' ||
@@ -183,6 +324,12 @@ export const streamChat = httpAction(async (ctx, request) => {
             : undefined,
         },
       });
+      
+      // Track message usage for subscription
+      await ctx.runMutation(api.subscriptions.trackMessageUsage, {
+        walletAddress,
+        isPremiumModel,
+      });
     },
   });
 
@@ -193,8 +340,9 @@ export const streamChat = httpAction(async (ctx, request) => {
   // Add CORS headers to the response
   const headers = new Headers(response.headers);
   headers.set('Access-Control-Allow-Origin', '*');
-  headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  headers.set('Access-Control-Allow-Headers', 'Content-Type');
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  headers.set('Access-Control-Allow-Credentials', 'true');
   
   return new Response(response.body, {
     status: response.status,

@@ -5,19 +5,29 @@ import { Rocket, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import AnimatedSection from '@/components/landing/animated-section';
 
 function CTA() {
   return (
-    <section className="relative bg-[linear-gradient(180deg,rgba(12,16,14,1)_0%,rgba(10,12,12,1)_100%)] py-20 md:py-28">
-      <div className="container mx-auto px-4">
-        <Card className="relative overflow-hidden border-white/10 bg-card/70 p-10">
+    <AnimatedSection
+      className="py-20 md:py-28 lg:py-32"
+      auroraVariant="primary"
+      includeRosetta={false}
+      includeHieroglyphs={false}
+      dustIntensity="medium"
+      edgeMask
+      allowOverlap
+      data-bg-variant="primary"
+    >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <Card className="relative overflow-hidden border-border/60 bg-card/70 p-10">
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_80%_20%,rgba(20,241,149,0.12)_0%,rgba(20,241,149,0)_60%)]"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_80%_20%,rgba(20,241,149,0.12)_0%,transparent_60%)]"
           />
           <div className="relative text-center">
             <h2 className="mb-3 font-bold text-3xl md:text-5xl">
-              <span className="bg-gradient-to-r from-primary via-white to-accent bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary via-foreground to-accent bg-clip-text text-transparent">
                 Ready to build with wallet‑native AI?
               </span>
             </h2>
@@ -42,7 +52,7 @@ function CTA() {
           </div>
         </Card>
       </div>
-    </section>
+    </AnimatedSection>
   );
 }
 

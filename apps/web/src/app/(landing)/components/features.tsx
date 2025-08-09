@@ -10,6 +10,7 @@ import {
   Network,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import AnimatedSection from '@/components/landing/animated-section';
 
 const featureList = [
   {
@@ -53,11 +54,20 @@ const featureList = [
 
 function Features() {
   return (
-    <section id="features" className="relative bg-[linear-gradient(180deg,rgba(17,24,21,1)_0%,rgba(12,16,14,1)_100%)] py-20 md:py-28">
-      <div className="container mx-auto px-4">
+    <AnimatedSection
+      id="features"
+      className="py-20 md:py-28 lg:py-32"
+      auroraVariant="primary"
+      includeRosetta={false}
+      includeHieroglyphs={false}
+      dustIntensity="low"
+      allowOverlap
+      data-bg-variant="primary"
+    >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <h2 className="mb-3 font-bold text-3xl md:text-5xl">
-            <span className="bg-gradient-to-r from-emerald-300 via-white to-accent bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-foreground to-accent bg-clip-text text-transparent">
               Build faster with wallet‑native primitives
             </span>
           </h2>
@@ -70,7 +80,7 @@ function Features() {
             const Icon = f.icon;
             return (
               <Card
-                className="group relative overflow-hidden border-white/10 bg-card/70 p-6 backdrop-blur hover:shadow-lg"
+                className="group relative overflow-hidden border-border/60 bg-card/70 p-6 backdrop-blur hover:shadow-lg"
                 key={f.title + i}
               >
                 <div
@@ -89,7 +99,7 @@ function Features() {
           })}
         </div>
       </div>
-    </section>
+    </AnimatedSection>
   );
 }
 

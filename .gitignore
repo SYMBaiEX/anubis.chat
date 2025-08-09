@@ -14,3 +14,4 @@ apps/web/.claude-flow/
 apps/web/.swarm/
 packages/backend/.claude-flow/
 packages/backend/.swarm/
+.env.local

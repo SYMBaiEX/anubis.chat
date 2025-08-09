@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
+import { authTables } from '@convex-dev/auth/server';
 
 // =============================================================================
 // Common Schema Definitions
@@ -165,16 +166,43 @@ const approvalModifications = v.object({
 
 export default defineSchema({
   // =============================================================================
-  // User Management
+  // Convex Auth Tables (Required)
+  // =============================================================================
+  ...authTables,
+
+  // =============================================================================
+  // Extended User Profile & Admin Control
   // =============================================================================
 
-  // Users table for wallet-based authentication
+  // Extended user profiles with Solana wallet integration and admin roles
   users: defineTable({
-    walletAddress: v.string(),
-    publicKey: v.string(),
+    // Convex Auth will handle the core user fields
+    // We extend with our custom fields for wallets, subscriptions, and admin roles
+    walletAddress: v.optional(v.string()), // Solana wallet address
+    publicKey: v.optional(v.string()), // Solana public key
     displayName: v.optional(v.string()),
     avatar: v.optional(v.string()),
-    preferences: v.object({
+    
+    // Admin role system integrated with Convex Auth
+    role: v.optional(v.union(
+      v.literal('user'),
+      v.literal('moderator'),
+      v.literal('admin'), 
+      v.literal('super_admin')
+    )),
+    permissions: v.optional(v.array(
+      v.union(
+        v.literal('user_management'),
+        v.literal('subscription_management'),
+        v.literal('content_moderation'),
+        v.literal('system_settings'),
+        v.literal('financial_data'),
+        v.literal('usage_analytics'),
+        v.literal('admin_management')
+      )
+    )),
+    
+    preferences: v.optional(v.object({
       theme: v.union(v.literal('light'), v.literal('dark')),
       aiModel: v.string(),
       notifications: v.boolean(),
@@ -184,64 +212,50 @@ export default defineSchema({
       streamResponses: v.optional(v.boolean()),
       saveHistory: v.optional(v.boolean()),
       compactMode: v.optional(v.boolean()),
-    }),
-    subscription: v.object({
+    })),
+    
+    subscription: v.optional(v.object({
       tier: v.union(
         v.literal('free'),
         v.literal('pro'),
-        v.literal('enterprise')
+        v.literal('pro_plus')
       ),
-      expiresAt: v.optional(v.number()),
-      tokensUsed: v.number(),
-      tokensLimit: v.number(),
-      features: v.array(v.string()),
+      // Message-based limits instead of tokens
+      messagesUsed: v.optional(v.number()),
+      messagesLimit: v.optional(v.number()),
+      premiumMessagesUsed: v.optional(v.number()), // GPT-4o, Claude usage
+      premiumMessagesLimit: v.optional(v.number()),
+      // Billing information
+      currentPeriodStart: v.optional(v.number()),
+      currentPeriodEnd: v.optional(v.number()),
+      subscriptionTxSignature: v.optional(v.string()), // Solana transaction
+      autoRenew: v.optional(v.boolean()),
+      planPriceSol: v.optional(v.number()), // Price in SOL
+      // Legacy token fields (will migrate)
+      tokensUsed: v.optional(v.number()),
+      tokensLimit: v.optional(v.number()),
+      features: v.optional(v.array(v.string())),
       billingCycle: v.optional(
         v.union(v.literal('monthly'), v.literal('yearly'))
       ),
-      autoRenew: v.optional(v.boolean()),
-    }),
-    createdAt: v.number(),
-    lastActiveAt: v.number(),
-    isActive: v.boolean(),
+    })),
+    
+    createdAt: v.optional(v.number()), // User creation timestamp
+    lastActiveAt: v.optional(v.number()),
+    isActive: v.optional(v.boolean()),
   })
     .index('by_wallet', ['walletAddress'])
     .index('by_active', ['isActive', 'lastActiveAt'])
+    .index('by_role', ['role'])
     .index('by_tier', ['subscription.tier']),
 
   // =============================================================================
-  // Authentication & Security
+  // Additional Authentication & Security (Custom)
   // =============================================================================
+  // Convex Auth handles most authentication, we keep custom tables for Solana-specific features
 
-  // JWT token blacklist for secure logout
-  blacklistedTokens: defineTable({
-    tokenId: v.string(),
-    userId: v.string(), // walletAddress
-    expiresAt: v.number(),
-    blacklistedAt: v.number(),
-    reason: v.optional(v.string()),
-  })
-    .index('by_token', ['tokenId'])
-    .index('by_expires', ['expiresAt'])
-    .index('by_user', ['userId']),
-
-  // Refresh tokens for secure token renewal
-  refreshTokens: defineTable({
-    tokenId: v.string(),
-    userId: v.string(), // walletAddress
-    tokenHash: v.string(),
-    expiresAt: v.number(),
-    createdAt: v.number(),
-    lastUsedAt: v.optional(v.number()),
-    deviceInfo: v.optional(v.string()),
-    ipAddress: v.optional(v.string()),
-    isActive: v.boolean(),
-  })
-    .index('by_token', ['tokenId'])
-    .index('by_user', ['userId', 'isActive'])
-    .index('by_expires', ['expiresAt']),
-
-  // Nonce tracking for wallet authentication
-  nonces: defineTable({
+  // Solana wallet challenges for signature verification (custom addition to Convex Auth)
+  solanaWalletChallenges: defineTable({
     publicKey: v.string(),
     nonce: v.string(),
     challenge: v.string(),
@@ -413,6 +427,93 @@ export default defineSchema({
       dimensions: 1536, // OpenAI embedding dimensions
       filterFields: ['documentId'],
     }),
+
+  // =============================================================================
+  // Subscription & Payment Management
+  // =============================================================================
+
+  // Subscription payments tracking
+  subscriptionPayments: defineTable({
+    userId: v.string(), // walletAddress
+    tier: v.union(v.literal('pro'), v.literal('pro_plus')),
+    amountSol: v.number(),
+    amountUsd: v.optional(v.number()), // USD value at time of payment
+    txSignature: v.string(), // Solana transaction signature
+    paymentDate: v.number(),
+    periodStart: v.number(),
+    periodEnd: v.number(),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('confirmed'),
+      v.literal('failed'),
+      v.literal('refunded')
+    ),
+    confirmations: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId', 'paymentDate'])
+    .index('by_signature', ['txSignature'])
+    .index('by_status', ['status', 'paymentDate']),
+
+  // Message usage tracking per model
+  messageUsage: defineTable({
+    userId: v.string(), // walletAddress
+    model: v.string(), // e.g., 'gpt-4o', 'claude-3.5-sonnet', 'deepseek-chat'
+    modelCategory: v.union(v.literal('premium'), v.literal('standard')),
+    messageCount: v.number(),
+    inputTokens: v.number(),
+    outputTokens: v.number(),
+    estimatedCost: v.number(), // in USD
+    date: v.number(), // Daily aggregation
+    createdAt: v.number(),
+  })
+    .index('by_user_date', ['userId', 'date'])
+    .index('by_user_model', ['userId', 'model', 'date'])
+    .index('by_category', ['userId', 'modelCategory', 'date']),
+
+  // Model access quotas per tier
+  modelQuotas: defineTable({
+    tier: v.union(
+      v.literal('free'),
+      v.literal('pro'),
+      v.literal('pro_plus')
+    ),
+    model: v.string(),
+    modelCategory: v.union(v.literal('premium'), v.literal('standard')),
+    monthlyLimit: v.number(), // -1 for unlimited within total tier limit
+    isAvailable: v.boolean(),
+    priority: v.number(), // Higher priority = preferred for routing
+    costPerMessage: v.number(), // For internal tracking
+    updatedAt: v.number(),
+  })
+    .index('by_tier', ['tier', 'isAvailable'])
+    .index('by_model', ['model', 'tier']),
+
+  // Upgrade prompts and suggestions tracking
+  upgradeSuggestions: defineTable({
+    userId: v.string(), // walletAddress
+    triggerType: v.union(
+      v.literal('limit_reached'),
+      v.literal('premium_model_request'),
+      v.literal('feature_request'),
+      v.literal('usage_milestone')
+    ),
+    currentTier: v.union(
+      v.literal('free'),
+      v.literal('pro'),
+      v.literal('pro_plus')
+    ),
+    suggestedTier: v.union(v.literal('pro'), v.literal('pro_plus')),
+    context: v.optional(v.string()), // What the user was trying to do
+    shown: v.boolean(),
+    converted: v.boolean(),
+    dismissedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index('by_user', ['userId', 'createdAt'])
+    .index('by_conversion', ['converted', 'suggestedTier']),
 
   // =============================================================================
   // Agentic AI System - Feature Branch Version with Blockchain Extensions

@@ -18,9 +18,9 @@ export function PageSidebar() {
 
   // Determine which sidebar content to show based on the current path
   const getSidebarContent = () => {
-    if (pathname.startsWith('/chat')) {
-      return <ChatSidebar />;
-    }
+    // Do not render a page-level sidebar on chat pages.
+    // Chat history is now displayed in the global app sidebar.
+    if (pathname.startsWith('/chat')) return null;
     if (pathname.startsWith('/dashboard')) {
       return <DashboardSidebar />;
     }

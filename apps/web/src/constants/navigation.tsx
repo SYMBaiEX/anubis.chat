@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   Server,
+  Shield,
   User,
   Workflow,
 } from 'lucide-react';
@@ -18,6 +19,7 @@ export interface NavItem {
   inHeader?: boolean;
   inSidebar?: boolean;
   devOnly?: boolean;
+  adminOnly?: boolean; // Admin-only navigation items
 }
 
 const allItems: NavItem[] = [
@@ -77,12 +79,22 @@ const allItems: NavItem[] = [
     inHeader: true,
     inSidebar: true,
   },
+  {
+    label: 'Admin',
+    href: '/admin',
+    icon: Shield,
+    requiresAuth: true,
+    adminOnly: true,
+    inHeader: true,
+    inSidebar: true,
+  },
   // Tailwind Test removed
 ];
 
 export function getHeaderNav(
   isAuthenticated: boolean,
-  isDev: boolean
+  isDev: boolean,
+  isAdmin?: boolean
 ): NavItem[] {
   // Show all pages in navigation; access is still protected by AuthGuard
   return allItems.filter(
@@ -90,13 +102,15 @@ export function getHeaderNav(
       (item.inHeader ?? true) &&
       (!item.devOnly || isDev) &&
       (!item.requiresAuth || isAuthenticated) &&
-      !(item.hideWhenAuth && isAuthenticated)
+      !(item.hideWhenAuth && isAuthenticated) &&
+      (!item.adminOnly || isAdmin)
   );
 }
 
 export function getSidebarNav(
   isAuthenticated: boolean,
-  isDev: boolean
+  isDev: boolean,
+  isAdmin?: boolean
 ): NavItem[] {
   // Show all pages in navigation; access is still protected by AuthGuard
   return allItems.filter(
@@ -104,6 +118,7 @@ export function getSidebarNav(
       (item.inSidebar ?? true) &&
       (!item.devOnly || isDev) &&
       (!item.requiresAuth || isAuthenticated) &&
-      !(item.hideWhenAuth && isAuthenticated)
+      !(item.hideWhenAuth && isAuthenticated) &&
+      (!item.adminOnly || isAdmin)
   );
 }

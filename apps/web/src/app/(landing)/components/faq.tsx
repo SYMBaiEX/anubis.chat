@@ -2,6 +2,7 @@
 
 import React, { memo } from 'react';
 import { Card } from '@/components/ui/card';
+import AnimatedSection from '@/components/landing/animated-section';
 
 const faqs = [
   {
@@ -24,25 +25,33 @@ const faqs = [
 
 function FAQ() {
   return (
-    <section className="relative bg-[linear-gradient(180deg,rgba(17,24,21,1)_0%,rgba(12,16,14,1)_100%)] py-20 md:py-28">
-      <div className="container mx-auto px-4">
+    <AnimatedSection
+      className="py-20 md:py-28 lg:py-32"
+      auroraVariant="primary"
+      includeRosetta={false}
+      includeHieroglyphs={false}
+      dustIntensity="low"
+      allowOverlap
+      data-bg-variant="primary"
+    >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <h2 className="mb-3 font-bold text-3xl md:text-5xl">
-            <span className="bg-gradient-to-r from-primary via-white to-accent bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-foreground to-accent bg-clip-text text-transparent">
               Frequently asked questions
             </span>
           </h2>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           {faqs.map((f) => (
-            <Card key={f.q} className="border-white/10 bg-card/70 p-6">
+            <Card key={f.q} className="border-border/60 bg-card/70 p-6">
               <h3 className="mb-1 font-semibold">{f.q}</h3>
               <p className="text-sm text-muted-foreground">{f.a}</p>
             </Card>
           ))}
         </div>
       </div>
-    </section>
+    </AnimatedSection>
   );
 }
 

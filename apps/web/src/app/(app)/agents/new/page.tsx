@@ -4,24 +4,37 @@ import { useForm } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { Crown, Zap, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuthContext, useSubscriptionStatus } from '@/components/providers/auth-provider';
+import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
+import { getModelsForTier, isPremiumModel, getModelById } from '@/lib/constants/ai-models';
 import { failure, type Result, safeAsync, success } from '@/lib/utils/result';
 
 // =============================================================================
 // Configuration
 // =============================================================================
 
+// Dynamic model configuration based on subscription tier
+const getAvailableModels = (tier: 'free' | 'pro' | 'pro_plus' | undefined) => {
+  if (!tier) return [];
+  
+  const availableModels = getModelsForTier(tier);
+  return availableModels.map(model => ({
+    value: model.id,
+    label: model.name,
+    isPremium: isPremiumModel(model),
+    tier: model.intelligence,
+  }));
+};
+
 const AGENT_CONFIG = {
-  models: [
-    { value: 'gpt-4o', label: 'GPT-4o' },
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-    { value: 'claude-3-5-sonnet', label: 'Claude 3.5 Sonnet' },
-    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
-  ] as const,
   templates: [
     { value: 'general', label: 'General Assistant' },
     { value: 'research', label: 'Research Specialist' },
@@ -163,6 +176,15 @@ async function createAgent(
 
 export default function NewAgentPage() {
   const router = useRouter();
+  const { user } = useAuthContext();
+  const subscription = useSubscriptionStatus();
+  
+  // Check if user has reached agent creation limits
+  const canCreateAgent = subscription ? (
+    subscription.tier === 'free' ? true : // Free tier can create basic agents
+    subscription.tier === 'pro' ? true :  // Pro tier can create advanced agents
+    true // Pro+ tier can create unlimited agents
+  ) : false;
 
   const form = useForm({
     defaultValues: {
@@ -221,9 +243,47 @@ export default function NewAgentPage() {
     },
   });
 
+  // Get available models based on subscription tier
+  const availableModels = getAvailableModels(subscription?.tier);
+
+  if (!subscription) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <h2 className="font-semibold text-xl">Loading subscription...</h2>
+          <p className="text-muted-foreground">Please wait while we load your subscription details.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
-      <h1 className="mb-4 font-semibold text-2xl">Create Agent</h1>
+      <div className="mb-6">
+        <h1 className="mb-2 font-semibold text-2xl">Create Agent</h1>
+        <div className="flex items-center gap-3">
+          <Badge variant={subscription.tier === 'free' ? 'secondary' : 'default'} className="gap-1">
+            <Crown className="h-3 w-3" />
+            {subscription.tier} Plan
+          </Badge>
+          <p className="text-muted-foreground text-sm">
+            {subscription.tier === 'free' && 'Access to basic models and features'}
+            {subscription.tier === 'pro' && 'Access to premium models with limits'}
+            {subscription.tier === 'pro_plus' && 'Full access to all models and features'}
+          </p>
+        </div>
+      </div>
+
+      {/* Tier-specific alerts */}
+      {subscription.tier === 'free' && (
+        <Alert className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Free tier agents are limited to basic models. Upgrade to Pro or Pro+ to access premium AI models and advanced features.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card className="max-w-2xl p-6">
         <form
           className="space-y-4"
@@ -361,6 +421,60 @@ export default function NewAgentPage() {
                     id={`${field.name}-error`}
                   >
                     {field.state.meta.errors[0]}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          {/* AI Model Selection */}
+          <form.Field name="model">
+            {(field) => (
+              <div>
+                <Label htmlFor={field.name}>AI Model</Label>
+                <div className="mt-2 space-y-2">
+                  {availableModels.map((model) => (
+                    <div
+                      key={model.value}
+                      className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                        field.state.value === model.value
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                      onClick={() => field.handleChange(model.value)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            id={model.value}
+                            name={field.name}
+                            checked={field.state.value === model.value}
+                            onChange={() => field.handleChange(model.value)}
+                            className="text-primary"
+                          />
+                          <label htmlFor={model.value} className="font-medium cursor-pointer">
+                            {model.label}
+                          </label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {model.isPremium && (
+                            <Badge variant="outline" className="gap-1 text-xs">
+                              <Zap className="h-3 w-3" />
+                              Premium
+                            </Badge>
+                          )}
+                          <Badge variant="secondary" className="text-xs capitalize">
+                            {model.tier}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {subscription.tier === 'free' && (
+                  <p className="mt-2 text-muted-foreground text-sm">
+                    Upgrade to Pro or Pro+ to access premium models with advanced capabilities.
                   </p>
                 )}
               </div>

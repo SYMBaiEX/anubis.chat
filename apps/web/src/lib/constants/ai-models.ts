@@ -6,7 +6,7 @@
 export interface AIModel {
   id: string;
   name: string;
-  provider: 'openai' | 'anthropic' | 'google';
+  provider: 'openrouter' | 'openai' | 'anthropic' | 'google';
   description: string;
   contextWindow: number;
   maxOutput?: number;
@@ -21,7 +21,136 @@ export interface AIModel {
   default?: boolean;
 }
 
+function createOpenRouterModel(params: {
+  id: string;
+  name: string;
+  description: string;
+  contextWindow: number;
+  maxOutput: number;
+  capabilities: string[];
+  speed: AIModel['speed'];
+  intelligence: AIModel['intelligence'];
+}): AIModel {
+  return {
+    id: params.id,
+    name: params.name,
+    provider: 'openrouter',
+    description: params.description,
+    contextWindow: params.contextWindow,
+    maxOutput: params.maxOutput,
+    pricing: { input: 0, output: 0 },
+    capabilities: params.capabilities,
+    speed: params.speed,
+    intelligence: params.intelligence,
+  };
+}
+
 export const AI_MODELS: AIModel[] = [
+  // OpenRouter (Primary) - curated free/popular models (as of Aug 9, 2025)
+  createOpenRouterModel({
+    id: 'openrouter/openai/gpt-oss-20b:free',
+    name: 'GPT-OSS-20B (Free) – OpenRouter',
+    description: 'OpenAI GPT-OSS-20B open-weight, free tier via OpenRouter',
+    contextWindow: 128_000,
+    maxOutput: 4_096,
+    capabilities: ['coding', 'reasoning', 'general'],
+    speed: 'fast',
+    intelligence: 'advanced',
+  }),
+  createOpenRouterModel({
+    id: 'openrouter/z-ai/glm-4.5-air:free',
+    name: 'GLM-4.5-Air (Free) – OpenRouter',
+    description: 'Zhipu AI GLM-4.5-Air free tier via OpenRouter',
+    contextWindow: 128_000,
+    maxOutput: 8_192,
+    capabilities: ['reasoning', 'coding', 'tools'],
+    speed: 'fast',
+    intelligence: 'advanced',
+  }),
+  createOpenRouterModel({
+    id: 'openrouter/qwen/qwen3-coder:free',
+    name: 'Qwen3-Coder (Free) – OpenRouter',
+    description: 'Qwen3-Coder free tier via OpenRouter, optimized for coding',
+    contextWindow: 128_000,
+    maxOutput: 8_192,
+    capabilities: ['coding', 'analysis'],
+    speed: 'fast',
+    intelligence: 'advanced',
+  }),
+  createOpenRouterModel({
+    id: 'openrouter/moonshotai/kimi-k2:free',
+    name: 'Kimi K2 (Free) – OpenRouter',
+    description: 'Moonshot AI Kimi K2 free tier via OpenRouter',
+    contextWindow: 128_000,
+    maxOutput: 8_192,
+    capabilities: ['agentic', 'coding', 'reasoning'],
+    speed: 'medium',
+    intelligence: 'advanced',
+  }),
+  {
+    id: 'openrouter/anthropic/claude-3.7-sonnet:thinking',
+    name: 'Claude 3.7 Sonnet (Thinking) – OpenRouter',
+    provider: 'openrouter',
+    description: 'Anthropic Claude 3.7 Sonnet with Thinking on OpenRouter',
+    contextWindow: 200_000,
+    maxOutput: 8_192,
+    pricing: { input: 0, output: 0 },
+    capabilities: ['reasoning', 'coding', 'analysis'],
+    speed: 'medium',
+    intelligence: 'expert',
+    released: 'August 2025',
+    default: true,
+  },
+  {
+    id: 'openrouter/openai/gpt-4o-mini',
+    name: 'GPT-4o Mini – OpenRouter',
+    provider: 'openrouter',
+    description: 'OpenAI GPT-4o Mini via OpenRouter, fast and low-cost',
+    contextWindow: 128_000,
+    maxOutput: 4_096,
+    pricing: { input: 0, output: 0 },
+    capabilities: ['general', 'coding', 'analysis'],
+    speed: 'fast',
+    intelligence: 'advanced',
+    released: '2025',
+  },
+  {
+    id: 'openrouter/deepseek/deepseek-chat',
+    name: 'DeepSeek Chat – OpenRouter',
+    provider: 'openrouter',
+    description: 'DeepSeek chat model via OpenRouter',
+    contextWindow: 32_768,
+    maxOutput: 8_192,
+    pricing: { input: 0, output: 0 },
+    capabilities: ['coding', 'math', 'reasoning'],
+    speed: 'fast',
+    intelligence: 'advanced',
+  },
+  {
+    id: 'openrouter/qwen/qwen2.5-coder:32b',
+    name: 'Qwen2.5 Coder 32B – OpenRouter',
+    provider: 'openrouter',
+    description: 'Qwen2.5 Coder 32B free-tier on OpenRouter',
+    contextWindow: 128_000,
+    maxOutput: 8_192,
+    pricing: { input: 0, output: 0 },
+    capabilities: ['coding', 'reasoning'],
+    speed: 'fast',
+    intelligence: 'advanced',
+    released: 'August 2025',
+  },
+  {
+    id: 'openrouter/meta/llama-3.1-70b-instruct',
+    name: 'Llama 3.1 70B Instruct – OpenRouter',
+    provider: 'openrouter',
+    description: 'Meta Llama 3.1 70B instruct via OpenRouter',
+    contextWindow: 131_072,
+    maxOutput: 8_192,
+    pricing: { input: 0, output: 0 },
+    capabilities: ['general', 'coding', 'analysis'],
+    speed: 'medium',
+    intelligence: 'advanced',
+  },
   // OpenAI Models (August 2025)
   {
     id: 'gpt-5',
@@ -224,7 +353,7 @@ export const getModelById = (id: string): AIModel | undefined => {
 };
 
 export const getModelsByProvider = (
-  provider: 'openai' | 'anthropic' | 'google'
+  provider: 'openai' | 'anthropic' | 'google' | 'openrouter'
 ): AIModel[] => {
   return AI_MODELS.filter((model) => model.provider === provider);
 };
@@ -241,4 +370,33 @@ export const formatTokenPrice = (
 ): string => {
   const cost = (tokens / 1_000_000) * pricePerMillion;
   return `$${cost.toFixed(4)}`;
+};
+
+// Determine if a model is premium based on pricing and intelligence
+export const isPremiumModel = (model: AIModel): boolean => {
+  // Premium models are expensive models (>$5 input or intelligence >= expert)
+  return (
+    model.pricing.input > 5 || 
+    model.intelligence === 'frontier' ||
+    model.intelligence === 'expert' ||
+    // Specific high-value models
+    ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4'].includes(model.id)
+  );
+};
+
+// Get models available for a specific subscription tier
+export const getModelsForTier = (tier: 'free' | 'pro' | 'pro_plus'): AIModel[] => {
+  if (tier === 'free') {
+    // Free tier only gets basic, cheap models
+    return AI_MODELS.filter(model => 
+      !isPremiumModel(model) && 
+      (model.pricing.input <= 1 || model.intelligence === 'basic')
+    );
+  } else if (tier === 'pro') {
+    // Pro tier gets all models but with premium usage limits
+    return AI_MODELS;
+  } else {
+    // Pro+ gets unlimited access to all models
+    return AI_MODELS;
+  }
 };

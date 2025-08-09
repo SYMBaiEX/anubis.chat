@@ -1,89 +1,18 @@
 import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
+import { 
+  getCurrentUser,
+  requireAuth,
+  requirePermission,
+  checkMessageUsage,
+  getUserStats
+} from './authHelpers';
 
-// Get user by wallet address
-export const getByWallet = query({
-  args: { walletAddress: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query('users')
-      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
-      .unique();
-  },
-});
 
-// Create or update user profile
-export const upsert = mutation({
-  args: {
-    walletAddress: v.string(),
-    publicKey: v.string(),
-    displayName: v.optional(v.string()),
-    avatar: v.optional(v.string()),
-    preferences: v.optional(
-      v.object({
-        theme: v.union(v.literal('light'), v.literal('dark')),
-        aiModel: v.string(),
-        notifications: v.boolean(),
-        language: v.optional(v.string()),
-        temperature: v.optional(v.number()),
-        maxTokens: v.optional(v.number()),
-        streamResponses: v.optional(v.boolean()),
-        saveHistory: v.optional(v.boolean()),
-        compactMode: v.optional(v.boolean()),
-      })
-    ),
-  },
-  handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query('users')
-      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
-      .unique();
-
-    const now = Date.now();
-
-    if (existing) {
-      // Update existing user
-      await ctx.db.patch(existing._id, {
-        displayName: args.displayName ?? existing.displayName,
-        avatar: args.avatar ?? existing.avatar,
-        preferences: args.preferences ?? existing.preferences,
-        lastActiveAt: now,
-        isActive: true,
-      });
-
-      return await ctx.db.get(existing._id);
-    }
-    // Create new user
-    const userId = await ctx.db.insert('users', {
-      walletAddress: args.walletAddress,
-      publicKey: args.publicKey,
-      displayName: args.displayName,
-      avatar: args.avatar,
-      preferences: args.preferences ?? {
-        theme: 'dark',
-        aiModel: 'gpt-4o',
-        notifications: true,
-      },
-      subscription: {
-        tier: 'free',
-        tokensUsed: 0,
-        tokensLimit: 10_000,
-        features: ['basic_chat', 'document_upload'],
-      },
-      createdAt: now,
-      lastActiveAt: now,
-      isActive: true,
-    });
-
-    return await ctx.db.get(userId);
-  },
-});
-
-// Update user preferences
+// Update user preferences (authenticated)
 export const updatePreferences = mutation({
   args: {
-    walletAddress: v.string(),
     preferences: v.object({
       theme: v.union(v.literal('light'), v.literal('dark')),
       aiModel: v.string(),
@@ -97,14 +26,7 @@ export const updatePreferences = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
-      .unique();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const { user } = await requireAuth(ctx);
 
     await ctx.db.patch(user._id, {
       preferences: {
@@ -118,22 +40,14 @@ export const updatePreferences = mutation({
   },
 });
 
-// Update user profile
+// Update user profile (authenticated)
 export const updateProfile = mutation({
   args: {
-    walletAddress: v.string(),
     displayName: v.optional(v.string()),
     avatar: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
-      .unique();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const { user } = await requireAuth(ctx);
 
     await ctx.db.patch(user._id, {
       displayName: args.displayName ?? user.displayName,
@@ -145,15 +59,21 @@ export const updateProfile = mutation({
   },
 });
 
-// Get user usage statistics
-export const getUsage = query({
-  args: { walletAddress: v.string() },
+// Get current user (authenticated)
+export const getCurrentUserProfile = query({
+  args: {},
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
-      .unique();
+    const user = await getCurrentUser(ctx);
+    return user;
+  },
+});
 
+// Get user usage statistics (authenticated)
+export const getUsage = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    
     if (!user) {
       return null;
     }
@@ -169,7 +89,7 @@ export const getUsage = query({
     const usage = await ctx.db
       .query('usage')
       .withIndex('by_user', (q) =>
-        q.eq('userId', args.walletAddress).gte('createdAt', startOfMonth)
+        q.eq('userId', user._id).gte('createdAt', startOfMonth)
       )
       .collect();
 
@@ -206,10 +126,9 @@ export const getUsage = query({
   },
 });
 
-// Track token usage
+// Track token usage (authenticated user)
 export const trackUsage = mutation({
   args: {
-    userId: v.string(),
     operation: v.union(
       v.literal('completion'),
       v.literal('object_generation'),
@@ -236,9 +155,11 @@ export const trackUsage = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const { user } = await requireAuth(ctx);
+
     // Record usage
     const usageId = await ctx.db.insert('usage', {
-      userId: args.userId,
+      userId: user._id,
       operation: args.operation,
       model: args.model,
       tokensUsed: args.tokensUsed,
@@ -250,37 +171,24 @@ export const trackUsage = mutation({
     });
 
     // Update user's token count
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.userId))
-      .unique();
-
-    if (user) {
-      await ctx.db.patch(user._id, {
-        subscription: {
-          ...user.subscription,
-          tokensUsed: user.subscription.tokensUsed + args.tokensUsed,
-        },
-        lastActiveAt: Date.now(),
-      });
-    }
+    await ctx.db.patch(user._id, {
+      subscription: {
+        ...user.subscription,
+        tokensUsed: user.subscription.tokensUsed + args.tokensUsed,
+      },
+      lastActiveAt: Date.now(),
+    });
 
     return await ctx.db.get(usageId);
   },
 });
 
-// Deactivate user account
-export const deactivate = mutation({
-  args: { walletAddress: v.string() },
-  handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query('users')
-      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
-      .unique();
 
-    if (!user) {
-      throw new Error('User not found');
-    }
+// Deactivate current user account (authenticated)
+export const deactivateAccount = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const { user } = await requireAuth(ctx);
 
     await ctx.db.patch(user._id, {
       isActive: false,
