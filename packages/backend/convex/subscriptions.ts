@@ -132,7 +132,7 @@ export const trackMessageUsageByWallet = mutation({
     };
 
     if (args.isPremiumModel) {
-      updates.subscription.premiumMessagesUsed = (user.subscription.premiumMessagesUsed ?? 0) + 1;
+      updates.subscription.premiumMessagesUsed = user.subscription.premiumMessagesUsed + 1;
     }
 
     await ctx.db.patch(user._id, updates);
@@ -206,16 +206,24 @@ export const trackDetailedMessageUsage = mutation({
     const modelConfig = MODEL_COSTS[args.model as keyof typeof MODEL_COSTS];
     const isPremium = modelConfig?.category === 'premium';
 
+    // Ensure subscription values are initialized properly
+    const currentMessagesUsed = user.subscription?.messagesUsed ?? 0;
+    const currentPremiumMessagesUsed = user.subscription?.premiumMessagesUsed ?? 0;
+    const messagesLimit = user.subscription?.messagesLimit ?? 50;
+    const premiumMessagesLimit = user.subscription?.premiumMessagesLimit ?? 0;
+    
     // Update user's message counts
     const updates: any = {
       subscription: {
         ...user.subscription,
-        messagesUsed: user.subscription.messagesUsed + 1,
+        messagesUsed: currentMessagesUsed + 1,
+        messagesLimit: messagesLimit,
+        premiumMessagesLimit: premiumMessagesLimit,
       },
     };
 
     if (isPremium) {
-      updates.subscription.premiumMessagesUsed = user.subscription.premiumMessagesUsed + 1;
+      updates.subscription.premiumMessagesUsed = currentPremiumMessagesUsed + 1;
     }
 
     await ctx.db.patch(user._id, updates);
@@ -419,39 +427,33 @@ export const getSubscriptionStatusByWallet = query({
 
     const tierConfig = SUBSCRIPTION_TIERS[user.subscription.tier];
     const now = Date.now();
-
-    // Handle legacy data with defaults
-    const messagesUsed = user.subscription.messagesUsed ?? 0;
-    const messagesLimit = user.subscription.messagesLimit ?? tierConfig.messagesLimit;
-    const premiumMessagesUsed = user.subscription.premiumMessagesUsed ?? 0;
-    const premiumMessagesLimit = user.subscription.premiumMessagesLimit ?? tierConfig.premiumMessagesLimit;
-    const currentPeriodStart = user.subscription.currentPeriodStart ?? now;
-    const currentPeriodEnd = user.subscription.currentPeriodEnd ?? (now + 30 * 24 * 60 * 60 * 1000);
-    const autoRenew = user.subscription.autoRenew ?? false;
-    const planPriceSol = user.subscription.planPriceSol ?? tierConfig.priceSol;
     
-    const messageUsagePercent = messagesLimit > 0 ? (messagesUsed / messagesLimit) * 100 : 0;
-    const premiumUsagePercent = premiumMessagesLimit > 0 ? (premiumMessagesUsed / premiumMessagesLimit) * 100 : 0;
-    const isExpired = currentPeriodEnd < now;
+    const messageUsagePercent = user.subscription.messagesLimit > 0 
+      ? (user.subscription.messagesUsed / user.subscription.messagesLimit) * 100 
+      : 0;
+    const premiumUsagePercent = user.subscription.premiumMessagesLimit > 0 
+      ? (user.subscription.premiumMessagesUsed / user.subscription.premiumMessagesLimit) * 100 
+      : 0;
+    const isExpired = user.subscription.currentPeriodEnd < now;
 
     return {
       tier: user.subscription.tier,
-      messagesUsed,
-      messagesLimit,
-      messagesRemaining: Math.max(0, messagesLimit - messagesUsed),
-      premiumMessagesUsed,
-      premiumMessagesLimit,
-      premiumMessagesRemaining: Math.max(0, premiumMessagesLimit - premiumMessagesUsed),
+      messagesUsed: user.subscription.messagesUsed,
+      messagesLimit: user.subscription.messagesLimit,
+      messagesRemaining: Math.max(0, user.subscription.messagesLimit - user.subscription.messagesUsed),
+      premiumMessagesUsed: user.subscription.premiumMessagesUsed,
+      premiumMessagesLimit: user.subscription.premiumMessagesLimit,
+      premiumMessagesRemaining: Math.max(0, user.subscription.premiumMessagesLimit - user.subscription.premiumMessagesUsed),
       messageUsagePercent,
       premiumUsagePercent,
-      currentPeriodStart,
-      currentPeriodEnd,
+      currentPeriodStart: user.subscription.currentPeriodStart,
+      currentPeriodEnd: user.subscription.currentPeriodEnd,
       isExpired,
-      autoRenew,
-      planPriceSol,
+      autoRenew: user.subscription.autoRenew,
+      planPriceSol: user.subscription.planPriceSol,
       features: user.subscription.features,
       availableModels: tierConfig.availableModels,
-      daysRemaining: Math.max(0, Math.floor((currentPeriodEnd - now) / (24 * 60 * 60 * 1000))),
+      daysRemaining: Math.max(0, Math.floor((user.subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000))),
     };
   },
 });
@@ -468,39 +470,33 @@ export const getSubscriptionStatus = query({
 
     const tierConfig = SUBSCRIPTION_TIERS[user.subscription.tier];
     const now = Date.now();
-
-    // Handle legacy data with defaults
-    const messagesUsed = user.subscription.messagesUsed ?? 0;
-    const messagesLimit = user.subscription.messagesLimit ?? tierConfig.messagesLimit;
-    const premiumMessagesUsed = user.subscription.premiumMessagesUsed ?? 0;
-    const premiumMessagesLimit = user.subscription.premiumMessagesLimit ?? tierConfig.premiumMessagesLimit;
-    const currentPeriodStart = user.subscription.currentPeriodStart ?? now;
-    const currentPeriodEnd = user.subscription.currentPeriodEnd ?? (now + 30 * 24 * 60 * 60 * 1000);
-    const autoRenew = user.subscription.autoRenew ?? false;
-    const planPriceSol = user.subscription.planPriceSol ?? tierConfig.priceSol;
     
-    const messageUsagePercent = messagesLimit > 0 ? (messagesUsed / messagesLimit) * 100 : 0;
-    const premiumUsagePercent = premiumMessagesLimit > 0 ? (premiumMessagesUsed / premiumMessagesLimit) * 100 : 0;
-    const isExpired = currentPeriodEnd < now;
+    const messageUsagePercent = user.subscription.messagesLimit > 0 
+      ? (user.subscription.messagesUsed / user.subscription.messagesLimit) * 100 
+      : 0;
+    const premiumUsagePercent = user.subscription.premiumMessagesLimit > 0 
+      ? (user.subscription.premiumMessagesUsed / user.subscription.premiumMessagesLimit) * 100 
+      : 0;
+    const isExpired = user.subscription.currentPeriodEnd < now;
 
     return {
       tier: user.subscription.tier,
-      messagesUsed,
-      messagesLimit,
-      messagesRemaining: Math.max(0, messagesLimit - messagesUsed),
-      premiumMessagesUsed,
-      premiumMessagesLimit,
-      premiumMessagesRemaining: Math.max(0, premiumMessagesLimit - premiumMessagesUsed),
+      messagesUsed: user.subscription.messagesUsed,
+      messagesLimit: user.subscription.messagesLimit,
+      messagesRemaining: Math.max(0, user.subscription.messagesLimit - user.subscription.messagesUsed),
+      premiumMessagesUsed: user.subscription.premiumMessagesUsed,
+      premiumMessagesLimit: user.subscription.premiumMessagesLimit,
+      premiumMessagesRemaining: Math.max(0, user.subscription.premiumMessagesLimit - user.subscription.premiumMessagesUsed),
       messageUsagePercent,
       premiumUsagePercent,
-      currentPeriodStart,
-      currentPeriodEnd,
+      currentPeriodStart: user.subscription.currentPeriodStart,
+      currentPeriodEnd: user.subscription.currentPeriodEnd,
       isExpired,
-      autoRenew,
-      planPriceSol,
+      autoRenew: user.subscription.autoRenew,
+      planPriceSol: user.subscription.planPriceSol,
       features: user.subscription.features,
       availableModels: tierConfig.availableModels,
-      daysRemaining: Math.max(0, Math.floor((currentPeriodEnd - now) / (24 * 60 * 60 * 1000))),
+      daysRemaining: Math.max(0, Math.floor((user.subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000))),
     };
   },
 });

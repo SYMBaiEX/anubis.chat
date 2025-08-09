@@ -62,3 +62,182 @@ View the Convex dashboard at https://dashboard.convex.dev/d/veracious-capybara-7
 8/9/2025, 4:24:30 AM [CONVEX H(POST /stream-chat)] [LOG] 'User message created, preparing AI response with model:' 'o4-mini'
 8/9/2025, 4:24:30 AM [CONVEX H(POST /stream-chat)] [WARN] 'Model o4-mini not yet available, using gpt-4o'
 8/9/2025, 4:24:30 AM [CONVEX H(POST /stream-chat)] [LOG] 'Creating streaming response with AI model...'
+- Preparing Convex functions...
+
+✔ 04:26:41 Convex functions ready! (2.89s)
+- Preparing Convex functions...
+
+✔ 04:27:02 Convex functions ready! (2.93s)
+- Preparing Convex functions...
+
+✔ 04:27:14 Convex functions ready! (2.67s)
+8/9/2025, 5:23:50 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 5:23:50 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s979t<redacted>nbfxh Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 5:23:50 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>ryE0Q and refresh token s97ch<redacted>nbgtr for session sd7d6<redacted>na0bn'
+8/9/2025, 5:23:50 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s979t<redacted>nbfxh (first use) for new refresh token s97ch<redacted>nbgtr'
+8/9/2025, 6:23:49 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 6:23:49 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s97ch<redacted>nbgtr Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 6:23:49 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>8uBIg and refresh token s97c2<redacted>nataw for session sd7d6<redacted>na0bn'
+8/9/2025, 6:23:49 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s97ch<redacted>nbgtr (first use) for new refresh token s97c2<redacted>nataw'
+8/9/2025, 7:23:47 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 7:23:47 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s97c2<redacted>nataw Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 7:23:47 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>5Yv7Q and refresh token s973a<redacted>nb5pg for session sd7d6<redacted>na0bn'
+8/9/2025, 7:23:47 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s97c2<redacted>nataw (first use) for new refresh token s973a<redacted>nb5pg'
+8/9/2025, 8:23:46 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 8:23:46 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s973a<redacted>nb5pg Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 8:23:46 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>F7DXQ and refresh token s974h<redacted>narpc for session sd7d6<redacted>na0bn'
+8/9/2025, 8:23:46 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s973a<redacted>nb5pg (first use) for new refresh token s974h<redacted>narpc'
+8/9/2025, 9:23:45 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 9:23:45 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s974h<redacted>narpc Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 9:23:45 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>fj3hA and refresh token s975v<redacted>nazk3 for session sd7d6<redacted>na0bn'
+8/9/2025, 9:23:45 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s974h<redacted>narpc (first use) for new refresh token s975v<redacted>nazk3'
+8/9/2025, 10:23:43 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 10:23:43 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s975v<redacted>nazk3 Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 10:23:43 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>O2BpQ and refresh token s97cx<redacted>naxy9 for session sd7d6<redacted>na0bn'
+8/9/2025, 10:23:43 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s975v<redacted>nazk3 (first use) for new refresh token s97cx<redacted>naxy9'
+8/9/2025, 11:04:59 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: signIn'
+8/9/2025, 11:04:59 AM [CONVEX M(auth:store)] [DEBUG] 'signInImpl args:' {
+  generateTokens: true,
+  type: 'signIn',
+  userId: 'k1741snd4kjq0h1nf5edc9v2417nb8x1'
+}
+8/9/2025, 11:04:59 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>dJxRQ and refresh token s975f<redacted>nbfnt for session sd786<redacted>nbkq1'
+8/9/2025, 11:05:00 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:05:00 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s975f<redacted>nbfnt Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:05:00 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>0Uusg and refresh token s9720<redacted>nba6z for session sd786<redacted>nbkq1'
+8/9/2025, 11:05:00 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s975f<redacted>nbfnt (first use) for new refresh token s9720<redacted>nba6z'
+8/9/2025, 11:06:34 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:06:34 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s9720<redacted>nba6z Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:06:34 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>-Y_1Q and refresh token s977m<redacted>nady2 for session sd786<redacted>nbkq1'
+8/9/2025, 11:06:34 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s9720<redacted>nba6z (first use) for new refresh token s977m<redacted>nady2'
+8/9/2025, 11:06:55 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:06:55 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s977m<redacted>nady2 Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:06:55 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>6cSlA and refresh token s978y<redacted>nbpx9 for session sd786<redacted>nbkq1'
+8/9/2025, 11:06:55 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s977m<redacted>nady2 (first use) for new refresh token s978y<redacted>nbpx9'
+8/9/2025, 11:07:09 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:07:09 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s978y<redacted>nbpx9 Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:07:09 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>QNyTA and refresh token s979y<redacted>nb1jg for session sd786<redacted>nbkq1'
+8/9/2025, 11:07:09 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s978y<redacted>nbpx9 (first use) for new refresh token s979y<redacted>nb1jg'
+8/9/2025, 11:07:24 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:07:24 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s979y<redacted>nb1jg Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:07:24 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>slwvg and refresh token s9746<redacted>nb9z0 for session sd786<redacted>nbkq1'
+8/9/2025, 11:07:24 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s979y<redacted>nb1jg (first use) for new refresh token s9746<redacted>nb9z0'
+8/9/2025, 11:08:50 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:08:50 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s9746<redacted>nb9z0 Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:08:50 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>-7CcA and refresh token s9715<redacted>nam9j for session sd786<redacted>nbkq1'
+8/9/2025, 11:08:50 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s9746<redacted>nb9z0 (first use) for new refresh token s9715<redacted>nam9j'
+8/9/2025, 11:08:52 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:08:52 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s9715<redacted>nam9j Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:08:52 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>jbZ1Q and refresh token s976b<redacted>nb7st for session sd786<redacted>nbkq1'
+8/9/2025, 11:08:52 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s9715<redacted>nam9j (first use) for new refresh token s976b<redacted>nb7st'
+8/9/2025, 11:09:13 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:09:13 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s976b<redacted>nb7st Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:09:13 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>gYgSw and refresh token s9782<redacted>naz1b for session sd786<redacted>nbkq1'
+8/9/2025, 11:09:13 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s976b<redacted>nb7st (first use) for new refresh token s9782<redacted>naz1b'
+8/9/2025, 11:09:32 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:09:32 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s9782<redacted>naz1b Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:09:32 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>j0SOQ and refresh token s970d<redacted>na8zn for session sd786<redacted>nbkq1'
+8/9/2025, 11:09:32 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s9782<redacted>naz1b (first use) for new refresh token s970d<redacted>na8zn'
+8/9/2025, 11:11:39 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:11:39 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s970d<redacted>na8zn Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:11:39 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>QcDPQ and refresh token s972h<redacted>nbybz for session sd786<redacted>nbkq1'
+8/9/2025, 11:11:39 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s970d<redacted>na8zn (first use) for new refresh token s972h<redacted>nbybz'
+8/9/2025, 11:12:31 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:12:31 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s972h<redacted>nbybz Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:12:31 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>DCcZA and refresh token s979m<redacted>natap for session sd786<redacted>nbkq1'
+8/9/2025, 11:12:31 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s972h<redacted>nbybz (first use) for new refresh token s979m<redacted>natap'
+8/9/2025, 11:12:32 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:12:32 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s979m<redacted>natap Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:12:32 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>b2ROg and refresh token s978y<redacted>nbdp5 for session sd786<redacted>nbkq1'
+8/9/2025, 11:12:32 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s979m<redacted>natap (first use) for new refresh token s978y<redacted>nbdp5'
+8/9/2025, 11:20:31 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:20:31 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s978y<redacted>nbdp5 Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:20:31 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>PB6lA and refresh token s976c<redacted>na5vt for session sd786<redacted>nbkq1'
+8/9/2025, 11:20:31 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s978y<redacted>nbdp5 (first use) for new refresh token s976c<redacted>na5vt'
+8/9/2025, 11:20:42 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:20:42 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s976c<redacted>na5vt Session ID: sd786<redacted>nbkq1'
+8/9/2025, 11:20:42 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>3CHZQ and refresh token s97bg<redacted>nbkrt for session sd786<redacted>nbkq1'
+8/9/2025, 11:20:42 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s976c<redacted>na5vt (first use) for new refresh token s97bg<redacted>nbkrt'
+8/9/2025, 11:23:42 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 11:23:42 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s97cx<redacted>naxy9 Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 11:23:42 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>RajbA and refresh token s971m<redacted>na6c1 for session sd7d6<redacted>na0bn'
+8/9/2025, 11:23:42 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s97cx<redacted>naxy9 (first use) for new refresh token s971m<redacted>na6c1'
+8/9/2025, 12:08:18 PM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 12:08:18 PM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s971m<redacted>na6c1 Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 12:08:18 PM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>SoApA and refresh token s9714<redacted>nazva for session sd7d6<redacted>na0bn'
+8/9/2025, 12:08:18 PM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s971m<redacted>na6c1 (first use) for new refresh token s9714<redacted>nazva'
+8/9/2025, 12:08:43 PM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 12:08:43 PM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s9714<redacted>nazva Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 12:08:43 PM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>Tt2fw and refresh token s9794<redacted>nba2s for session sd7d6<redacted>na0bn'
+8/9/2025, 12:08:43 PM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s9714<redacted>nazva (first use) for new refresh token s9794<redacted>nba2s'
+- Preparing Convex functions...
+
+✔ 12:09:20 Convex functions ready! (2.74s)
+8/9/2025, 12:09:24 PM [CONVEX M(fixSubscription:fixCurrentUserSubscription)] Uncaught Error: User not found
+    at handler (../convex/fixSubscription.ts:13:16)
+
+8/9/2025, 12:10:00 PM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 12:10:00 PM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s9794<redacted>nba2s Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 12:10:00 PM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>7eXVA and refresh token s97fk<redacted>nbv3t for session sd7d6<redacted>na0bn'
+8/9/2025, 12:10:00 PM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s9794<redacted>nba2s (first use) for new refresh token s97fk<redacted>nbv3t'
+- Preparing Convex functions...
+
+✔ 12:10:26 Convex functions ready! (2.96s)
+- Preparing Convex functions...
+
+✔ 12:10:50 Convex functions ready! (2.96s)
+- Preparing Convex functions...
+
+✔ 12:11:05 Convex functions ready! (2.97s)
+8/9/2025, 12:11:37 PM [CONVEX H(POST /stream-chat)] [LOG] 'User message created, preparing AI response with model:' 'o4-mini'
+8/9/2025, 12:11:37 PM [CONVEX H(POST /stream-chat)] [WARN] 'Model o4-mini not yet available, using gpt-4o'
+8/9/2025, 12:11:37 PM [CONVEX H(POST /stream-chat)] [LOG] 'Creating streaming response with AI model...'
+8/9/2025, 12:11:47 PM [CONVEX H(POST /stream-chat)] [LOG] 'User message created, preparing AI response with model:' 'o4-mini'
+8/9/2025, 12:11:47 PM [CONVEX H(POST /stream-chat)] [WARN] 'Model o4-mini not yet available, using gpt-4o'
+8/9/2025, 12:11:47 PM [CONVEX H(POST /stream-chat)] [LOG] 'Creating streaming response with AI model...'
+- Preparing Convex functions...
+
+✔ 12:12:37 Convex functions ready! (2.92s)
+- Preparing Convex functions...
+
+✔ 12:12:45 Convex functions ready! (2.67s)
+- Preparing Convex functions...
+
+✔ 12:12:50 Convex functions ready! (2.51s)
+- Preparing Convex functions...
+
+✔ 12:12:57 Convex functions ready! (2.39s)
+- Preparing Convex functions...
+
+✔ 12:13:03 Convex functions ready! (2.97s)
+- Preparing Convex functions...
+
+✔ 12:13:14 Convex functions ready! (2.5s)
+- Preparing Convex functions...
+
+✔ 12:13:34 Convex functions ready! (2.62s)
+8/9/2025, 12:18:15 PM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 12:18:15 PM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s97bg<redacted>nbkrt Session ID: sd786<redacted>nbkq1'
+8/9/2025, 12:18:15 PM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>kkrCA and refresh token s9789<redacted>nbehv for session sd786<redacted>nbkq1'
+8/9/2025, 12:18:15 PM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s97bg<redacted>nbkrt (first use) for new refresh token s9789<redacted>nbehv'
+- Preparing Convex functions...
+
+✔ 12:20:45 Convex functions ready! (2.85s)
+- Preparing Convex functions...
+
+✔ 12:24:12 Convex functions ready! (2.64s)
+- Preparing Convex functions...
+
+✔ 12:25:50 Convex functions ready! (2.81s)
+- Preparing Convex functions...
+
+✔ 12:26:05 Convex functions ready! (2.69s)
+- Preparing Convex functions...
+
+✔ 12:27:23 Convex functions ready! (2.56s)
+- Preparing Convex functions...
+
+✔ 12:28:55 Convex functions ready! (2.98s)
+- Preparing Convex functions...
+
+✔ 12:29:04 Convex functions ready! (2.81s)

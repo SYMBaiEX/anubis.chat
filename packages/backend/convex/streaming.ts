@@ -104,7 +104,7 @@ export const streamChat = httpAction(async (ctx, request) => {
   }
 
   // Select AI model based on chat configuration (move this up to fix reference error)
-  const modelName = model || chat.model || 'gpt-5';
+  const modelName = model || chat.model || 'gpt-5-nano';
   
   // Create user message
   const userMessage = await ctx.runMutation(api.messages.create, {
@@ -131,7 +131,7 @@ export const streamChat = httpAction(async (ctx, request) => {
   // Prepare AI model
   let aiModel;
   
-  // Check premium model access
+  // Check premium model access (gpt-5-nano is not premium, it's an efficient nano model)
   const isPremiumModel = ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4', 'gpt-5', 'gpt-5-pro', 'o3'].includes(modelName);
   
   if (isPremiumModel) {
@@ -237,6 +237,7 @@ export const streamChat = httpAction(async (ctx, request) => {
         apiModelName = 'gpt-4o';
         console.warn(`Model ${modelName} not yet available, using gpt-4o`);
       }
+      // gpt-5-nano is now available and will be used directly
 
       aiModel = openai(apiModelName);
     }

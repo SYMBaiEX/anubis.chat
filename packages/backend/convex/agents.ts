@@ -262,7 +262,7 @@ export const initializeDefaults = mutation({
       return 'Default agents already exist';
     }
 
-    // Create default public agents
+    // Create default public agents with varied models
     const defaultAgents = [
       {
         name: 'ISIS General Assistant',
@@ -279,7 +279,7 @@ export const initializeDefaults = mutation({
           'swapTokens',
           'getTokenPrice',
         ],
-        model: 'gpt-4',
+        model: 'gpt-5-nano',
         temperature: 0.7,
         maxTokens: 4000,
       },
@@ -297,7 +297,7 @@ export const initializeDefaults = mutation({
           'getMarketData',
           'analyzeToken',
         ],
-        model: 'gpt-4',
+        model: 'claude-3.5-sonnet',
         temperature: 0.3,
         maxTokens: 3000,
       },
@@ -315,7 +315,7 @@ export const initializeDefaults = mutation({
           'provideLiquidity',
           'getDeFiPositions',
         ],
-        model: 'gpt-4',
+        model: 'openrouter/deepseek/deepseek-chat',
         temperature: 0.5,
         maxTokens: 3500,
       },
@@ -333,7 +333,7 @@ export const initializeDefaults = mutation({
           'listNFT',
           'buyNFT',
         ],
-        model: 'gpt-4',
+        model: 'gemini-2.0-flash',
         temperature: 0.6,
         maxTokens: 3000,
       },
@@ -350,7 +350,7 @@ export const initializeDefaults = mutation({
           'getProposals',
           'delegateVote',
         ],
-        model: 'gpt-4',
+        model: 'openrouter/openai/gpt-4o-mini',
         temperature: 0.4,
         maxTokens: 3000,
       },
@@ -367,7 +367,7 @@ export const initializeDefaults = mutation({
           'analyzePerformance',
           'getAssetAllocation',
         ],
-        model: 'gpt-4',
+        model: 'openrouter/qwen/qwen3-coder:free',
         temperature: 0.3,
         maxTokens: 3500,
       },
