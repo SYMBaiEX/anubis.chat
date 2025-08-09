@@ -241,3 +241,26 @@ View the Convex dashboard at https://dashboard.convex.dev/d/veracious-capybara-7
 - Preparing Convex functions...
 
 ✔ 12:29:04 Convex functions ready! (2.81s)
+- Preparing Convex functions...
+
+✔ 12:40:51 Convex functions ready! (2.57s)
+- Preparing Convex functions...
+
+✔ 12:41:03 Convex functions ready! (2.85s)
+- Preparing Convex functions...
+
+✔ 12:41:13 Convex functions ready! (2.53s)
+- Preparing Convex functions...
+
+✔ 12:41:39 Convex functions ready! (2.91s)
+- Preparing Convex functions...
+
+✔ 12:42:17 Convex functions ready! (3.47s)
+- Preparing Convex functions...
+
+✔ 12:42:40 Convex functions ready! (2.84s)
+- Preparing Convex functions...
+
+✔ 12:42:52 Convex functions ready! (2.78s)
+8/9/2025, 12:48:10 PM [CONVEX H(POST /stream-chat)] [LOG] 'User message created, preparing AI response with model:' 'gpt-5-nano'
+8/9/2025, 12:48:10 PM [CONVEX H(POST /stream-chat)] [LOG] 'Creating streaming response with AI model...'

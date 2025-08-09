@@ -62,6 +62,16 @@ export const canUseModel = query({
       return { allowed: false, reason: 'Authentication required' };
     }
 
+    // Admins have unlimited access to all models
+    if (user.role && user.role !== 'user') {
+      return {
+        allowed: true,
+        isAdmin: true,
+        remaining: Infinity,
+        premiumRemaining: Infinity,
+      };
+    }
+
     const tierConfig = SUBSCRIPTION_TIERS[user.subscription.tier];
     const modelConfig = MODEL_COSTS[args.model as keyof typeof MODEL_COSTS];
 
@@ -149,6 +159,17 @@ export const trackMessageUsage = mutation({
 
     // User is guaranteed to exist due to requireAuth
 
+    // Skip tracking for admins - they have unlimited usage
+    if (user.role && user.role !== 'user') {
+      return {
+        messagesUsed: 0,
+        messagesRemaining: Infinity,
+        premiumMessagesUsed: 0,
+        premiumMessagesRemaining: Infinity,
+        isAdmin: true,
+      };
+    }
+
     // Update user's message counts
     const updates: any = {
       subscription: {
@@ -202,6 +223,17 @@ export const trackDetailedMessageUsage = mutation({
     const { user } = await requireAuth(ctx);
 
     // User is guaranteed to exist due to requireAuth
+
+    // Skip tracking for admins - they have unlimited usage
+    if (user.role && user.role !== 'user') {
+      return {
+        messagesUsed: 0,
+        messagesRemaining: Infinity,
+        premiumMessagesUsed: 0,
+        premiumMessagesRemaining: Infinity,
+        isAdmin: true,
+      };
+    }
 
     const modelConfig = MODEL_COSTS[args.model as keyof typeof MODEL_COSTS];
     const isPremium = modelConfig?.category === 'premium';
@@ -466,6 +498,30 @@ export const getSubscriptionStatus = query({
 
     if (!user) {
       return null;
+    }
+
+    // Admins have unlimited access
+    if (user.role && user.role !== 'user') {
+      return {
+        tier: 'admin',
+        isAdmin: true,
+        messagesUsed: 0,
+        messagesLimit: Infinity,
+        messagesRemaining: Infinity,
+        premiumMessagesUsed: 0,
+        premiumMessagesLimit: Infinity,
+        premiumMessagesRemaining: Infinity,
+        messageUsagePercent: 0,
+        premiumUsagePercent: 0,
+        currentPeriodStart: Date.now(),
+        currentPeriodEnd: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
+        isExpired: false,
+        autoRenew: false,
+        planPriceSol: 0,
+        features: ['unlimited_everything'],
+        availableModels: ['gpt-5-nano', 'gpt-4o', 'gpt-4o-mini', 'claude-3.5-sonnet', 'deepseek-chat', 'deepseek-r1'],
+        daysRemaining: Infinity,
+      };
     }
 
     const tierConfig = SUBSCRIPTION_TIERS[user.subscription.tier];
