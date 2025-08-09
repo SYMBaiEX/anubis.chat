@@ -12,18 +12,18 @@ export function AdminDebug() {
   const { isAuthenticated, user } = useAuthContext();
   
   // Use the original admin auth
-  const adminStatus = useQuery(api.adminAuth.checkAdminStatus);
+  const adminStatus = useQuery(api.adminAuth.checkCurrentUserAdminStatus);
   
   // Get all admins for debugging
-  const allAdmins = useQuery(api.adminAuth.getAdmins);
+  const allAdmins = useQuery(api.adminAuth.getAllAdmins);
   
   // Mutations
-  const initializeAdmins = useMutation(api.adminAuth.initializeAdminsFromEnv);
+  const syncAdminsFromEnv = useMutation(api.adminAuth.syncAdminWallets);
 
   const handleInitializeAdmins = async () => {
     try {
-      const result = await initializeAdmins();
-      toast.success(`Admin system initialized: ${result.totalAdmins} admins created`);
+      const result = await syncAdminsFromEnv();
+      toast.success(`Admin system initialized: ${result.totalAdminWallets} admin wallets synced`);
     } catch (error) {
       toast.error('Failed to initialize admin system: ' + (error as Error).message);
     }

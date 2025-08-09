@@ -470,6 +470,9 @@ export const getSubscriptionAnalytics = query({
     
     const analytics = {
       ...userStats,
+      totalUsers: userStats.total,
+      activeUsers: userStats.active,
+      tierCounts: userStats.byTier, // Map byTier to tierCounts for frontend compatibility
       totalRevenue: 0, // Would calculate from payments table when implemented
       newUsersThisMonth: users.filter(u => {
         const monthAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);

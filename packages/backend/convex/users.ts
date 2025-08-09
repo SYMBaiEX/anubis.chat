@@ -34,6 +34,7 @@ export const updatePreferences = mutation({
         ...args.preferences,
       },
       lastActiveAt: Date.now(),
+      updatedAt: Date.now(),
     });
 
     return await ctx.db.get(user._id);
@@ -53,6 +54,7 @@ export const updateProfile = mutation({
       displayName: args.displayName ?? user.displayName,
       avatar: args.avatar ?? user.avatar,
       lastActiveAt: Date.now(),
+      updatedAt: Date.now(),
     });
 
     return await ctx.db.get(user._id);
@@ -176,6 +178,7 @@ export const trackUsage = mutation({
         ? { ...user.subscription, tokensUsed: (user.subscription.tokensUsed ?? 0) + args.tokensUsed }
         : undefined,
       lastActiveAt: Date.now(),
+      updatedAt: Date.now(),
     });
 
     return await ctx.db.get(usageId);
@@ -192,6 +195,7 @@ export const deactivateAccount = mutation({
     await ctx.db.patch(user._id, {
       isActive: false,
       lastActiveAt: Date.now(),
+      updatedAt: Date.now(),
     });
 
     return { success: true };

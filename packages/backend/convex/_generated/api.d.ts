@@ -22,6 +22,8 @@ import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
 import type * as memories from "../memories.js";
 import type * as messages from "../messages.js";
+import type * as migrations_fixBlacklistedTokens from "../migrations/fixBlacklistedTokens.js";
+import type * as migrations_removeUpdatedAt from "../migrations/removeUpdatedAt.js";
 import type * as migrations from "../migrations.js";
 import type * as streaming from "../streaming.js";
 import type * as subscriptions from "../subscriptions.js";
@@ -60,6 +62,8 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   memories: typeof memories;
   messages: typeof messages;
+  "migrations/fixBlacklistedTokens": typeof migrations_fixBlacklistedTokens;
+  "migrations/removeUpdatedAt": typeof migrations_removeUpdatedAt;
   migrations: typeof migrations;
   streaming: typeof streaming;
   subscriptions: typeof subscriptions;

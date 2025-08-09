@@ -155,6 +155,7 @@ export const verifyAndSignIn = internalMutation({
       // Update user status and role if needed
       const updates: any = {
         lastActiveAt: Date.now(),
+        updatedAt: Date.now(),
         isActive: true,
       };
       
@@ -225,6 +226,7 @@ export const verifyAndSignIn = internalMutation({
       },
       createdAt: Date.now(),
       lastActiveAt: Date.now(),
+      updatedAt: Date.now(),
       isActive: true,
     });
     

@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { api } from '@convex/_generated/api';
+import { MigrationButton } from './migration-button';
 
 function AdminDashboardContent() {
   const { user } = useAuthContext();
@@ -33,7 +34,7 @@ function AdminDashboardContent() {
   const [tierFilter, setTierFilter] = useState<'all' | 'free' | 'pro' | 'pro_plus'>('all');
   
   // Check if user is admin (for display purposes - auth is handled by AdminGuard)
-  const adminStatus = useQuery(api.adminAuth.checkAdminStatus);
+  const adminStatus = useQuery(api.adminAuth.checkCurrentUserAdminStatus);
   
   // Get admin data
   const allUsers = useQuery(api.adminAuth.getAllUsers, {
@@ -44,12 +45,12 @@ function AdminDashboardContent() {
   
   const subscriptionAnalytics = useQuery(api.adminAuth.getSubscriptionAnalytics);
   const systemUsage = useQuery(api.adminAuth.getSystemUsage);
-  const admins = useQuery(api.adminAuth.getAdmins);
+  const admins = useQuery(api.adminAuth.getAllAdmins);
   
   // Mutations
   const updateUserSubscription = useMutation(api.adminAuth.updateUserSubscription);
-  const addAdmin = useMutation(api.adminAuth.addAdmin);
-  const initializeAdmins = useMutation(api.adminAuth.initializeAdminsFromEnv);
+  const promoteToAdmin = useMutation(api.adminAuth.promoteUserToAdmin);
+  const syncAdminsFromEnv = useMutation(api.adminAuth.syncAdminWallets);
   
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -57,7 +58,7 @@ function AdminDashboardContent() {
   // Initialize admin system if no admins exist
   const handleInitializeAdmins = async () => {
     try {
-      await initializeAdmins();
+      await syncAdminsFromEnv();
       toast.success('Admin system initialized successfully');
     } catch (error) {
       toast.error('Failed to initialize admin system: ' + (error as Error).message);
@@ -82,13 +83,16 @@ function AdminDashboardContent() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-3 mb-2">
-          <Shield className="h-6 w-6" />
-          <h1 className="font-semibold text-2xl">Admin Dashboard</h1>
-          <Badge variant="outline" className="gap-1">
-            <Crown className="h-3 w-3" />
-            {adminStatus?.adminInfo?.role}
-          </Badge>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <Shield className="h-6 w-6" />
+            <h1 className="font-semibold text-2xl">Admin Dashboard</h1>
+            <Badge variant="outline" className="gap-1">
+              <Crown className="h-3 w-3" />
+              {adminStatus?.adminInfo?.role}
+            </Badge>
+          </div>
+          <MigrationButton />
         </div>
         <p className="text-muted-foreground">
           System administration and user management
@@ -104,9 +108,9 @@ function AdminDashboardContent() {
               <span className="font-medium text-sm">Total Users</span>
             </div>
             <div className="mt-2">
-              <div className="font-bold text-2xl">{subscriptionAnalytics.totalUsers}</div>
+              <div className="font-bold text-2xl">{subscriptionAnalytics?.totalUsers || 0}</div>
               <p className="text-muted-foreground text-xs">
-                {subscriptionAnalytics.activeUsers} active
+                {subscriptionAnalytics?.activeUsers || 0} active
               </p>
             </div>
           </Card>
@@ -117,7 +121,7 @@ function AdminDashboardContent() {
               <span className="font-medium text-sm">Revenue</span>
             </div>
             <div className="mt-2">
-              <div className="font-bold text-2xl">{subscriptionAnalytics.totalRevenue} SOL</div>
+              <div className="font-bold text-2xl">{subscriptionAnalytics?.totalRevenue || 0} SOL</div>
               <p className="text-muted-foreground text-xs">
                 Monthly recurring
               </p>
@@ -130,7 +134,7 @@ function AdminDashboardContent() {
               <span className="font-medium text-sm">Messages</span>
             </div>
             <div className="mt-2">
-              <div className="font-bold text-2xl">{systemUsage.totalMessages}</div>
+              <div className="font-bold text-2xl">{systemUsage?.totalMessages || 0}</div>
               <p className="text-muted-foreground text-xs">
                 Total sent
               </p>
@@ -143,7 +147,7 @@ function AdminDashboardContent() {
               <span className="font-medium text-sm">Chats</span>
             </div>
             <div className="mt-2">
-              <div className="font-bold text-2xl">{systemUsage.totalChats}</div>
+              <div className="font-bold text-2xl">{systemUsage?.totalChats || 0}</div>
               <p className="text-muted-foreground text-xs">
                 Conversations
               </p>
@@ -174,14 +178,18 @@ function AdminDashboardContent() {
               />
             </div>
             <Select
-              className="w-32"
               value={tierFilter}
-              onChange={(e) => setTierFilter(e.target.value as typeof tierFilter)}
+              onValueChange={(value) => setTierFilter(value as typeof tierFilter)}
             >
-              <SelectItem value="all">All Tiers</SelectItem>
-              <SelectItem value="free">Free</SelectItem>
-              <SelectItem value="pro">Pro</SelectItem>
-              <SelectItem value="pro_plus">Pro+</SelectItem>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tiers</SelectItem>
+                <SelectItem value="free">Free</SelectItem>
+                <SelectItem value="pro">Pro</SelectItem>
+                <SelectItem value="pro_plus">Pro+</SelectItem>
+              </SelectContent>
             </Select>
           </div>
 
@@ -230,19 +238,24 @@ function AdminDashboardContent() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                           <Select
-                             className="w-24"
-                             onChange={(e) =>
-                               handleUpdateSubscription(
-                                 user.walletAddress,
-                                 e.target.value as 'free' | 'pro' | 'pro_plus'
-                               )
-                             }
-                           >
-                             <SelectItem value="free">Free</SelectItem>
-                             <SelectItem value="pro">Pro</SelectItem>
-                             <SelectItem value="pro_plus">Pro+</SelectItem>
-                           </Select>
+                          <Select
+                            value={user.subscription.tier}
+                            onValueChange={(value) =>
+                              handleUpdateSubscription(
+                                user.walletAddress,
+                                value as 'free' | 'pro' | 'pro_plus'
+                              )
+                            }
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="free">Free</SelectItem>
+                              <SelectItem value="pro">Pro</SelectItem>
+                              <SelectItem value="pro_plus">Pro+</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -255,21 +268,21 @@ function AdminDashboardContent() {
 
         {/* Subscriptions Tab */}
         <TabsContent value="subscriptions" className="space-y-4">
-          {subscriptionAnalytics && (
+          {subscriptionAnalytics && subscriptionAnalytics.tierCounts && (
             <div className="grid gap-4 md:grid-cols-3">
               <Card className="p-6">
                 <h3 className="font-medium mb-2">Free Tier</h3>
-                <div className="font-bold text-2xl">{subscriptionAnalytics.tierCounts.free}</div>
+                <div className="font-bold text-2xl">{subscriptionAnalytics.tierCounts.free || 0}</div>
                 <p className="text-muted-foreground text-sm">users</p>
               </Card>
               <Card className="p-6">
                 <h3 className="font-medium mb-2">Pro Tier</h3>
-                <div className="font-bold text-2xl">{subscriptionAnalytics.tierCounts.pro}</div>
+                <div className="font-bold text-2xl">{subscriptionAnalytics.tierCounts.pro || 0}</div>
                 <p className="text-muted-foreground text-sm">users</p>
               </Card>
               <Card className="p-6">
                 <h3 className="font-medium mb-2">Pro+ Tier</h3>
-                <div className="font-bold text-2xl">{subscriptionAnalytics.tierCounts.pro_plus}</div>
+                <div className="font-bold text-2xl">{subscriptionAnalytics.tierCounts.pro_plus || 0}</div>
                 <p className="text-muted-foreground text-sm">users</p>
               </Card>
             </div>
@@ -343,19 +356,19 @@ function AdminDashboardContent() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <div className="text-sm text-muted-foreground">Total Users</div>
-                    <div className="font-bold text-lg">{systemUsage.totalUsers}</div>
+                    <div className="font-bold text-lg">{systemUsage?.totalUsers || 0}</div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Active Users</div>
-                    <div className="font-bold text-lg">{systemUsage.activeUsers}</div>
+                    <div className="font-bold text-lg">{systemUsage?.activeUsers || 0}</div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Total Chats</div>
-                    <div className="font-bold text-lg">{systemUsage.totalChats}</div>
+                    <div className="font-bold text-lg">{systemUsage?.totalChats || 0}</div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Total Messages</div>
-                    <div className="font-bold text-lg">{systemUsage.totalMessages}</div>
+                    <div className="font-bold text-lg">{systemUsage?.totalMessages || 0}</div>
                   </div>
                 </div>
               </Card>

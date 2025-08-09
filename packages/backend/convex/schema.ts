@@ -242,7 +242,7 @@ export default defineSchema({
     
     createdAt: v.optional(v.number()), // User creation timestamp
     lastActiveAt: v.optional(v.number()),
-    updatedAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()), // Last update timestamp
     isActive: v.optional(v.boolean()),
   })
     .index('by_wallet', ['walletAddress'])
@@ -271,10 +271,13 @@ export default defineSchema({
 
   // Blacklisted tokens for auth/session invalidation
   blacklistedTokens: defineTable({
-    token: v.string(),
+    token: v.optional(v.string()), // Made optional for migration
+    tokenId: v.optional(v.string()), // Legacy field
+    userId: v.optional(v.string()), // Legacy field  
+    blacklistedAt: v.optional(v.number()), // Legacy field
     reason: v.optional(v.string()),
     expiresAt: v.number(),
-    createdAt: v.number(),
+    createdAt: v.optional(v.number()), // Made optional for migration
   }).index('by_expires', ['expiresAt']),
 
   // Nonces for wallet login / challenge flows

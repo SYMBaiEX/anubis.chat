@@ -144,7 +144,10 @@ export const trackMessageUsageByWallet = mutation({
       },
     } as const;
 
-    await ctx.db.patch(user._id, updates);
+    await ctx.db.patch(user._id, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
   },
 });
 
@@ -180,7 +183,10 @@ export const trackMessageUsage = mutation({
       },
     } as const;
 
-    await ctx.db.patch(user._id, updates);
+    await ctx.db.patch(user._id, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
 
     // Track detailed usage
     const today = new Date();
@@ -255,7 +261,10 @@ export const trackDetailedMessageUsage = mutation({
       },
     } as const;
 
-    await ctx.db.patch(user._id, updates);
+    await ctx.db.patch(user._id, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
 
     // Track detailed usage
     const today = new Date();
@@ -355,6 +364,7 @@ export const processPayment = mutation({
         planPriceSol: tierConfig.priceSol,
         features: tierConfig.features,
       },
+      updatedAt: Date.now(),
     });
 
     return {
@@ -432,6 +442,7 @@ export const initializeUserSubscription = mutation({
     await ctx.db.patch(user._id, {
       subscription,
       lastActiveAt: now,
+      updatedAt: now,
     });
 
     return subscription;
@@ -577,6 +588,7 @@ export const resetMonthlyUsage = mutation({
               currentPeriodStart: now,
               currentPeriodEnd: periodEnd,
             },
+            updatedAt: now,
           });
         } catch (error) {
           console.error(`Failed to reset usage for user ${user._id}:`, error);

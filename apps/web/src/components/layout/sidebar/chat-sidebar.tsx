@@ -89,7 +89,7 @@ export function ChatSidebar({ selectedChatId, onChatSelect }: ChatSidebarProps) 
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-hidden p-2">
         {chats === undefined ? (
           <div className="p-2">
             <LoadingStates variant="skeleton" />
@@ -99,33 +99,55 @@ export function ChatSidebar({ selectedChatId, onChatSelect }: ChatSidebarProps) 
             No conversations yet
           </div>
         ) : (
-          <div className="space-y-2">
-            {chats.map((chat) => (
-              <div
-                key={chat._id}
-                className={cn(
-                  'flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 transition-colors',
-                  activeChatId === chat._id
-                    ? 'bg-white/10'
-                    : 'hover:bg-white/5'
-                )}
-                onClick={() => handleChatSelect(chat._id)}
-              >
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm">{chat.title}</p>
-                  <p className="text-muted-foreground text-[10px]">{formatChatDate(chat._creationTime)}</p>
-                </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6"
-                  onClick={(e) => handleDeleteChat(chat._id, e)}
+          <div className="flex flex-col h-full">
+            {/* Chat list container with fixed height for 4 items */}
+            <div 
+              className={cn(
+                "space-y-2 overflow-y-auto",
+                // Calculate max height based on approximately 4 chat items
+                // Each item is roughly 56px (py-2 + content + gap)
+                "max-h-[224px]", // 4 items * 56px
+                // Add subtle scrollbar styling
+                "scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent",
+                // Add padding-right to account for scrollbar when present
+                chats.length > 4 && "pr-1"
+              )}
+            >
+              {chats.map((chat) => (
+                <div
+                  key={chat._id}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 transition-colors',
+                    activeChatId === chat._id
+                      ? 'bg-white/10'
+                      : 'hover:bg-white/5'
+                  )}
+                  onClick={() => handleChatSelect(chat._id)}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                  <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm">{chat.title}</p>
+                    <p className="text-muted-foreground text-[10px]">{formatChatDate(chat._creationTime)}</p>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 flex-shrink-0"
+                    onClick={(e) => handleDeleteChat(chat._id, e)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            {/* Show count indicator if more than 4 chats */}
+            {chats.length > 4 && (
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <p className="text-[10px] text-center text-muted-foreground">
+                  Showing {Math.min(4, chats.length)} of {chats.length} chats
+                </p>
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>

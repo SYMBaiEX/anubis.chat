@@ -149,7 +149,7 @@ export function SystemSettingsGuard({ children }: { children: React.ReactNode })
 }
 
 export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
-  const adminStatus = useQuery(api.adminAuth.checkAdminStatus);
+  const adminStatus = useQuery(api.adminAuth.checkCurrentUserAdminStatus);
   
   if (adminStatus?.adminInfo?.role !== 'super_admin') {
     return (

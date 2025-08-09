@@ -95,8 +95,26 @@ export async function hasPermission(
   permission: string
 ): Promise<boolean> {
   const user = await getCurrentUser(ctx);
-  if (!user || !user.permissions) return false;
+  if (!user) return false;
   
+  // Super admins have all permissions
+  if (user.role === 'super_admin') return true;
+  
+  // Admins have most permissions by default
+  if (user.role === 'admin') {
+    const adminImplicitPermissions = [
+      'user_management',
+      'subscription_management',
+      'content_moderation',
+      'usage_analytics'
+    ];
+    if (adminImplicitPermissions.includes(permission)) {
+      return true;
+    }
+  }
+  
+  // Check explicit permissions
+  if (!user.permissions) return false;
   return user.permissions.includes(permission as any);
 }
 
@@ -109,6 +127,26 @@ export async function requirePermission(
 ) {
   const { user } = await requireAuth(ctx);
   
+  // Super admins have all permissions
+  if (user.role === 'super_admin') {
+    return { user };
+  }
+  
+  // Admins have most permissions by default
+  if (user.role === 'admin') {
+    // Admin role has implicit permissions for most operations
+    const adminImplicitPermissions = [
+      'user_management',
+      'subscription_management',
+      'content_moderation',
+      'usage_analytics'
+    ];
+    if (adminImplicitPermissions.includes(permission)) {
+      return { user };
+    }
+  }
+  
+  // Check explicit permissions for all roles
   if (!user.permissions || !user.permissions.includes(permission as any)) {
     throw new Error(`Permission '${permission}' required`);
   }
