@@ -151,8 +151,8 @@ export const create = mutation({
         workflowId,
         stepId: step.stepId,
         name: step.name,
-        type: 'task' as const,
-        position: step.order,
+         type: 'task',
+         position: step.order,
         config: {
           originalType: step.type,
           agentId: step.agentId,
@@ -163,6 +163,7 @@ export const create = mutation({
         },
         createdAt: now,
         updatedAt: now,
+         order: step.order,
       });
     }
 
@@ -543,7 +544,7 @@ export const getRecentActivity = query({
         const workflow = await ctx.db.get(execution.workflowId);
         return {
           ...execution,
-          workflowName: workflow?.name || 'Unknown Workflow',
+          workflowName: workflow?.name ?? 'Unknown Workflow',
         };
       })
     );
@@ -563,7 +564,16 @@ export const saveVisualWorkflow = mutation({
     name: v.string(),
     description: v.optional(v.string()),
     walletAddress: v.string(),
-    category: v.optional(v.string()),
+    category: v.optional(
+      v.union(
+        v.literal('research'),
+        v.literal('automation'),
+        v.literal('data'),
+        v.literal('communication'),
+        v.literal('development'),
+        v.literal('custom')
+      )
+    ),
     tags: v.optional(v.array(v.string())),
     isTemplate: v.optional(v.boolean()),
     isPublic: v.optional(v.boolean()),

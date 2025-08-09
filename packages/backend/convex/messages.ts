@@ -17,7 +17,7 @@ export const getByChatId = query({
       .withIndex('by_chat', (q) => q.eq('chatId', args.chatId));
 
     if (args.before !== undefined) {
-      query = query.filter((q) => q.lt(q.field('createdAt'), args.before!));
+      query = query.filter((q) => q.lt(q.field('createdAt'), args.before ?? 0));
     }
 
     const messages = await query.order('desc').take(limit);
@@ -91,9 +91,9 @@ export const create = mutation({
         .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
         .unique();
 
-      if (user) {
+      if (user && user.subscription) {
         // Check if user has reached message limits
-        if (user.subscription.messagesUsed >= user.subscription.messagesLimit) {
+        if ((user.subscription.messagesUsed ?? 0) >= (user.subscription.messagesLimit ?? 0)) {
           throw new Error('Monthly message limit reached. Please upgrade your subscription.');
         }
 
@@ -105,8 +105,10 @@ export const create = mutation({
           throw new Error('Premium models require Pro or Pro+ subscription.');
         }
 
-        if (isPremiumModel && 
-            user.subscription.premiumMessagesUsed >= user.subscription.premiumMessagesLimit) {
+        if (
+          isPremiumModel &&
+          (user.subscription.premiumMessagesUsed ?? 0) >= (user.subscription.premiumMessagesLimit ?? 0)
+        ) {
           throw new Error('Premium message quota exhausted. Please upgrade or wait for next billing cycle.');
         }
       }
@@ -128,13 +130,12 @@ export const create = mutation({
     });
 
     // Update chat's last message timestamp and counters
-    const tokenCount =
-      args.tokenCount || args.metadata?.usage?.totalTokens || 0;
+    const tokenCount = args.tokenCount ?? args.metadata?.usage?.totalTokens ?? 0;
     await ctx.db.patch(args.chatId, {
       lastMessageAt: now,
       updatedAt: now,
-      messageCount: (await ctx.db.get(args.chatId))!.messageCount + 1,
-      totalTokens: (await ctx.db.get(args.chatId))!.totalTokens + tokenCount,
+      messageCount: (await ctx.db.get(args.chatId))?.messageCount! + 1,
+      totalTokens: ((await ctx.db.get(args.chatId))?.totalTokens ?? 0) + tokenCount,
     });
 
     return await ctx.db.get(messageId);

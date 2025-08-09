@@ -5,7 +5,7 @@
  */
 
 import { v } from 'convex/values';
-import type { Doc, Id } from './_generated/dataModel';
+import type { Doc } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // =============================================================================
@@ -216,12 +216,12 @@ export const remove = mutation({
 
     // Check if agent has active executions (from upstream)
     // If execution tables are not present in schema, skip active execution check gracefully
-    let activeExecutions: Array<Doc<'agentExecutions'>> = [] as any;
+    let activeExecutions: Array<Doc<'agentExecutions'>> = [];
     try {
       activeExecutions = await ctx.db
-        .query('agentExecutions' as any)
-        .withIndex('by_agent' as any, (q: any) => q.eq('agentId', args.id))
-        .filter((q: any) =>
+        .query('agentExecutions')
+        .withIndex('by_agent', (q) => q.eq('agentId', args.id))
+        .filter((q) =>
           q.or(
             q.eq(q.field('status'), 'pending'),
             q.eq(q.field('status'), 'running'),
@@ -230,7 +230,7 @@ export const remove = mutation({
         )
         .collect();
     } catch {
-      activeExecutions = [] as any;
+      activeExecutions = [];
     }
 
     if (activeExecutions.length > 0) {
@@ -664,21 +664,19 @@ export const getAgentStats = query({
     const activeAgents = agents.filter((agent) => agent.isActive);
 
     // Get execution counts
-    let allExecutions: Array<Array<Doc<'agentExecutions'>>> = [] as any;
+    let allExecutions: Array<Array<Doc<'agentExecutions'>>> = [];
     try {
       allExecutions = await Promise.all(
         agents.map(
           (agent) =>
             ctx.db
-              .query('agentExecutions' as any)
-              .withIndex('by_agent' as any, (q: any) =>
-                q.eq('agentId', agent._id)
-              )
-              .collect() as unknown as Promise<Array<Doc<'agentExecutions'>>>
+              .query('agentExecutions')
+              .withIndex('by_agent', (q) => q.eq('agentId', agent._id))
+              .collect()
         )
       );
     } catch {
-      allExecutions = [] as any;
+      allExecutions = [];
     }
 
     const executions = allExecutions.flat();
@@ -710,7 +708,7 @@ export const getAgentStats = query({
           ? completedExecutions
               .filter((exec) => exec.completedAt && exec.startedAt)
               .reduce(
-                (sum, exec) => sum + (exec.completedAt! - exec.startedAt),
+                (sum, exec) => sum + ((exec.completedAt ?? 0) - exec.startedAt),
                 0
               ) / completedExecutions.length
           : 0,

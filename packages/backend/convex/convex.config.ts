@@ -2,8 +2,7 @@ import persistentTextStreaming from '@convex-dev/persistent-text-streaming/conve
 import { defineApp } from 'convex/server';
 
 const app = defineApp();
-app.use(persistentTextStreaming, {
-  llmProvider: 'openai',
-});
+// The plugin currently doesn't expose typed options; keep a simple config object
+app.use(persistentTextStreaming, { name: 'persistent-text-streaming' as const });
 
 export default app;

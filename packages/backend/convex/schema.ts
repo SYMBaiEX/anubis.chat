@@ -242,6 +242,7 @@ export default defineSchema({
     
     createdAt: v.optional(v.number()), // User creation timestamp
     lastActiveAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
   })
     .index('by_wallet', ['walletAddress'])
@@ -267,6 +268,24 @@ export default defineSchema({
     .index('by_nonce', ['nonce'])
     .index('by_expires', ['expiresAt'])
     .index('by_used', ['used']),
+
+  // Blacklisted tokens for auth/session invalidation
+  blacklistedTokens: defineTable({
+    token: v.string(),
+    reason: v.optional(v.string()),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  }).index('by_expires', ['expiresAt']),
+
+  // Nonces for wallet login / challenge flows
+  nonces: defineTable({
+    walletAddress: v.string(),
+    nonce: v.string(),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index('by_expires', ['expiresAt'])
+    .index('by_wallet', ['walletAddress']),
 
   // =============================================================================
   // Chat System
@@ -584,6 +603,100 @@ export default defineSchema({
     .index('by_chat', ['chatId'])
     .index('by_agent', ['agentId', 'isActive'])
     .index('by_user', ['userId', 'isActive']),
+
+  // Agent Executions (runtime execution records for agents)
+  agentExecutions: defineTable({
+    agentId: v.id('agents'),
+    walletAddress: v.string(),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('running'),
+      v.literal('waiting_approval'),
+      v.literal('completed'),
+      v.literal('failed'),
+      v.literal('cancelled')
+    ),
+    input: v.string(),
+    result: v.optional(
+      v.object({
+        success: v.boolean(),
+        output: v.string(),
+        finalStep: v.number(),
+        totalSteps: v.number(),
+        toolsUsed: v.array(v.string()),
+        tokensUsed: v.object({
+          input: v.number(),
+          output: v.number(),
+          total: v.number(),
+        }),
+        executionTime: v.number(),
+      })
+    ),
+    error: v.optional(v.string()),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+    metadata: v.optional(v.any()),
+  })
+    .index('by_agent', ['agentId'])
+    .index('by_user', ['walletAddress'])
+    .index('by_status', ['status']),
+
+  // Agent Steps (detailed steps within an execution)
+  agentSteps: defineTable({
+    executionId: v.id('agentExecutions'),
+    stepNumber: v.number(),
+    type: v.union(
+      v.literal('reasoning'),
+      v.literal('tool_call'),
+      v.literal('parallel_tools'),
+      v.literal('human_approval'),
+      v.literal('workflow_step')
+    ),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('running'),
+      v.literal('completed'),
+      v.literal('failed'),
+      v.literal('waiting_approval')
+    ),
+    input: v.optional(v.string()),
+    toolCalls: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          name: v.string(),
+          parameters: v.any(),
+          requiresApproval: v.boolean(),
+        })
+      )
+    ),
+    output: v.optional(v.string()),
+    reasoning: v.optional(v.string()),
+    toolResults: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          success: v.boolean(),
+          result: v.any(),
+          error: v.optional(
+            v.object({
+              code: v.string(),
+              message: v.string(),
+              details: v.optional(v.any()),
+              retryable: v.optional(v.boolean()),
+            })
+          ),
+          executionTime: v.number(),
+          metadata: v.optional(v.any()),
+        })
+      )
+    ),
+    error: v.optional(v.string()),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index('by_execution', ['executionId', 'stepNumber'])
+    .index('by_status', ['status']),
 
   // Blockchain Transactions initiated by agents
   blockchainTransactions: defineTable({

@@ -92,8 +92,8 @@ export const promoteUserToAdmin = mutation({
 
     // Default permissions based on role
     const defaultPermissions = {
-      moderator: ['content_moderation'],
-      admin: ['user_management', 'subscription_management', 'content_moderation', 'usage_analytics'],
+      moderator: ['content_moderation'] as const,
+      admin: ['user_management', 'subscription_management', 'content_moderation', 'usage_analytics'] as const,
       super_admin: [
         'user_management',
         'subscription_management', 
@@ -102,13 +102,13 @@ export const promoteUserToAdmin = mutation({
         'financial_data',
         'usage_analytics',
         'admin_management'
-      ]
-    };
+      ] as const,
+    } as const;
 
     // Update user with admin role and permissions
     await ctx.db.patch(targetUser._id, {
       role: args.role,
-      permissions: args.permissions || defaultPermissions[args.role],
+      permissions: (args.permissions as any) ?? ([...defaultPermissions[args.role]] as unknown as typeof targetUser.permissions),
       updatedAt: Date.now(),
     });
 

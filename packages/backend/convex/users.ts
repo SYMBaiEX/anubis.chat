@@ -116,10 +116,10 @@ export const getUsage = query({
           cost: totalCost,
           requests: usage.length,
         },
-        limit: user.subscription.tokensLimit,
+        limit: user.subscription?.tokensLimit ?? 0,
         remaining: Math.max(
           0,
-          user.subscription.tokensLimit - user.subscription.tokensUsed
+          (user.subscription?.tokensLimit ?? 0) - (user.subscription?.tokensUsed ?? 0)
         ),
       },
     };
@@ -172,10 +172,9 @@ export const trackUsage = mutation({
 
     // Update user's token count
     await ctx.db.patch(user._id, {
-      subscription: {
-        ...user.subscription,
-        tokensUsed: user.subscription.tokensUsed + args.tokensUsed,
-      },
+      subscription: user.subscription
+        ? { ...user.subscription, tokensUsed: (user.subscription.tokensUsed ?? 0) + args.tokensUsed }
+        : undefined,
       lastActiveAt: Date.now(),
     });
 

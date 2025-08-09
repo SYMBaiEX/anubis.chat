@@ -83,7 +83,7 @@ export const streamChat = httpAction(async (ctx, request) => {
   });
 
   // Check message limits (skip for admins)
-  if (!adminStatus.isAdmin && subscription.messagesUsed >= subscription.messagesLimit) {
+  if (!adminStatus.isAdmin && (subscription.messagesUsed ?? 0) >= (subscription.messagesLimit ?? 0)) {
     return new Response(
       JSON.stringify({ 
         error: 'Monthly message limit reached. Please upgrade your subscription.',
@@ -164,7 +164,7 @@ export const streamChat = httpAction(async (ctx, request) => {
       );
     }
     
-    if (subscription.premiumMessagesUsed >= subscription.premiumMessagesLimit) {
+    if ((subscription.premiumMessagesUsed ?? 0) >= (subscription.premiumMessagesLimit ?? 0)) {
       return new Response(
         JSON.stringify({ 
           error: 'Premium message quota exhausted. Please upgrade or wait for next billing cycle.',

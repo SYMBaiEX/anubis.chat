@@ -4,7 +4,7 @@
  */
 
 import { getAuthUserId } from "@convex-dev/auth/server";
-import type { QueryCtx, MutationCtx, ActionCtx } from "./_generated/server";
+import type { QueryCtx, MutationCtx } from "./_generated/server";
 import type { Id, Doc } from "./_generated/dataModel";
 
 // =============================================================================
@@ -14,7 +14,7 @@ import type { Id, Doc } from "./_generated/dataModel";
 /**
  * Get the current authenticated user with full profile data
  */
-export async function getCurrentUser(ctx: QueryCtx | MutationCtx | ActionCtx) {
+export async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
   if (!userId) {
     return null;
@@ -27,7 +27,7 @@ export async function getCurrentUser(ctx: QueryCtx | MutationCtx | ActionCtx) {
 /**
  * Require authentication - throws if user is not authenticated
  */
-export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
+export async function requireAuth(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
   if (!userId) {
     throw new Error("Authentication required");
@@ -44,7 +44,7 @@ export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
 /**
  * Get the current user's wallet address
  */
-export async function getCurrentWalletAddress(ctx: QueryCtx | MutationCtx | ActionCtx) {
+export async function getCurrentWalletAddress(ctx: QueryCtx | MutationCtx) {
   const user = await getCurrentUser(ctx);
   return user?.walletAddress || null;
 }
@@ -56,7 +56,7 @@ export async function getCurrentWalletAddress(ctx: QueryCtx | MutationCtx | Acti
 /**
  * Check if the current user has admin privileges
  */
-export async function isCurrentUserAdmin(ctx: QueryCtx | MutationCtx | ActionCtx): Promise<boolean> {
+export async function isCurrentUserAdmin(ctx: QueryCtx | MutationCtx): Promise<boolean> {
   const user = await getCurrentUser(ctx);
   if (!user) return false;
   
@@ -66,7 +66,7 @@ export async function isCurrentUserAdmin(ctx: QueryCtx | MutationCtx | ActionCtx
 /**
  * Require admin privileges - throws if user is not an admin
  */
-export async function requireAdmin(ctx: QueryCtx | MutationCtx | ActionCtx, requiredRole?: 'moderator' | 'admin' | 'super_admin') {
+export async function requireAdmin(ctx: QueryCtx | MutationCtx, requiredRole?: 'moderator' | 'admin' | 'super_admin') {
   const { user } = await requireAuth(ctx);
   
   if (!user.role || user.role === 'user') {
@@ -91,7 +91,7 @@ export async function requireAdmin(ctx: QueryCtx | MutationCtx | ActionCtx, requ
  * Check if user has a specific permission
  */
 export async function hasPermission(
-  ctx: QueryCtx | MutationCtx | ActionCtx, 
+  ctx: QueryCtx | MutationCtx, 
   permission: string
 ): Promise<boolean> {
   const user = await getCurrentUser(ctx);
@@ -104,7 +104,7 @@ export async function hasPermission(
  * Require a specific permission - throws if user doesn't have it
  */
 export async function requirePermission(
-  ctx: QueryCtx | MutationCtx | ActionCtx, 
+  ctx: QueryCtx | MutationCtx, 
   permission: string
 ) {
   const { user } = await requireAuth(ctx);
@@ -124,7 +124,7 @@ export async function requirePermission(
  * Check if the current user owns a resource
  */
 export async function isResourceOwner(
-  ctx: QueryCtx | MutationCtx | ActionCtx,
+  ctx: QueryCtx | MutationCtx,
   resource: { walletAddress?: string; ownerId?: string; userId?: string }
 ): Promise<boolean> {
   const user = await getCurrentUser(ctx);
@@ -144,7 +144,7 @@ export async function isResourceOwner(
  * Require resource ownership or admin privileges
  */
 export async function requireOwnershipOrAdmin(
-  ctx: QueryCtx | MutationCtx | ActionCtx,
+  ctx: QueryCtx | MutationCtx,
   resource: { walletAddress?: string; ownerId?: string; userId?: string }
 ) {
   const { user } = await requireAuth(ctx);
@@ -167,7 +167,7 @@ export async function requireOwnershipOrAdmin(
  * Check if user has an active subscription of a specific tier
  */
 export async function hasSubscriptionTier(
-  ctx: QueryCtx | MutationCtx | ActionCtx,
+  ctx: QueryCtx | MutationCtx,
   tier: 'free' | 'pro' | 'pro_plus'
 ): Promise<boolean> {
   const user = await getCurrentUser(ctx);
@@ -184,7 +184,7 @@ export async function hasSubscriptionTier(
  * Require a minimum subscription tier
  */
 export async function requireSubscriptionTier(
-  ctx: QueryCtx | MutationCtx | ActionCtx,
+  ctx: QueryCtx | MutationCtx,
   tier: 'free' | 'pro' | 'pro_plus'
 ) {
   const { user } = await requireAuth(ctx);
@@ -199,7 +199,7 @@ export async function requireSubscriptionTier(
 /**
  * Check user's message usage against limits
  */
-export async function checkMessageUsage(ctx: QueryCtx | MutationCtx | ActionCtx) {
+export async function checkMessageUsage(ctx: QueryCtx | MutationCtx) {
   const user = await getCurrentUser(ctx);
   if (!user?.subscription) return { canSendMessage: false, usage: null };
   
@@ -227,7 +227,7 @@ export async function checkMessageUsage(ctx: QueryCtx | MutationCtx | ActionCtx)
  * Get user by wallet address
  */
 export async function getUserByWallet(
-  ctx: QueryCtx | MutationCtx | ActionCtx,
+  ctx: QueryCtx | MutationCtx,
   walletAddress: string
 ): Promise<Doc<"users"> | null> {
   return await ctx.db
@@ -239,7 +239,7 @@ export async function getUserByWallet(
 /**
  * Get all admin users
  */
-export async function getAllAdmins(ctx: QueryCtx | MutationCtx | ActionCtx) {
+export async function getAllAdmins(ctx: QueryCtx | MutationCtx) {
   return await ctx.db
     .query("users")
     .withIndex("by_role", (q) => q.eq("role", "admin"))
@@ -257,7 +257,7 @@ export async function isWalletAdmin(walletAddress: string): Promise<boolean> {
 /**
  * Get user statistics (for admin dashboard)
  */
-export async function getUserStats(ctx: QueryCtx | MutationCtx | ActionCtx) {
+export async function getUserStats(ctx: QueryCtx | MutationCtx) {
   const users = await ctx.db.query("users").collect();
   
   const stats = {

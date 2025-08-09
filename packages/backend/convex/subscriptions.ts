@@ -134,16 +134,15 @@ export const trackMessageUsageByWallet = mutation({
     }
 
     // Update user's message counts
-    const updates: any = {
+    const updates = {
       subscription: {
         ...user.subscription,
-        messagesUsed: user.subscription.messagesUsed + 1,
+        messagesUsed: (user.subscription?.messagesUsed ?? 0) + 1,
+        premiumMessagesUsed: args.isPremiumModel
+          ? (user.subscription?.premiumMessagesUsed ?? 0) + 1
+          : user.subscription?.premiumMessagesUsed ?? 0,
       },
-    };
-
-    if (args.isPremiumModel) {
-      updates.subscription.premiumMessagesUsed = user.subscription.premiumMessagesUsed + 1;
-    }
+    } as const;
 
     await ctx.db.patch(user._id, updates);
   },
@@ -171,16 +170,15 @@ export const trackMessageUsage = mutation({
     }
 
     // Update user's message counts
-    const updates: any = {
+    const updates = {
       subscription: {
         ...user.subscription,
-        messagesUsed: user.subscription.messagesUsed + 1,
+        messagesUsed: (user.subscription?.messagesUsed ?? 0) + 1,
+        premiumMessagesUsed: args.isPremiumModel
+          ? (user.subscription?.premiumMessagesUsed ?? 0) + 1
+          : user.subscription?.premiumMessagesUsed ?? 0,
       },
-    };
-
-    if (args.isPremiumModel) {
-      updates.subscription.premiumMessagesUsed = user.subscription.premiumMessagesUsed + 1;
-    }
+    } as const;
 
     await ctx.db.patch(user._id, updates);
 
@@ -245,18 +243,17 @@ export const trackDetailedMessageUsage = mutation({
     const premiumMessagesLimit = user.subscription?.premiumMessagesLimit ?? 0;
     
     // Update user's message counts
-    const updates: any = {
+    const updates = {
       subscription: {
         ...user.subscription,
         messagesUsed: currentMessagesUsed + 1,
-        messagesLimit: messagesLimit,
-        premiumMessagesLimit: premiumMessagesLimit,
+        messagesLimit,
+        premiumMessagesLimit,
+        premiumMessagesUsed: isPremium
+          ? currentPremiumMessagesUsed + 1
+          : currentPremiumMessagesUsed,
       },
-    };
-
-    if (isPremium) {
-      updates.subscription.premiumMessagesUsed = currentPremiumMessagesUsed + 1;
-    }
+    } as const;
 
     await ctx.db.patch(user._id, updates);
 
@@ -278,7 +275,7 @@ export const trackDetailedMessageUsage = mutation({
     });
 
     // Check if we should show upgrade prompt
-    const usagePercent = (user.subscription.messagesUsed / user.subscription.messagesLimit) * 100;
+    const usagePercent = ((user.subscription?.messagesUsed ?? 0) / (user.subscription?.messagesLimit ?? 1)) * 100;
     
     if (usagePercent >= 80 && usagePercent < 90) {
       await ctx.db.insert('upgradeSuggestions', {
