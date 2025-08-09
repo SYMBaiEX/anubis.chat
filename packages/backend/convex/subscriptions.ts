@@ -106,6 +106,39 @@ export const canUseModel = query({
   },
 });
 
+// Track message usage by wallet address (for HTTP actions)
+export const trackMessageUsageByWallet = mutation({
+  args: {
+    walletAddress: v.string(),
+    isPremiumModel: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    // Query user by wallet address
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
+      .first();
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Update user's message counts
+    const updates: any = {
+      subscription: {
+        ...user.subscription,
+        messagesUsed: user.subscription.messagesUsed + 1,
+      },
+    };
+
+    if (args.isPremiumModel) {
+      updates.subscription.premiumMessagesUsed = (user.subscription.premiumMessagesUsed ?? 0) + 1;
+    }
+
+    await ctx.db.patch(user._id, updates);
+  },
+});
+
 // Track message usage (simplified for API middleware)
 export const trackMessageUsage = mutation({
   args: {
@@ -368,7 +401,62 @@ export const initializeUserSubscription = mutation({
   },
 });
 
-// Get subscription status
+// Get subscription status by wallet address (for HTTP actions)
+export const getSubscriptionStatusByWallet = query({
+  args: {
+    walletAddress: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Query user by wallet address
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
+      .first();
+
+    if (!user) {
+      return null;
+    }
+
+    const tierConfig = SUBSCRIPTION_TIERS[user.subscription.tier];
+    const now = Date.now();
+
+    // Handle legacy data with defaults
+    const messagesUsed = user.subscription.messagesUsed ?? 0;
+    const messagesLimit = user.subscription.messagesLimit ?? tierConfig.messagesLimit;
+    const premiumMessagesUsed = user.subscription.premiumMessagesUsed ?? 0;
+    const premiumMessagesLimit = user.subscription.premiumMessagesLimit ?? tierConfig.premiumMessagesLimit;
+    const currentPeriodStart = user.subscription.currentPeriodStart ?? now;
+    const currentPeriodEnd = user.subscription.currentPeriodEnd ?? (now + 30 * 24 * 60 * 60 * 1000);
+    const autoRenew = user.subscription.autoRenew ?? false;
+    const planPriceSol = user.subscription.planPriceSol ?? tierConfig.priceSol;
+    
+    const messageUsagePercent = messagesLimit > 0 ? (messagesUsed / messagesLimit) * 100 : 0;
+    const premiumUsagePercent = premiumMessagesLimit > 0 ? (premiumMessagesUsed / premiumMessagesLimit) * 100 : 0;
+    const isExpired = currentPeriodEnd < now;
+
+    return {
+      tier: user.subscription.tier,
+      messagesUsed,
+      messagesLimit,
+      messagesRemaining: Math.max(0, messagesLimit - messagesUsed),
+      premiumMessagesUsed,
+      premiumMessagesLimit,
+      premiumMessagesRemaining: Math.max(0, premiumMessagesLimit - premiumMessagesUsed),
+      messageUsagePercent,
+      premiumUsagePercent,
+      currentPeriodStart,
+      currentPeriodEnd,
+      isExpired,
+      autoRenew,
+      planPriceSol,
+      features: user.subscription.features,
+      availableModels: tierConfig.availableModels,
+      daysRemaining: Math.max(0, Math.floor((currentPeriodEnd - now) / (24 * 60 * 60 * 1000))),
+    };
+  },
+});
+
+// Get subscription status (for authenticated users)
 export const getSubscriptionStatus = query({
   args: {},
   handler: async (ctx, args) => {

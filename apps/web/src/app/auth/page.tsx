@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useWallet } from '@/hooks/useWallet';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 
 const log = createModuleLogger('auth-page');
 
@@ -45,7 +46,9 @@ export default function AuthPage() {
     formatAddress,
     authenticateWithConvex,
     connect: connectWallet,
+    disconnect,
   } = useWallet();
+  const { setVisible } = useWalletModal();
   
   const {
     isAuthenticated,
@@ -91,6 +94,17 @@ export default function AuthPage() {
     setAuthError(null);
   };
 
+  const handleSwitchWallet = async () => {
+    try {
+      if (isConnected) {
+        await disconnect();
+      }
+      setVisible(true);
+    } catch (e) {
+      setAuthError('Unable to switch wallet. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Background Effects */}
@@ -133,14 +147,14 @@ export default function AuthPage() {
                   <p className="mt-1 text-destructive/80 text-sm">
                     {authError}
                   </p>
-                  <Button
-                    className="mt-3"
-                    onClick={clearError}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Try Again
-                  </Button>
+                  <div className="mt-3 flex gap-2">
+                    <Button onClick={clearError} size="sm" variant="outline">
+                      Try Again
+                    </Button>
+                    <Button onClick={handleSwitchWallet} size="sm" variant="outline">
+                      Switch Wallet
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Card>
@@ -225,6 +239,11 @@ export default function AuthPage() {
                         <Shield className="mr-2 h-5 w-5" />
                         Sign In with Wallet
                       </Button>
+                      <div className="mt-2 text-center">
+                        <Button onClick={handleSwitchWallet} size="sm" type="button" variant="outline">
+                          Switch Wallet
+                        </Button>
+                      </div>
                       <p className="text-center text-muted-foreground text-xs">
                         By signing in, you agree to our Terms of Service and
                         Privacy Policy

@@ -57,7 +57,9 @@ export const streamChat = httpAction(async (ctx, request) => {
   }
 
   // Check subscription status
-  const subscription = await ctx.runQuery(api.subscriptions.getSubscriptionStatus, {});
+  const subscription = await ctx.runQuery(api.subscriptions.getSubscriptionStatusByWallet, {
+    walletAddress,
+  });
   
   if (!subscription) {
     return new Response(
@@ -101,6 +103,9 @@ export const streamChat = httpAction(async (ctx, request) => {
     );
   }
 
+  // Select AI model based on chat configuration (move this up to fix reference error)
+  const modelName = model || chat.model || 'gpt-5';
+  
   // Create user message
   const userMessage = await ctx.runMutation(api.messages.create, {
     chatId: chatId as Id<'chats'>,
@@ -108,6 +113,8 @@ export const streamChat = httpAction(async (ctx, request) => {
     role: 'user',
     content,
   });
+  
+  console.log('User message created, preparing AI response with model:', modelName);
 
   // Get recent messages for context
   const messages = await ctx.runQuery(api.messages.getByChatId, {
@@ -121,9 +128,8 @@ export const streamChat = httpAction(async (ctx, request) => {
     content: msg.content,
   }));
 
-  // Select AI model based on chat configuration
+  // Prepare AI model
   let aiModel;
-  const modelName = model || chat.model || 'gpt-5';
   
   // Check premium model access
   const isPremiumModel = ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4', 'gpt-5', 'gpt-5-pro', 'o3'].includes(modelName);
@@ -297,14 +303,18 @@ export const streamChat = httpAction(async (ctx, request) => {
   }
 
   // Create streaming response
-  const result = await streamText({
-    model: aiModel,
-    system:
-      chat.systemPrompt ||
-      'You are ISIS, a helpful AI assistant with access to Solana blockchain operations.',
-    messages: conversationHistory,
-    temperature: temperature ?? chat.temperature ?? 0.7,
-    maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
+  console.log('Creating streaming response with AI model...');
+  
+  let result;
+  try {
+    result = await streamText({
+      model: aiModel,
+      system:
+        chat.systemPrompt ||
+        'You are ISIS, a helpful AI assistant with access to Solana blockchain operations.',
+      messages: conversationHistory,
+      temperature: temperature ?? chat.temperature ?? 0.7,
+      maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
     onFinish: async ({ text, finishReason, usage }) => {
       // Save assistant message to database
       await ctx.runMutation(api.messages.create, {
@@ -326,12 +336,31 @@ export const streamChat = httpAction(async (ctx, request) => {
       });
       
       // Track message usage for subscription
-      await ctx.runMutation(api.subscriptions.trackMessageUsage, {
+      await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
         walletAddress,
         isPremiumModel,
       });
     },
   });
+  } catch (error) {
+    console.error('Error creating streaming response:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Failed to generate AI response',
+        details: error instanceof Error ? error.message : String(error)
+      }),
+      {
+        status: 500,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      }
+    );
+  }
 
   // Convert to a proper text stream response with CORS headers
   // The AI SDK provides toTextStreamResponse() which returns a properly formatted Response

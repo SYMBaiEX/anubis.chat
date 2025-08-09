@@ -59,7 +59,24 @@ export function useConvexChat(chatId: string | undefined) {
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to stream response: ${response.status}`);
+          // Try to get error details
+          const errorText = await response.text();
+          console.error('Streaming error:', response.status, errorText);
+          
+          let errorMessage = `Failed to stream response: ${response.status}`;
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData.error) {
+              errorMessage = errorData.error;
+            }
+          } catch {
+            // If not JSON, use the raw text
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          }
+          
+          throw new Error(errorMessage);
         }
 
         if (!response.body) {

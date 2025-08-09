@@ -1,0 +1,64 @@
+$ convex dev
+✔ Provisioned a dev deployment and saved its name as CONVEX_DEPLOYMENT to .env.local
+
+Write your Convex functions in convex/
+Give us feedback at https://convex.dev/community or support@convex.dev
+View the Convex dashboard at https://dashboard.convex.dev/d/veracious-capybara-763
+
+- Preparing Convex functions...
+
+✔ 04:21:29 Convex functions ready! (2.22s)
+8/9/2025, 4:22:06 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 4:22:06 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s974a<redacted>nb0v6 Session ID: sd7ec<redacted>nbtjg'
+8/9/2025, 4:22:06 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>Qs-bw and refresh token s9739<redacted>na2p1 for session sd7ec<redacted>nbtjg'
+8/9/2025, 4:22:06 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s974a<redacted>nb0v6 (first use) for new refresh token s9739<redacted>na2p1'
+8/9/2025, 4:22:09 AM [CONVEX H(POST /stream-chat)] Uncaught ReferenceError: Cannot access 'f' before initialization
+    at <anonymous> (../../convex/streaming.ts:116:64)
+    at async invokeFunction (../../../../node_modules/convex/src/server/impl/registration_impl.ts:80:2)
+    at async invokeHttpAction (../../../../node_modules/convex/src/server/impl/registration_impl.ts:453:0)
+    at async <anonymous> (../../../../node_modules/convex/src/server/router.ts:322:16)
+
+8/9/2025, 4:22:15 AM [CONVEX H(POST /stream-chat)] Uncaught ReferenceError: Cannot access 'f' before initialization
+    at <anonymous> (../../convex/streaming.ts:116:64)
+    at async invokeFunction (../../../../node_modules/convex/src/server/impl/registration_impl.ts:80:2)
+    at async invokeHttpAction (../../../../node_modules/convex/src/server/impl/registration_impl.ts:453:0)
+    at async <anonymous> (../../../../node_modules/convex/src/server/router.ts:322:16)
+
+8/9/2025, 4:23:10 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: signOut'
+- Preparing Convex functions...
+
+✘ [ERROR] The symbol "modelName" has already been declared
+
+    convex/streaming.ts:133:8:
+      133 │   const modelName = model || chat.model || 'gpt-5';
+          ╵         ~~~~~~~~~
+
+  The symbol "modelName" was originally declared here:
+
+    convex/streaming.ts:107:8:
+      107 │   const modelName = model || chat.model || 'gpt-5';
+          ╵         ~~~~~~~~~
+
+- Preparing Convex functions...
+
+✔ 04:23:24 Convex functions ready! (3.05s)
+8/9/2025, 4:23:18 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: signIn'
+8/9/2025, 4:23:18 AM [CONVEX M(auth:store)] [DEBUG] 'signInImpl args:' {
+  generateTokens: true,
+  type: 'signIn',
+  userId: 'k174b6mr3vzb6y4mgrdwy3q1717nawxk'
+}
+8/9/2025, 4:23:18 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>dIvSg and refresh token s97c2<redacted>nbe0x for session sd7d6<redacted>na0bn'
+8/9/2025, 4:23:18 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 4:23:18 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s97c2<redacted>nbe0x Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 4:23:18 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>dIvSg and refresh token s9788<redacted>nbvap for session sd7d6<redacted>na0bn'
+8/9/2025, 4:23:18 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s97c2<redacted>nbe0x (first use) for new refresh token s9788<redacted>nbvap'
+8/9/2025, 4:23:52 AM [CONVEX M(auth:store)] [INFO] '`auth:store` type: refreshSession'
+8/9/2025, 4:23:52 AM [CONVEX M(auth:store)] [DEBUG] 'refreshSessionImpl args: Token ID: s9788<redacted>nbvap Session ID: sd7d6<redacted>na0bn'
+8/9/2025, 4:23:52 AM [CONVEX M(auth:store)] [DEBUG] 'Generated token eyJhb<redacted>Vtf7g and refresh token s979t<redacted>nbfxh for session sd7d6<redacted>na0bn'
+8/9/2025, 4:23:52 AM [CONVEX M(auth:store)] [DEBUG] 'Exchanged s9788<redacted>nbvap (first use) for new refresh token s979t<redacted>nbfxh'
+8/9/2025, 4:23:54 AM [CONVEX H(POST /stream-chat)] [LOG] 'User message created, preparing AI response with model:' 'gpt-4o'
+8/9/2025, 4:23:59 AM [CONVEX H(POST /stream-chat)] [LOG] 'User message created, preparing AI response with model:' 'gpt-4o'
+8/9/2025, 4:24:30 AM [CONVEX H(POST /stream-chat)] [LOG] 'User message created, preparing AI response with model:' 'o4-mini'
+8/9/2025, 4:24:30 AM [CONVEX H(POST /stream-chat)] [WARN] 'Model o4-mini not yet available, using gpt-4o'
+8/9/2025, 4:24:30 AM [CONVEX H(POST /stream-chat)] [LOG] 'Creating streaming response with AI model...'
