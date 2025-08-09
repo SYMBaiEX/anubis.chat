@@ -33,7 +33,11 @@ export default function LandingHeader() {
     >
       <div className="relative mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4">
         {/* Brand */}
-        <LogoWithText size="md" textVariant="gradient" />
+        <LogoWithText 
+          href={isAuthenticated ? '/dashboard' : '/'} 
+          size="md" 
+          textVariant="gradient" 
+        />
 
         {/* Actions */}
         <div className="flex items-center gap-3">

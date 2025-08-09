@@ -146,7 +146,7 @@ export default function Sidebar() {
             {isCollapsed ? (
               <LogoIcon className="mx-auto" size="md" />
             ) : (
-              <Logo size="md" text="ISIS.chat" textVariant="gradient" />
+              <Logo href="/dashboard" size="md" text="ISIS.chat" textVariant="gradient" />
             )}
 
             {/* Collapse Button - Desktop Only */}

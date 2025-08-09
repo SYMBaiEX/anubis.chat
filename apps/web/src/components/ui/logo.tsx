@@ -15,6 +15,8 @@ interface LogoProps {
   text?: string;
   /** Text style variant */
   textVariant?: 'default' | 'gradient' | 'egypt';
+  /** Custom href for the logo link */
+  href?: string;
 }
 
 const sizeMap = {
@@ -31,6 +33,7 @@ export function Logo({
   asLink = true,
   text = 'ISIS Chat',
   textVariant = 'default',
+  href = '/',
 }: LogoProps) {
   const dimensions = sizeMap[size];
 
@@ -64,7 +67,7 @@ export function Logo({
       <Link
         aria-label="ISIS Chat Home"
         className="inline-flex transition-opacity hover:opacity-80"
-        href="/"
+        href={href}
       >
         {logoContent}
       </Link>
@@ -94,11 +97,13 @@ export function LogoWithText({
   className,
   textVariant = 'default',
   asLink = true,
-}: Pick<LogoProps, 'size' | 'className' | 'textVariant' | 'asLink'>) {
+  href = '/',
+}: Pick<LogoProps, 'size' | 'className' | 'textVariant' | 'asLink' | 'href'>) {
   return (
     <Logo
       asLink={asLink}
       className={className}
+      href={href}
       showText
       size={size}
       textVariant={textVariant}
