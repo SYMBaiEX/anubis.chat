@@ -8,7 +8,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Tabs } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { UserProfileProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -71,7 +71,6 @@ export function UserProfile({
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
             <Avatar
-              alt={user.displayName ?? 'User'}
               fallback={user.displayName?.[0] ?? 'U'}
               size="xl"
               src={user.avatar}
@@ -238,12 +237,20 @@ export function UserProfile({
 
   return (
     <div className={cn('space-y-6', className)}>
-      <Tabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        tabs={tabs}
-        variant="underline"
-      />
+      <Tabs onValueChange={setActiveTab} value={activeTab}>
+        <TabsList>
+          {tabs.map((tab) => (
+            <TabsTrigger key={tab.id} value={tab.id}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {tabs.map((tab) => (
+          <TabsContent key={tab.id} value={tab.id}>
+            {tab.content}
+          </TabsContent>
+        ))}
+      </Tabs>
       {children}
     </div>
   );

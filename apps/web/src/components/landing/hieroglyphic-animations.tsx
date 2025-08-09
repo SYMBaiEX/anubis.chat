@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import { useTheme } from 'next-themes';
+import { useEffect, useMemo, useState } from 'react';
 
 // Authentic hieroglyphs from the Rosetta Stone and common Egyptian symbols
 const hieroglyphs = [
@@ -145,16 +145,16 @@ export function HieroglyphicAnimations({
     for (let i = 0; i < count; i++) {
       const symbol =
         hieroglyphs[Math.floor(Math.random() * hieroglyphs.length)];
-      
+
       // Calculate grid position
       const col = i % cols;
       const row = Math.floor(i / cols);
-      
+
       // Add randomization within each cell to avoid perfect grid
       // Keep glyphs away from center (40-60% range)
-      let x = col * cellWidth + (Math.random() * cellWidth * 0.8);
-      let y = row * cellHeight + (Math.random() * cellHeight * 0.8);
-      
+      let x = col * cellWidth + Math.random() * cellWidth * 0.8;
+      let y = row * cellHeight + Math.random() * cellHeight * 0.8;
+
       // Push glyphs away from the center hero area
       if (x > 35 && x < 65) {
         x = x < 50 ? x - 15 : x + 15;
@@ -217,7 +217,7 @@ export function HieroglyphicAnimations({
   }
 
   const isDark = resolvedTheme === 'dark';
-  
+
   // Use ISIS primary (bright green) and Egyptian gold for dark theme
   // Use Egyptian bronze and amber for light theme for better contrast
   const glyphColors = isDark
@@ -234,7 +234,7 @@ export function HieroglyphicAnimations({
           // Cycle through available colors for variety
           const colorIndex = index % glyphColors.length;
           const currentColor = glyphColors[colorIndex];
-          
+
           return (
             <div
               className="hieroglyph-glow absolute text-6xl md:text-8xl"
@@ -246,9 +246,9 @@ export function HieroglyphicAnimations({
                 animation: `hieroglyphFadeInOut ${glyph.duration}s ${glyph.animationDelay}s infinite ease-in-out`,
                 fontSize: `${3 + Math.random() * 2}rem`,
                 transform: `rotate(${-15 + Math.random() * 30}deg)`,
-                textShadow: isDark 
-                  ? `0 0 20px ${currentColor}, 0 0 40px ${currentColor}33` 
-                  : `0 2px 4px rgba(0,0,0,0.1)`,
+                textShadow: isDark
+                  ? `0 0 20px ${currentColor}, 0 0 40px ${currentColor}33`
+                  : '0 2px 4px rgba(0,0,0,0.1)',
               }}
             >
               {glyph.symbol}
@@ -266,8 +266,8 @@ export function HieroglyphicAnimations({
               opacity: isDark ? 0.15 : 0.12,
               animationDelay: '2s',
               animationDuration: '15s',
-              textShadow: isDark 
-                ? '0 0 30px var(--egypt-gold), 0 0 60px var(--isis-primary)' 
+              textShadow: isDark
+                ? '0 0 30px var(--egypt-gold), 0 0 60px var(--isis-primary)'
                 : '0 2px 8px rgba(0,0,0,0.15)',
             }}
           >
@@ -285,8 +285,8 @@ export function HieroglyphicAnimations({
               opacity: isDark ? 0.12 : 0.1,
               animationDelay: '5s',
               animationDuration: '12s',
-              textShadow: isDark 
-                ? '0 0 35px var(--isis-primary), 0 0 70px var(--isis-accent)' 
+              textShadow: isDark
+                ? '0 0 35px var(--isis-primary), 0 0 70px var(--isis-accent)'
                 : '0 3px 10px rgba(0,0,0,0.12)',
             }}
           >
@@ -304,8 +304,8 @@ export function HieroglyphicAnimations({
               opacity: isDark ? 0.1 : 0.08,
               animationDelay: '8s',
               animationDuration: '18s',
-              textShadow: isDark 
-                ? '0 0 40px var(--isis-accent), 0 0 80px var(--isis-primary)' 
+              textShadow: isDark
+                ? '0 0 40px var(--isis-accent), 0 0 80px var(--isis-primary)'
                 : '0 4px 12px rgba(0,0,0,0.1)',
             }}
           >

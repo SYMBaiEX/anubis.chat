@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTheme } from 'next-themes';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface Particle {
   id: string;
@@ -138,13 +138,13 @@ export function DustParticles({
   }
 
   const isDark = resolvedTheme === 'dark';
-  
+
   // Use ISIS primary (bright green) for dark theme particles with glow effect
   // Use Egyptian stone colors for light theme for subtle, sandstorm-like effect
-  const particleColor = isDark 
+  const particleColor = isDark
     ? 'var(--isis-primary)' // Bright green particles for dark theme
     : 'var(--egypt-stone)'; // Sandy brown for light theme
-    
+
   // Accent particles for variety
   const accentParticleColor = isDark
     ? 'var(--isis-accent)' // Purple accent for dark theme
@@ -160,7 +160,7 @@ export function DustParticles({
           // Alternate between primary and accent colors for variety
           const useAccent = index % 3 === 0;
           const currentColor = useAccent ? accentParticleColor : particleColor;
-          
+
           return (
             <div
               className="absolute rounded-full"
@@ -172,7 +172,7 @@ export function DustParticles({
                 height: `${particle.size}px`,
                 backgroundColor: currentColor,
                 opacity: particle.opacity,
-                boxShadow: isDark 
+                boxShadow: isDark
                   ? `0 0 ${particle.size * 3}px ${currentColor}, 0 0 ${particle.size * 6}px ${currentColor}66`
                   : `0 0 ${particle.size * 2}px rgba(0,0,0,0.1)`,
                 filter: isDark ? 'blur(0.5px)' : 'blur(0.3px)',
@@ -187,9 +187,9 @@ export function DustParticles({
         <div
           className="absolute top-0 left-1/4 h-full w-2 animate-sway"
           style={{
-            background: isDark 
-              ? `linear-gradient(to bottom, var(--isis-primary)20, transparent 60%)`
-              : `linear-gradient(to bottom, var(--egypt-gold)15, transparent 50%)`,
+            background: isDark
+              ? 'linear-gradient(to bottom, var(--isis-primary)20, transparent 60%)'
+              : 'linear-gradient(to bottom, var(--egypt-gold)15, transparent 50%)',
             transform: 'rotate(15deg)',
             animationDuration: '20s',
             opacity: isDark ? 0.08 : 0.05,
@@ -203,8 +203,8 @@ export function DustParticles({
           className="absolute top-0 right-1/3 h-full w-2"
           style={{
             background: isDark
-              ? `linear-gradient(to bottom, var(--isis-accent)18, transparent 65%)`
-              : `linear-gradient(to bottom, var(--egypt-bronze)12, transparent 55%)`,
+              ? 'linear-gradient(to bottom, var(--isis-accent)18, transparent 65%)'
+              : 'linear-gradient(to bottom, var(--egypt-bronze)12, transparent 55%)',
             transform: 'rotate(-10deg)',
             animation: 'sway-reverse 25s ease-in-out infinite',
             opacity: isDark ? 0.06 : 0.04,

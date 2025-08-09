@@ -3,7 +3,11 @@
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 
-export function TombBackground({ showAccentGlow = true }: { showAccentGlow?: boolean }) {
+export function TombBackground({
+  showAccentGlow = true,
+}: {
+  showAccentGlow?: boolean;
+}) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 

@@ -12,6 +12,11 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.1",
+    "@ai-sdk/google": "^2.0.3",
+    "@ai-sdk/openai": "^2.0.7",
+    "@convex-dev/persistent-text-streaming": "^0.2.3",
+    "ai": "^5.0.8",
     "convex": "^1.25.4"
   }
 }

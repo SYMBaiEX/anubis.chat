@@ -608,11 +608,29 @@ export default defineSchema({
     description: v.optional(v.string()),
     walletAddress: v.string(),
     isActive: v.boolean(),
+    category: v.optional(
+      v.union(
+        v.literal('research'),
+        v.literal('automation'),
+        v.literal('data'),
+        v.literal('communication'),
+        v.literal('development'),
+        v.literal('custom')
+      )
+    ),
+    tags: v.optional(v.array(v.string())),
+    version: v.optional(v.string()),
+    isPublic: v.optional(v.boolean()),
+    isTemplate: v.optional(v.boolean()),
+    parentWorkflowId: v.optional(v.id('workflows')), // For versioning
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index('by_owner', ['walletAddress', 'updatedAt'])
     .index('by_active', ['isActive', 'updatedAt'])
+    .index('by_category', ['category', 'isPublic'])
+    .index('by_template', ['isTemplate', 'category'])
+    .index('by_version', ['parentWorkflowId', 'version'])
     .searchIndex('search_name', {
       searchField: 'name',
       filterFields: ['walletAddress', 'isActive'],
@@ -635,7 +653,10 @@ export default defineSchema({
       v.literal('end'),
       v.literal('task'),
       v.literal('loop'),
-      v.literal('subworkflow')
+      v.literal('subworkflow'),
+      v.literal('agent'),
+      v.literal('trigger'),
+      v.literal('action')
     ),
     agentId: v.optional(v.id('agents')),
     condition: v.optional(v.string()),
@@ -643,9 +664,49 @@ export default defineSchema({
     nextSteps: v.optional(v.array(v.string())),
     requiresApproval: v.optional(v.boolean()),
     order: v.number(),
+    position: v.number(), // For ordering
+    // Visual editor data - complete structure
+    visualData: v.optional(
+      v.object({
+        nodeId: v.string(),
+        nodeType: v.string(),
+        position: v.object({
+          x: v.number(),
+          y: v.number(),
+        }),
+        data: v.object({
+          type: v.string(),
+          label: v.string(),
+          description: v.optional(v.string()),
+          icon: v.optional(v.string()),
+          config: v.optional(v.any()),
+          parameters: v.optional(v.any()),
+        }),
+      })
+    ),
+    config: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   })
     .index('by_workflow', ['workflowId', 'order'])
     .index('by_step_id', ['stepId']),
+
+  // Workflow edges (connections between nodes)
+  workflowEdges: defineTable({
+    workflowId: v.id('workflows'),
+    sourceNodeId: v.string(),
+    targetNodeId: v.string(),
+    sourceHandle: v.optional(v.string()),
+    targetHandle: v.optional(v.string()),
+    label: v.optional(v.string()),
+    animated: v.optional(v.boolean()),
+    style: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_workflow', ['workflowId'])
+    .index('by_source', ['sourceNodeId'])
+    .index('by_target', ['targetNodeId']),
 
   // Workflow triggers
   workflowTriggers: defineTable({

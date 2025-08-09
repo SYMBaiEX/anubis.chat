@@ -1,0 +1,86 @@
+'use client';
+
+import { usePathname } from 'next/navigation';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useSidebar } from './sidebar-context';
+import { ChatSidebar } from './chat-sidebar';
+import { DashboardSidebar } from './dashboard-sidebar';
+import { AgentsSidebar } from './agents-sidebar';
+import { McpSidebar } from './mcp-sidebar';
+import { MarketplaceSidebar } from './marketplace-sidebar';
+import { WorkflowSidebar } from './workflow-sidebar';
+
+export function PageSidebar() {
+  const pathname = usePathname();
+  const { isOpen, setIsOpen } = useSidebar();
+
+  // Determine which sidebar content to show based on the current path
+  const getSidebarContent = () => {
+    if (pathname.startsWith('/chat')) {
+      return <ChatSidebar />;
+    }
+    if (pathname.startsWith('/dashboard')) {
+      return <DashboardSidebar />;
+    }
+    if (pathname.startsWith('/agents')) {
+      return <AgentsSidebar />;
+    }
+    if (pathname.startsWith('/mcp')) {
+      return <McpSidebar />;
+    }
+    if (pathname.startsWith('/marketplace')) {
+      return <MarketplaceSidebar />;
+    }
+    if (pathname.startsWith('/workflow')) {
+      return <WorkflowSidebar />;
+    }
+    return null;
+  };
+
+  const sidebarContent = getSidebarContent();
+
+  // Don't render sidebar if there's no content for this page
+  if (!sidebarContent) {
+    return null;
+  }
+
+  return (
+    <>
+      {/* Sidebar */}
+      <div
+        className={cn(
+          'fixed left-0 top-[65px] z-40 h-[calc(100vh-65px)] border-r border-border/50 bg-card/95 backdrop-blur-sm transition-all duration-300',
+          isOpen ? 'w-80' : 'w-0'
+        )}
+      >
+        <div className={cn('h-full overflow-hidden', isOpen ? 'block' : 'hidden')}>
+          {/* Sidebar Header */}
+          <div className="flex h-14 items-center justify-between border-b border-border/50 px-4">
+            <div className="flex-1">{/* Title will be set by individual sidebars */}</div>
+            <Button
+              className="h-8 w-8 p-0"
+              onClick={() => setIsOpen(false)}
+              size="sm"
+              variant="ghost"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Sidebar Content */}
+          <div className="h-[calc(100%-56px)] overflow-y-auto">{sidebarContent}</div>
+        </div>
+      </div>
+
+      {/* Main content offset */}
+      <div
+        className={cn(
+          'transition-all duration-300',
+          isOpen ? 'ml-80' : 'ml-0'
+        )}
+      />
+    </>
+  );
+}

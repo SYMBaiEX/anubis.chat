@@ -10,14 +10,19 @@ import { LoadingStates } from '@/components/data/loading-states';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { useSolanaAgent } from '@/components/providers/solana-agent-provider';
 import { Button } from '@/components/ui/button';
+import { useConvexChat } from '@/hooks/use-convex-chat';
+import { useTypingIndicator } from '@/hooks/use-typing-indicator';
+import { DEFAULT_MODEL } from '@/lib/constants/ai-models';
 import type { Chat, ChatMessage } from '@/lib/types/api';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
 import { AgentSelector } from './agent-selector';
 import { ChatHeader } from './chat-header';
 import { ChatList } from './chat-list';
+import { ChatWelcome } from './chat-welcome';
 import { MessageInput } from './message-input';
 import { MessageList } from './message-list';
+import { ModelSelector } from './model-selector';
 
 const log = createModuleLogger('components/chat/chat-interface');
 
@@ -35,6 +40,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const [selectedChatId, setSelectedChatId] = useState<string | undefined>();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL.id);
 
   // Debug logging
   useEffect(() => {
@@ -53,13 +59,17 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       : 'skip'
   );
 
-  const messages = useQuery(
-    api.messages.getByChatId,
-    selectedChatId ? { chatId: selectedChatId as Id<'chats'> } : 'skip'
-  );
-
   const createChat = useMutation(api.chats.create);
+  const updateChat = useMutation(api.chats.update);
   const deleteChat = useMutation(api.chats.remove);
+
+  // Use our new Convex chat hook for real-time streaming
+  const { messages, sendMessage, isStreaming, streamingMessage } =
+    useConvexChat(selectedChatId);
+
+  // Use typing indicators
+  const { typingUsers, startTyping, stopTyping, isAnyoneTyping } =
+    useTypingIndicator(selectedChatId, user?.walletAddress);
 
   const currentChat = chats?.find((chat) => chat._id === selectedChatId);
 
@@ -69,6 +79,13 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       setSelectedChatId(chats[0]._id);
     }
   }, [chats, selectedChatId]);
+
+  // Update selected model when chat changes
+  useEffect(() => {
+    if (currentChat && currentChat.model) {
+      setSelectedModel(currentChat.model);
+    }
+  }, [currentChat]);
 
   const handleCreateChat = async () => {
     if (!user?.walletAddress) {
@@ -81,7 +98,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       const newChat = await createChat({
         title: `New Chat ${new Date().toLocaleTimeString()}`,
         ownerId: user.walletAddress,
-        model: selectedAgent?.model || user.preferences?.aiModel || 'gpt-4o',
+        model: selectedModel || DEFAULT_MODEL.id,
         systemPrompt:
           selectedAgent?.systemPrompt ||
           'You are ISIS, a helpful AI assistant with access to Solana blockchain operations.',
@@ -98,31 +115,17 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!(selectedChatId && user && token)) {
+    if (!(selectedChatId && user)) {
       console.error('Missing requirements for sending message:', {
         selectedChatId,
         user: !!user,
-        token: !!token,
       });
       return;
     }
 
     try {
-      // Use streaming API route which persists user and assistant messages
-      const res = await fetch(`/api/chats/${selectedChatId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content, role: 'user', stream: true }),
-      });
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('Failed to send message:', res.status, errorText);
-        throw new Error(`Failed to stream AI response: ${res.status}`);
-      }
-      // We don't need to consume the stream here; Convex queries will update when assistant message is saved server-side
+      // Use the new Convex streaming function with selected model
+      await sendMessage(content, user.walletAddress, selectedModel);
     } catch (error: any) {
       log.error('Failed to send message', { error: error?.message });
     }
@@ -130,13 +133,33 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   const handleDeleteChat = async (chatId: string) => {
     try {
-      await deleteChat({ id: chatId as Id<'chats'> });
+      await deleteChat({
+        id: chatId as Id<'chats'>,
+        ownerId: user?.walletAddress || '',
+      });
       if (selectedChatId === chatId) {
         const remainingChats = chats?.filter((chat) => chat._id !== chatId);
         setSelectedChatId(remainingChats?.[0]?._id);
       }
     } catch (error: any) {
       log.error('Failed to delete chat', { error: error?.message });
+    }
+  };
+
+  const handleModelChange = async (newModel: string) => {
+    setSelectedModel(newModel);
+
+    // Update the chat's model in the database
+    if (selectedChatId && user?.walletAddress) {
+      try {
+        await updateChat({
+          id: selectedChatId as Id<'chats'>,
+          ownerId: user.walletAddress,
+          model: newModel,
+        });
+      } catch (error: any) {
+        log.error('Failed to update chat model', { error: error?.message });
+      }
     }
   };
 
@@ -241,6 +264,17 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Model Selector */}
+            {currentChat && (
+              <div className="w-64">
+                <ModelSelector
+                  disabled={isStreaming}
+                  onValueChange={handleModelChange}
+                  value={selectedModel}
+                />
+              </div>
+            )}
+
             {/* Agent Selector */}
             {isInitialized && <AgentSelector />}
 
@@ -276,6 +310,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 </div>
               ) : (
                 <MessageList
+                  isTyping={isAnyoneTyping}
                   messages={messages}
                   onMessageRegenerate={(messageId) => {
                     // TODO: Implement message regeneration
@@ -289,38 +324,36 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             <div className="border-border/50 border-t bg-card/30 p-4 backdrop-blur">
               <div className="mx-auto max-w-4xl">
                 <MessageInput
-                  disabled={!selectedChatId || messages === undefined}
+                  disabled={
+                    !selectedChatId || messages === undefined || isStreaming
+                  }
                   onSend={handleSendMessage}
-                  placeholder="Ask ISIS anything..."
+                  onTyping={startTyping}
+                  placeholder={
+                    isStreaming
+                      ? 'ISIS is responding...'
+                      : 'Ask ISIS anything...'
+                  }
                 />
               </div>
             </div>
           </div>
         ) : (
           <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background">
-            <EmptyState
-              action={
-                chats?.length === 0
-                  ? {
-                      label: 'Start Your First Chat',
-                      onClick: handleCreateChat,
-                    }
-                  : undefined
-              }
-              description={
-                chats?.length === 0
-                  ? 'Create your first chat to start conversing with AI agents'
-                  : 'Select a chat from the sidebar to continue'
-              }
-              icon={
-                <MessageSquare className="h-12 w-12 text-muted-foreground" />
-              }
-              title={
-                chats?.length === 0
-                  ? 'Welcome to ISIS Chat'
-                  : 'No Chat Selected'
-              }
-            />
+            {chats?.length === 0 ? (
+              <ChatWelcome 
+                onCreateChat={handleCreateChat} 
+                isCreating={isCreatingChat} 
+              />
+            ) : (
+              <EmptyState
+                description="Select a chat from the sidebar to continue"
+                icon={
+                  <MessageSquare className="h-12 w-12 text-muted-foreground" />
+                }
+                title="No Chat Selected"
+              />
+            )}
           </div>
         )}
       </div>

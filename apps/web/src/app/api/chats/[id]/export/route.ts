@@ -97,7 +97,10 @@ function generateMarkdown(chat: Chat, messages: Message[]): string {
   return markdown;
 }
 
-async function generatePDF(markdown: string, title: string): Promise<Buffer> {
+async function generatePDF(
+  markdown: string,
+  title: string
+): Promise<ArrayBuffer> {
   // Import jsPDF dynamically to avoid issues with SSR
   const { jsPDF } = await import('jspdf');
 
@@ -263,9 +266,8 @@ async function generatePDF(markdown: string, title: string): Promise<Buffer> {
     }
   }
 
-  // Convert PDF to buffer
-  const pdfOutput = doc.output('arraybuffer');
-  return Buffer.from(pdfOutput);
+  // Return ArrayBuffer for Web Response compatibility
+  return doc.output('arraybuffer');
 }
 
 // =============================================================================
@@ -279,7 +281,7 @@ async function handleGet(
   try {
     const { id: chatId } = await params;
     // Get wallet address from authenticated request
-    const walletAddress = req.walletAddress;
+    const walletAddress = req.user.walletAddress;
 
     // Parse query parameters
     const searchParams = req.nextUrl.searchParams;
@@ -381,7 +383,7 @@ async function handleGet(
         const markdown = generateMarkdown(chat, messages);
         const pdfBuffer = await generatePDF(markdown, chat.title);
 
-        return new NextResponse(pdfBuffer, {
+        return new NextResponse(pdfBuffer as ArrayBuffer, {
           headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': `attachment; filename="${chat.title.replace(/[^a-z0-9]/gi, '_')}_export.pdf"`,

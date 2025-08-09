@@ -19,13 +19,15 @@ if (typeof window !== 'undefined') {
   const createServerDOMPurify = async () => {
     const { JSDOM } = await import('jsdom');
     const window = new JSDOM('').window;
-    return DOMPurify(window as unknown as Window);
+    return (DOMPurify as unknown as (win: Window) => typeof DOMPurify)(
+      window as unknown as Window
+    );
   };
 
   // For server-side, we'll create a simple fallback that just escapes HTML
   // The actual DOMPurify instance will be created on demand
   isomorphicDOMPurify = {
-    sanitize: (dirty: string, config?: any) => {
+    sanitize: (dirty: string, config?: DOMPurify.Config) => {
       // Simple HTML escaping as fallback for SSR
       // This is safe but doesn't preserve any formatting
       return dirty
@@ -36,7 +38,7 @@ if (typeof window !== 'undefined') {
         .replace(/'/g, '&#x27;')
         .replace(/\//g, '&#x2F;');
     },
-  } as typeof DOMPurify;
+  } as unknown as typeof DOMPurify;
 }
 
 /**

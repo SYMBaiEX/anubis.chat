@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
             walletAddress,
             publicKey,
             preferences: {
-              theme: 'dark' as 'dark' | 'light',
+              theme: Theme.DARK,
               aiModel: 'gpt-4o',
               notifications: true,
             },
@@ -149,15 +149,18 @@ export async function POST(request: NextRequest) {
           displayName: undefined,
           avatar: undefined,
           preferences: {
-            theme: 'dark' as 'dark' | 'light',
+            theme: Theme.DARK,
             aiModel: 'gpt-4o',
             notifications: true,
           },
           subscription: {
-            tier: 'free' as 'free' | 'pro' | 'enterprise',
+            tier: SubscriptionTier.FREE,
             tokensUsed: 0,
             tokensLimit: 10_000,
-            features: ['basic_chat', 'document_upload'],
+            features: [
+              SubscriptionFeature.BASIC_CHAT,
+              SubscriptionFeature.DOCUMENT_UPLOAD,
+            ],
           },
           createdAt: Date.now(),
           lastActiveAt: Date.now(),
@@ -169,14 +172,40 @@ export async function POST(request: NextRequest) {
       const refreshToken = createJWTToken(walletAddress, publicKey);
       const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
 
-      // Create auth session response
+      // Create auth session response (map DB user to API type)
       const authSession: AuthSession = {
         walletAddress,
         publicKey,
         token,
         refreshToken,
         expiresAt,
-        user: user!, // We ensure user is always defined above
+        user: {
+          walletAddress: (user as any).walletAddress,
+          publicKey: (user as any).publicKey,
+          displayName: (user as any).displayName,
+          avatar: (user as any).avatar,
+          preferences: {
+            ...(user as any).preferences,
+            theme:
+              ((user as any).preferences as any).theme === 'dark'
+                ? Theme.DARK
+                : ((user as any).preferences as any).theme === 'light'
+                  ? Theme.LIGHT
+                  : Theme.SYSTEM,
+          },
+          subscription: {
+            ...(user as any).subscription,
+            tier:
+              ((user as any).subscription as any).tier === 'pro'
+                ? SubscriptionTier.PRO
+                : ((user as any).subscription as any).tier === 'enterprise'
+                  ? SubscriptionTier.ENTERPRISE
+                  : SubscriptionTier.FREE,
+          },
+          createdAt: (user as any).createdAt,
+          lastActiveAt: (user as any).lastActiveAt,
+          isActive: (user as any).isActive,
+        },
       };
 
       // Add security headers and return response

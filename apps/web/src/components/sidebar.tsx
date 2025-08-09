@@ -19,6 +19,7 @@ import type { ReactElement } from 'react';
 import { useEffect, useState } from 'react';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Logo, LogoIcon } from '@/components/ui/logo';
+import { WalletConnectButton } from '@/components/wallet/wallet-connect-button';
 import type { NavItem } from '@/constants/navigation';
 import { getSidebarNav } from '@/constants/navigation';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -125,9 +126,9 @@ export default function Sidebar() {
           {/* Logo */}
           <div className="flex h-16 items-center justify-between border-sidebar-border border-b px-4">
             {isCollapsed ? (
-              <LogoIcon size="md" className="mx-auto" />
+              <LogoIcon className="mx-auto" size="md" />
             ) : (
-              <Logo size="md" textVariant="gradient" text="ISIS.chat" />
+              <Logo size="md" text="ISIS.chat" textVariant="gradient" />
             )}
 
             {/* Collapse Button - Desktop Only */}
@@ -184,6 +185,14 @@ export default function Sidebar() {
 
           {/* Bottom Section */}
           <div className="space-y-2 border-sidebar-border border-t p-4">
+            {/* Wallet Connection */}
+            <div className={cn(
+              'mb-3',
+              isCollapsed && 'flex justify-center'
+            )}>
+              <WalletConnectButton collapsed={isCollapsed} />
+            </div>
+
             {/* Theme Toggle */}
             <button
               aria-label="Toggle theme"

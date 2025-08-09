@@ -12,10 +12,15 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import type { AuthSession, User } from '@/lib/types/api';
+import { authCache, cacheUtils, type AuthCacheData } from '@/lib/cache/auth-cache';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('auth-provider');
 
 // Token refresh configuration
 const TOKEN_REFRESH_INTERVAL = 20 * 60 * 1000; // Refresh every 20 minutes
 const TOKEN_VALIDITY_CHECK_INTERVAL = 60 * 1000; // Check validity every minute
+const CACHE_TTL = 60 * 60 * 1000; // Cache for 1 hour
 
 interface AuthContextValue {
   // Auth state
@@ -49,9 +54,103 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const wallet = useWallet();
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const validityCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const cacheCleanupRef = useRef<(() => void) | null>(null);
 
-  // Validate session with backend
+  // Check cache on mount and restore session
+  useEffect(() => {
+    // Only run on client side after mount
+    if (typeof window === 'undefined') return;
+    
+    const cached = authCache.get();
+    if (cached && cached.isAuthenticated && !auth.isAuthenticated) {
+      log.info('Restoring session from cache');
+      // The auth hook should handle restoring from cache
+    }
+  }, []);
+
+  // Cache authentication state when it changes
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.user && auth.token) {
+      const cacheData: AuthCacheData = {
+        user: {
+          walletAddress: auth.user.walletAddress || '',
+          publicKey: auth.user.publicKey,
+          username: auth.user.username,
+          email: auth.user.email,
+          avatar: auth.user.avatar,
+        },
+        token: auth.token,
+        refreshToken: null, // We don't store refresh tokens in cache for security
+        expiresAt: Date.now() + CACHE_TTL,
+        isAuthenticated: true,
+        lastVerified: Date.now(),
+      };
+      
+      authCache.set(cacheData, { 
+        ttl: CACHE_TTL, 
+        storage: 'all' // Use all storage layers for redundancy
+      });
+      
+      log.info('Authentication state cached');
+    } else if (!auth.isAuthenticated) {
+      // Clear cache when logged out
+      authCache.clear();
+      log.info('Authentication cache cleared');
+    }
+  }, [auth.isAuthenticated, auth.user, auth.token]);
+
+  // Set up auto-refresh from cache
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.token) {
+      // Clean up previous auto-refresh
+      if (cacheCleanupRef.current) {
+        cacheCleanupRef.current();
+      }
+
+      // Set up new auto-refresh
+      cacheCleanupRef.current = cacheUtils.setupAutoRefresh(
+        async () => {
+          // Refresh authentication
+          const newToken = await auth.refreshToken();
+          if (newToken && auth.user) {
+            return {
+              user: {
+                walletAddress: auth.user.walletAddress || '',
+                publicKey: auth.user.publicKey,
+                username: auth.user.username,
+                email: auth.user.email,
+                avatar: auth.user.avatar,
+              },
+              token: newToken,
+              refreshToken: null,
+              expiresAt: Date.now() + CACHE_TTL,
+              isAuthenticated: true,
+              lastVerified: Date.now(),
+            };
+          }
+          throw new Error('Failed to refresh authentication');
+        },
+        TOKEN_VALIDITY_CHECK_INTERVAL
+      );
+
+      return () => {
+        if (cacheCleanupRef.current) {
+          cacheCleanupRef.current();
+          cacheCleanupRef.current = null;
+        }
+      };
+    }
+  }, [auth.isAuthenticated, auth.token, auth.refreshToken, auth.user]);
+
+  // Validate session with backend (with caching)
   const validateSession = useCallback(async (): Promise<boolean> => {
+    // Check cache first
+    const cached = authCache.get();
+    if (cached && !authCache.needsRefresh(cached)) {
+      log.debug('Session valid from cache');
+      return true;
+    }
+
     if (!auth.token) {
       return false;
     }
@@ -68,12 +167,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!response.ok) {
         // Token is invalid, try to refresh
         const newToken = await auth.refreshToken();
+        if (newToken) {
+          // Update cache with new token
+          authCache.update({ 
+            token: newToken,
+            lastVerified: Date.now(),
+            expiresAt: Date.now() + CACHE_TTL,
+          });
+        }
         return !!newToken;
       }
 
+      // Update cache verification time
+      authCache.update({ lastVerified: Date.now() });
       return true;
     } catch (error) {
-      console.error('Session validation failed:', error);
+      log.error('Session validation failed:', error);
       return false;
     }
   }, [auth.token, auth.refreshToken]);
@@ -192,6 +301,83 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => clearTimeout(timeoutId);
   }, [auth.isAuthenticated, wallet.isConnected, auth.logout]);
 
+  // Wrap login with caching
+  const cachedLogin = useCallback(async () => {
+    // Check cache first
+    const cached = authCache.get();
+    if (cached && cached.isAuthenticated && !authCache.needsRefresh(cached)) {
+      log.info('Using cached authentication');
+      return {
+        user: cached.user,
+        token: cached.token,
+        expiresAt: cached.expiresAt,
+      } as AuthSession;
+    }
+
+    // Perform login
+    const result = await auth.login();
+    
+    // Cache successful login
+    if (result && result.user && result.token) {
+      const cacheData: AuthCacheData = {
+        user: {
+          walletAddress: result.user.walletAddress || '',
+          publicKey: result.user.publicKey,
+          username: result.user.username,
+          email: result.user.email,
+          avatar: result.user.avatar,
+        },
+        token: result.token,
+        refreshToken: null,
+        expiresAt: Date.now() + CACHE_TTL,
+        isAuthenticated: true,
+        lastVerified: Date.now(),
+      };
+      
+      authCache.set(cacheData, { 
+        ttl: CACHE_TTL, 
+        storage: 'all'
+      });
+      
+      log.info('Login cached');
+    }
+    
+    return result;
+  }, [auth.login]);
+
+  // Wrap logout with cache clearing
+  const cachedLogout = useCallback(async () => {
+    // Clear cache first
+    authCache.clear();
+    log.info('Cache cleared on logout');
+    
+    // Clean up auto-refresh
+    if (cacheCleanupRef.current) {
+      cacheCleanupRef.current();
+      cacheCleanupRef.current = null;
+    }
+    
+    // Perform logout
+    await auth.logout();
+  }, [auth.logout]);
+
+  // Wrap refresh token with caching
+  const cachedRefreshToken = useCallback(async () => {
+    const newToken = await auth.refreshToken();
+    
+    if (newToken) {
+      // Update cache with new token
+      authCache.update({ 
+        token: newToken,
+        lastVerified: Date.now(),
+        expiresAt: Date.now() + CACHE_TTL,
+      });
+      log.info('Token refreshed and cached');
+    }
+    
+    return newToken;
+  }, [auth.refreshToken]);
+
   const contextValue: AuthContextValue = useMemo(
     () => ({
       // Auth state
@@ -201,10 +387,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       token: auth.token,
       error: auth.error,
 
-      // Auth methods
-      login: auth.login,
-      logout: auth.logout,
-      refreshToken: auth.refreshToken,
+      // Auth methods (cached versions)
+      login: cachedLogin,
+      logout: cachedLogout,
+      refreshToken: cachedRefreshToken,
       clearError: auth.clearError,
       validateSession,
 
@@ -219,9 +405,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       auth.user,
       auth.token,
       auth.error,
-      auth.login,
-      auth.logout,
-      auth.refreshToken,
+      cachedLogin,
+      cachedLogout,
+      cachedRefreshToken,
       auth.clearError,
       validateSession,
       wallet.isConnecting,

@@ -43,7 +43,7 @@ export function sanitizeCodeHTML(html: string): string {
       // Server-side fallback - just escape HTML
       return sanitizeText(html);
     }
-    return DOMPurify.sanitize(html, DEFAULT_CODE_SANITIZE_OPTIONS);
+    return DOMPurify.sanitize(html, DEFAULT_CODE_SANITIZE_OPTIONS) as string;
   } catch (error) {
     console.error('Code sanitization failed:', error);
     return '';
@@ -60,7 +60,7 @@ export function sanitizeUserHTML(html: string): string {
       // Server-side fallback - just escape HTML
       return sanitizeText(html);
     }
-    return DOMPurify.sanitize(html, STRICT_SANITIZE_OPTIONS);
+    return DOMPurify.sanitize(html, STRICT_SANITIZE_OPTIONS) as string;
   } catch (error) {
     console.error('User content sanitization failed:', error);
     return '';

@@ -70,8 +70,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
           return notFoundResponse('Agent not found');
         }
 
-        // Check ownership
-        if (agentDoc.walletAddress !== walletAddress) {
+        // Check ownership - backend stores creator in `createdBy`
+        if ((agentDoc as any).createdBy !== walletAddress) {
           return unauthorizedResponse(
             'Access denied: You do not own this agent'
           );
@@ -86,9 +86,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
           systemPrompt: agentDoc.systemPrompt,
           temperature: agentDoc.temperature,
           maxTokens: agentDoc.maxTokens,
-          tools: agentDoc.tools || [],
-          maxSteps: agentDoc.maxSteps || 10,
-          walletAddress: agentDoc.walletAddress,
+          tools: ((agentDoc as any).tools as string[] | undefined) || [],
+          maxSteps: ((agentDoc as any).maxSteps as number | undefined) || 10,
+          walletAddress:
+            (agentDoc as any).walletAddress ?? (agentDoc as any).createdBy,
           createdAt: agentDoc.createdAt,
           updatedAt: agentDoc.updatedAt,
         };

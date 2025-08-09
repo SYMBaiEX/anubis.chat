@@ -164,7 +164,9 @@ async function initializeDefaultAgents(walletAddress: string) {
           model: 'gpt-4o-mini',
           systemPrompt: agent.systemPrompt,
           maxSteps: 10,
-          walletAddress,
+          createdBy: walletAddress,
+          type: 'custom',
+          capabilities: [],
         });
       }
     }
@@ -216,7 +218,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Convert Convex data to API format
-        let formattedAgents = convexAgentsToApiFormat(agents);
+        let formattedAgents = convexAgentsToApiFormat(agents as any);
 
         // Apply filters
         if (template) {
@@ -352,14 +354,16 @@ export async function POST(request: NextRequest) {
         // Store agent in Convex
         await convex.mutation(api.agents.create, {
           name: newAgent.name,
-          description: newAgent.description,
+          description: newAgent.description ?? '',
           model: newAgent.model,
           systemPrompt: newAgent.systemPrompt,
           temperature: newAgent.temperature,
           maxTokens: newAgent.maxTokens,
           tools: toolNames,
           maxSteps: newAgent.maxSteps,
-          walletAddress: newAgent.walletAddress,
+          createdBy: newAgent.walletAddress,
+          type: 'custom',
+          capabilities: [],
         });
 
         log.info('Agent created successfully', {

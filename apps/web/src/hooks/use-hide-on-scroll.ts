@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export function useHideOnScroll() {
   const [isVisible, setIsVisible] = useState(true);
@@ -12,13 +12,13 @@ export function useHideOnScroll() {
 
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       if (currentScrollY < lastScrollY.current || currentScrollY < 50) {
         setIsVisible(true);
       } else {
         setIsVisible(false);
       }
-      
+
       lastScrollY.current = currentScrollY;
     };
 

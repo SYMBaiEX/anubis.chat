@@ -1,14 +1,43 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Brain,
+  ChevronLeft,
+  Database,
+  Globe,
+  Info,
+  Key,
+  Monitor,
+  Moon,
+  Palette,
+  RefreshCw,
+  RotateCcw,
+  Save,
+  Settings,
+  Shield,
+  Sun,
+  Volume2,
+  Zap,
+} from 'lucide-react';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -16,39 +45,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import {
-  Settings,
-  Brain,
-  Zap,
-  Shield,
-  Palette,
-  Volume2,
-  Globe,
-  Key,
-  Database,
-  RefreshCw,
-  Save,
-  RotateCcw,
-  Info,
-  ChevronLeft,
-  Moon,
-  Sun,
-  Monitor,
-} from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
 interface ChatSettings {
   model: string;
@@ -102,7 +103,7 @@ export function ChatSettingsPanel({
   isOpen = true,
   onClose,
   variant = 'panel',
-  className
+  className,
 }: ChatSettingsPanelProps) {
   const [localSettings, setLocalSettings] = useState<ChatSettings>(settings);
   const [hasChanges, setHasChanges] = useState(false);
@@ -111,7 +112,7 @@ export function ChatSettingsPanel({
     key: K,
     value: ChatSettings[K]
   ) => {
-    setLocalSettings(prev => ({ ...prev, [key]: value }));
+    setLocalSettings((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
   };
 
@@ -129,42 +130,42 @@ export function ChatSettingsPanel({
 
   const content = (
     <div className="space-y-6">
-      <Tabs defaultValue="model" className="w-full">
-        <TabsList className="grid grid-cols-4 w-full">
+      <Tabs className="w-full" defaultValue="model">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="model">
-            <Brain className="h-4 w-4 mr-2" />
+            <Brain className="mr-2 h-4 w-4" />
             Model
           </TabsTrigger>
           <TabsTrigger value="behavior">
-            <Zap className="h-4 w-4 mr-2" />
+            <Zap className="mr-2 h-4 w-4" />
             Behavior
           </TabsTrigger>
           <TabsTrigger value="interface">
-            <Palette className="h-4 w-4 mr-2" />
+            <Palette className="mr-2 h-4 w-4" />
             Interface
           </TabsTrigger>
           <TabsTrigger value="advanced">
-            <Settings className="h-4 w-4 mr-2" />
+            <Settings className="mr-2 h-4 w-4" />
             Advanced
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="model" className="space-y-4 mt-4">
+        <TabsContent className="mt-4 space-y-4" value="model">
           <div className="space-y-2">
             <Label htmlFor="model">AI Model</Label>
             <Select
-              value={localSettings.model}
               onValueChange={(value) => handleChange('model', value)}
+              value={localSettings.model}
             >
               <SelectTrigger id="model">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {models.map(model => (
+                {models.map((model) => (
                   <SelectItem key={model.value} value={model.value}>
-                    <div className="flex items-center justify-between w-full">
+                    <div className="flex w-full items-center justify-between">
                       <span>{model.label}</span>
-                      <Badge variant="outline" className="ml-2">
+                      <Badge className="ml-2" variant="outline">
                         {model.provider}
                       </Badge>
                     </div>
@@ -177,111 +178,116 @@ export function ChatSettingsPanel({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="temperature">Temperature</Label>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 {localSettings.temperature}
               </span>
             </div>
             <Slider
               id="temperature"
-              min={0}
               max={2}
+              min={0}
+              onValueChange={([value]) => handleChange('temperature', value)}
               step={0.1}
               value={[localSettings.temperature]}
-              onValueChange={([value]) => handleChange('temperature', value)}
             />
-            <p className="text-xs text-muted-foreground">
-              Controls randomness: Lower is more focused, higher is more creative
+            <p className="text-muted-foreground text-xs">
+              Controls randomness: Lower is more focused, higher is more
+              creative
             </p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="maxTokens">Max Tokens</Label>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 {localSettings.maxTokens}
               </span>
             </div>
             <Slider
               id="maxTokens"
-              min={100}
               max={4000}
+              min={100}
+              onValueChange={([value]) => handleChange('maxTokens', value)}
               step={100}
               value={[localSettings.maxTokens]}
-              onValueChange={([value]) => handleChange('maxTokens', value)}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Maximum length of the response
             </p>
           </div>
         </TabsContent>
 
-        <TabsContent value="behavior" className="space-y-4 mt-4">
+        <TabsContent className="mt-4 space-y-4" value="behavior">
           <div className="space-y-2">
             <Label htmlFor="systemPrompt">System Prompt</Label>
             <Textarea
+              className="min-h-[120px]"
               id="systemPrompt"
-              value={localSettings.systemPrompt}
               onChange={(e) => handleChange('systemPrompt', e.target.value)}
               placeholder="You are a helpful AI assistant..."
-              className="min-h-[120px]"
+              value={localSettings.systemPrompt}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Instructions that define the AI's behavior and personality
             </p>
           </div>
 
-          <Accordion type="single" collapsible>
+          <Accordion collapsible type="single">
             <AccordionItem value="advanced-params">
               <AccordionTrigger>Advanced Parameters</AccordionTrigger>
               <AccordionContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="topP">Top P</Label>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-muted-foreground text-sm">
                       {localSettings.topP}
                     </span>
                   </div>
                   <Slider
                     id="topP"
-                    min={0}
                     max={1}
+                    min={0}
+                    onValueChange={([value]) => handleChange('topP', value)}
                     step={0.05}
                     value={[localSettings.topP]}
-                    onValueChange={([value]) => handleChange('topP', value)}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="frequencyPenalty">Frequency Penalty</Label>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-muted-foreground text-sm">
                       {localSettings.frequencyPenalty}
                     </span>
                   </div>
                   <Slider
                     id="frequencyPenalty"
-                    min={-2}
                     max={2}
+                    min={-2}
+                    onValueChange={([value]) =>
+                      handleChange('frequencyPenalty', value)
+                    }
                     step={0.1}
                     value={[localSettings.frequencyPenalty]}
-                    onValueChange={([value]) => handleChange('frequencyPenalty', value)}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="presencePenalty">Presence Penalty</Label>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-muted-foreground text-sm">
                       {localSettings.presencePenalty}
                     </span>
                   </div>
                   <Slider
                     id="presencePenalty"
-                    min={-2}
                     max={2}
+                    min={-2}
+                    onValueChange={([value]) =>
+                      handleChange('presencePenalty', value)
+                    }
                     step={0.1}
                     value={[localSettings.presencePenalty]}
-                    onValueChange={([value]) => handleChange('presencePenalty', value)}
                   />
                 </div>
               </AccordionContent>
@@ -289,20 +295,20 @@ export function ChatSettingsPanel({
           </Accordion>
         </TabsContent>
 
-        <TabsContent value="interface" className="space-y-4 mt-4">
+        <TabsContent className="mt-4 space-y-4" value="interface">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="theme">Theme</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Choose your preferred color scheme
                 </p>
               </div>
               <Select
-                value={localSettings.theme}
-                onValueChange={(value: 'light' | 'dark' | 'system') => 
+                onValueChange={(value: 'light' | 'dark' | 'system') =>
                   handleChange('theme', value)
                 }
+                value={localSettings.theme}
               >
                 <SelectTrigger className="w-32">
                   <SelectValue />
@@ -310,19 +316,19 @@ export function ChatSettingsPanel({
                 <SelectContent>
                   <SelectItem value="light">
                     <div className="flex items-center">
-                      <Sun className="h-4 w-4 mr-2" />
+                      <Sun className="mr-2 h-4 w-4" />
                       Light
                     </div>
                   </SelectItem>
                   <SelectItem value="dark">
                     <div className="flex items-center">
-                      <Moon className="h-4 w-4 mr-2" />
+                      <Moon className="mr-2 h-4 w-4" />
                       Dark
                     </div>
                   </SelectItem>
                   <SelectItem value="system">
                     <div className="flex items-center">
-                      <Monitor className="h-4 w-4 mr-2" />
+                      <Monitor className="mr-2 h-4 w-4" />
                       System
                     </div>
                   </SelectItem>
@@ -333,42 +339,46 @@ export function ChatSettingsPanel({
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="soundEnabled">Sound Effects</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Play sounds for notifications
                 </p>
               </div>
               <Switch
-                id="soundEnabled"
                 checked={localSettings.soundEnabled}
-                onCheckedChange={(checked) => handleChange('soundEnabled', checked)}
+                id="soundEnabled"
+                onCheckedChange={(checked) =>
+                  handleChange('soundEnabled', checked)
+                }
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="autoScroll">Auto-scroll</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Automatically scroll to new messages
                 </p>
               </div>
               <Switch
-                id="autoScroll"
                 checked={localSettings.autoScroll}
-                onCheckedChange={(checked) => handleChange('autoScroll', checked)}
+                id="autoScroll"
+                onCheckedChange={(checked) =>
+                  handleChange('autoScroll', checked)
+                }
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="language">Language</Label>
               <Select
-                value={localSettings.language}
                 onValueChange={(value) => handleChange('language', value)}
+                value={localSettings.language}
               >
                 <SelectTrigger id="language">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {languages.map(lang => (
+                  {languages.map((lang) => (
                     <SelectItem key={lang.value} value={lang.value}>
                       {lang.label}
                     </SelectItem>
@@ -379,66 +389,74 @@ export function ChatSettingsPanel({
           </div>
         </TabsContent>
 
-        <TabsContent value="advanced" className="space-y-4 mt-4">
+        <TabsContent className="mt-4 space-y-4" value="advanced">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="streamResponses">Stream Responses</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Show responses as they're generated
                 </p>
               </div>
               <Switch
-                id="streamResponses"
                 checked={localSettings.streamResponses}
-                onCheckedChange={(checked) => handleChange('streamResponses', checked)}
+                id="streamResponses"
+                onCheckedChange={(checked) =>
+                  handleChange('streamResponses', checked)
+                }
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="saveHistory">Save History</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Store conversation history locally
                 </p>
               </div>
               <Switch
-                id="saveHistory"
                 checked={localSettings.saveHistory}
-                onCheckedChange={(checked) => handleChange('saveHistory', checked)}
+                id="saveHistory"
+                onCheckedChange={(checked) =>
+                  handleChange('saveHistory', checked)
+                }
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="enableMemory">Enable Memory</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Remember context across conversations
                 </p>
               </div>
               <Switch
-                id="enableMemory"
                 checked={localSettings.enableMemory}
-                onCheckedChange={(checked) => handleChange('enableMemory', checked)}
+                id="enableMemory"
+                onCheckedChange={(checked) =>
+                  handleChange('enableMemory', checked)
+                }
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="contextWindow">Context Window</Label>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   {localSettings.contextWindow} messages
                 </span>
               </div>
               <Slider
                 id="contextWindow"
-                min={1}
                 max={50}
+                min={1}
+                onValueChange={([value]) =>
+                  handleChange('contextWindow', value)
+                }
                 step={1}
                 value={[localSettings.contextWindow]}
-                onValueChange={([value]) => handleChange('contextWindow', value)}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Number of previous messages to include in context
               </p>
             </div>
@@ -446,10 +464,10 @@ export function ChatSettingsPanel({
             <div className="space-y-2">
               <Label htmlFor="responseFormat">Response Format</Label>
               <Select
-                value={localSettings.responseFormat}
-                onValueChange={(value: 'text' | 'markdown' | 'json') => 
+                onValueChange={(value: 'text' | 'markdown' | 'json') =>
                   handleChange('responseFormat', value)
                 }
+                value={localSettings.responseFormat}
               >
                 <SelectTrigger id="responseFormat">
                   <SelectValue />
@@ -467,20 +485,20 @@ export function ChatSettingsPanel({
 
       {hasChanges && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between p-3 bg-muted rounded-lg"
+          className="flex items-center justify-between rounded-lg bg-muted p-3"
+          initial={{ opacity: 0, y: 10 }}
         >
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             You have unsaved changes
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleReset}>
-              <RotateCcw className="h-4 w-4 mr-1" />
+            <Button onClick={handleReset} size="sm" variant="outline">
+              <RotateCcw className="mr-1 h-4 w-4" />
               Reset
             </Button>
-            <Button size="sm" onClick={handleSave}>
-              <Save className="h-4 w-4 mr-1" />
+            <Button onClick={handleSave} size="sm">
+              <Save className="mr-1 h-4 w-4" />
               Save
             </Button>
           </div>
@@ -494,22 +512,22 @@ export function ChatSettingsPanel({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ x: 300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 300, opacity: 0 }}
             className={cn(
-              'fixed right-0 top-0 h-full w-80 bg-background border-l shadow-lg z-50 overflow-y-auto',
+              'fixed top-0 right-0 z-50 h-full w-80 overflow-y-auto border-l bg-background shadow-lg',
               className
             )}
+            exit={{ x: 300, opacity: 0 }}
+            initial={{ x: 300, opacity: 0 }}
           >
             <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 font-semibold text-lg">
                   <Settings className="h-5 w-5" />
                   Chat Settings
                 </h2>
                 {onClose && (
-                  <Button variant="ghost" size="icon" onClick={onClose}>
+                  <Button onClick={onClose} size="icon" variant="ghost">
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                 )}

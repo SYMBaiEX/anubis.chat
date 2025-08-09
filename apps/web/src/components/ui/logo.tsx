@@ -33,16 +33,12 @@ export function Logo({
   textVariant = 'default',
 }: LogoProps) {
   const dimensions = sizeMap[size];
-  
-  const textClasses = cn(
-    'font-semibold tracking-wide',
-    dimensions.text,
-    {
-      'text-gradient': textVariant === 'gradient',
-      'egypt-text': textVariant === 'egypt',
-      '': textVariant === 'default',
-    }
-  );
+
+  const textClasses = cn('font-semibold tracking-wide', dimensions.text, {
+    'text-gradient': textVariant === 'gradient',
+    'egypt-text': textVariant === 'egypt',
+    '': textVariant === 'default',
+  });
 
   const logoContent = (
     <div className={cn('flex items-center gap-2', className)}>
@@ -55,9 +51,9 @@ export function Logo({
           'h-12 w-12': size === 'xl',
         })}
         height={dimensions.image}
+        priority
         src="/favicon.png"
         width={dimensions.image}
-        priority
       />
       {showText && <span className={textClasses}>{text}</span>}
     </div>
@@ -65,10 +61,10 @@ export function Logo({
 
   if (asLink) {
     return (
-      <Link 
-        href="/" 
+      <Link
         aria-label="ISIS Chat Home"
         className="inline-flex transition-opacity hover:opacity-80"
+        href="/"
       >
         {logoContent}
       </Link>
@@ -81,29 +77,31 @@ export function Logo({
 /**
  * Logo icon only variant
  */
-export function LogoIcon({ 
-  size = 'md', 
-  className 
+export function LogoIcon({
+  size = 'md',
+  className,
 }: Pick<LogoProps, 'size' | 'className'>) {
-  return <Logo showText={false} size={size} className={className} asLink={false} />;
+  return (
+    <Logo asLink={false} className={className} showText={false} size={size} />
+  );
 }
 
 /**
  * Logo with text variant for headers/navigation
  */
-export function LogoWithText({ 
-  size = 'md', 
+export function LogoWithText({
+  size = 'md',
   className,
   textVariant = 'default',
   asLink = true,
 }: Pick<LogoProps, 'size' | 'className' | 'textVariant' | 'asLink'>) {
   return (
-    <Logo 
-      showText 
-      size={size} 
-      className={className} 
-      textVariant={textVariant}
+    <Logo
       asLink={asLink}
+      className={className}
+      showText
+      size={size}
+      textVariant={textVariant}
     />
   );
 }

@@ -11,6 +11,32 @@ import { mutation, query } from './_generated/server';
 // Workflow Management
 // =============================================================================
 
+// Visual workflow node and edge types
+export interface VisualNodeData {
+  nodeId: string;
+  nodeType: string;
+  position: { x: number; y: number };
+  data: {
+    type: string;
+    label: string;
+    description?: string;
+    icon?: string;
+    config?: Record<string, unknown>;
+    parameters?: Record<string, unknown>;
+  };
+}
+
+export interface VisualEdgeData {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
+  label?: string;
+  animated?: boolean;
+  style?: Record<string, unknown>;
+}
+
 // Get workflow by ID
 export const getById = query({
   args: { id: v.id('workflows') },
@@ -125,13 +151,18 @@ export const create = mutation({
         workflowId,
         stepId: step.stepId,
         name: step.name,
-        type: step.type,
-        agentId: step.agentId,
-        condition: step.condition,
-        parameters: step.parameters,
-        nextSteps: step.nextSteps,
-        requiresApproval: step.requiresApproval,
-        order: step.order,
+        type: 'task' as const,
+        position: step.order,
+        config: {
+          originalType: step.type,
+          agentId: step.agentId,
+          condition: step.condition,
+          parameters: step.parameters,
+          nextSteps: step.nextSteps,
+          requiresApproval: step.requiresApproval,
+        },
+        createdAt: now,
+        updatedAt: now,
       });
     }
 
@@ -518,5 +549,385 @@ export const getRecentActivity = query({
     );
 
     return executionsWithWorkflows;
+  },
+});
+
+// =============================================================================
+// Visual Workflow Builder Functions
+// =============================================================================
+
+// Save or update visual workflow data
+export const saveVisualWorkflow = mutation({
+  args: {
+    id: v.optional(v.id('workflows')),
+    name: v.string(),
+    description: v.optional(v.string()),
+    walletAddress: v.string(),
+    category: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    isTemplate: v.optional(v.boolean()),
+    isPublic: v.optional(v.boolean()),
+    nodes: v.array(
+      v.object({
+        id: v.string(),
+        type: v.string(),
+        position: v.object({
+          x: v.number(),
+          y: v.number(),
+        }),
+        data: v.object({
+          type: v.string(),
+          label: v.string(),
+          description: v.optional(v.string()),
+          icon: v.optional(v.string()),
+          config: v.optional(v.any()),
+          parameters: v.optional(v.any()),
+        }),
+      })
+    ),
+    edges: v.array(
+      v.object({
+        id: v.string(),
+        source: v.string(),
+        target: v.string(),
+        sourceHandle: v.optional(v.string()),
+        targetHandle: v.optional(v.string()),
+        label: v.optional(v.string()),
+        animated: v.optional(v.boolean()),
+        style: v.optional(v.any()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    let workflowId = args.id;
+
+    if (workflowId) {
+      // Update existing workflow
+      const workflow = await ctx.db.get(workflowId);
+      if (!workflow || workflow.walletAddress !== args.walletAddress) {
+        throw new Error('Workflow not found or access denied');
+      }
+
+      await ctx.db.patch(workflowId, {
+        name: args.name,
+        description: args.description,
+        category: args.category,
+        tags: args.tags,
+        isTemplate: args.isTemplate,
+        isPublic: args.isPublic,
+        updatedAt: now,
+      });
+
+      // Delete existing steps and edges
+      const existingSteps = await ctx.db
+        .query('workflowSteps')
+        .withIndex('by_workflow', (q) => q.eq('workflowId', workflowId))
+        .collect();
+
+      for (const step of existingSteps) {
+        await ctx.db.delete(step._id);
+      }
+
+      const existingEdges = await ctx.db
+        .query('workflowEdges')
+        .withIndex('by_workflow', (q) => q.eq('workflowId', workflowId))
+        .collect();
+
+      for (const edge of existingEdges) {
+        await ctx.db.delete(edge._id);
+      }
+    } else {
+      // Create new workflow
+      workflowId = await ctx.db.insert('workflows', {
+        name: args.name,
+        description: args.description,
+        walletAddress: args.walletAddress,
+        category: args.category,
+        tags: args.tags,
+        isTemplate: args.isTemplate,
+        isPublic: args.isPublic,
+        version: '1.0.0',
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // Save nodes as workflow steps
+    for (let i = 0; i < args.nodes.length; i++) {
+      const node = args.nodes[i];
+      await ctx.db.insert('workflowSteps', {
+        workflowId,
+        stepId: node.id,
+        name: node.data.label,
+        type:
+          node.data.type === 'trigger' ||
+          node.data.type === 'condition' ||
+          node.data.type === 'action' ||
+          node.data.type === 'task'
+            ? node.data.type
+            : 'task',
+        position: i,
+        config: node.data.config || {},
+        visualData: {
+          nodeId: node.id,
+          nodeType: node.type,
+          position: node.position,
+          data: node.data,
+        },
+        createdAt: now,
+        updatedAt: now,
+        order: i,
+      });
+    }
+
+    // Save edges
+    for (const edge of args.edges) {
+      await ctx.db.insert('workflowEdges', {
+        workflowId,
+        sourceNodeId: edge.source,
+        targetNodeId: edge.target,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
+        label: edge.label,
+        animated: edge.animated,
+        style: edge.style,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return workflowId;
+  },
+});
+
+// Get visual workflow with nodes and edges
+export const getVisualWorkflow = query({
+  args: { id: v.id('workflows') },
+  handler: async (ctx, args) => {
+    const workflow = await ctx.db.get(args.id);
+    if (!workflow) return null;
+
+    // Get all steps with visual data
+    const steps = await ctx.db
+      .query('workflowSteps')
+      .withIndex('by_workflow', (q) => q.eq('workflowId', args.id))
+      .collect();
+
+    // Get all edges
+    const edges = await ctx.db
+      .query('workflowEdges')
+      .withIndex('by_workflow', (q) => q.eq('workflowId', args.id))
+      .collect();
+
+    // Transform to React Flow format
+    const nodes = steps.map((step) => ({
+      id: step.visualData?.nodeId || step.stepId || step._id,
+      type: step.visualData?.nodeType || 'custom',
+      position: step.visualData?.position || { x: 100, y: 100 },
+      data: step.visualData?.data || {
+        type: step.type,
+        label: step.name,
+        config: step.config,
+      },
+    }));
+
+    const flowEdges = edges.map((edge) => ({
+      id: edge._id,
+      source: edge.sourceNodeId,
+      target: edge.targetNodeId,
+      sourceHandle: edge.sourceHandle,
+      targetHandle: edge.targetHandle,
+      label: edge.label,
+      animated: edge.animated,
+      style: edge.style,
+    }));
+
+    return {
+      ...workflow,
+      nodes,
+      edges: flowEdges,
+    };
+  },
+});
+
+// List visual workflows
+export const listVisualWorkflows = query({
+  args: {
+    walletAddress: v.string(),
+    includeTemplates: v.optional(v.boolean()),
+    onlyPublic: v.optional(v.boolean()),
+    category: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit ?? 50, 100);
+
+    let workflows = await ctx.db
+      .query('workflows')
+      .withIndex('by_owner', (q) => q.eq('walletAddress', args.walletAddress))
+      .order('desc')
+      .take(limit);
+
+    // Apply filters
+    if (!args.includeTemplates) {
+      workflows = workflows.filter((w) => !w.isTemplate);
+    }
+
+    if (args.onlyPublic) {
+      workflows = workflows.filter((w) => w.isPublic);
+    }
+
+    if (args.category) {
+      workflows = workflows.filter((w) => w.category === args.category);
+    }
+
+    // Get node and edge counts
+    const workflowsWithCounts = await Promise.all(
+      workflows.map(async (workflow) => {
+        const steps = await ctx.db
+          .query('workflowSteps')
+          .withIndex('by_workflow', (q) => q.eq('workflowId', workflow._id))
+          .collect();
+
+        const edges = await ctx.db
+          .query('workflowEdges')
+          .withIndex('by_workflow', (q) => q.eq('workflowId', workflow._id))
+          .collect();
+
+        return {
+          ...workflow,
+          nodeCount: steps.length,
+          edgeCount: edges.length,
+        };
+      })
+    );
+
+    return workflowsWithCounts;
+  },
+});
+
+// Clone workflow (for templates)
+export const cloneWorkflow = mutation({
+  args: {
+    sourceId: v.id('workflows'),
+    newName: v.string(),
+    walletAddress: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const sourceWorkflow = await ctx.db.get(args.sourceId);
+    if (!sourceWorkflow) {
+      throw new Error('Source workflow not found');
+    }
+
+    // Create new workflow
+    const now = Date.now();
+    const newWorkflowId = await ctx.db.insert('workflows', {
+      name: args.newName,
+      description: sourceWorkflow.description,
+      walletAddress: args.walletAddress,
+      category: sourceWorkflow.category,
+      tags: sourceWorkflow.tags,
+      isTemplate: false,
+      isPublic: false,
+      version: '1.0.0',
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Copy steps
+    const steps = await ctx.db
+      .query('workflowSteps')
+      .withIndex('by_workflow', (q) => q.eq('workflowId', args.sourceId))
+      .collect();
+
+    for (const step of steps) {
+      await ctx.db.insert('workflowSteps', {
+        workflowId: newWorkflowId,
+        stepId: step.stepId,
+        name: step.name,
+        type: step.type,
+        position: step.position,
+        config: step.config,
+        visualData: step.visualData,
+        createdAt: now,
+        updatedAt: now,
+        agentId: step.agentId,
+        condition: step.condition,
+        parameters: step.parameters,
+        nextSteps: step.nextSteps,
+        requiresApproval: step.requiresApproval,
+        order: step.order,
+      });
+    }
+
+    // Copy edges
+    const edges = await ctx.db
+      .query('workflowEdges')
+      .withIndex('by_workflow', (q) => q.eq('workflowId', args.sourceId))
+      .collect();
+
+    for (const edge of edges) {
+      await ctx.db.insert('workflowEdges', {
+        workflowId: newWorkflowId,
+        sourceNodeId: edge.sourceNodeId,
+        targetNodeId: edge.targetNodeId,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
+        label: edge.label,
+        animated: edge.animated,
+        style: edge.style,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return newWorkflowId;
+  },
+});
+
+// Get workflow templates
+export const getWorkflowTemplates = query({
+  args: {
+    category: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit ?? 20, 100);
+
+    let templates = await ctx.db
+      .query('workflows')
+      .filter((q) => q.eq(q.field('isTemplate'), true))
+      .order('desc')
+      .take(limit);
+
+    if (args.category) {
+      templates = templates.filter((t) => t.category === args.category);
+    }
+
+    // Get counts
+    const templatesWithCounts = await Promise.all(
+      templates.map(async (template) => {
+        const steps = await ctx.db
+          .query('workflowSteps')
+          .withIndex('by_workflow', (q) => q.eq('workflowId', template._id))
+          .collect();
+
+        const edges = await ctx.db
+          .query('workflowEdges')
+          .withIndex('by_workflow', (q) => q.eq('workflowId', template._id))
+          .collect();
+
+        return {
+          ...template,
+          nodeCount: steps.length,
+          edgeCount: edges.length,
+        };
+      })
+    );
+
+    return templatesWithCounts;
   },
 });

@@ -8,7 +8,11 @@ import { useWallet } from '@/hooks/useWallet';
 // UI Health Score Threshold
 const HEALTH_SCORE_THRESHOLD = 80;
 
-export function WalletConnectButton() {
+interface WalletConnectButtonProps {
+  collapsed?: boolean;
+}
+
+export function WalletConnectButton({ collapsed = false }: WalletConnectButtonProps) {
   const {
     isConnected,
     isConnecting,
@@ -43,9 +47,31 @@ export function WalletConnectButton() {
     return '🟢';
   };
 
+  if (collapsed) {
+    return (
+      <Button
+        className="h-10 w-10 border-2 p-0 transition-colors hover:border-primary"
+        disabled={isConnecting}
+        onClick={handleClick}
+        size="icon"
+        title={
+          isConnected
+            ? `${formatAddress()} - Health: ${connectionHealthScore}% ${isHealthy ? '(Good)' : '(Poor)'}`
+            : error || 'Connect your Solana wallet'
+        }
+        variant={getButtonVariant()}
+      >
+        <Wallet className="h-5 w-5" />
+        {getHealthIndicator() && (
+          <span className="absolute -top-1 -right-1 text-[10px]">{getHealthIndicator()}</span>
+        )}
+      </Button>
+    );
+  }
+
   return (
     <Button
-      className="border-2 transition-colors hover:border-primary"
+      className="w-full border-2 transition-colors hover:border-primary"
       disabled={isConnecting}
       onClick={handleClick}
       size="sm"

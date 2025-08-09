@@ -77,8 +77,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
           return notFoundResponse('Agent not found');
         }
 
-        // Check ownership
-        if (agent.walletAddress !== walletAddress) {
+        // Check ownership - backend stores creator in `createdBy`
+        if ((agent as any).createdBy !== walletAddress) {
           return unauthorizedResponse(
             'Access denied: You do not own this agent'
           );
@@ -184,7 +184,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         await convex.mutation(api.agents.remove, {
           id: agentId as Id<'agents'>,
           walletAddress,
-        });
+          userId: walletAddress,
+        } as any);
 
         log.info('Agent deleted successfully', { agentId, walletAddress });
 

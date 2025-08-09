@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import type { MessageListProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { MessageBubble } from './message-bubble';
+import { StreamingMessage } from './streaming-message';
 import { TypingIndicator } from './typing-indicator';
 
 /**
@@ -19,12 +20,12 @@ export function MessageList({
   messages,
   loading = false,
   onMessageRegenerate,
+  isTyping = false,
   className,
   children,
-}: MessageListProps) {
+}: MessageListProps & { isTyping?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [lastMessageCount, setLastMessageCount] = useState(0);
 
   // Auto-scroll to bottom when new messages arrive
@@ -144,18 +145,30 @@ export function MessageList({
 
               {/* Messages for this date */}
               <div className="space-y-4">
-                {group.messages.map((message, messageIndex) => (
-                  <MessageBubble
-                    key={message._id}
-                    message={message}
-                    onCopy={() => {
-                      navigator.clipboard.writeText(message.content);
-                    }}
-                    onEdit={(_newContent) => {}}
-                    onRegenerate={() => onMessageRegenerate?.(message._id)}
-                    showActions={true}
-                  />
-                ))}
+                {group.messages.map((message, messageIndex) => {
+                  // Check if this is a streaming message
+                  if ('isStreaming' in message && message.isStreaming) {
+                    return (
+                      <StreamingMessage
+                        content={message.content}
+                        key={message.id}
+                      />
+                    );
+                  }
+
+                  return (
+                    <MessageBubble
+                      key={message._id}
+                      message={message}
+                      onCopy={() => {
+                        navigator.clipboard.writeText(message.content);
+                      }}
+                      onEdit={(_newContent) => {}}
+                      onRegenerate={() => onMessageRegenerate?.(message._id)}
+                      showActions={true}
+                    />
+                  );
+                })}
               </div>
             </div>
           ))}

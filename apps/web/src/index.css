@@ -375,7 +375,7 @@
     background:
       radial-gradient(
         30% 40% at 60% 10%,
-        rgba(255, 215, 0, 0.10),
+        rgba(255, 215, 0, 0.1),
         transparent 70%
       ),
       radial-gradient(
@@ -524,16 +524,17 @@
 }
 
 .section-transition::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -2px;
   left: 0;
   right: 0;
   height: 120px;
-  background: linear-gradient(to bottom, 
-    transparent 0%, 
-    transparent 40%, 
-    rgba(0, 0, 0, 0.02) 70%, 
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.02) 70%,
     rgba(0, 0, 0, 0.05) 100%
   );
   pointer-events: none;
@@ -541,16 +542,17 @@
 }
 
 .section-transition::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -2px;
   left: 0;
   right: 0;
   height: 120px;
-  background: linear-gradient(to top, 
-    transparent 0%, 
-    transparent 40%, 
-    rgba(0, 0, 0, 0.02) 70%, 
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.02) 70%,
     rgba(0, 0, 0, 0.05) 100%
   );
   pointer-events: none;
@@ -559,7 +561,7 @@
 
 /* Smooth gradient mesh overlay */
 .gradient-mesh {
-  background-image: 
+  background-image:
     radial-gradient(at 40% 20%, hsla(162, 84%, 51%, 0.1) 0px, transparent 50%),
     radial-gradient(at 80% 0%, hsla(269, 72%, 56%, 0.08) 0px, transparent 50%),
     radial-gradient(at 0% 50%, hsla(51, 100%, 50%, 0.05) 0px, transparent 50%),

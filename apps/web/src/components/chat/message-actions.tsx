@@ -1,7 +1,24 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  CheckCircle,
+  Copy,
+  Download,
+  Edit3,
+  Flag,
+  MessageSquare,
+  MoreVertical,
+  RotateCw,
+  Share2,
+  Sparkles,
+  ThumbsDown,
+  ThumbsUp,
+  Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,30 +26,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  Copy,
-  Edit3,
-  Trash2,
-  MoreVertical,
-  RotateCw,
-  Share2,
-  Flag,
-  Download,
-  CheckCircle,
-  Sparkles,
-  ThumbsUp,
-  ThumbsDown,
-  MessageSquare,
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
 interface MessageActionsProps {
   messageId: string;
@@ -59,7 +59,7 @@ export function MessageActions({
   onShare,
   onFlag,
   className,
-  variant = 'inline'
+  variant = 'inline',
 }: MessageActionsProps) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState<boolean | null>(null);
@@ -78,7 +78,9 @@ export function MessageActions({
 
   const handleLike = (isLike: boolean) => {
     setLiked(liked === isLike ? null : isLike);
-    toast.success(isLike ? 'Feedback recorded: Liked' : 'Feedback recorded: Disliked');
+    toast.success(
+      isLike ? 'Feedback recorded: Liked' : 'Feedback recorded: Disliked'
+    );
   };
 
   const handleDownload = () => {
@@ -99,9 +101,9 @@ export function MessageActions({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
-            size="icon"
             className={cn('h-8 w-8', className)}
+            size="icon"
+            variant="ghost"
           >
             <MoreVertical className="h-4 w-4" />
           </Button>
@@ -120,44 +122,50 @@ export function MessageActions({
               </>
             )}
           </DropdownMenuItem>
-          
+
           {role === 'user' && onEdit && (
             <DropdownMenuItem onClick={() => onEdit(messageId, content)}>
               <Edit3 className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
           )}
-          
+
           {role === 'assistant' && onRegenerate && (
             <DropdownMenuItem onClick={() => onRegenerate(messageId)}>
               <RotateCw className="mr-2 h-4 w-4" />
               Regenerate
             </DropdownMenuItem>
           )}
-          
+
           <DropdownMenuItem onClick={handleDownload}>
             <Download className="mr-2 h-4 w-4" />
             Download
           </DropdownMenuItem>
-          
+
           {onShare && (
             <DropdownMenuItem onClick={() => onShare(messageId)}>
               <Share2 className="mr-2 h-4 w-4" />
               Share
             </DropdownMenuItem>
           )}
-          
+
           <DropdownMenuSeparator />
-          
+
           {onFlag && (
-            <DropdownMenuItem onClick={() => onFlag(messageId)} className="text-amber-600">
+            <DropdownMenuItem
+              className="text-amber-600"
+              onClick={() => onFlag(messageId)}
+            >
               <Flag className="mr-2 h-4 w-4" />
               Report
             </DropdownMenuItem>
           )}
-          
+
           {onDelete && (
-            <DropdownMenuItem onClick={() => onDelete(messageId)} className="text-destructive">
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => onDelete(messageId)}
+            >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete
             </DropdownMenuItem>
@@ -170,22 +178,22 @@ export function MessageActions({
   if (variant === 'floating') {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 10 }}
         className={cn(
-          'absolute -top-2 right-2 flex items-center gap-1 rounded-lg bg-background/95 backdrop-blur border p-1 shadow-lg',
+          '-top-2 absolute right-2 flex items-center gap-1 rounded-lg border bg-background/95 p-1 shadow-lg backdrop-blur',
           className
         )}
+        exit={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 10 }}
       >
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="icon"
                 className="h-7 w-7"
                 onClick={handleCopy}
+                size="icon"
+                variant="ghost"
               >
                 {copied ? (
                   <CheckCircle className="h-3.5 w-3.5 text-green-500" />
@@ -202,15 +210,17 @@ export function MessageActions({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
-                    size="icon"
                     className="h-7 w-7"
                     onClick={() => handleLike(true)}
+                    size="icon"
+                    variant="ghost"
                   >
-                    <ThumbsUp className={cn(
-                      "h-3.5 w-3.5",
-                      liked === true && "fill-green-500 text-green-500"
-                    )} />
+                    <ThumbsUp
+                      className={cn(
+                        'h-3.5 w-3.5',
+                        liked === true && 'fill-green-500 text-green-500'
+                      )}
+                    />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Good response</TooltipContent>
@@ -219,15 +229,17 @@ export function MessageActions({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
-                    size="icon"
                     className="h-7 w-7"
                     onClick={() => handleLike(false)}
+                    size="icon"
+                    variant="ghost"
                   >
-                    <ThumbsDown className={cn(
-                      "h-3.5 w-3.5",
-                      liked === false && "fill-red-500 text-red-500"
-                    )} />
+                    <ThumbsDown
+                      className={cn(
+                        'h-3.5 w-3.5',
+                        liked === false && 'fill-red-500 text-red-500'
+                      )}
+                    />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Bad response</TooltipContent>
@@ -237,10 +249,10 @@ export function MessageActions({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="ghost"
-                      size="icon"
                       className="h-7 w-7"
                       onClick={() => onRegenerate(messageId)}
+                      size="icon"
+                      variant="ghost"
                     >
                       <RotateCw className="h-3.5 w-3.5" />
                     </Button>
@@ -253,7 +265,7 @@ export function MessageActions({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7">
+              <Button className="h-7 w-7" size="icon" variant="ghost">
                 <MoreVertical className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -288,10 +300,10 @@ export function MessageActions({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="ghost"
-              size="icon"
               className="h-8 w-8"
               onClick={handleCopy}
+              size="icon"
+              variant="ghost"
             >
               {copied ? (
                 <CheckCircle className="h-4 w-4 text-green-500" />
@@ -309,10 +321,10 @@ export function MessageActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="icon"
                 className="h-8 w-8"
                 onClick={() => onEdit(messageId, content)}
+                size="icon"
+                variant="ghost"
               >
                 <Edit3 className="h-4 w-4" />
               </Button>
@@ -325,10 +337,10 @@ export function MessageActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="icon"
                 className="h-8 w-8"
                 onClick={() => onRegenerate(messageId)}
+                size="icon"
+                variant="ghost"
               >
                 <RotateCw className="h-4 w-4" />
               </Button>
@@ -341,10 +353,10 @@ export function MessageActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="icon"
                 className="h-8 w-8 hover:text-destructive"
                 onClick={() => onDelete(messageId)}
+                size="icon"
+                variant="ghost"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

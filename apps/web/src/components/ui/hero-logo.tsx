@@ -15,16 +15,16 @@ interface HeroLogoProps {
  * Large hero logo for landing pages and splash screens
  * Displays "ISIS CHAT" in large, styled text with optional icon
  */
-export function HeroLogo({ 
-  className, 
-  showIcon = true, 
-  iconSize = 'xl' 
+export function HeroLogo({
+  className,
+  showIcon = true,
+  iconSize = 'xl',
 }: HeroLogoProps) {
   return (
     <div className={cn('flex flex-col items-center gap-4', className)}>
       {showIcon && (
         <div className="animate-pulse">
-          <LogoIcon size={iconSize} className="drop-shadow-2xl" />
+          <LogoIcon className="drop-shadow-2xl" size={iconSize} />
         </div>
       )}
       <div className="space-y-2 text-center">
@@ -47,7 +47,7 @@ export function CompactHeroLogo({ className }: { className?: string }) {
     <div className={cn('flex items-center gap-3', className)}>
       <LogoIcon size="lg" />
       <div>
-        <h2 className="text-gradient font-bold text-2xl">ISIS CHAT</h2>
+        <h2 className="font-bold text-2xl text-gradient">ISIS CHAT</h2>
         <p className="egypt-text text-sm">Ancient Wisdom • Modern Tech</p>
       </div>
     </div>

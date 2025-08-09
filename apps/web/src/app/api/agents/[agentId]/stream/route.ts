@@ -64,15 +64,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
         return new Response('Agent not found', { status: 404 });
       }
 
-      // Check ownership
-      if (agentDoc.walletAddress !== walletAddress) {
+      // Check ownership - backend stores creator in `createdBy`
+      if ((agentDoc as any).createdBy !== walletAddress) {
         return new Response('Unauthorized', { status: 403 });
       }
 
       // Convert to Agent format for execution engine with validation
       let agent: Agent;
       try {
-        agent = convexAgentToApiFormat(agentDoc);
+        agent = convexAgentToApiFormat(agentDoc as any);
       } catch (conversionError) {
         log.error('Agent conversion error', {
           agentId,

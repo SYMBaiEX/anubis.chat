@@ -1,30 +1,30 @@
 import {
-  TrendingUp,
-  DollarSign,
-  Image,
-  Vote,
-  BarChart3,
-  Wallet,
   Activity,
-  RefreshCw,
-  PieChart,
-  MessageSquare,
-  TrendingDown,
-  Database,
+  BarChart3,
+  Bell,
+  Brain,
   Code,
+  Database,
+  DollarSign,
+  Eye,
+  Globe,
+  Image,
   Zap as Lightning,
   Link,
-  Globe,
-  Shield,
   Lock,
-  Users,
-  Bell,
-  Mail,
-  Send,
-  Brain,
-  Eye,
-  Mic,
   type LucideIcon,
+  Mail,
+  MessageSquare,
+  Mic,
+  PieChart,
+  RefreshCw,
+  Send,
+  Shield,
+  TrendingDown,
+  TrendingUp,
+  Users,
+  Vote,
+  Wallet,
 } from 'lucide-react';
 
 interface Capability {
@@ -99,7 +99,7 @@ export const capabilities: Capability[] = [
     icon: RefreshCw,
     premium: true,
   },
-  
+
   // Data & Analytics
   {
     id: 'market-analysis',
@@ -130,7 +130,7 @@ export const capabilities: Capability[] = [
     category: 'Analytics',
     icon: Database,
   },
-  
+
   // Development & Automation
   {
     id: 'smart-contracts',
@@ -161,7 +161,7 @@ export const capabilities: Capability[] = [
     icon: Globe,
     beta: true,
   },
-  
+
   // Security & Privacy
   {
     id: 'security-audit',
@@ -186,7 +186,7 @@ export const capabilities: Capability[] = [
     icon: Users,
     premium: true,
   },
-  
+
   // Communication
   {
     id: 'notifications',
@@ -218,7 +218,7 @@ export const capabilities: Capability[] = [
     icon: Send,
     beta: true,
   },
-  
+
   // Advanced Features
   {
     id: 'ai-predictions',

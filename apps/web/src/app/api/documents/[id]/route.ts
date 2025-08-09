@@ -87,7 +87,6 @@ export async function GET(
       } catch (error) {
         log.error('Failed to retrieve document', {
           error,
-          documentId,
           operation: 'get_document',
         });
         const response = NextResponse.json(
@@ -168,6 +167,10 @@ export async function PUT(
           characterCount: updates.metadata?.characterCount,
         });
 
+        if (!patched) {
+          return notFoundResponse('Document not found or update failed');
+        }
+
         const responseData: DocumentUpdateResponse = {
           document: {
             id: patched._id,
@@ -187,7 +190,6 @@ export async function PUT(
       } catch (error) {
         log.error('Failed to update document', {
           error,
-          documentId,
           operation: 'update_document',
         });
         const response = NextResponse.json(
@@ -239,7 +241,6 @@ export async function DELETE(
       } catch (error) {
         log.error('Failed to delete document', {
           error,
-          documentId,
           operation: 'delete_document',
         });
         const response = NextResponse.json(

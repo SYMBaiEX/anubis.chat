@@ -1,24 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { AnimatePresence, motion } from 'framer-motion';
+import type { LucideIcon } from 'lucide-react';
 import {
-  Home,
-  MessageSquare,
   Bot,
-  Wallet,
-  Settings,
+  Home,
+  Menu,
+  MessageSquare,
   Plus,
   Search,
+  Settings,
   User,
-  Menu,
+  Wallet,
   X,
-  type LucideIcon,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface NavItem {
   id: string;
@@ -48,13 +48,13 @@ export function MobileNavigation({
   variant = 'bottom',
   className,
   onNewChat,
-  unreadCount = 0
+  unreadCount = 0,
 }: MobileNavigationProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  const navItems = defaultNavItems.map(item => ({
+  const navItems = defaultNavItems.map((item) => ({
     ...item,
     badge: item.id === 'chat' && unreadCount > 0 ? unreadCount : item.badge,
   }));
@@ -66,36 +66,35 @@ export function MobileNavigation({
 
   if (variant === 'floating') {
     return (
-      <div className={cn(
-        'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
-        'bg-background/95 backdrop-blur-lg border rounded-full shadow-lg',
-        'px-2 py-2',
-        className
-      )}>
+      <div
+        className={cn(
+          '-translate-x-1/2 fixed bottom-6 left-1/2 z-50',
+          'rounded-full border bg-background/95 shadow-lg backdrop-blur-lg',
+          'px-2 py-2',
+          className
+        )}
+      >
         <div className="flex items-center gap-1">
           {navItems.slice(0, 4).map((item) => {
             const isActive = pathname === item.href;
             const ItemIcon = item.icon;
             return (
-              <motion.div
-                key={item.id}
-                whileTap={{ scale: 0.95 }}
-              >
+              <motion.div key={item.id} whileTap={{ scale: 0.95 }}>
                 <Button
-                  variant={isActive ? 'default' : 'ghost'}
-                  size="icon"
+                  aria-label={item.label}
                   className={cn(
                     'relative h-10 w-10 rounded-full',
                     isActive && 'shadow-sm'
                   )}
                   onClick={() => handleNavigation(item.href)}
-                  aria-label={item.label}
+                  size="icon"
+                  variant={isActive ? 'default' : 'ghost'}
                 >
                   <ItemIcon className="h-5 w-5" />
                   {item.badge && (
                     <Badge
+                      className="-top-1 -right-1 absolute flex h-5 w-5 items-center justify-center p-0"
                       variant={item.badgeVariant || 'destructive'}
-                      className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center"
                     >
                       {item.badge}
                     </Badge>
@@ -104,16 +103,16 @@ export function MobileNavigation({
               </motion.div>
             );
           })}
-          
-          <div className="w-px h-6 bg-border mx-1" />
-          
+
+          <div className="mx-1 h-6 w-px bg-border" />
+
           <motion.div whileTap={{ scale: 0.95 }}>
             <Button
-              variant="ghost"
-              size="icon"
+              aria-label="Open menu"
               className="h-10 w-10 rounded-full"
               onClick={() => setIsDrawerOpen(true)}
-              aria-label="Open menu"
+              size="icon"
+              variant="ghost"
             >
               <Menu className="h-5 w-5" />
             </Button>
@@ -128,14 +127,14 @@ export function MobileNavigation({
       <>
         {/* Menu Button */}
         <Button
-          variant="outline"
-          size="icon"
+          aria-label="Open navigation menu"
           className={cn(
-            'fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg',
+            'fixed right-6 bottom-6 z-50 h-14 w-14 rounded-full shadow-lg',
             className
           )}
           onClick={() => setIsDrawerOpen(true)}
-          aria-label="Open navigation menu"
+          size="icon"
+          variant="outline"
         >
           <Menu className="h-6 w-6" />
         </Button>
@@ -146,30 +145,30 @@ export function MobileNavigation({
             <>
               {/* Backdrop */}
               <motion.div
-                initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
+                className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm"
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+                initial={{ opacity: 0 }}
                 onClick={() => setIsDrawerOpen(false)}
               />
 
               {/* Drawer Content */}
               <motion.div
-                initial={{ x: '100%' }}
                 animate={{ x: 0 }}
+                className="fixed top-0 right-0 z-50 h-full w-80 border-l bg-background shadow-xl"
                 exit={{ x: '100%' }}
+                initial={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 20 }}
-                className="fixed right-0 top-0 h-full w-80 bg-background border-l shadow-xl z-50"
               >
-                <div className="flex flex-col h-full">
+                <div className="flex h-full flex-col">
                   {/* Header */}
-                  <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="text-lg font-semibold">Menu</h2>
+                  <div className="flex items-center justify-between border-b p-4">
+                    <h2 className="font-semibold text-lg">Menu</h2>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsDrawerOpen(false)}
                       aria-label="Close menu"
+                      onClick={() => setIsDrawerOpen(false)}
+                      size="icon"
+                      variant="ghost"
                     >
                       <X className="h-5 w-5" />
                     </Button>
@@ -183,17 +182,17 @@ export function MobileNavigation({
                         const ItemIcon = item.icon;
                         return (
                           <Button
-                            key={item.id}
-                            variant={isActive ? 'secondary' : 'ghost'}
                             className="w-full justify-start"
+                            key={item.id}
                             onClick={() => handleNavigation(item.href)}
+                            variant={isActive ? 'secondary' : 'ghost'}
                           >
-                            <ItemIcon className="h-5 w-5 mr-3" />
+                            <ItemIcon className="mr-3 h-5 w-5" />
                             {item.label}
                             {item.badge && (
                               <Badge
-                                variant={item.badgeVariant || 'secondary'}
                                 className="ml-auto"
+                                variant={item.badgeVariant || 'secondary'}
                               >
                                 {item.badge}
                               </Badge>
@@ -203,13 +202,13 @@ export function MobileNavigation({
                       })}
                     </div>
 
-                    <div className="mt-6 pt-6 border-t">
+                    <div className="mt-6 border-t pt-6">
                       <Button
-                        variant="outline"
                         className="w-full"
                         onClick={() => handleNavigation('/settings')}
+                        variant="outline"
                       >
-                        <Settings className="h-5 w-5 mr-3" />
+                        <Settings className="mr-3 h-5 w-5" />
                         Settings
                       </Button>
                     </div>
@@ -217,7 +216,7 @@ export function MobileNavigation({
 
                   {/* Footer Actions */}
                   {onNewChat && (
-                    <div className="p-4 border-t">
+                    <div className="border-t p-4">
                       <Button
                         className="w-full"
                         onClick={() => {
@@ -225,7 +224,7 @@ export function MobileNavigation({
                           setIsDrawerOpen(false);
                         }}
                       >
-                        <Plus className="h-5 w-5 mr-2" />
+                        <Plus className="mr-2 h-5 w-5" />
                         New Chat
                       </Button>
                     </div>
@@ -241,51 +240,57 @@ export function MobileNavigation({
 
   // Bottom variant (default)
   return (
-    <div className={cn(
-      'fixed bottom-0 left-0 right-0 z-50',
-      'bg-background/95 backdrop-blur-lg border-t',
-      'px-4 py-2 safe-bottom',
-      className
-    )}>
-      <div className="flex items-center justify-around max-w-lg mx-auto">
+    <div
+      className={cn(
+        'fixed right-0 bottom-0 left-0 z-50',
+        'border-t bg-background/95 backdrop-blur-lg',
+        'safe-bottom px-4 py-2',
+        className
+      )}
+    >
+      <div className="mx-auto flex max-w-lg items-center justify-around">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const ItemIcon = item.icon;
           return (
             <motion.button
-              key={item.id}
-              whileTap={{ scale: 0.95 }}
               className={cn(
-                'relative flex flex-col items-center gap-1 p-2 rounded-lg transition-colors',
+                'relative flex flex-col items-center gap-1 rounded-lg p-2 transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground',
                 'hover:bg-muted/50'
               )}
+              key={item.id}
               onClick={() => handleNavigation(item.href)}
+              whileTap={{ scale: 0.95 }}
             >
               <div className="relative">
-                <ItemIcon className={cn(
-                  'h-5 w-5 transition-colors',
-                  isActive && 'text-primary'
-                )} />
+                <ItemIcon
+                  className={cn(
+                    'h-5 w-5 transition-colors',
+                    isActive && 'text-primary'
+                  )}
+                />
                 {item.badge && (
                   <Badge
+                    className="-top-2 -right-2 absolute flex h-4 min-w-[16px] items-center justify-center p-0 text-[10px]"
                     variant={item.badgeVariant || 'destructive'}
-                    className="absolute -top-2 -right-2 h-4 min-w-[16px] p-0 flex items-center justify-center text-[10px]"
                   >
                     {item.badge}
                   </Badge>
                 )}
               </div>
-              <span className={cn(
-                'text-[10px] font-medium',
-                isActive && 'text-primary'
-              )}>
+              <span
+                className={cn(
+                  'font-medium text-[10px]',
+                  isActive && 'text-primary'
+                )}
+              >
                 {item.label}
               </span>
               {isActive && (
                 <motion.div
+                  className="-bottom-2 -translate-x-1/2 absolute left-1/2 h-1 w-1 rounded-full bg-primary"
                   layoutId="activeTab"
-                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full"
                 />
               )}
             </motion.button>
@@ -296,15 +301,15 @@ export function MobileNavigation({
       {/* Quick Action Button */}
       {onNewChat && (
         <motion.div
-          initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="absolute -top-16 right-4"
+          className="-top-16 absolute right-4"
+          initial={{ scale: 0 }}
         >
           <Button
-            size="icon"
+            aria-label="Start new chat"
             className="h-14 w-14 rounded-full shadow-lg"
             onClick={onNewChat}
-            aria-label="Start new chat"
+            size="icon"
           >
             <Plus className="h-6 w-6" />
           </Button>

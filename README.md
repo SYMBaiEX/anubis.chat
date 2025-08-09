@@ -5,10 +5,16 @@ A next-generation AI chat platform combining advanced RAG (Retrieval-Augmented G
 ## 🚀 Key Features
 
 ### AI & Chat
-- **Multi-Model AI Support** - Integration with Claude 3.5, GPT-4o, DeepSeek v3, and Gemini 2.0
+- **Latest AI Models (August 2025)** - GPT-5, Claude Opus 4.1, Gemini 2.5 Pro, and 14+ cutting-edge models
+- **Dynamic Model Selection** - Switch between AI models on-the-fly with rich UI selector
+- **Multi-Provider Support** - Seamless integration with OpenAI, Anthropic, and Google
+- **Real-time Streaming** - Convex HTTP actions for streaming AI responses
 - **Document RAG System** - Upload and query documents with semantic search
 - **Real-time Chat** - Streaming responses with conversation memory
+- **Typing Indicators** - Real-time typing status with automatic cleanup
+- **Optimistic Updates** - Instant UI feedback for better user experience
 - **Context-Aware Responses** - AI leverages uploaded documents for enhanced answers
+- **Model Persistence** - Selected model saved per chat conversation
 
 ### Web3 Integration
 - **Solana Wallet Authentication** - Secure login with Phantom, Solflare, and other wallets

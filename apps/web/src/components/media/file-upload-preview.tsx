@@ -1,32 +1,32 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  X,
-  Upload,
-  File,
-  FileText,
-  FileImage,
-  FileVideo,
-  FileAudio,
-  FileCode,
-  FileArchive,
-  FileSpreadsheet,
-  Paperclip,
-  Download,
-  Eye,
-  Trash2,
   AlertCircle,
   CheckCircle,
+  Download,
+  Eye,
+  File,
+  FileArchive,
+  FileAudio,
+  FileCode,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
+  FileVideo,
   Loader2,
+  Paperclip,
+  Trash2,
+  Upload,
+  X,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 interface FileUploadItem {
   id: string;
@@ -53,14 +53,14 @@ interface FileUploadPreviewProps {
 }
 
 const fileTypeIcons: Record<string, React.ComponentType<any>> = {
-  'image': FileImage,
-  'video': FileVideo,
-  'audio': FileAudio,
-  'text': FileText,
-  'code': FileCode,
-  'archive': FileArchive,
-  'spreadsheet': FileSpreadsheet,
-  'default': File,
+  image: FileImage,
+  video: FileVideo,
+  audio: FileAudio,
+  text: FileText,
+  code: FileCode,
+  archive: FileArchive,
+  spreadsheet: FileSpreadsheet,
+  default: File,
 };
 
 const getFileIcon = (type: string) => {
@@ -68,9 +68,16 @@ const getFileIcon = (type: string) => {
   if (type.startsWith('video/')) return fileTypeIcons.video;
   if (type.startsWith('audio/')) return fileTypeIcons.audio;
   if (type.startsWith('text/')) return fileTypeIcons.text;
-  if (type.includes('zip') || type.includes('rar') || type.includes('tar')) return fileTypeIcons.archive;
-  if (type.includes('sheet') || type.includes('excel')) return fileTypeIcons.spreadsheet;
-  if (type.includes('javascript') || type.includes('typescript') || type.includes('python')) return fileTypeIcons.code;
+  if (type.includes('zip') || type.includes('rar') || type.includes('tar'))
+    return fileTypeIcons.archive;
+  if (type.includes('sheet') || type.includes('excel'))
+    return fileTypeIcons.spreadsheet;
+  if (
+    type.includes('javascript') ||
+    type.includes('typescript') ||
+    type.includes('python')
+  )
+    return fileTypeIcons.code;
   return fileTypeIcons.default;
 };
 
@@ -79,7 +86,7 @@ const formatFileSize = (bytes: number) => {
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  return Math.round((bytes / k ** i) * 100) / 100 + ' ' + sizes[i];
 };
 
 export function FileUploadPreview({
@@ -91,7 +98,7 @@ export function FileUploadPreview({
   maxSize = 10, // 10MB default
   acceptedTypes,
   variant = 'grid',
-  className
+  className,
 }: FileUploadPreviewProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,7 +116,7 @@ export function FileUploadPreview({
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const droppedFiles = Array.from(e.dataTransfer.files);
     handleFiles(droppedFiles);
   }, []);
@@ -122,12 +129,15 @@ export function FileUploadPreview({
     }
 
     // Validate file size and type
-    const validFiles = newFiles.filter(file => {
+    const validFiles = newFiles.filter((file) => {
       if (file.size > maxSize * 1024 * 1024) {
         toast.error(`${file.name} exceeds ${maxSize}MB limit`);
         return false;
       }
-      if (acceptedTypes && !acceptedTypes.some(type => file.type.match(type))) {
+      if (
+        acceptedTypes &&
+        !acceptedTypes.some((type) => file.type.match(type))
+      ) {
         toast.error(`${file.name} is not an accepted file type`);
         return false;
       }
@@ -149,38 +159,42 @@ export function FileUploadPreview({
     return (
       <div
         className={cn(
-          'relative border-2 border-dashed rounded-lg p-8 text-center transition-colors',
-          isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25',
+          'relative rounded-lg border-2 border-dashed p-8 text-center transition-colors',
+          isDragging
+            ? 'border-primary bg-primary/5'
+            : 'border-muted-foreground/25',
           className
         )}
-        onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
         <input
+          accept={acceptedTypes?.join(',')}
+          className="hidden"
+          multiple
+          onChange={handleFileSelect}
           ref={fileInputRef}
           type="file"
-          multiple
-          accept={acceptedTypes?.join(',')}
-          onChange={handleFileSelect}
-          className="hidden"
         />
-        
+
         <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-medium">Drop files here or click to browse</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <h3 className="mt-4 font-medium text-lg">
+          Drop files here or click to browse
+        </h3>
+        <p className="mt-2 text-muted-foreground text-sm">
           Maximum {maxFiles} files, up to {maxSize}MB each
         </p>
         {acceptedTypes && (
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-muted-foreground text-xs">
             Accepted: {acceptedTypes.join(', ')}
           </p>
         )}
-        
+
         <Button
           className="mt-4"
-          variant="outline"
           onClick={() => fileInputRef.current?.click()}
+          variant="outline"
         >
           <Paperclip className="mr-2 h-4 w-4" />
           Select Files
@@ -197,64 +211,67 @@ export function FileUploadPreview({
             const Icon = getFileIcon(file.type);
             return (
               <motion.div
-                key={file.id}
-                initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-3 rounded-lg bg-muted/50 p-3"
                 exit={{ opacity: 0, x: 20 }}
-                className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
+                initial={{ opacity: 0, x: -20 }}
+                key={file.id}
               >
-                <Icon className="h-8 w-8 text-muted-foreground shrink-0" />
-                
-                <div className="flex-1 min-w-0">
+                <Icon className="h-8 w-8 shrink-0 text-muted-foreground" />
+
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium truncate">{file.name}</p>
+                    <p className="truncate font-medium text-sm">{file.name}</p>
                     {file.status === 'completed' && (
-                      <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                      <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
                     )}
                     {file.status === 'error' && (
-                      <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+                      <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {formatFileSize(file.size)}
                   </p>
-                  {file.status === 'uploading' && file.progress !== undefined && (
-                    <Progress value={file.progress} className="h-1 mt-1" />
-                  )}
+                  {file.status === 'uploading' &&
+                    file.progress !== undefined && (
+                      <Progress className="mt-1 h-1" value={file.progress} />
+                    )}
                   {file.error && (
-                    <p className="text-xs text-destructive mt-1">{file.error}</p>
+                    <p className="mt-1 text-destructive text-xs">
+                      {file.error}
+                    </p>
                   )}
                 </div>
-                
+
                 <div className="flex items-center gap-1">
                   {file.preview && onPreview && (
                     <Button
-                      variant="ghost"
-                      size="icon"
                       className="h-8 w-8"
                       onClick={() => onPreview(file)}
+                      size="icon"
+                      variant="ghost"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
                   )}
                   {file.url && (
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
                       asChild
+                      className="h-8 w-8"
+                      size="icon"
+                      variant="ghost"
                     >
-                      <a href={file.url} download={file.name}>
+                      <a download={file.name} href={file.url}>
                         <Download className="h-4 w-4" />
                       </a>
                     </Button>
                   )}
                   {onRemove && file.status !== 'uploading' && (
                     <Button
-                      variant="ghost"
-                      size="icon"
                       className="h-8 w-8 hover:text-destructive"
                       onClick={() => onRemove(file.id)}
+                      size="icon"
+                      variant="ghost"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -267,24 +284,24 @@ export function FileUploadPreview({
             );
           })}
         </AnimatePresence>
-        
+
         {files.length < maxFiles && (
           <Button
-            variant="outline"
             className="w-full"
             onClick={() => fileInputRef.current?.click()}
+            variant="outline"
           >
             <Upload className="mr-2 h-4 w-4" />
             Add More Files
           </Button>
         )}
         <input
+          accept={acceptedTypes?.join(',')}
+          className="hidden"
+          multiple
+          onChange={handleFileSelect}
           ref={fileInputRef}
           type="file"
-          multiple
-          accept={acceptedTypes?.join(',')}
-          onChange={handleFileSelect}
-          className="hidden"
         />
       </div>
     );
@@ -296,20 +313,20 @@ export function FileUploadPreview({
         <AnimatePresence>
           {files.map((file) => (
             <motion.div
-              key={file.id}
-              initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              key={file.id}
             >
-              <Badge variant="secondary" className="pr-1">
-                <Paperclip className="h-3 w-3 mr-1" />
+              <Badge className="pr-1" variant="secondary">
+                <Paperclip className="mr-1 h-3 w-3" />
                 <span className="max-w-[100px] truncate">{file.name}</span>
                 {onRemove && (
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-4 w-4 ml-1 hover:bg-destructive/20"
+                    className="ml-1 h-4 w-4 hover:bg-destructive/20"
                     onClick={() => onRemove(file.id)}
+                    size="icon"
+                    variant="ghost"
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -318,23 +335,23 @@ export function FileUploadPreview({
             </motion.div>
           ))}
         </AnimatePresence>
-        
+
         {files.length < maxFiles && (
           <>
             <Button
-              variant="outline"
-              size="sm"
               onClick={() => fileInputRef.current?.click()}
+              size="sm"
+              variant="outline"
             >
               <Upload className="h-3 w-3" />
             </Button>
             <input
+              accept={acceptedTypes?.join(',')}
+              className="hidden"
+              multiple
+              onChange={handleFileSelect}
               ref={fileInputRef}
               type="file"
-              multiple
-              accept={acceptedTypes?.join(',')}
-              onChange={handleFileSelect}
-              className="hidden"
             />
           </>
         )}
@@ -345,78 +362,83 @@ export function FileUploadPreview({
   // Grid variant (default)
   return (
     <div className={cn('space-y-4', className)}>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
         <AnimatePresence>
           {files.map((file) => {
             const Icon = getFileIcon(file.type);
             const isImage = file.type.startsWith('image/');
-            
+
             return (
               <motion.div
-                key={file.id}
-                initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                key={file.id}
               >
-                <Card className="relative group overflow-hidden">
-                  <div className="aspect-square relative">
+                <Card className="group relative overflow-hidden">
+                  <div className="relative aspect-square">
                     {isImage && file.preview ? (
                       <img
-                        src={file.preview}
                         alt={file.name}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-cover"
+                        src={file.preview}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <div className="flex h-full w-full items-center justify-center bg-muted">
                         <Icon className="h-12 w-12 text-muted-foreground" />
                       </div>
                     )}
-                    
-                    {file.status === 'uploading' && file.progress !== undefined && (
-                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                        <div className="text-center">
-                          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-                          <p className="text-sm">{file.progress}%</p>
+
+                    {file.status === 'uploading' &&
+                      file.progress !== undefined && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                          <div className="text-center">
+                            <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin" />
+                            <p className="text-sm">{file.progress}%</p>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    
+                      )}
+
                     {file.status === 'error' && (
-                      <div className="absolute inset-0 bg-destructive/10 flex items-center justify-center">
+                      <div className="absolute inset-0 flex items-center justify-center bg-destructive/10">
                         <AlertCircle className="h-8 w-8 text-destructive" />
                       </div>
                     )}
-                    
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="absolute bottom-2 left-2 right-2">
-                        <p className="text-white text-xs truncate">{file.name}</p>
-                        <p className="text-white/80 text-xs">{formatFileSize(file.size)}</p>
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="absolute right-2 bottom-2 left-2">
+                        <p className="truncate text-white text-xs">
+                          {file.name}
+                        </p>
+                        <p className="text-white/80 text-xs">
+                          {formatFileSize(file.size)}
+                        </p>
                       </div>
-                      
+
                       <div className="absolute top-2 right-2 flex gap-1">
                         {file.preview && onPreview && (
                           <Button
-                            variant="secondary"
-                            size="icon"
                             className="h-7 w-7"
                             onClick={() => onPreview(file)}
+                            size="icon"
+                            variant="secondary"
                           >
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
                         )}
                         {onRemove && file.status !== 'uploading' && (
                           <Button
-                            variant="secondary"
-                            size="icon"
                             className="h-7 w-7"
                             onClick={() => onRemove(file.id)}
+                            size="icon"
+                            variant="secondary"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         )}
                       </div>
                     </div>
-                    
+
                     {file.status === 'completed' && (
                       <div className="absolute top-2 left-2">
                         <CheckCircle className="h-5 w-5 text-green-500 drop-shadow" />
@@ -428,32 +450,29 @@ export function FileUploadPreview({
             );
           })}
         </AnimatePresence>
-        
+
         {files.length < maxFiles && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
+          <motion.div animate={{ opacity: 1 }} initial={{ opacity: 0 }}>
             <Card
-              className="aspect-square flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors border-dashed"
+              className="flex aspect-square cursor-pointer items-center justify-center border-dashed transition-colors hover:bg-muted/50"
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="text-center">
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="mt-2 text-sm text-muted-foreground">Add File</p>
+                <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                <p className="mt-2 text-muted-foreground text-sm">Add File</p>
               </div>
             </Card>
           </motion.div>
         )}
       </div>
-      
+
       <input
+        accept={acceptedTypes?.join(',')}
+        className="hidden"
+        multiple
+        onChange={handleFileSelect}
         ref={fileInputRef}
         type="file"
-        multiple
-        accept={acceptedTypes?.join(',')}
-        onChange={handleFileSelect}
-        className="hidden"
       />
     </div>
   );

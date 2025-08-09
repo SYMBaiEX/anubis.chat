@@ -32,12 +32,13 @@ const log = createModuleLogger('message-input');
  */
 export function MessageInput({
   onSend,
+  onTyping,
   disabled = false,
   placeholder = 'Type your message...',
   maxLength = 4000,
   className,
   children,
-}: MessageInputProps) {
+}: MessageInputProps & { onTyping?: () => void }) {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -170,7 +171,13 @@ export function MessageInput({
               className="max-h-[200px] min-h-[44px] resize-none pr-20"
               disabled={disabled}
               maxLength={maxLength}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => {
+                setMessage(e.target.value);
+                // Trigger typing indicator
+                if (onTyping && e.target.value.trim()) {
+                  onTyping();
+                }
+              }}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               ref={textareaRef}

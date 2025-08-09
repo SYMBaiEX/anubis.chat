@@ -5,6 +5,7 @@ import {
   MessageSquare,
   Server,
   User,
+  Workflow,
 } from 'lucide-react';
 import type { ElementType } from 'react';
 
@@ -20,7 +21,14 @@ export interface NavItem {
 }
 
 const allItems: NavItem[] = [
-  { label: 'Home', href: '/', icon: Home, hideWhenAuth: true, inHeader: true, inSidebar: true },
+  {
+    label: 'Home',
+    href: '/',
+    icon: Home,
+    hideWhenAuth: true,
+    inHeader: true,
+    inSidebar: true,
+  },
   {
     label: 'Dashboard',
     href: '/dashboard',
@@ -41,6 +49,14 @@ const allItems: NavItem[] = [
     label: 'Agents',
     href: '/agents/new',
     icon: Bot,
+    requiresAuth: true,
+    inHeader: true,
+    inSidebar: true,
+  },
+  {
+    label: 'Workflows',
+    href: '/workflows',
+    icon: Workflow,
     requiresAuth: true,
     inHeader: true,
     inSidebar: true,
@@ -74,7 +90,7 @@ export function getHeaderNav(
       (item.inHeader ?? true) &&
       (!item.devOnly || isDev) &&
       (!item.requiresAuth || isAuthenticated) &&
-      (!item.hideWhenAuth || !isAuthenticated)
+      !(item.hideWhenAuth && isAuthenticated)
   );
 }
 
@@ -88,6 +104,6 @@ export function getSidebarNav(
       (item.inSidebar ?? true) &&
       (!item.devOnly || isDev) &&
       (!item.requiresAuth || isAuthenticated) &&
-      (!item.hideWhenAuth || !isAuthenticated)
+      !(item.hideWhenAuth && isAuthenticated)
   );
 }

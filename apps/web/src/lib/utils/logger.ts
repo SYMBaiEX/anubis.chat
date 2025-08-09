@@ -100,6 +100,13 @@ export interface AppLogger {
   info(message: string, meta?: Record<string, any>): void;
   debug(message: string, meta?: Record<string, any>): void;
   trace(message: string, meta?: Record<string, any>): void;
+  apiRequest(event: string, meta?: Record<string, any>): void;
+  dbOperation(event: string, meta?: Record<string, any>): void;
+  auth(
+    message: string,
+    walletAddress?: string,
+    meta?: Record<string, any>
+  ): void;
 }
 
 // Enhanced logger wrapper with additional functionality
@@ -156,6 +163,43 @@ class EnhancedLogger implements AppLogger {
     } else {
       this.pino.trace(message);
     }
+  }
+
+  apiRequest(event: string, meta?: Record<string, any>): void {
+    this.pino.info(
+      {
+        logType: 'api_request',
+        event,
+        ...(meta || {}),
+      },
+      event
+    );
+  }
+
+  dbOperation(event: string, meta?: Record<string, any>): void {
+    this.pino.debug(
+      {
+        logType: 'db_operation',
+        event,
+        ...(meta || {}),
+      },
+      event
+    );
+  }
+
+  auth(
+    message: string,
+    walletAddress?: string,
+    meta?: Record<string, any>
+  ): void {
+    this.pino.info(
+      {
+        logType: 'auth',
+        walletAddress,
+        ...(meta || {}),
+      },
+      message
+    );
   }
 }
 

@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { AuthSession, User, WalletAuthChallenge } from '@/lib/types/api';
+import { authCache, type AuthCacheData } from '@/lib/cache/auth-cache';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { useWallet } from './useWallet';
+
+const log = createModuleLogger('useAuth');
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -35,8 +39,21 @@ const AUTH_EXPIRES_KEY = 'isis-auth-expires';
 export const useAuth = (): UseAuthReturn => {
   const { publicKey, signMessage, isConnected } = useWallet();
   const [authState, setAuthState] = useState<AuthState>(() => {
-    // Initialize from localStorage if available
+    // Try to restore from cache first
     if (typeof window !== 'undefined') {
+      const cached = authCache.get();
+      if (cached && cached.isAuthenticated && !authCache.needsRefresh(cached)) {
+        log.info('Restored auth state from cache');
+        return {
+          isAuthenticated: true,
+          isLoading: false,
+          user: cached.user as User,
+          token: cached.token,
+          error: null,
+        };
+      }
+
+      // Fallback to localStorage (legacy)
       const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
       const storedUser = localStorage.getItem(AUTH_USER_KEY);
       const storedExpires = localStorage.getItem(AUTH_EXPIRES_KEY);
@@ -59,10 +76,30 @@ export const useAuth = (): UseAuthReturn => {
             localStorage.removeItem(AUTH_USER_KEY);
             localStorage.removeItem(AUTH_REFRESH_KEY);
             localStorage.removeItem(AUTH_EXPIRES_KEY);
+            authCache.clear();
             return INITIAL_AUTH_STATE;
           }
 
           const user = parsedUser as User;
+          
+          // Migrate to new cache system
+          const cacheData: AuthCacheData = {
+            user: {
+              walletAddress: user.walletAddress || '',
+              publicKey: user.publicKey,
+              username: user.username,
+              email: user.email,
+              avatar: user.avatar,
+            },
+            token: storedToken,
+            refreshToken: null,
+            expiresAt: expiresAt || Date.now() + 3600000,
+            isAuthenticated: true,
+            lastVerified: Date.now(),
+          };
+          authCache.set(cacheData, { storage: 'all' });
+          log.info('Migrated auth to new cache system');
+          
           return {
             isAuthenticated: true,
             isLoading: false,
@@ -76,6 +113,7 @@ export const useAuth = (): UseAuthReturn => {
           localStorage.removeItem(AUTH_USER_KEY);
           localStorage.removeItem(AUTH_REFRESH_KEY);
           localStorage.removeItem(AUTH_EXPIRES_KEY);
+          authCache.clear();
         }
       }
     }
@@ -88,19 +126,46 @@ export const useAuth = (): UseAuthReturn => {
   }, []);
 
   const clearAuthState = useCallback(() => {
+    // Clear cache first
+    authCache.clear();
+    
+    // Clear legacy storage
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
     localStorage.removeItem(AUTH_REFRESH_KEY);
     localStorage.removeItem(AUTH_EXPIRES_KEY);
-    sessionStorage.removeItem(AUTH_TOKEN_KEY); // Also clear session storage
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    
     setAuthState(INITIAL_AUTH_STATE);
+    log.info('Auth state cleared');
   }, []);
 
   const storeAuthSession = useCallback((session: AuthSession) => {
+    // Store in new cache system
+    const cacheData: AuthCacheData = {
+      user: {
+        walletAddress: session.user.walletAddress || '',
+        publicKey: session.user.publicKey,
+        username: session.user.username,
+        email: session.user.email,
+        avatar: session.user.avatar,
+      },
+      token: session.token,
+      refreshToken: session.refreshToken || null,
+      expiresAt: session.expiresAt || Date.now() + 3600000, // Default 1 hour
+      isAuthenticated: true,
+      lastVerified: Date.now(),
+    };
+    
+    authCache.set(cacheData, { 
+      ttl: 3600000, // 1 hour TTL
+      storage: 'all' 
+    });
+
+    // Also store in legacy format for backwards compatibility
     localStorage.setItem(AUTH_TOKEN_KEY, session.token);
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(session.user));
 
-    // Store refresh token and expiry if available
     if (session.refreshToken) {
       localStorage.setItem(AUTH_REFRESH_KEY, session.refreshToken);
     }
@@ -108,7 +173,6 @@ export const useAuth = (): UseAuthReturn => {
       localStorage.setItem(AUTH_EXPIRES_KEY, session.expiresAt.toString());
     }
 
-    // Also store in session storage for tab sync
     sessionStorage.setItem(AUTH_TOKEN_KEY, session.token);
 
     setAuthState({
@@ -118,6 +182,8 @@ export const useAuth = (): UseAuthReturn => {
       token: session.token,
       error: null,
     });
+    
+    log.info('Auth session stored and cached');
   }, []);
 
   const getAuthChallenge = useCallback(
@@ -233,6 +299,24 @@ export const useAuth = (): UseAuthReturn => {
       throw new Error(errorMessage);
     }
 
+    // Check cache first
+    const cached = authCache.get();
+    if (cached && cached.isAuthenticated && !authCache.needsRefresh(cached)) {
+      log.info('Using cached authentication');
+      setAuthState({
+        isAuthenticated: true,
+        isLoading: false,
+        user: cached.user as User,
+        token: cached.token,
+        error: null,
+      });
+      return {
+        user: cached.user as User,
+        token: cached.token || '',
+        expiresAt: cached.expiresAt,
+      } as AuthSession;
+    }
+
     setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
@@ -267,7 +351,7 @@ export const useAuth = (): UseAuthReturn => {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Login failed';
-      console.error('Login error:', errorMessage, error);
+      log.error('Login error:', errorMessage);
       setAuthState((prev) => ({
         ...prev,
         isLoading: false,
@@ -341,7 +425,14 @@ export const useAuth = (): UseAuthReturn => {
       const newToken = data.token;
       const newExpiry = data.expiresAt;
 
-      // Update stored token and expiry
+      // Update cache with new token
+      authCache.update({
+        token: newToken,
+        expiresAt: newExpiry || Date.now() + 3600000,
+        lastVerified: Date.now(),
+      });
+
+      // Update legacy storage
       localStorage.setItem(AUTH_TOKEN_KEY, newToken);
       if (newExpiry) {
         localStorage.setItem(AUTH_EXPIRES_KEY, newExpiry.toString());
@@ -352,11 +443,11 @@ export const useAuth = (): UseAuthReturn => {
       sessionStorage.setItem(AUTH_TOKEN_KEY, newToken);
 
       setAuthState((prev) => ({ ...prev, token: newToken }));
+      log.info('Token refreshed and cached');
 
       return newToken;
     } catch (error) {
-      console.error('Token refresh failed:', error);
-      // Log to error tracking service instead of console in production
+      log.error('Token refresh failed:', error);
       clearAuthState();
       return null;
     }

@@ -1,20 +1,64 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Activity,
+  AlertCircle,
+  BarChart3,
+  Bot,
+  Brain,
+  CheckCircle2,
+  Code,
+  Coins,
+  Copy,
+  Cpu,
+  Database,
+  Download,
+  Eye,
+  FileText,
+  GitBranch,
+  Globe,
+  HelpCircle,
+  Image,
+  Info,
+  Layers,
+  Link,
+  Lock,
+  MessageSquare,
+  Palette,
+  Plus,
+  RefreshCw,
+  Save,
+  Settings,
+  Share2,
+  Shield,
+  Sparkles,
+  Terminal,
+  TestTube,
+  Trash2,
+  TrendingUp,
+  Unlock,
+  Upload,
+  Vote,
+  Wallet,
+  Wand2,
+  X,
+  Zap,
+} from 'lucide-react';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Result, ok, err } from '@/lib/types/result';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -22,62 +66,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  Bot,
-  Brain,
-  Code,
-  Database,
-  Eye,
-  FileText,
-  Globe,
-  HelpCircle,
-  Image,
-  Layers,
-  MessageSquare,
-  Palette,
-  Plus,
-  Save,
-  Settings,
-  Sparkles,
-  TestTube,
-  Trash2,
-  Upload,
-  Wand2,
-  X,
-  Zap,
-  Shield,
-  Lock,
-  Unlock,
-  RefreshCw,
-  Copy,
-  Download,
-  Share2,
-  GitBranch,
-  Terminal,
-  Cpu,
-  Activity,
-  TrendingUp,
-  Coins,
-  Vote,
-  BarChart3,
-  Wallet,
-  Link,
-  CheckCircle2,
-  AlertCircle,
-  Info,
-} from 'lucide-react';
+import { err, ok, type Result } from '@/lib/types/result';
 import { cn } from '@/lib/utils';
 import { AgentCapabilitySelector } from './agent-capability-selector';
-import { AgentToolBuilder } from './agent-tool-builder';
 import { AgentPersonalityEditor } from './agent-personality-editor';
-import { AgentTestingPanel } from './agent-testing-panel';
 import { AgentTemplateGallery } from './agent-template-gallery';
+import { AgentTestingPanel } from './agent-testing-panel';
+import { AgentToolBuilder } from './agent-tool-builder';
 import type { Agent, AgentTemplate } from './types';
 
 interface AgentBuilderProps {
@@ -86,7 +92,11 @@ interface AgentBuilderProps {
   initialAgent?: Partial<Agent>;
 }
 
-export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderProps) {
+export function AgentBuilder({
+  onSave,
+  onCancel,
+  initialAgent,
+}: AgentBuilderProps) {
   const [activeTab, setActiveTab] = useState('basics');
   const [agentData, setAgentData] = useState<Agent>({
     name: initialAgent?.name || '',
@@ -122,32 +132,66 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const agentTypes = [
-    { value: 'general', label: 'General Assistant', icon: Bot, color: 'bg-gray-500' },
-    { value: 'trading', label: 'Trading Agent', icon: TrendingUp, color: 'bg-green-500' },
-    { value: 'defi', label: 'DeFi Specialist', icon: Coins, color: 'bg-blue-500' },
+    {
+      value: 'general',
+      label: 'General Assistant',
+      icon: Bot,
+      color: 'bg-gray-500',
+    },
+    {
+      value: 'trading',
+      label: 'Trading Agent',
+      icon: TrendingUp,
+      color: 'bg-green-500',
+    },
+    {
+      value: 'defi',
+      label: 'DeFi Specialist',
+      icon: Coins,
+      color: 'bg-blue-500',
+    },
     { value: 'nft', label: 'NFT Expert', icon: Image, color: 'bg-purple-500' },
     { value: 'dao', label: 'DAO Manager', icon: Vote, color: 'bg-orange-500' },
-    { value: 'portfolio', label: 'Portfolio Analyst', icon: BarChart3, color: 'bg-indigo-500' },
-    { value: 'developer', label: 'Code Assistant', icon: Code, color: 'bg-pink-500' },
-    { value: 'research', label: 'Research Agent', icon: Database, color: 'bg-teal-500' },
+    {
+      value: 'portfolio',
+      label: 'Portfolio Analyst',
+      icon: BarChart3,
+      color: 'bg-indigo-500',
+    },
+    {
+      value: 'developer',
+      label: 'Code Assistant',
+      icon: Code,
+      color: 'bg-pink-500',
+    },
+    {
+      value: 'research',
+      label: 'Research Agent',
+      icon: Database,
+      color: 'bg-teal-500',
+    },
   ];
 
   const validateAgent = () => {
     const newErrors: Record<string, string> = {};
     if (!agentData.name) newErrors.name = 'Agent name is required';
-    if (!agentData.description) newErrors.description = 'Description is required';
-    if (agentData.capabilities.length === 0) newErrors.capabilities = 'Select at least one capability';
+    if (!agentData.description)
+      newErrors.description = 'Description is required';
+    if (agentData.capabilities.length === 0)
+      newErrors.capabilities = 'Select at least one capability';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSave = async (): Promise<Result<Agent, Error>> => {
     if (!validateAgent()) {
-      return err(new Error('Validation failed. Please check all required fields.'));
+      return err(
+        new Error('Validation failed. Please check all required fields.')
+      );
     }
-    
+
     setIsSaving(true);
-    
+
     try {
       // Simulate save operation (replace with actual API call)
       await new Promise((resolve, reject) => {
@@ -160,37 +204,39 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
           }
         }, 1000);
       });
-      
+
       // Call the onSave callback if provided
       onSave?.(agentData);
-      
+
       setIsSaving(false);
-      
+
       // Return success result with the saved agent data
       return ok(agentData);
     } catch (error) {
       setIsSaving(false);
-      
+
       // Handle different error types
       if (error instanceof Error) {
         return err(error);
-      } else if (typeof error === 'string') {
-        return err(new Error(error));
-      } else {
-        return err(new Error('An unexpected error occurred while saving the agent.'));
       }
+      if (typeof error === 'string') {
+        return err(new Error(error));
+      }
+      return err(
+        new Error('An unexpected error occurred while saving the agent.')
+      );
     }
   };
 
   const getTypeIcon = (type: string) => {
-    const agentType = agentTypes.find(t => t.value === type);
+    const agentType = agentTypes.find((t) => t.value === type);
     const IconComponent = agentType?.icon || Bot;
     return <IconComponent className="h-4 w-4" />;
   };
 
   return (
     <TooltipProvider>
-      <div className="h-full flex flex-col">
+      <div className="flex h-full flex-col">
         {/* Header */}
         <div className="border-b px-6 py-4">
           <div className="flex items-center justify-between">
@@ -198,19 +244,20 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
               <div className="relative">
                 <Avatar className="h-12 w-12 border-2 border-primary">
                   <AvatarImage src={agentData.avatar} />
-                  <AvatarFallback>
-                    {getTypeIcon(agentData.type)}
-                  </AvatarFallback>
+                  <AvatarFallback>{getTypeIcon(agentData.type)}</AvatarFallback>
                 </Avatar>
-                <Badge className="absolute -bottom-1 -right-1 h-5 px-1" variant="secondary">
+                <Badge
+                  className="-bottom-1 -right-1 absolute h-5 px-1"
+                  variant="secondary"
+                >
                   {agentData.type}
                 </Badge>
               </div>
               <div>
-                <h2 className="text-xl font-semibold">
+                <h2 className="font-semibold text-xl">
                   {agentData.name || 'New Agent'}
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   {agentData.description || 'Configure your custom AI agent'}
                 </p>
               </div>
@@ -218,39 +265,46 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
 
             <div className="flex items-center space-x-2">
               <Button
-                variant="ghost"
-                size="icon"
                 onClick={() => setPreviewMode(!previewMode)}
+                size="icon"
+                variant="ghost"
               >
                 <Eye className="h-4 w-4" />
               </Button>
               <Button
-                variant="ghost"
+                onClick={() => {
+                  /* Template logic */
+                }}
                 size="icon"
-                onClick={() => {/* Template logic */}}
+                variant="ghost"
               >
                 <Download className="h-4 w-4" />
               </Button>
               <Button
-                variant="ghost"
+                onClick={() => {
+                  /* Share logic */
+                }}
                 size="icon"
-                onClick={() => {/* Share logic */}}
+                variant="ghost"
               >
                 <Share2 className="h-4 w-4" />
               </Button>
-              <Separator orientation="vertical" className="h-6" />
-              <Button variant="outline" onClick={onCancel}>
+              <Separator className="h-6" orientation="vertical" />
+              <Button onClick={onCancel} variant="outline">
                 Cancel
               </Button>
-              <Button 
+              <Button
+                disabled={isSaving}
                 onClick={async () => {
                   const result = await handleSave();
                   if (!result.ok) {
                     // Handle error - you may want to show a toast or error message
-                    console.error('Failed to save agent:', result.error.message);
+                    console.error(
+                      'Failed to save agent:',
+                      result.error.message
+                    );
                   }
-                }} 
-                disabled={isSaving}
+                }}
               >
                 {isSaving ? (
                   <>
@@ -270,60 +324,64 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
 
         {/* Main Content */}
         <div className="flex-1 overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+          <Tabs
+            className="h-full"
+            onValueChange={setActiveTab}
+            value={activeTab}
+          >
             <div className="border-b px-6">
               <TabsList className="h-12 w-full justify-start rounded-none border-0 bg-transparent p-0">
                 <TabsTrigger
+                  className="relative h-12 rounded-none border-transparent border-b-2 bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                   value="basics"
-                  className="relative h-12 rounded-none border-b-2 border-transparent bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                 >
                   <Settings className="mr-2 h-4 w-4" />
                   Basics
                   {errors.name || errors.description ? (
-                    <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
+                    <div className="-top-1 -right-1 absolute h-2 w-2 rounded-full bg-destructive" />
                   ) : null}
                 </TabsTrigger>
                 <TabsTrigger
+                  className="relative h-12 rounded-none border-transparent border-b-2 bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                   value="capabilities"
-                  className="relative h-12 rounded-none border-b-2 border-transparent bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                 >
                   <Zap className="mr-2 h-4 w-4" />
                   Capabilities
                   {errors.capabilities ? (
-                    <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
+                    <div className="-top-1 -right-1 absolute h-2 w-2 rounded-full bg-destructive" />
                   ) : null}
                 </TabsTrigger>
                 <TabsTrigger
+                  className="relative h-12 rounded-none border-transparent border-b-2 bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                   value="tools"
-                  className="relative h-12 rounded-none border-b-2 border-transparent bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                 >
                   <Terminal className="mr-2 h-4 w-4" />
                   Tools & APIs
                 </TabsTrigger>
                 <TabsTrigger
+                  className="relative h-12 rounded-none border-transparent border-b-2 bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                   value="personality"
-                  className="relative h-12 rounded-none border-b-2 border-transparent bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                 >
                   <Sparkles className="mr-2 h-4 w-4" />
                   Personality
                 </TabsTrigger>
                 <TabsTrigger
+                  className="relative h-12 rounded-none border-transparent border-b-2 bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                   value="knowledge"
-                  className="relative h-12 rounded-none border-b-2 border-transparent bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                 >
                   <Brain className="mr-2 h-4 w-4" />
                   Knowledge Base
                 </TabsTrigger>
                 <TabsTrigger
+                  className="relative h-12 rounded-none border-transparent border-b-2 bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                   value="permissions"
-                  className="relative h-12 rounded-none border-b-2 border-transparent bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                 >
                   <Shield className="mr-2 h-4 w-4" />
                   Permissions
                 </TabsTrigger>
                 <TabsTrigger
+                  className="relative h-12 rounded-none border-transparent border-b-2 bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                   value="testing"
-                  className="relative h-12 rounded-none border-b-2 border-transparent bg-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                 >
                   <TestTube className="mr-2 h-4 w-4" />
                   Test
@@ -334,7 +392,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
             <ScrollArea className="h-[calc(100%-3rem)]">
               <div className="p-6">
                 {/* Basics Tab */}
-                <TabsContent value="basics" className="mt-0 space-y-6">
+                <TabsContent className="mt-0 space-y-6" value="basics">
                   <Card>
                     <CardHeader>
                       <CardTitle>Basic Information</CardTitle>
@@ -347,31 +405,43 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                         <div className="space-y-2">
                           <Label htmlFor="name">Agent Name *</Label>
                           <Input
+                            className={errors.name ? 'border-destructive' : ''}
                             id="name"
+                            onChange={(e) =>
+                              setAgentData((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
                             placeholder="e.g., Trading Pro, DeFi Helper"
                             value={agentData.name}
-                            onChange={(e) => setAgentData(prev => ({ ...prev, name: e.target.value }))}
-                            className={errors.name ? 'border-destructive' : ''}
                           />
                           {errors.name && (
-                            <p className="text-sm text-destructive">{errors.name}</p>
+                            <p className="text-destructive text-sm">
+                              {errors.name}
+                            </p>
                           )}
                         </div>
 
                         <div className="space-y-2">
                           <Label htmlFor="type">Agent Type</Label>
                           <Select
+                            onValueChange={(value) =>
+                              setAgentData((prev) => ({ ...prev, type: value }))
+                            }
                             value={agentData.type}
-                            onValueChange={(value) => setAgentData(prev => ({ ...prev, type: value }))}
                           >
                             <SelectTrigger id="type">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {agentTypes.map(type => {
+                              {agentTypes.map((type) => {
                                 const TypeIcon = type.icon;
                                 return (
-                                  <SelectItem key={type.value} value={type.value}>
+                                  <SelectItem
+                                    key={type.value}
+                                    value={type.value}
+                                  >
                                     <div className="flex items-center">
                                       <TypeIcon className="mr-2 h-4 w-4" />
                                       {type.label}
@@ -387,14 +457,24 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                       <div className="space-y-2">
                         <Label htmlFor="description">Description *</Label>
                         <Textarea
+                          className={cn(
+                            'min-h-[100px]',
+                            errors.description ? 'border-destructive' : ''
+                          )}
                           id="description"
+                          onChange={(e) =>
+                            setAgentData((prev) => ({
+                              ...prev,
+                              description: e.target.value,
+                            }))
+                          }
                           placeholder="Describe what your agent does and its key capabilities..."
                           value={agentData.description}
-                          onChange={(e) => setAgentData(prev => ({ ...prev, description: e.target.value }))}
-                          className={cn("min-h-[100px]", errors.description ? 'border-destructive' : '')}
                         />
                         {errors.description && (
-                          <p className="text-sm text-destructive">{errors.description}</p>
+                          <p className="text-destructive text-sm">
+                            {errors.description}
+                          </p>
                         )}
                       </div>
 
@@ -403,11 +483,16 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                         <div className="flex space-x-2">
                           <Input
                             id="avatar"
+                            onChange={(e) =>
+                              setAgentData((prev) => ({
+                                ...prev,
+                                avatar: e.target.value,
+                              }))
+                            }
                             placeholder="https://example.com/avatar.png"
                             value={agentData.avatar}
-                            onChange={(e) => setAgentData(prev => ({ ...prev, avatar: e.target.value }))}
                           />
-                          <Button variant="outline" size="icon">
+                          <Button size="icon" variant="outline">
                             <Upload className="h-4 w-4" />
                           </Button>
                         </div>
@@ -416,11 +501,14 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                       <Separator />
 
                       <div className="space-y-4">
-                        <h4 className="text-sm font-medium">Quick Templates</h4>
+                        <h4 className="font-medium text-sm">Quick Templates</h4>
                         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                           <AgentTemplateGallery
                             onSelectTemplate={(template: AgentTemplate) => {
-                              setAgentData(prev => ({ ...prev, ...template.config }));
+                              setAgentData((prev) => ({
+                                ...prev,
+                                ...template.config,
+                              }));
                             }}
                           />
                         </div>
@@ -430,7 +518,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                 </TabsContent>
 
                 {/* Capabilities Tab */}
-                <TabsContent value="capabilities" className="mt-0 space-y-6">
+                <TabsContent className="mt-0 space-y-6" value="capabilities">
                   <Card>
                     <CardHeader>
                       <CardTitle>Agent Capabilities</CardTitle>
@@ -440,18 +528,22 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                     </CardHeader>
                     <CardContent>
                       <AgentCapabilitySelector
+                        onChange={(capabilities) =>
+                          setAgentData((prev) => ({ ...prev, capabilities }))
+                        }
                         selected={agentData.capabilities}
-                        onChange={(capabilities) => setAgentData(prev => ({ ...prev, capabilities }))}
                       />
                       {errors.capabilities && (
-                        <p className="mt-2 text-sm text-destructive">{errors.capabilities}</p>
+                        <p className="mt-2 text-destructive text-sm">
+                          {errors.capabilities}
+                        </p>
                       )}
                     </CardContent>
                   </Card>
                 </TabsContent>
 
                 {/* Tools Tab */}
-                <TabsContent value="tools" className="mt-0 space-y-6">
+                <TabsContent className="mt-0 space-y-6" value="tools">
                   <Card>
                     <CardHeader>
                       <CardTitle>Tools & API Integrations</CardTitle>
@@ -461,15 +553,17 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                     </CardHeader>
                     <CardContent>
                       <AgentToolBuilder
+                        onChange={(tools) =>
+                          setAgentData((prev) => ({ ...prev, tools }))
+                        }
                         tools={agentData.tools}
-                        onChange={(tools) => setAgentData(prev => ({ ...prev, tools }))}
                       />
                     </CardContent>
                   </Card>
                 </TabsContent>
 
                 {/* Personality Tab */}
-                <TabsContent value="personality" className="mt-0 space-y-6">
+                <TabsContent className="mt-0 space-y-6" value="personality">
                   <Card>
                     <CardHeader>
                       <CardTitle>Agent Personality</CardTitle>
@@ -479,15 +573,17 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                     </CardHeader>
                     <CardContent>
                       <AgentPersonalityEditor
+                        onChange={(personality) =>
+                          setAgentData((prev) => ({ ...prev, personality }))
+                        }
                         personality={agentData.personality}
-                        onChange={(personality) => setAgentData(prev => ({ ...prev, personality }))}
                       />
                     </CardContent>
                   </Card>
                 </TabsContent>
 
                 {/* Knowledge Base Tab */}
-                <TabsContent value="knowledge" className="mt-0 space-y-6">
+                <TabsContent className="mt-0 space-y-6" value="knowledge">
                   <Card>
                     <CardHeader>
                       <CardTitle>Knowledge Base</CardTitle>
@@ -496,10 +592,12 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                      <div className="rounded-lg border-2 border-dashed p-8 text-center">
                         <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <h3 className="mt-4 text-lg font-medium">Drop files here</h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
+                        <h3 className="mt-4 font-medium text-lg">
+                          Drop files here
+                        </h3>
+                        <p className="mt-2 text-muted-foreground text-sm">
                           Support for PDF, TXT, MD, JSON files
                         </p>
                         <Button className="mt-4" variant="outline">
@@ -512,7 +610,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                 </TabsContent>
 
                 {/* Permissions Tab */}
-                <TabsContent value="permissions" className="mt-0 space-y-6">
+                <TabsContent className="mt-0 space-y-6" value="permissions">
                   <Card>
                     <CardHeader>
                       <CardTitle>Security & Permissions</CardTitle>
@@ -525,16 +623,19 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                         <div className="flex items-center justify-between">
                           <div className="space-y-0.5">
                             <Label>Execute Trades</Label>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               Allow agent to execute blockchain transactions
                             </p>
                           </div>
                           <Switch
                             checked={agentData.permissions.canExecuteTrades}
-                            onCheckedChange={(checked) => 
-                              setAgentData(prev => ({
+                            onCheckedChange={(checked) =>
+                              setAgentData((prev) => ({
                                 ...prev,
-                                permissions: { ...prev.permissions, canExecuteTrades: checked }
+                                permissions: {
+                                  ...prev.permissions,
+                                  canExecuteTrades: checked,
+                                },
                               }))
                             }
                           />
@@ -543,16 +644,19 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                         <div className="flex items-center justify-between">
                           <div className="space-y-0.5">
                             <Label>Require Approval</Label>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               Require user confirmation for sensitive actions
                             </p>
                           </div>
                           <Switch
                             checked={agentData.permissions.requiresApproval}
-                            onCheckedChange={(checked) => 
-                              setAgentData(prev => ({
+                            onCheckedChange={(checked) =>
+                              setAgentData((prev) => ({
                                 ...prev,
-                                permissions: { ...prev.permissions, requiresApproval: checked }
+                                permissions: {
+                                  ...prev.permissions,
+                                  requiresApproval: checked,
+                                },
                               }))
                             }
                           />
@@ -562,16 +666,21 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                           <Label>Maximum Transaction Value (SOL)</Label>
                           <div className="flex items-center space-x-4">
                             <Slider
-                              value={[agentData.permissions.maxTransactionValue]}
-                              onValueChange={([value]) => 
-                                setAgentData(prev => ({
+                              className="flex-1"
+                              max={1000}
+                              onValueChange={([value]) =>
+                                setAgentData((prev) => ({
                                   ...prev,
-                                  permissions: { ...prev.permissions, maxTransactionValue: value }
+                                  permissions: {
+                                    ...prev.permissions,
+                                    maxTransactionValue: value,
+                                  },
                                 }))
                               }
-                              max={1000}
                               step={10}
-                              className="flex-1"
+                              value={[
+                                agentData.permissions.maxTransactionValue,
+                              ]}
                             />
                             <span className="w-20 text-right font-mono text-sm">
                               {agentData.permissions.maxTransactionValue} SOL
@@ -584,7 +693,7 @@ export function AgentBuilder({ onSave, onCancel, initialAgent }: AgentBuilderPro
                 </TabsContent>
 
                 {/* Testing Tab */}
-                <TabsContent value="testing" className="mt-0 space-y-6">
+                <TabsContent className="mt-0 space-y-6" value="testing">
                   <AgentTestingPanel agent={agentData} />
                 </TabsContent>
               </div>

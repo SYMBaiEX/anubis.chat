@@ -121,9 +121,12 @@ export default function AnimatedSection({
           shouldAnimate={active}
         />
       </div>
-      {auroraVariant !== undefined && (
-        auroraVariant ? <IsisAurora variant={auroraVariant} /> : <IsisAurora />
-      )}
+      {auroraVariant !== undefined &&
+        (auroraVariant ? (
+          <IsisAurora variant={auroraVariant} />
+        ) : (
+          <IsisAurora />
+        ))}
 
       {/* Foreground content */}
       <div className="relative z-10">{children}</div>

@@ -6,6 +6,7 @@ import { convexConfig, isDevelopment } from '@/lib/env';
 import { createModuleLogger } from '@/lib/utils/logger';
 import { ConvexErrorBoundary } from './error/ConvexErrorBoundary';
 import { AuthProvider } from './providers/auth-provider';
+import { ClientOnlyWrapper } from './providers/client-only-wrapper';
 import { SolanaAgentProvider } from './providers/solana-agent-provider';
 import { ThemeProvider } from './theme-provider';
 import { Toaster } from './ui/sonner';
@@ -43,11 +44,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       >
         <SidebarProvider>
           <ConvexProvider client={convex}>
-            <WalletProvider>
-              <AuthProvider>
-                <SolanaAgentProvider>{children}</SolanaAgentProvider>
-              </AuthProvider>
-            </WalletProvider>
+            <ClientOnlyWrapper>
+              <WalletProvider>
+                <AuthProvider>
+                  <SolanaAgentProvider>{children}</SolanaAgentProvider>
+                </AuthProvider>
+              </WalletProvider>
+            </ClientOnlyWrapper>
           </ConvexProvider>
           <Toaster richColors />
         </SidebarProvider>

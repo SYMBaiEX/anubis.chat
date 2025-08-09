@@ -1,12 +1,61 @@
 'use client';
 
+import {
+  Activity,
+  BarChart3,
+  Book,
+  Brain,
+  Briefcase,
+  Check,
+  ChevronRight,
+  Clock,
+  Coffee,
+  Crown,
+  Diamond,
+  Eye,
+  Flame,
+  Gamepad2,
+  Globe,
+  GraduationCap,
+  Heart,
+  Info,
+  Lightbulb,
+  MessageSquare,
+  Music,
+  Palette,
+  Plus,
+  RefreshCw,
+  Rocket,
+  Search,
+  Shield,
+  Smile,
+  Sparkles,
+  Star,
+  Sun,
+  Users,
+  Wand2,
+  Wrench,
+  X,
+  Zap,
+} from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -14,59 +63,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-  Sparkles,
-  MessageSquare,
-  Smile,
-  Zap,
-  Brain,
-  Heart,
-  Star,
-  Music,
-  Palette,
-  Book,
-  Gamepad2,
-  Briefcase,
-  GraduationCap,
-  Globe,
-  Users,
-  Coffee,
-  Rocket,
-  Shield,
-  Crown,
-  Diamond,
-  Flame,
-  Plus,
-  X,
-  Info,
-  ChevronRight,
-  RefreshCw,
-  Wand2,
-  Clock,
-  Search,
-  Sun,
-  Tool,
-  Lightbulb,
-  Activity,
-  Eye,
-  BarChart3,
-  Check,
-} from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type { AgentPersonality } from './types';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
 
 interface Personality extends AgentPersonality {
   customPrompt?: string;
@@ -87,25 +88,89 @@ interface AgentPersonalityEditorProps {
 }
 
 const toneOptions = [
-  { value: 'professional', label: 'Professional', icon: Briefcase, description: 'Formal and business-oriented' },
-  { value: 'friendly', label: 'Friendly', icon: Smile, description: 'Warm and approachable' },
-  { value: 'casual', label: 'Casual', icon: Coffee, description: 'Relaxed and conversational' },
-  { value: 'enthusiastic', label: 'Enthusiastic', icon: Rocket, description: 'Energetic and motivating' },
-  { value: 'educational', label: 'Educational', icon: GraduationCap, description: 'Informative and teaching-focused' },
-  { value: 'empathetic', label: 'Empathetic', icon: Heart, description: 'Understanding and supportive' },
-  { value: 'humorous', label: 'Humorous', icon: Gamepad2, description: 'Light-hearted and fun' },
-  { value: 'authoritative', label: 'Authoritative', icon: Crown, description: 'Confident and commanding' },
+  {
+    value: 'professional',
+    label: 'Professional',
+    icon: Briefcase,
+    description: 'Formal and business-oriented',
+  },
+  {
+    value: 'friendly',
+    label: 'Friendly',
+    icon: Smile,
+    description: 'Warm and approachable',
+  },
+  {
+    value: 'casual',
+    label: 'Casual',
+    icon: Coffee,
+    description: 'Relaxed and conversational',
+  },
+  {
+    value: 'enthusiastic',
+    label: 'Enthusiastic',
+    icon: Rocket,
+    description: 'Energetic and motivating',
+  },
+  {
+    value: 'educational',
+    label: 'Educational',
+    icon: GraduationCap,
+    description: 'Informative and teaching-focused',
+  },
+  {
+    value: 'empathetic',
+    label: 'Empathetic',
+    icon: Heart,
+    description: 'Understanding and supportive',
+  },
+  {
+    value: 'humorous',
+    label: 'Humorous',
+    icon: Gamepad2,
+    description: 'Light-hearted and fun',
+  },
+  {
+    value: 'authoritative',
+    label: 'Authoritative',
+    icon: Crown,
+    description: 'Confident and commanding',
+  },
 ];
 
 const styleOptions = [
   { value: 'concise', label: 'Concise', description: 'Brief and to the point' },
-  { value: 'detailed', label: 'Detailed', description: 'Comprehensive explanations' },
-  { value: 'technical', label: 'Technical', description: 'Uses domain-specific language' },
+  {
+    value: 'detailed',
+    label: 'Detailed',
+    description: 'Comprehensive explanations',
+  },
+  {
+    value: 'technical',
+    label: 'Technical',
+    description: 'Uses domain-specific language',
+  },
   { value: 'simple', label: 'Simple', description: 'Easy to understand' },
-  { value: 'creative', label: 'Creative', description: 'Imaginative and original' },
-  { value: 'analytical', label: 'Analytical', description: 'Data-driven and logical' },
-  { value: 'storytelling', label: 'Storytelling', description: 'Narrative and engaging' },
-  { value: 'direct', label: 'Direct', description: 'Straightforward communication' },
+  {
+    value: 'creative',
+    label: 'Creative',
+    description: 'Imaginative and original',
+  },
+  {
+    value: 'analytical',
+    label: 'Analytical',
+    description: 'Data-driven and logical',
+  },
+  {
+    value: 'storytelling',
+    label: 'Storytelling',
+    description: 'Narrative and engaging',
+  },
+  {
+    value: 'direct',
+    label: 'Direct',
+    description: 'Straightforward communication',
+  },
 ];
 
 const traitOptions = [
@@ -120,7 +185,7 @@ const traitOptions = [
   { value: 'curious', label: 'Curious', icon: Search },
   { value: 'reliable', label: 'Reliable', icon: Shield },
   { value: 'optimistic', label: 'Optimistic', icon: Sun },
-  { value: 'practical', label: 'Practical', icon: Tool },
+  { value: 'practical', label: 'Practical', icon: Wrench },
   { value: 'innovative', label: 'Innovative', icon: Lightbulb },
   { value: 'collaborative', label: 'Collaborative', icon: Users },
   { value: 'detail-oriented', label: 'Detail-oriented', icon: Eye },
@@ -162,7 +227,10 @@ const personalityTemplates = [
   },
 ];
 
-export function AgentPersonalityEditor({ personality, onChange }: AgentPersonalityEditorProps) {
+export function AgentPersonalityEditor({
+  personality,
+  onChange,
+}: AgentPersonalityEditorProps) {
   const [activeTab, setActiveTab] = useState('presets');
   const [showExampleDialog, setShowExampleDialog] = useState(false);
   const [newExample, setNewExample] = useState({ input: '', output: '' });
@@ -174,7 +242,7 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
   const handleTraitToggle = (trait: string) => {
     const traits = personality.traits || [];
     if (traits.includes(trait)) {
-      onChange({ ...personality, traits: traits.filter(t => t !== trait) });
+      onChange({ ...personality, traits: traits.filter((t) => t !== trait) });
     } else {
       onChange({ ...personality, traits: [...traits, trait] });
     }
@@ -200,7 +268,7 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
     });
   };
 
-  const applyTemplate = (template: typeof personalityTemplates[0]) => {
+  const applyTemplate = (template: (typeof personalityTemplates)[0]) => {
     onChange({
       ...personality,
       tone: template.tone,
@@ -211,54 +279,65 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs onValueChange={setActiveTab} value={activeTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="presets">Presets</TabsTrigger>
           <TabsTrigger value="customize">Customize</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="presets" className="space-y-4 mt-4">
+        <TabsContent className="mt-4 space-y-4" value="presets">
           <div className="grid gap-3 sm:grid-cols-2">
             {personalityTemplates.map((template) => {
               const Icon = template.icon;
-              const isActive = 
+              const isActive =
                 personality.tone === template.tone &&
                 personality.style === template.style &&
-                JSON.stringify(personality.traits) === JSON.stringify(template.traits);
-              
+                JSON.stringify(personality.traits) ===
+                  JSON.stringify(template.traits);
+
               return (
                 <Card
-                  key={template.id}
                   className={cn(
-                    "cursor-pointer transition-all hover:shadow-md",
-                    isActive && "border-primary shadow-md"
+                    'cursor-pointer transition-all hover:shadow-md',
+                    isActive && 'border-primary shadow-md'
                   )}
+                  key={template.id}
                   onClick={() => applyTemplate(template)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start space-x-3">
-                      <div className={cn(
-                        "flex h-10 w-10 items-center justify-center rounded-lg",
-                        isActive ? "bg-primary text-primary-foreground" : "bg-muted"
-                      )}>
+                      <div
+                        className={cn(
+                          'flex h-10 w-10 items-center justify-center rounded-lg',
+                          isActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        )}
+                      >
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium">{template.name}</h4>
+                          <h4 className="font-medium text-sm">
+                            {template.name}
+                          </h4>
                           {isActive && (
-                            <Badge variant="default" className="text-xs">
+                            <Badge className="text-xs" variant="default">
                               Active
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="mt-1 text-muted-foreground text-xs">
                           Tone: {template.tone} • Style: {template.style}
                         </p>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {template.traits.map(trait => (
-                            <Badge key={trait} variant="secondary" className="text-xs">
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {template.traits.map((trait) => (
+                            <Badge
+                              className="text-xs"
+                              key={trait}
+                              variant="secondary"
+                            >
                               {trait}
                             </Badge>
                           ))}
@@ -273,13 +352,13 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base flex items-center">
+              <CardTitle className="flex items-center text-base">
                 <Wand2 className="mr-2 h-4 w-4" />
                 Quick Personality Generator
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="w-full">
+              <Button className="w-full" variant="outline">
                 <Sparkles className="mr-2 h-4 w-4" />
                 Generate Random Personality
               </Button>
@@ -287,7 +366,7 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
           </Card>
         </TabsContent>
 
-        <TabsContent value="customize" className="space-y-6 mt-4">
+        <TabsContent className="mt-4 space-y-6" value="customize">
           {/* Tone Selection */}
           <div className="space-y-3">
             <Label>Tone of Voice</Label>
@@ -295,27 +374,29 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
               {toneOptions.map((option) => {
                 const Icon = option.icon;
                 const isSelected = personality.tone === option.value;
-                
+
                 return (
                   <button
-                    key={option.value}
-                    onClick={() => onChange({ ...personality, tone: option.value })}
                     className={cn(
-                      "flex items-center space-x-2 rounded-lg border p-3 text-left transition-all",
+                      'flex items-center space-x-2 rounded-lg border p-3 text-left transition-all',
                       isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
                     )}
+                    key={option.value}
+                    onClick={() =>
+                      onChange({ ...personality, tone: option.value })
+                    }
                   >
                     <Icon className="h-4 w-4 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{option.label}</p>
-                      <p className="text-xs text-muted-foreground truncate">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm">{option.label}</p>
+                      <p className="truncate text-muted-foreground text-xs">
                         {option.description}
                       </p>
                     </div>
                     {isSelected && (
-                      <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                      <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
                     )}
                   </button>
                 );
@@ -327,18 +408,20 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
           <div className="space-y-3">
             <Label>Communication Style</Label>
             <Select
+              onValueChange={(value) =>
+                onChange({ ...personality, style: value })
+              }
               value={personality.style}
-              onValueChange={(value) => onChange({ ...personality, style: value })}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {styleOptions.map(option => (
+                {styleOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     <div>
                       <div className="font-medium">{option.label}</div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-muted-foreground text-xs">
                         {option.description}
                       </div>
                     </div>
@@ -352,7 +435,7 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Personality Traits</Label>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 {personality.traits?.length || 0} selected
               </span>
             </div>
@@ -360,21 +443,21 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
               {traitOptions.map((trait) => {
                 const Icon = trait.icon;
                 const isSelected = personality.traits?.includes(trait.value);
-                
+
                 return (
                   <button
+                    className={cn(
+                      'flex items-center space-x-2 rounded-md border px-3 py-2 text-sm transition-all',
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border hover:border-primary/50'
+                    )}
                     key={trait.value}
                     onClick={() => handleTraitToggle(trait.value)}
-                    className={cn(
-                      "flex items-center space-x-2 rounded-md border px-3 py-2 text-sm transition-all",
-                      isSelected
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border hover:border-primary/50"
-                    )}
                   >
                     <Icon className="h-3 w-3" />
                     <span>{trait.label}</span>
-                    {isSelected && <Check className="h-3 w-3 ml-auto" />}
+                    {isSelected && <Check className="ml-auto h-3 w-3" />}
                   </button>
                 );
               })}
@@ -390,17 +473,19 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm">Creativity</Label>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     {personality.creativity || 50}%
                   </span>
                 </div>
                 <Slider
-                  value={[personality.creativity || 50]}
-                  onValueChange={(value) => handleSliderChange('creativity', value)}
                   max={100}
+                  onValueChange={(value) =>
+                    handleSliderChange('creativity', value)
+                  }
                   step={10}
+                  value={[personality.creativity || 50]}
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Higher values make responses more creative and varied
                 </p>
               </div>
@@ -408,17 +493,19 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm">Formality</Label>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     {personality.formality || 50}%
                   </span>
                 </div>
                 <Slider
-                  value={[personality.formality || 50]}
-                  onValueChange={(value) => handleSliderChange('formality', value)}
                   max={100}
+                  onValueChange={(value) =>
+                    handleSliderChange('formality', value)
+                  }
                   step={10}
+                  value={[personality.formality || 50]}
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Adjusts between casual and formal language
                 </p>
               </div>
@@ -426,17 +513,19 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm">Verbosity</Label>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     {personality.verbosity || 50}%
                   </span>
                 </div>
                 <Slider
-                  value={[personality.verbosity || 50]}
-                  onValueChange={(value) => handleSliderChange('verbosity', value)}
                   max={100}
+                  onValueChange={(value) =>
+                    handleSliderChange('verbosity', value)
+                  }
                   step={10}
+                  value={[personality.verbosity || 50]}
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Controls response length and detail level
                 </p>
               </div>
@@ -444,17 +533,17 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm">Humor</Label>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     {personality.humor || 30}%
                   </span>
                 </div>
                 <Slider
-                  value={[personality.humor || 30]}
-                  onValueChange={(value) => handleSliderChange('humor', value)}
                   max={100}
+                  onValueChange={(value) => handleSliderChange('humor', value)}
                   step={10}
+                  value={[personality.humor || 30]}
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Adds wit and playfulness to responses
                 </p>
               </div>
@@ -462,17 +551,19 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm">Empathy</Label>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     {personality.empathy || 70}%
                   </span>
                 </div>
                 <Slider
-                  value={[personality.empathy || 70]}
-                  onValueChange={(value) => handleSliderChange('empathy', value)}
                   max={100}
+                  onValueChange={(value) =>
+                    handleSliderChange('empathy', value)
+                  }
                   step={10}
+                  value={[personality.empathy || 70]}
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Level of emotional understanding and support
                 </p>
               </div>
@@ -480,7 +571,7 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
           </Card>
         </TabsContent>
 
-        <TabsContent value="advanced" className="space-y-6 mt-4">
+        <TabsContent className="mt-4 space-y-6" value="advanced">
           {/* Custom System Prompt */}
           <Card>
             <CardHeader>
@@ -491,10 +582,12 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
             </CardHeader>
             <CardContent>
               <Textarea
+                className="min-h-[150px] font-mono text-sm"
+                onChange={(e) =>
+                  onChange({ ...personality, customPrompt: e.target.value })
+                }
                 placeholder="You are a helpful assistant that..."
                 value={personality.customPrompt || ''}
-                onChange={(e) => onChange({ ...personality, customPrompt: e.target.value })}
-                className="min-h-[150px] font-mono text-sm"
               />
             </CardContent>
           </Card>
@@ -509,33 +602,36 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
             </CardHeader>
             <CardContent className="space-y-4">
               {(personality.examples || []).map((example, index) => (
-                <div key={index} className="space-y-2 p-3 rounded-lg bg-muted/50">
+                <div
+                  className="space-y-2 rounded-lg bg-muted/50 p-3"
+                  key={index}
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
                       <div>
                         <Label className="text-xs">User Input</Label>
-                        <p className="text-sm mt-1">{example.input}</p>
+                        <p className="mt-1 text-sm">{example.input}</p>
                       </div>
                       <div>
                         <Label className="text-xs">Agent Response</Label>
-                        <p className="text-sm mt-1">{example.output}</p>
+                        <p className="mt-1 text-sm">{example.output}</p>
                       </div>
                     </div>
                     <Button
-                      variant="ghost"
-                      size="sm"
                       onClick={() => handleRemoveExample(index)}
+                      size="sm"
+                      variant="ghost"
                     >
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
               ))}
-              
+
               <Button
-                variant="outline"
                 className="w-full"
                 onClick={() => setShowExampleDialog(true)}
+                variant="outline"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Example
@@ -552,18 +648,22 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
               <div className="space-y-3 rounded-lg bg-muted/50 p-4">
                 <div className="flex items-center space-x-2">
                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Test Message</span>
+                  <span className="font-medium text-sm">Test Message</span>
                 </div>
-                <div className="pl-6 text-sm text-muted-foreground">
+                <div className="pl-6 text-muted-foreground text-sm">
                   "How can I help you today?"
                 </div>
                 <div className="pl-6">
                   <p className="text-sm italic">
                     Based on your settings, the agent will respond in a{' '}
-                    <span className="font-medium">{personality.tone}</span> tone with a{' '}
-                    <span className="font-medium">{personality.style}</span> style.
+                    <span className="font-medium">{personality.tone}</span> tone
+                    with a{' '}
+                    <span className="font-medium">{personality.style}</span>{' '}
+                    style.
                     {personality.traits?.length > 0 && (
-                      <> The agent will be{' '}
+                      <>
+                        {' '}
+                        The agent will be{' '}
                         {personality.traits.map((trait, i) => (
                           <span key={trait}>
                             <span className="font-medium">{trait}</span>
@@ -583,7 +683,7 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
       </Tabs>
 
       {/* Add Example Dialog */}
-      <Dialog open={showExampleDialog} onOpenChange={setShowExampleDialog}>
+      <Dialog onOpenChange={setShowExampleDialog} open={showExampleDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add Example Conversation</DialogTitle>
@@ -592,33 +692,35 @@ export function AgentPersonalityEditor({ personality, onChange }: AgentPersonali
             <div className="space-y-2">
               <Label>User Input</Label>
               <Textarea
+                onChange={(e) =>
+                  setNewExample({ ...newExample, input: e.target.value })
+                }
                 placeholder="What the user might say..."
                 value={newExample.input}
-                onChange={(e) => setNewExample({ ...newExample, input: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>Agent Response</Label>
               <Textarea
+                onChange={(e) =>
+                  setNewExample({ ...newExample, output: e.target.value })
+                }
                 placeholder="How the agent should respond..."
                 value={newExample.output}
-                onChange={(e) => setNewExample({ ...newExample, output: e.target.value })}
               />
             </div>
           </div>
           <DialogFooter>
             <Button
-              variant="outline"
               onClick={() => {
                 setShowExampleDialog(false);
                 setNewExample({ input: '', output: '' });
               }}
+              variant="outline"
             >
               Cancel
             </Button>
-            <Button onClick={handleAddExample}>
-              Add Example
-            </Button>
+            <Button onClick={handleAddExample}>Add Example</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

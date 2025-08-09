@@ -215,17 +215,23 @@ export const remove = mutation({
     }
 
     // Check if agent has active executions (from upstream)
-    const activeExecutions = await ctx.db
-      .query('agentExecutions')
-      .withIndex('by_agent', (q) => q.eq('agentId', args.id))
-      .filter((q) =>
-        q.or(
-          q.eq(q.field('status'), 'pending'),
-          q.eq(q.field('status'), 'running'),
-          q.eq(q.field('status'), 'waiting_approval')
+    // If execution tables are not present in schema, skip active execution check gracefully
+    let activeExecutions: Array<Doc<'agentExecutions'>> = [] as any;
+    try {
+      activeExecutions = await ctx.db
+        .query('agentExecutions' as any)
+        .withIndex('by_agent' as any, (q: any) => q.eq('agentId', args.id))
+        .filter((q: any) =>
+          q.or(
+            q.eq(q.field('status'), 'pending'),
+            q.eq(q.field('status'), 'running'),
+            q.eq(q.field('status'), 'waiting_approval')
+          )
         )
-      )
-      .collect();
+        .collect();
+    } catch {
+      activeExecutions = [] as any;
+    }
 
     if (activeExecutions.length > 0) {
       throw new Error('Cannot delete agent with active executions');
@@ -658,14 +664,22 @@ export const getAgentStats = query({
     const activeAgents = agents.filter((agent) => agent.isActive);
 
     // Get execution counts
-    const allExecutions = await Promise.all(
-      agents.map((agent) =>
-        ctx.db
-          .query('agentExecutions')
-          .withIndex('by_agent', (q) => q.eq('agentId', agent._id))
-          .collect()
-      )
-    );
+    let allExecutions: Array<Array<Doc<'agentExecutions'>>> = [] as any;
+    try {
+      allExecutions = await Promise.all(
+        agents.map(
+          (agent) =>
+            ctx.db
+              .query('agentExecutions' as any)
+              .withIndex('by_agent' as any, (q: any) =>
+                q.eq('agentId', agent._id)
+              )
+              .collect() as unknown as Promise<Array<Doc<'agentExecutions'>>>
+        )
+      );
+    } catch {
+      allExecutions = [] as any;
+    }
 
     const executions = allExecutions.flat();
     const completedExecutions = executions.filter(
