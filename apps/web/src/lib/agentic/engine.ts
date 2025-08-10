@@ -4,7 +4,7 @@
  */
 
 import { openai } from '@ai-sdk/openai';
-import type { CoreMessage, TypedToolCall } from 'ai';
+import type { CoreMessage, ToolResultPart } from 'ai';
 import { generateText, tool } from 'ai';
 import { nanoid } from 'nanoid';
 import type {
@@ -193,7 +193,7 @@ export class AgenticEngine {
           step.toolCalls = result.toolCalls.map((tc) => ({
             id: tc.toolCallId,
             name: tc.toolName,
-            parameters: tc.args || {},
+            parameters: (tc as any).input ?? {},
             requiresApproval: this.requiresApproval(tc.toolName),
           }));
 
@@ -225,8 +225,11 @@ export class AgenticEngine {
                 type: 'tool-result',
                 toolCallId: result.toolCalls[i].toolCallId,
                 toolName: result.toolCalls[i].toolName,
-                result: toolResult,
-              })),
+                output:
+                  (toolResult as any).output ??
+                  (toolResult as any).result ??
+                  (toolResult as any),
+              })) as ToolResultPart[],
             });
           }
         }
@@ -356,7 +359,7 @@ export class AgenticEngine {
    */
   private isTaskComplete(
     text: string,
-    toolCalls: TypedToolCall[] | undefined
+    toolCalls: unknown[] | undefined
   ): boolean {
     // Simple heuristics to determine task completion
     const completionIndicators = [

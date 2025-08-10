@@ -24,7 +24,9 @@ export const getMyMessages = query({
     // Verify the chat belongs to the user
     const chat = await ctx.db.get(args.chatId);
     if (!chat || chat.ownerId !== user._id) {
-      console.warn(`Access denied: User ${user._id} tried to access chat ${args.chatId}`);
+      console.warn(
+        `Access denied: User ${user._id} tried to access chat ${args.chatId}`
+      );
       return [];
     }
 
@@ -108,20 +110,23 @@ export const createMyMessage = mutation({
         (user.subscription.messagesUsed ?? 0) >=
         (user.subscription.messagesLimit ?? 0)
       ) {
-        throw new Error('Message limit reached. Please upgrade your subscription.');
+        throw new Error(
+          'Message limit reached. Please upgrade your subscription.'
+        );
       }
 
       // Check premium model limits if using a premium model
       const model = args.metadata?.model || chat.model;
       const premiumModels = ['gpt-4o', 'claude-3-5-sonnet', 'gemini-1.5-pro'];
-      
-      if (premiumModels.includes(model)) {
-        if (
-          (user.subscription.premiumMessagesUsed ?? 0) >=
+
+      if (
+        premiumModels.includes(model) &&
+        (user.subscription.premiumMessagesUsed ?? 0) >=
           (user.subscription.premiumMessagesLimit ?? 0)
-        ) {
-          throw new Error('Premium message limit reached. Please upgrade to Pro Plus.');
-        }
+      ) {
+        throw new Error(
+          'Premium message limit reached. Please upgrade to Pro Plus.'
+        );
       }
 
       // Update usage counts
@@ -130,7 +135,7 @@ export const createMyMessage = mutation({
       };
 
       if (premiumModels.includes(model)) {
-        updates['subscription.premiumMessagesUsed'] = 
+        updates['subscription.premiumMessagesUsed'] =
           (user.subscription.premiumMessagesUsed ?? 0) + 1;
       }
 
@@ -140,9 +145,14 @@ export const createMyMessage = mutation({
     const now = Date.now();
 
     // Create the message
+    const walletAddress = user.walletAddress;
+    if (!walletAddress) {
+      throw new Error('Wallet address not set for user');
+    }
+
     const messageId = await ctx.db.insert('messages', {
       chatId: args.chatId,
-      walletAddress: user.walletAddress,
+      walletAddress,
       role: args.role,
       content: args.content,
       tokenCount: args.tokenCount ?? 0,
@@ -178,7 +188,7 @@ export const deleteMyMessage = mutation({
   },
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
-    
+
     const message = await ctx.db.get(args.id);
     if (!message) {
       throw new Error('Message not found');
@@ -209,7 +219,7 @@ export const clearMyChatMessages = mutation({
   },
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
-    
+
     // Verify the chat belongs to the user
     const chat = await ctx.db.get(args.chatId);
     if (!chat || chat.ownerId !== user._id) {
@@ -260,13 +270,16 @@ export const getMyChatMessageStats = query({
       .withIndex('by_chat', (q) => q.eq('chatId', args.chatId))
       .collect();
 
-    const userMessages = messages.filter(m => m.role === 'user');
-    const assistantMessages = messages.filter(m => m.role === 'assistant');
-    
-    const totalTokens = messages.reduce((sum, m) => sum + (m.tokenCount ?? 0), 0);
-    
+    const userMessages = messages.filter((m) => m.role === 'user');
+    const assistantMessages = messages.filter((m) => m.role === 'assistant');
+
+    const totalTokens = messages.reduce(
+      (sum, m) => sum + (m.tokenCount ?? 0),
+      0
+    );
+
     const modelUsage = new Map<string, number>();
-    messages.forEach(m => {
+    messages.forEach((m) => {
       const model = m.metadata?.model;
       if (model) {
         modelUsage.set(model, (modelUsage.get(model) || 0) + 1);
@@ -280,7 +293,8 @@ export const getMyChatMessageStats = query({
       totalTokens,
       modelUsage: Object.fromEntries(modelUsage),
       firstMessage: messages.length > 0 ? messages[0].createdAt : null,
-      lastMessage: messages.length > 0 ? messages[messages.length - 1].createdAt : null,
+      lastMessage:
+        messages.length > 0 ? messages[messages.length - 1].createdAt : null,
     };
   },
 });

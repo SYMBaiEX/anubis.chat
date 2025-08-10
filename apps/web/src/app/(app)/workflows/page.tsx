@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { AdminGuard } from '@/components/auth/admin-guard';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import {
   useAuthContext,
@@ -42,7 +43,7 @@ import {
   type WorkflowMeta,
 } from '@/hooks/convex/useWorkflows';
 
-export default function WorkflowsPage() {
+function WorkflowsContent() {
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowMeta | null>(
     null
   );
@@ -507,5 +508,13 @@ export default function WorkflowsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function WorkflowsPage() {
+  return (
+    <AdminGuard>
+      <WorkflowsContent />
+    </AdminGuard>
   );
 }

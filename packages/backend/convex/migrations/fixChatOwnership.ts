@@ -3,8 +3,9 @@
  * This ensures proper data isolation when users change wallets or use different auth methods
  */
 
-import { internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
+import { internal } from '../_generated/api';
+import { internalMutation } from '../_generated/server';
 
 export const migrateChatsToUserIds = internalMutation({
   args: {
@@ -21,7 +22,7 @@ export const migrateChatsToUserIds = internalMutation({
 
     for (const chat of chats) {
       processed++;
-      
+
       try {
         // Check if ownerId is already a user ID (starts with specific pattern)
         // Convex IDs typically have a specific format
@@ -71,14 +72,17 @@ export const runFullMigration = internalMutation({
     let hasMore = true;
 
     while (hasMore) {
-      const result = await migrateChatsToUserIds(ctx, { batchSize: 100 });
+      const result = await ctx.runMutation(
+        internal.migrations.fixChatOwnership.migrateChatsToUserIds,
+        { batchSize: 100 }
+      );
       totalProcessed += result.processed;
       totalUpdated += result.updated;
       totalErrors += result.errors;
       hasMore = result.hasMore;
 
       // Add a small delay to avoid overwhelming the database
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     console.log('Migration completed:', {

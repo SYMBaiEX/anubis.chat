@@ -10,6 +10,7 @@ export interface SliderProps {
   max?: number;
   step?: number;
   className?: string;
+  disabled?: boolean;
 }
 
 export function Slider({
@@ -19,6 +20,7 @@ export function Slider({
   max = 100,
   step = 1,
   className,
+  disabled,
 }: SliderProps) {
   const current = Math.min(Math.max(value[0] ?? min, min), max);
 
@@ -29,6 +31,7 @@ export function Slider({
         'h-2 w-full appearance-none rounded bg-muted accent-primary outline-none',
         className
       )}
+      disabled={disabled}
       max={max}
       min={min}
       onChange={(e) => onValueChange?.([Number(e.target.value)])}

@@ -24,6 +24,7 @@ export interface Agent {
   systemPrompt: string;
   capabilities: string[];
   model: string;
+  version?: string;
   temperature?: number;
   maxTokens?: number;
   config?: {
@@ -146,6 +147,8 @@ interface SolanaAgentProviderProps {
 export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   const wallet = useWallet();
   const { user, isAuthenticated } = useAuthContext();
+  const userWalletAddress = user?.walletAddress;
+  const canQueryByUser = isAuthenticated && !!userWalletAddress;
 
   const [agentKit, setAgentKit] = useState<SolanaAgentKit | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -155,25 +158,23 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   // Fetch available agents
   const agents = useQuery(
     api.agents.list,
-    isAuthenticated && user?.walletAddress
-      ? { includePublic: true, userId: user.walletAddress }
+    canQueryByUser
+      ? ({ includePublic: true, userId: userWalletAddress as string } as const)
       : 'skip'
   );
 
   // Fetch user's recent transactions
   const recentTransactions = useQuery(
     api.blockchainTransactions.listByUser,
-    isAuthenticated && user?.walletAddress
-      ? { userId: user.walletAddress, limit: 10 }
+    canQueryByUser
+      ? ({ userId: userWalletAddress as string, limit: 10 } as const)
       : 'skip'
   ) as BlockchainTransaction[] | undefined;
 
   // Fetch pending transactions
   const pendingTransactions = useQuery(
     api.blockchainTransactions.listPending,
-    isAuthenticated && user?.walletAddress
-      ? { userId: user.walletAddress }
-      : 'skip'
+    canQueryByUser ? ({ userId: userWalletAddress as string } as const) : 'skip'
   ) as BlockchainTransaction[] | undefined;
 
   // Initialize Solana Agent Kit when wallet connects

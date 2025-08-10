@@ -149,11 +149,11 @@ export function UsageIndicator({
 
         {showPayment && upgradePrompt.suggestedTier && (
           <PaymentModal
+            currentTier={subscription.tier}
             isOpen={showPayment}
             onClose={() => setShowPayment(false)}
             onSuccess={() => setShowPayment(false)}
             tier={upgradePrompt.suggestedTier}
-            currentTier={subscription.tier}
           />
         )}
       </Card>
@@ -256,11 +256,11 @@ export function UsageIndicator({
 
       {showPayment && upgradePrompt.suggestedTier && (
         <PaymentModal
+          currentTier={subscription.tier}
           isOpen={showPayment}
           onClose={() => setShowPayment(false)}
           onSuccess={() => setShowPayment(false)}
           tier={upgradePrompt.suggestedTier}
-          currentTier={subscription.tier}
         />
       )}
     </Card>

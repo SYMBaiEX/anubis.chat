@@ -140,13 +140,15 @@ export function AgentSelector({ className }: AgentSelectorProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button className="min-w-[200px] justify-between" variant="outline">
-            <div className="flex items-center space-x-2">
-              {selectedAgent && getAgentIcon(selectedAgent.type)}
-              <span className="truncate">
+            <div className="flex min-w-0 flex-1 items-center space-x-2">
+              <div className="flex-shrink-0">
+                {selectedAgent && getAgentIcon(selectedAgent.type)}
+              </div>
+              <span className="flex-1 truncate text-left">
                 {selectedAgent?.name || 'Select Agent'}
               </span>
             </div>
-            <ChevronDown className="h-4 w-4 opacity-50" />
+            <ChevronDown className="h-4 w-4 flex-shrink-0 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
 

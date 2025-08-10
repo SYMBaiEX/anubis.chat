@@ -6,17 +6,16 @@ import {
   Activity,
   CreditCard,
   Crown,
-  Filter,
   Search,
   Settings,
   Shield,
   Users,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+// removed unused Button import
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -64,23 +63,8 @@ function AdminDashboardContent() {
   const updateUserSubscription = useMutation(
     api.adminAuth.updateUserSubscription
   );
-  const promoteToAdmin = useMutation(api.adminAuth.promoteUserToAdmin);
   const syncAdminsFromEnv = useMutation(api.adminAuth.syncAdminWallets);
-
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [showUserModal, setShowUserModal] = useState(false);
-
-  // Initialize admin system if no admins exist
-  const handleInitializeAdmins = async () => {
-    try {
-      await syncAdminsFromEnv();
-      toast.success('Admin system initialized successfully');
-    } catch (error) {
-      toast.error(
-        'Failed to initialize admin system: ' + (error as Error).message
-      );
-    }
-  };
+  // removed unused promoteToAdmin, selectedUser/showUserModal, and handleInitializeAdmins
 
   // Handle user subscription update
   const handleUpdateSubscription = async (
@@ -200,8 +184,8 @@ function AdminDashboardContent() {
               />
             </div>
             <Select
-              onValueChange={(value) =>
-                setTierFilter(value as typeof tierFilter)
+              onValueChange={(v) =>
+                setTierFilter(v as 'all' | 'free' | 'pro' | 'pro_plus')
               }
               value={tierFilter}
             >
@@ -230,71 +214,89 @@ function AdminDashboardContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {allUsers.map((user) => (
-                    <TableRow key={user._id}>
+                  {allUsers.map((listedUser) => (
+                    <TableRow key={listedUser._id}>
                       <TableCell>
                         <div>
                           <div className="font-medium">
-                            {user.displayName || 'Anonymous'}
+                            {listedUser.displayName || 'Anonymous'}
                           </div>
-                          <div className="text-muted-foreground text-sm">
-                            {user.walletAddress.slice(0, 8)}...
-                            {user.walletAddress.slice(-4)}
-                          </div>
+                          {listedUser.walletAddress && (
+                            <div className="text-muted-foreground text-sm">
+                              {listedUser.walletAddress.slice(0, 8)}...
+                              {listedUser.walletAddress.slice(-4)}
+                            </div>
+                          )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {listedUser.subscription && (
+                          <Badge
+                            variant={
+                              listedUser.subscription.tier === 'free'
+                                ? 'secondary'
+                                : 'default'
+                            }
+                          >
+                            {listedUser.subscription.tier === 'pro_plus'
+                              ? 'Pro+'
+                              : listedUser.subscription.tier === 'pro'
+                                ? 'Pro'
+                                : 'Free'}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {listedUser.subscription && (
+                          <div className="text-sm">
+                            <div>
+                              {listedUser.subscription.messagesUsed || 0}/
+                              {listedUser.subscription.messagesLimit || 0}{' '}
+                              messages
+                            </div>
+                            <div className="text-muted-foreground">
+                              {listedUser.subscription.premiumMessagesUsed || 0}
+                              /
+                              {listedUser.subscription.premiumMessagesLimit ||
+                                0}{' '}
+                              premium
+                            </div>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge
                           variant={
-                            user.subscription.tier === 'free'
-                              ? 'secondary'
-                              : 'default'
+                            listedUser.isActive ? 'default' : 'secondary'
                           }
                         >
-                          {user.subscription.tier}
+                          {listedUser.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">
-                          <div>
-                            {user.subscription.messagesUsed || 0}/
-                            {user.subscription.messagesLimit || 0} messages
-                          </div>
-                          <div className="text-muted-foreground">
-                            {user.subscription.premiumMessagesUsed || 0}/
-                            {user.subscription.premiumMessagesLimit || 0}{' '}
-                            premium
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={user.isActive ? 'default' : 'secondary'}
-                        >
-                          {user.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Select
-                            onValueChange={(value) =>
-                              handleUpdateSubscription(
-                                user.walletAddress,
-                                value as 'free' | 'pro' | 'pro_plus'
-                              )
-                            }
-                            value={user.subscription.tier}
-                          >
-                            <SelectTrigger className="w-24">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="free">Free</SelectItem>
-                              <SelectItem value="pro">Pro</SelectItem>
-                              <SelectItem value="pro_plus">Pro+</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        {listedUser.walletAddress &&
+                          listedUser.subscription && (
+                            <div className="flex gap-2">
+                              <Select
+                                onValueChange={(v) =>
+                                  handleUpdateSubscription(
+                                    listedUser.walletAddress as string,
+                                    v as 'free' | 'pro' | 'pro_plus'
+                                  )
+                                }
+                                value={listedUser.subscription.tier}
+                              >
+                                <SelectTrigger className="w-24">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="free">Free</SelectItem>
+                                  <SelectItem value="pro">Pro</SelectItem>
+                                  <SelectItem value="pro_plus">Pro+</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -356,13 +358,14 @@ function AdminDashboardContent() {
                   {admins.map((admin) => (
                     <TableRow key={admin._id}>
                       <TableCell>
-                        <div className="font-medium">
-                          {admin.walletAddress.slice(0, 8)}...
-                          {admin.walletAddress.slice(-4)}
-                        </div>
-                        {admin.notes && (
+                        {admin.walletAddress ? (
+                          <div className="font-medium">
+                            {admin.walletAddress.slice(0, 8)}...
+                            {admin.walletAddress.slice(-4)}
+                          </div>
+                        ) : (
                           <div className="text-muted-foreground text-sm">
-                            {admin.notes}
+                            N/A
                           </div>
                         )}
                       </TableCell>
@@ -379,18 +382,15 @@ function AdminDashboardContent() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {admin.permissions.length} permissions
+                          {admin.permissions?.length ?? 0} permissions
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {new Date(admin.createdAt).toLocaleDateString()}
+                          {admin.createdAt
+                            ? new Date(admin.createdAt).toLocaleDateString()
+                            : 'N/A'}
                         </div>
-                        {admin.addedBy && (
-                          <div className="text-muted-foreground text-xs">
-                            by {admin.addedBy.slice(0, 8)}...
-                          </div>
-                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -451,7 +451,7 @@ function AdminDashboardContent() {
                     </span>
                     <span>
                       {process.env.NEXT_PUBLIC_ADMIN_WALLETS?.split(',')
-                        .length || 0}{' '}
+                        ?.length ?? 0}{' '}
                       configured
                     </span>
                   </div>

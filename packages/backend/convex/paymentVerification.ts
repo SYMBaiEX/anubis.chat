@@ -29,6 +29,7 @@ interface PaymentVerificationRequest {
   expectedAmount: number;
   tier: 'pro' | 'pro_plus';
   walletAddress: string;
+  isProrated?: boolean;
   isUpgrade?: boolean;
   previousTier?: 'free' | 'pro' | 'pro_plus';
 }
@@ -368,7 +369,7 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       );
     }
 
-    const { expectedAmount, isUpgrade, previousTier } = body;
+    const { expectedAmount, isProrated, isUpgrade, previousTier } = body;
     ({ txSignature, tier, walletAddress } = body);
 
     // Log verification start
@@ -381,7 +382,7 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
         amount: expectedAmount,
         walletAddress,
         network: solanaConfig.network,
-        isUpgrade: isUpgrade || false,
+        isUpgrade,
         previousTier: previousTier || 'free',
       },
       'info'
@@ -482,14 +483,16 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       tier === 'pro'
         ? subscriptionConfig.pricing.pro
         : subscriptionConfig.pricing.proPlus;
-    
-    // Calculate expected amount based on whether it's an upgrade
+
+    // Calculate expected amount based on whether it's a prorated upgrade
     let expectedTierAmount = tierPricing.priceSOL;
-    if (isUpgrade && previousTier === 'pro' && tier === 'pro_plus') {
-      // If upgrading from Pro to Pro Plus, only pay the difference
-      expectedTierAmount = subscriptionConfig.pricing.proPlus.priceSOL - subscriptionConfig.pricing.pro.priceSOL;
+    if (isProrated && tier === 'pro_plus') {
+      // For prorated Pro+ upgrade, only pay the difference
+      expectedTierAmount =
+        subscriptionConfig.pricing.proPlus.priceSOL -
+        subscriptionConfig.pricing.pro.priceSOL;
     }
-    
+
     if (Math.abs(expectedAmount - expectedTierAmount) > 0.001) {
       return new Response(
         JSON.stringify({
@@ -583,6 +586,7 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
           txSignature,
           amountSol: expectedAmount,
           walletAddress,
+          isProrated,
           verificationDetails: verificationResult.transactionDetails!,
         }
       );

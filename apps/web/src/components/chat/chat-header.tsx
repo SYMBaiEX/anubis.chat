@@ -2,12 +2,17 @@
 
 import {
   Bot,
+  Brain,
+  Check,
+  Edit3,
   Info,
   MoreVertical,
   RefreshCw,
   Settings,
   Trash2,
+  X,
 } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import type { ChatHeaderProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 
@@ -26,11 +32,40 @@ import { cn } from '@/lib/utils';
  */
 export function ChatHeader({
   chat,
-  onSettingsClick,
+  onRename,
   onClearHistory,
+  onDelete,
+  onSettingsClick,
+  onModelSelectorClick,
+  onAgentSelectorClick,
   className,
   children,
 }: ChatHeaderProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(chat.title);
+
+  const handleSaveTitle = () => {
+    if (editingTitle.trim() && editingTitle !== chat.title) {
+      onRename?.(editingTitle.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTitle(chat.title);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveTitle();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelEdit();
+    }
+  };
+
   const getModelDisplayName = (model: string) => {
     if (model.includes('gpt-4')) return 'GPT-4';
     if (model.includes('gpt-3.5')) return 'GPT-3.5';
@@ -80,13 +115,62 @@ export function ChatHeader({
       {/* Chat Info */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center space-x-2">
-          <h3 className="truncate font-medium text-sm">{chat.title}</h3>
-          <Badge
-            className={cn('text-xs', getModelColor(chat.model))}
-            variant="secondary"
-          >
-            {getModelDisplayName(chat.model)}
-          </Badge>
+          {isEditing ? (
+            <div className="flex flex-1 items-center space-x-1">
+              <Input
+                autoFocus
+                className="h-6 flex-1 text-sm"
+                onBlur={handleSaveTitle}
+                onChange={(e) => setEditingTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Chat title"
+                value={editingTitle}
+              />
+              <Button
+                className="h-6 w-6 p-0"
+                onClick={handleSaveTitle}
+                size="sm"
+                variant="ghost"
+              >
+                <Check className="h-3 w-3" />
+              </Button>
+              <Button
+                className="h-6 w-6 p-0"
+                onClick={handleCancelEdit}
+                size="sm"
+                variant="ghost"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          ) : (
+            <div className="group flex flex-1 items-center space-x-2">
+              <h3
+                className="cursor-pointer truncate font-medium text-sm transition-colors hover:text-primary"
+                onClick={() => setIsEditing(true)}
+                title="Click to rename chat"
+              >
+                {chat.title}
+              </h3>
+              <Button
+                className="h-4 w-4 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                onClick={() => setIsEditing(true)}
+                size="sm"
+                variant="ghost"
+              >
+                <Edit3 className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+
+          {!isEditing && (
+            <Badge
+              className={cn('text-xs', getModelColor(chat.model))}
+              variant="secondary"
+            >
+              {getModelDisplayName(chat.model)}
+            </Badge>
+          )}
         </div>
 
         {/* Chat Status */}
@@ -127,9 +211,36 @@ export function ChatHeader({
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={onSettingsClick}>
-              <Settings className="mr-2 h-4 w-4" />
-              Chat Settings
+            {/* Mobile-only options */}
+            <div className="sm:hidden">
+              {onModelSelectorClick && (
+                <DropdownMenuItem onClick={onModelSelectorClick}>
+                  <Brain className="mr-2 h-4 w-4" />
+                  Select Model
+                </DropdownMenuItem>
+              )}
+
+              {onAgentSelectorClick && (
+                <DropdownMenuItem onClick={onAgentSelectorClick}>
+                  <Bot className="mr-2 h-4 w-4" />
+                  Select Agent
+                </DropdownMenuItem>
+              )}
+
+              {onSettingsClick && (
+                <DropdownMenuItem onClick={onSettingsClick}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Chat Settings
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuSeparator />
+            </div>
+
+            {/* Always visible options */}
+            <DropdownMenuItem onClick={() => setIsEditing(true)}>
+              <Edit3 className="mr-2 h-4 w-4" />
+              Rename Chat
             </DropdownMenuItem>
 
             <DropdownMenuItem onClick={onClearHistory}>
@@ -141,7 +252,7 @@ export function ChatHeader({
 
             <DropdownMenuItem
               className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
-              onClick={onClearHistory}
+              onClick={onDelete}
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete Chat

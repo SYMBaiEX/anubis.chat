@@ -40,7 +40,7 @@ export const streamChat = httpAction(async (ctx, request) => {
   const user = await ctx.runQuery(api.users.getUserByWallet, {
     walletAddress,
   });
-  
+
   if (!user) {
     return new Response(
       JSON.stringify({ error: 'User not found. Please sign in.' }),

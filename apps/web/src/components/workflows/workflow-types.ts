@@ -51,7 +51,7 @@ export interface NodeParameters {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 }
 
-export interface WorkflowNodeData {
+export interface WorkflowNodeData extends Record<string, unknown> {
   type: NodeType;
   label: string;
   description?: string;

@@ -60,6 +60,7 @@ const allItems: NavItem[] = [
     href: '/workflows',
     icon: Workflow,
     requiresAuth: true,
+    adminOnly: true,
     inHeader: true,
     inSidebar: true,
   },

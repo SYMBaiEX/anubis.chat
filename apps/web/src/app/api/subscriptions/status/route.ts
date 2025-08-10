@@ -5,8 +5,8 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { convexConfig } from '@/lib/env';
-import { verifyAuthToken } from '@/lib/middleware/subscription-auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
+import { verifyAuthToken } from '@/lib/middleware/subscription-auth';
 import {
   addSecurityHeaders,
   internalErrorResponse,

@@ -206,8 +206,11 @@ export default function DashboardPage() {
                 Usage
               </h3>
               <p className="font-bold text-lg sm:text-xl md:text-2xl">
-                {subscription
-                  ? Math.round(subscription.messageUsagePercent)
+                {subscription && subscription.messagesLimit > 0
+                  ? Math.round(
+                      (subscription.messagesUsed / subscription.messagesLimit) *
+                        100
+                    )
                   : 0}
                 %
               </p>

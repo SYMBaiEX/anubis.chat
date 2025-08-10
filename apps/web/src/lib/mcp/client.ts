@@ -327,44 +327,50 @@ export const mcpManager = new MCPClientManager();
 // Default MCP server configurations
 export const DEFAULT_MCP_SERVERS: MCPServerConfig[] = [
   {
-    name: 'filesystem',
+    name: 'context7',
     transport: {
-      type: MCPTransportType.STDIO,
-      command: 'npx',
-      args: ['-y', '@modelcontextprotocol/server-filesystem'],
-      env: {
-        MCP_ALLOWED_PATHS: process.env.MCP_ALLOWED_PATHS || '/tmp',
+      type: MCPTransportType.HTTP,
+      url: process.env.CONTEXT7_MCP_URL || 'https://mcp.context7.com/mcp',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(process.env.CONTEXT7_API_KEY && {
+          'Authorization': `Bearer ${process.env.CONTEXT7_API_KEY}`,
+        }),
       },
+      timeout: 30000, // 30 second timeout
     },
-    description: 'File system operations',
+    description: 'Access to library documentation, code examples, and best practices',
     toolSchemas: {
-      read_file: z.object({
-        path: z.string().describe('Path to the file to read'),
+      resolve_library_id: z.object({
+        libraryName: z.string().describe('Library name to search for and retrieve a Context7-compatible library ID'),
       }),
-      write_file: z.object({
-        path: z.string().describe('Path to the file to write'),
-        content: z.string().describe('Content to write to the file'),
-      }),
-      list_directory: z.object({
-        path: z.string().describe('Path to the directory to list'),
+      get_library_docs: z.object({
+        context7CompatibleLibraryID: z.string().describe('Exact Context7-compatible library ID (e.g., /mongodb/docs, /vercel/next.js)'),
+        tokens: z.number().optional().describe('Maximum number of tokens of documentation to retrieve (default: 10000)'),
+        topic: z.string().optional().describe('Topic to focus documentation on (e.g., hooks, routing)'),
       }),
     },
   },
   {
-    name: 'brave-search',
+    name: 'solana',
     transport: {
-      type: MCPTransportType.STDIO,
-      command: 'npx',
-      args: ['-y', '@modelcontextprotocol/server-brave-search'],
-      env: {
-        BRAVE_API_KEY: process.env.BRAVE_API_KEY || '',
+      type: MCPTransportType.HTTP,
+      url: process.env.SOLANA_MCP_URL || 'https://mcp.solana.com/mcp',
+      headers: {
+        'Content-Type': 'application/json',
       },
+      timeout: 30000, // 30 second timeout
     },
-    description: 'Web search using Brave',
+    description: 'Solana developer assistant with documentation search and Anchor framework expertise',
     toolSchemas: {
-      brave_web_search: z.object({
-        query: z.string().describe('Search query'),
-        count: z.number().optional().describe('Number of results'),
+      'Solana_Expert__Ask_For_Help': z.object({
+        question: z.string().describe('A Solana related question (how-to, concepts, APIs, SDKs, errors). Provide as much context about the problem as needed.'),
+      }),
+      'Solana_Documentation_Search': z.object({
+        query: z.string().describe('A search query that will be matched against a corpus of Solana documentation using RAG'),
+      }),
+      'Ask_Solana_Anchor_Framework_Expert': z.object({
+        question: z.string().describe('Any question about the Anchor Framework (how-to, concepts, APIs, SDKs, errors)'),
       }),
     },
   },

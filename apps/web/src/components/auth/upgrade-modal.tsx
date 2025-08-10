@@ -122,6 +122,10 @@ export function UpgradeModal({
       ? { txSignature: paymentDetails.txSignature }
       : 'skip'
   );
+  const proratedUpgrade = useQuery(
+    api.subscriptions.calculateProratedUpgrade,
+    selectedTier ? { targetTier: selectedTier } : 'skip'
+  );
 
   // Get user data from Convex query
   const user = useQuery(api.users.getCurrentUserProfile);
@@ -197,10 +201,18 @@ export function UpgradeModal({
       setIsProcessing(true);
       setPaymentStep('payment');
 
-      // Create payment instructions
+      // Create payment instructions with prorated pricing
+      const isProrated =
+        proratedUpgrade?.isProrated &&
+        selectedTier === 'pro_plus' &&
+        subscription?.tier === 'pro';
+      const paymentAmount = isProrated
+        ? proratedUpgrade.proratedPrice
+        : selectedConfig.priceSOL;
+
       setPaymentDetails({
         walletAddress: publicKey.toString(),
-        amount: selectedConfig.priceSOL,
+        amount: paymentAmount,
       });
 
       log.info('Upgrade initiated', {
@@ -238,12 +250,21 @@ export function UpgradeModal({
       setPaymentStep('processing');
       setError(null);
 
+      // Get the correct payment amount (prorated or full price)
+      const isProrated =
+        proratedUpgrade?.isProrated &&
+        selectedTier === 'pro_plus' &&
+        subscription?.tier === 'pro';
+      const paymentAmount = isProrated
+        ? proratedUpgrade.proratedPrice
+        : selectedConfig.priceSOL;
+
       // Check wallet balance first
       const balance = await connection.getBalance(publicKey);
       const balanceSol = balance / 1_000_000_000; // Convert lamports to SOL
-      if (balanceSol < selectedConfig.priceSOL) {
+      if (balanceSol < paymentAmount) {
         throw new Error(
-          `Insufficient balance. Required: ${selectedConfig.priceSOL} SOL, Available: ${balanceSol.toFixed(4)} SOL`
+          `Insufficient balance. Required: ${paymentAmount} SOL, Available: ${balanceSol.toFixed(4)} SOL`
         );
       }
 
@@ -253,12 +274,13 @@ export function UpgradeModal({
       const transaction = await createPaymentTransaction(
         publicKey,
         recipientPublicKey,
-        selectedConfig.priceSOL
+        paymentAmount
       );
 
       log.info('Payment transaction created', {
         tier: selectedTier,
-        amount: selectedConfig.priceSOL,
+        amount: paymentAmount,
+        isProrated,
         recipient: solanaConfig.paymentAddress,
         sender: publicKey.toString(),
         attempt: retryAttempt + 1,
@@ -295,9 +317,10 @@ export function UpgradeModal({
             },
             body: JSON.stringify({
               txSignature,
-              expectedAmount: selectedConfig.priceSOL,
+              expectedAmount: paymentAmount,
               tier: selectedTier,
               walletAddress: publicKey.toString(),
+              isProrated,
             }),
           });
 
@@ -467,6 +490,15 @@ export function UpgradeModal({
     const isCurrentTier = currentTier === tier;
     const isDowngrade = currentTier === 'pro_plus' && tier === 'pro';
 
+    // Check if this is a prorated upgrade
+    const isProrated =
+      proratedUpgrade?.isProrated &&
+      tier === 'pro_plus' &&
+      currentTier === 'pro';
+    const displayPrice = isProrated
+      ? proratedUpgrade.proratedPrice
+      : config.priceSOL;
+
     return (
       <Card
         className={cn(
@@ -490,6 +522,12 @@ export function UpgradeModal({
           </Badge>
         )}
 
+        {isProrated && (
+          <Badge className="-top-2 -translate-x-1/2 absolute left-1/2 bg-gradient-to-r from-green-500 to-green-600">
+            Prorated Upgrade
+          </Badge>
+        )}
+
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div
@@ -505,10 +543,26 @@ export function UpgradeModal({
             </div>
           </div>
           <div className="text-right">
-            <div className="font-bold text-xl">{config.priceSOL} SOL</div>
-            <div className="text-muted-foreground text-sm">
-              ≈ ${config.priceUSD}/month
-            </div>
+            {isProrated ? (
+              <div className="space-y-1">
+                <div className="font-bold text-green-600 text-xl">
+                  {displayPrice} SOL
+                </div>
+                <div className="text-muted-foreground text-xs line-through">
+                  {config.priceSOL} SOL
+                </div>
+                <div className="font-medium text-green-600 text-xs">
+                  Upgrade price only
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="font-bold text-xl">{displayPrice} SOL</div>
+                <div className="text-muted-foreground text-sm">
+                  ≈ ${config.priceUSD}/month
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -528,6 +582,22 @@ export function UpgradeModal({
             <span className="font-medium text-gray-600 text-sm dark:text-gray-400">
               Current Plan
             </span>
+          </div>
+        )}
+
+        {isProrated && (
+          <div className="mt-4 rounded bg-green-50 p-3 dark:bg-green-900/20">
+            <div className="text-center text-green-800 text-sm dark:text-green-200">
+              <p className="font-medium">Pro Member Discount</p>
+              <p className="text-xs">
+                Pay only the difference - your remaining Pro time continues!
+              </p>
+              {proratedUpgrade?.daysRemaining && (
+                <p className="mt-1 text-xs">
+                  {proratedUpgrade.daysRemaining} days left in your Pro plan
+                </p>
+              )}
+            </div>
           </div>
         )}
       </Card>
@@ -613,10 +683,14 @@ export function UpgradeModal({
             <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">
-                  {selectedConfig.priceSOL} SOL
+                  {paymentDetails.amount || selectedConfig.priceSOL} SOL
                 </span>
                 <span className="text-muted-foreground text-sm">
-                  ≈ ${selectedConfig.priceUSD} USD
+                  {proratedUpgrade?.isProrated &&
+                  selectedTier === 'pro_plus' &&
+                  subscription?.tier === 'pro'
+                    ? 'Prorated upgrade'
+                    : `≈ $${selectedConfig.priceUSD} USD`}
                 </span>
               </div>
             </div>
@@ -655,7 +729,7 @@ export function UpgradeModal({
           <Button
             className="w-full"
             disabled={isProcessing || !publicKey}
-            onClick={handlePaymentComplete}
+            onClick={() => handlePaymentComplete()}
           >
             {isProcessing ? 'Processing Payment...' : 'Send Payment'}
           </Button>
@@ -904,23 +978,11 @@ export function UpgradeModal({
     <Dialog onOpenChange={handleClose} open={isOpen}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-2xl">Upgrade Your Plan</DialogTitle>
-              <DialogDescription>
-                {upgradePrompt?.message ||
-                  'Unlock more messages and premium AI models'}
-              </DialogDescription>
-            </div>
-            <Button
-              disabled={paymentStep === 'processing'}
-              onClick={handleClose}
-              size="sm"
-              variant="ghost"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-2xl">Upgrade Your Plan</DialogTitle>
+          <DialogDescription>
+            {upgradePrompt?.message ||
+              'Unlock more messages and premium AI models'}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="mt-6">

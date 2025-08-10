@@ -129,10 +129,10 @@ export function SubscriptionStatus({
                 {subscription.tier === 'admin'
                   ? 'Administrator'
                   : subscription.tier === 'pro_plus'
-                    ? 'Pro+'
-                    : subscription.tier.charAt(0).toUpperCase() +
-                      subscription.tier.slice(1)}{' '}
-                {subscription.tier !== 'admin' && 'Plan'}
+                    ? 'Pro+ Plan'
+                    : subscription.tier === 'pro'
+                      ? 'Pro Plan'
+                      : 'Free Plan'}
               </h3>
               <p className="text-gray-600 text-sm dark:text-gray-400">
                 {subscription.tier === 'admin'

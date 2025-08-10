@@ -336,12 +336,67 @@ export const trackDetailedMessageUsage = mutation({
   },
 });
 
+// Calculate prorated upgrade cost for Pro to Pro+ upgrade
+export const calculateProratedUpgrade = query({
+  args: {
+    targetTier: v.union(v.literal('pro'), v.literal('pro_plus')),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+
+    if (!user) {
+      return null;
+    }
+
+    const currentTier = user.subscription.tier;
+    const targetTier = args.targetTier;
+
+    // Only support Pro to Pro+ proration for now
+    if (currentTier !== 'pro' || targetTier !== 'pro_plus') {
+      return {
+        isProrated: false,
+        fullPrice: SUBSCRIPTION_TIERS[targetTier].priceSol,
+        proratedPrice: SUBSCRIPTION_TIERS[targetTier].priceSol,
+        creditApplied: 0,
+        daysRemaining: 0,
+      };
+    }
+
+    const now = Date.now();
+    const currentPeriodEnd = user.subscription.currentPeriodEnd;
+    const daysRemaining = Math.max(
+      0,
+      Math.ceil((currentPeriodEnd - now) / (1000 * 60 * 60 * 24))
+    );
+
+    // Calculate credit for unused Pro subscription
+    const proPricePerDay = SUBSCRIPTION_TIERS.pro.priceSol / 30;
+    const creditApplied = proPricePerDay * daysRemaining;
+
+    // Calculate prorated price
+    const fullPriceDifference =
+      SUBSCRIPTION_TIERS.pro_plus.priceSol - SUBSCRIPTION_TIERS.pro.priceSol;
+    const proratedPrice = Math.max(0, fullPriceDifference);
+
+    return {
+      isProrated: true,
+      fullPrice: SUBSCRIPTION_TIERS[targetTier].priceSol,
+      proratedPrice,
+      creditApplied,
+      daysRemaining,
+      currentTier,
+      targetTier,
+    };
+  },
+});
+
 // Process subscription payment (creates pending payment for verification)
 export const processPayment = mutation({
   args: {
     tier: v.union(v.literal('pro'), v.literal('pro_plus')),
     txSignature: v.string(),
     amountSol: v.number(),
+    isProrated: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
@@ -351,10 +406,23 @@ export const processPayment = mutation({
     }
 
     const tierConfig = SUBSCRIPTION_TIERS[args.tier];
+    let expectedAmount = tierConfig.priceSol;
+
+    // Handle prorated upgrade from Pro to Pro+
+    if (
+      args.isProrated &&
+      user.subscription.tier === 'pro' &&
+      args.tier === 'pro_plus'
+    ) {
+      expectedAmount =
+        SUBSCRIPTION_TIERS.pro_plus.priceSol - SUBSCRIPTION_TIERS.pro.priceSol;
+    }
 
     // Verify payment amount
-    if (Math.abs(args.amountSol - tierConfig.priceSol) > 0.001) {
-      throw new Error('Invalid payment amount');
+    if (Math.abs(args.amountSol - expectedAmount) > 0.001) {
+      throw new Error(
+        `Invalid payment amount. Expected: ${expectedAmount} SOL, received: ${args.amountSol} SOL`
+      );
     }
 
     // Check if transaction signature already exists
@@ -409,6 +477,7 @@ export const processVerifiedPayment = internalMutation({
     txSignature: v.string(),
     amountSol: v.number(),
     walletAddress: v.string(),
+    isProrated: v.optional(v.boolean()),
     verificationDetails: v.object({
       signature: v.string(),
       recipient: v.string(),
@@ -452,7 +521,7 @@ export const processVerifiedPayment = internalMutation({
         createdAt: now,
         updatedAt: now,
       });
-      
+
       payment = await ctx.db.get(paymentId);
       if (!payment) {
         throw new Error('Failed to create payment record');
@@ -476,7 +545,23 @@ export const processVerifiedPayment = internalMutation({
 
     const tierConfig = SUBSCRIPTION_TIERS[args.tier];
     const now = Date.now();
-    const periodEnd = now + 30 * 24 * 60 * 60 * 1000; // 30 days
+
+    // For prorated upgrades, maintain the current billing period
+    let periodEnd = now + 30 * 24 * 60 * 60 * 1000; // Default: 30 days from now
+    let periodStart = now;
+    let resetUsage = true;
+
+    // Handle prorated upgrade from Pro to Pro+
+    if (
+      args.isProrated &&
+      user.subscription.tier === 'pro' &&
+      args.tier === 'pro_plus'
+    ) {
+      // Keep the existing billing period for prorated upgrades
+      periodStart = user.subscription.currentPeriodStart;
+      periodEnd = user.subscription.currentPeriodEnd;
+      resetUsage = false; // Don't reset usage counters for mid-cycle upgrades
+    }
 
     // Update payment status to confirmed
     await ctx.db.patch(payment._id, {
@@ -490,11 +575,13 @@ export const processVerifiedPayment = internalMutation({
       subscription: {
         ...user.subscription,
         tier: args.tier,
-        messagesUsed: 0, // Reset on new subscription
+        messagesUsed: resetUsage ? 0 : user.subscription.messagesUsed,
         messagesLimit: tierConfig.messagesLimit,
-        premiumMessagesUsed: 0,
+        premiumMessagesUsed: resetUsage
+          ? 0
+          : user.subscription.premiumMessagesUsed,
         premiumMessagesLimit: tierConfig.premiumMessagesLimit,
-        currentPeriodStart: now,
+        currentPeriodStart: periodStart,
         currentPeriodEnd: periodEnd,
         subscriptionTxSignature: args.txSignature,
         autoRenew: true,

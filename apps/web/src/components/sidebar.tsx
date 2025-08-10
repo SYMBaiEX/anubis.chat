@@ -52,12 +52,6 @@ const bottomItems: Array<{
     icon: <Settings className="h-4 w-4 flex-shrink-0" />,
   },
   {
-    label: 'Security',
-    href: '/security',
-    requiresAuth: true,
-    icon: <Shield className="h-4 w-4 flex-shrink-0" />,
-  },
-  {
     label: 'Wallet',
     href: '/wallet',
     requiresAuth: true,

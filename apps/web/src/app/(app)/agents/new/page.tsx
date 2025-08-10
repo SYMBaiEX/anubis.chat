@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -66,6 +67,10 @@ const AGENT_CONFIG = {
     maxSteps: 10,
     enableMCPTools: false,
     tools: [] as string[],
+    mcpServers: [
+      { name: 'context7', enabled: false, label: 'Context7 - Library Documentation', description: 'Access to library docs, code examples, and best practices' },
+      { name: 'solana', enabled: false, label: 'Solana Developer Assistant', description: 'Expert guidance for Solana development, Anchor framework, and real-time documentation search' },
+    ],
   },
 } as const;
 
@@ -121,6 +126,15 @@ const createAgentFormSchema = z.object({
     .max(50, 'Max steps cannot exceed 50')
     .default(AGENT_CONFIG.defaults.maxSteps),
   enableMCPTools: z.boolean().default(AGENT_CONFIG.defaults.enableMCPTools),
+  mcpServers: z
+    .array(
+      z.object({
+        name: z.string(),
+        enabled: z.boolean(),
+        config: z.object({}).optional(),
+      })
+    )
+    .optional(),
 });
 
 type CreateAgentFormData = z.infer<typeof createAgentFormSchema>;
@@ -163,7 +177,12 @@ export default function NewAgentPage() {
       maxTokens: AGENT_CONFIG.defaults.maxTokens,
       maxSteps: AGENT_CONFIG.defaults.maxSteps,
       enableMCPTools: AGENT_CONFIG.defaults.enableMCPTools,
-    } satisfies CreateAgentFormData,
+      mcpServers: AGENT_CONFIG.defaults.mcpServers.map(s => ({ 
+        name: s.name, 
+        enabled: s.enabled, 
+        config: {} 
+      })),
+    } as CreateAgentFormData,
     onSubmit: async ({ value }) => {
       // Validate form data
       const validation = createAgentFormSchema.safeParse(value);
@@ -188,16 +207,22 @@ export default function NewAgentPage() {
         // Prepare agent data
         const agentData = {
           name: validation.data.name,
-          type:
-            validation.data.template === 'custom'
-              ? 'custom'
-              : validation.data.template === 'blockchain'
-                ? 'trading'
-                : validation.data.template === 'analysis'
-                  ? 'portfolio'
-                  : validation.data.template === 'research'
-                    ? 'general'
-                    : ('general' as const),
+          type: (validation.data.template === 'custom'
+            ? 'custom'
+            : validation.data.template === 'blockchain'
+              ? 'trading'
+              : validation.data.template === 'analysis'
+                ? 'portfolio'
+                : validation.data.template === 'research'
+                  ? 'general'
+                  : 'general') as
+            | 'general'
+            | 'custom'
+            | 'trading'
+            | 'defi'
+            | 'nft'
+            | 'dao'
+            | 'portfolio',
           description: validation.data.description || '',
           systemPrompt:
             validation.data.systemPrompt || 'You are a helpful AI assistant.',
@@ -208,6 +233,7 @@ export default function NewAgentPage() {
           maxSteps: validation.data.maxSteps,
           createdBy: user.walletAddress,
           tools: AGENT_CONFIG.defaults.tools,
+          mcpServers: validation.data.mcpServers?.filter(s => s.enabled),
         };
 
         console.log('Creating agent with data:', agentData);
@@ -227,7 +253,9 @@ export default function NewAgentPage() {
   });
 
   // Get available models based on subscription tier
-  const availableModels = getAvailableModels(subscription?.tier);
+  const availableModels = getAvailableModels(
+    subscription?.tier === 'admin' ? 'pro_plus' : subscription?.tier
+  );
 
   if (!subscription) {
     return (
@@ -431,18 +459,21 @@ export default function NewAgentPage() {
                     AI Model <span className="text-red-500">*</span>
                   </Label>
                   <Select
-                    id={field.name}
-                    name={field.name}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onValueChange={(value) =>
+                      field.handleChange(value as CreateAgentFormData['model'])
+                    }
                     value={field.state.value}
                   >
-                    <option value="">Select an AI model</option>
-                    {availableModels.map((model) => (
-                      <option key={model.value} value={model.value}>
-                        {model.label}
-                      </option>
-                    ))}
+                    <SelectTrigger id={field.name}>
+                      <SelectValue placeholder="Select an AI model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableModels.map((model) => (
+                        <SelectItem key={model.value} value={model.value}>
+                          {model.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                   {selectedModel && (
                     <div className="flex items-center gap-2">
@@ -494,7 +525,11 @@ export default function NewAgentPage() {
                   min={0}
                   name={field.name}
                   onChange={(e) =>
-                    field.handleChange(Number.parseFloat(e.target.value))
+                    field.handleChange(
+                      Number.parseFloat(
+                        e.target.value
+                      ) as CreateAgentFormData['temperature']
+                    )
                   }
                   step={0.1}
                   type="range"
@@ -518,7 +553,12 @@ export default function NewAgentPage() {
                   min={1}
                   name={field.name}
                   onChange={(e) =>
-                    field.handleChange(Number.parseInt(e.target.value, 10))
+                    field.handleChange(
+                      Number.parseInt(
+                        e.target.value,
+                        10
+                      ) as CreateAgentFormData['maxTokens']
+                    )
                   }
                   placeholder="4096"
                   type="number"
@@ -535,6 +575,83 @@ export default function NewAgentPage() {
               </div>
             )}
           </form.Field>
+
+          {/* MCP Server Configuration */}
+          <div className="space-y-4">
+            <div>
+              <Label>MCP Server Tools</Label>
+              <p className="mb-3 text-muted-foreground text-sm">
+                Enable additional AI tools and capabilities for your agent
+              </p>
+              <div className="space-y-3">
+                {AGENT_CONFIG.defaults.mcpServers.map((server, index) => (
+                  <form.Field key={server.name} name={`mcpServers`}>
+                    {(field) => {
+                      const mcpServers = field.state.value || [];
+                      const serverState = mcpServers[index] || {
+                        name: server.name,
+                        enabled: false,
+                        config: {},
+                      };
+
+                      return (
+                        <Card className="p-4">
+                          <div className="flex items-start gap-3">
+                            <Checkbox
+                              checked={serverState.enabled}
+                              className="mt-1"
+                              id={`mcp-${server.name}`}
+                              onCheckedChange={(checked) => {
+                                const newServers = [...mcpServers];
+                                newServers[index] = {
+                                  ...serverState,
+                                  enabled: checked as boolean,
+                                };
+                                field.handleChange(newServers);
+                              }}
+                            />
+                            <div className="flex-1">
+                              <label
+                                className="cursor-pointer font-medium text-sm"
+                                htmlFor={`mcp-${server.name}`}
+                              >
+                                {server.label}
+                              </label>
+                              <p className="mt-1 text-muted-foreground text-xs">
+                                {server.description}
+                              </p>
+                              {server.name === 'context7' && (
+                                <div className="mt-2 rounded-lg bg-blue-50 p-2 text-xs dark:bg-blue-950">
+                                  <strong>Context7 Features:</strong>
+                                  <ul className="ml-4 mt-1 list-disc">
+                                    <li>Access to 50,000+ library docs</li>
+                                    <li>Real-time, version-specific code examples</li>
+                                    <li>Best practices and patterns</li>
+                                    <li>Framework-specific guidance</li>
+                                  </ul>
+                                </div>
+                              )}
+                              {server.name === 'solana' && (
+                                <div className="mt-2 rounded-lg bg-purple-50 p-2 text-xs dark:bg-purple-950">
+                                  <strong>Solana Developer Tools:</strong>
+                                  <ul className="ml-4 mt-1 list-disc">
+                                    <li>Solana expert for development questions</li>
+                                    <li>Documentation search with RAG</li>
+                                    <li>Anchor framework specialist</li>
+                                    <li>Real-time docs updates</li>
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    }}
+                  </form.Field>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-2">

@@ -99,7 +99,7 @@ export const updateMyChat = mutation({
   },
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
-    
+
     const chat = await ctx.db.get(args.id);
 
     if (!chat || chat.ownerId !== user._id) {
@@ -112,7 +112,8 @@ export const updateMyChat = mutation({
 
     if (args.title !== undefined) updates.title = args.title;
     if (args.model !== undefined) updates.model = args.model;
-    if (args.systemPrompt !== undefined) updates.systemPrompt = args.systemPrompt;
+    if (args.systemPrompt !== undefined)
+      updates.systemPrompt = args.systemPrompt;
     if (args.temperature !== undefined) updates.temperature = args.temperature;
     if (args.maxTokens !== undefined) updates.maxTokens = args.maxTokens;
     if (args.isActive !== undefined) updates.isActive = args.isActive;
@@ -129,7 +130,7 @@ export const deleteMyChat = mutation({
   },
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
-    
+
     const chat = await ctx.db.get(args.id);
 
     if (!chat || chat.ownerId !== user._id) {
@@ -187,7 +188,7 @@ export const getMyChatStats = query({
   args: {},
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);
-    
+
     if (!user) {
       return {
         totalChats: 0,

@@ -83,7 +83,7 @@ export function PaymentModal({
 
   const config = TIER_CONFIG[tier];
   const connection = new Connection(RPC_ENDPOINT);
-  
+
   // Calculate upgrade pricing
   const isUpgrade = currentTier === 'pro' && tier === 'pro_plus';
   const upgradeDiscount = isUpgrade ? TIER_CONFIG.pro.price : 0;
@@ -183,7 +183,8 @@ export function PaymentModal({
             {step === 'processing' && (
               <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
             )}
-            {step === 'details' && (isUpgrade ? 'Upgrade to' : 'Subscribe to')} {config.name}
+            {step === 'details' && (isUpgrade ? 'Upgrade to' : 'Subscribe to')}{' '}
+            {config.name}
           </DialogTitle>
         </DialogHeader>
 

@@ -9,9 +9,9 @@ import { WalletConnectButton } from './wallet/wallet-connect-button';
 
 export default function Header() {
   const pathname = usePathname();
-  const { isAuthenticated } = useAuthContext();
+  const { isAuthenticated, isAdmin } = useAuthContext();
   const isDev = process.env.NODE_ENV === 'development';
-  const navItems = getHeaderNav(isAuthenticated, isDev);
+  const navItems = getHeaderNav(isAuthenticated, isDev, isAdmin);
 
   return (
     <div className="relative overflow-hidden border-border/50 border-b bg-card/80 backdrop-blur-sm transition-all duration-300">

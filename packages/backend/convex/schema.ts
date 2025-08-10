@@ -582,6 +582,16 @@ export default defineSchema({
         gasBudget: v.optional(v.number()),
       })
     ),
+    // MCP Server Configuration
+    mcpServers: v.optional(
+      v.array(
+        v.object({
+          name: v.string(), // Server name (e.g., 'context7', 'filesystem')
+          enabled: v.boolean(),
+          config: v.optional(v.object({})), // Server-specific configuration
+        })
+      )
+    ),
     isActive: v.boolean(),
     isPublic: v.boolean(), // Whether available to all users or custom
     createdBy: v.optional(v.string()), // walletAddress for custom agents

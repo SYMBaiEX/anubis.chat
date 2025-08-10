@@ -20,7 +20,7 @@ export const getUserByWallet = query({
       .query('users')
       .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
       .first();
-    
+
     return user;
   },
 });

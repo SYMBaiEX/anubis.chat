@@ -1,6 +1,14 @@
 'use client';
 
-import { AlertTriangle, Calendar, Check, Clock, Crown, TrendingUp, Zap } from 'lucide-react';
+import {
+  AlertTriangle,
+  Calendar,
+  Check,
+  Clock,
+  Crown,
+  TrendingUp,
+  Zap,
+} from 'lucide-react';
 import { UpgradeModal } from '@/components/auth/upgrade-modal';
 import { UsageIndicator } from '@/components/chat/usage-indicator';
 import {
@@ -38,7 +46,9 @@ export default function SubscriptionPage() {
 
   const usagePercent =
     subscription.messagesLimit > 0
-      ? Math.round((subscription.messagesUsed / subscription.messagesLimit) * 100)
+      ? Math.round(
+          (subscription.messagesUsed / subscription.messagesLimit) * 100
+        )
       : 0;
 
   const getTierColor = (tier: string) => {
@@ -116,9 +126,8 @@ export default function SubscriptionPage() {
         <Alert>
           <TrendingUp className="h-4 w-4" />
           <AlertDescription>
-            You've used {usagePercent}% of your
-            monthly message allowance. Consider upgrading to avoid hitting
-            limits.
+            You've used {usagePercent}% of your monthly message allowance.
+            Consider upgrading to avoid hitting limits.
           </AlertDescription>
         </Alert>
       )}
@@ -157,7 +166,8 @@ export default function SubscriptionPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    {subscription.daysRemaining ?? limits?.daysUntilReset ?? 0} days remaining
+                    {subscription.daysRemaining ?? limits?.daysUntilReset ?? 0}{' '}
+                    days remaining
                   </div>
                 </div>
               )}
@@ -206,9 +216,7 @@ export default function SubscriptionPage() {
             <div className="text-muted-foreground text-sm">Premium Used</div>
           </div>
           <div className="text-center">
-            <div className="font-bold text-2xl">
-              {usagePercent}%
-            </div>
+            <div className="font-bold text-2xl">{usagePercent}%</div>
             <div className="text-muted-foreground text-sm">Usage Rate</div>
           </div>
         </div>
@@ -355,7 +363,9 @@ export default function SubscriptionPage() {
                     </div>
                   ))
               ) : (
-                <div className="text-muted-foreground">Basic models available</div>
+                <div className="text-muted-foreground">
+                  Basic models available
+                </div>
               )}
             </div>
           </div>

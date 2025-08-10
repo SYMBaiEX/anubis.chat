@@ -13,6 +13,7 @@ const PROTECTED_ROUTES = [
   '/account',
   '/settings',
   '/subscription',
+  '/wallet',
   ...ADMIN_ROUTES,
 ];
 

@@ -339,13 +339,17 @@ export function PaymentDevTools() {
                   <div className="space-y-2">
                     <Label htmlFor="test-model">Model</Label>
                     <Select
+                      onValueChange={(v) => setTestModel(v)}
                       value={testModel}
-                      onChange={(e) => setTestModel(e.currentTarget.value)}
                     >
                       <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
                       <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                      <SelectItem value="claude-3.5-sonnet">Claude 3.5 Sonnet</SelectItem>
-                      <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
+                      <SelectItem value="claude-3.5-sonnet">
+                        Claude 3.5 Sonnet
+                      </SelectItem>
+                      <SelectItem value="deepseek-chat">
+                        DeepSeek Chat
+                      </SelectItem>
                       <SelectItem value="deepseek-r1">DeepSeek R1</SelectItem>
                     </Select>
                   </div>
@@ -417,10 +421,8 @@ export function PaymentDevTools() {
                 <div className="space-y-2">
                   <Label htmlFor="test-tier">Test Tier</Label>
                   <Select
+                    onValueChange={(v) => setTestTier(v as 'pro' | 'pro_plus')}
                     value={testTier}
-                    onChange={(e) =>
-                      setTestTier(e.currentTarget.value as 'pro' | 'pro_plus')
-                    }
                   >
                     <SelectItem value="pro">Pro (0.05 SOL)</SelectItem>
                     <SelectItem value="pro_plus">Pro+ (0.1 SOL)</SelectItem>
@@ -617,8 +619,10 @@ export function PaymentDevTools() {
                             ) > 90
                               ? 'bg-red-500'
                               : getUsagePercentage(
-                                    subscriptionStatus?.premiumMessagesUsed ?? 0,
-                                    subscriptionStatus?.premiumMessagesLimit ?? 0
+                                    subscriptionStatus?.premiumMessagesUsed ??
+                                      0,
+                                    subscriptionStatus?.premiumMessagesLimit ??
+                                      0
                                   ) > 75
                                 ? 'bg-yellow-500'
                                 : 'bg-green-500'

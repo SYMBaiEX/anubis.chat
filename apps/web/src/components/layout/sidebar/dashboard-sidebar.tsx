@@ -7,8 +7,8 @@ import {
   FileText,
   HelpCircle,
   Settings,
-  Shield,
   User,
+  Wallet as WalletIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -28,10 +28,10 @@ const dashboardItems = [
     description: 'Configure your preferences',
   },
   {
-    label: 'Security',
-    href: '/dashboard/security',
-    icon: Shield,
-    description: 'Security and privacy settings',
+    label: 'Wallet',
+    href: '/wallet',
+    icon: WalletIcon,
+    description: 'Manage your connected wallet',
   },
   {
     label: 'Activity',

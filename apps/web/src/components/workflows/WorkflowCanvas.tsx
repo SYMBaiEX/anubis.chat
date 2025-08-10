@@ -1,5 +1,6 @@
 'use client';
 
+import type { Connection, Edge, Node, NodeTypes } from '@xyflow/react';
 import {
   addEdge,
   Background,
@@ -13,7 +14,6 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
-import type { Connection, Edge, Node } from '@xyflow/react';
 import { useCallback, useRef, useState } from 'react';
 import '@xyflow/react/dist/style.css';
 import {
@@ -36,16 +36,12 @@ import WorkflowSidebar from './WorkflowSidebar';
 import type {
   NodeType,
   WorkflowEdge as WorkflowEdgeType,
+  WorkflowNodeData,
   WorkflowNode as WorkflowNodeType,
   WorkflowTemplate,
-  WorkflowNodeData,
 } from './workflow-types';
 
-interface CustomNodeTypes {
-  custom: typeof CustomNode;
-}
-
-const nodeTypes: CustomNodeTypes = {
+const nodeTypes: NodeTypes = {
   custom: CustomNode,
 };
 
@@ -149,7 +145,7 @@ function WorkflowCanvasContent({
         id: `${type}_${Date.now()}`,
         type: 'custom',
         position,
-        data: nodeData,
+        data: nodeData as unknown as Record<string, unknown>,
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -378,7 +374,7 @@ function WorkflowCanvasContent({
           <Background color="#0f172a" variant={BackgroundVariant.Dots} />
           <MiniMap
             nodeColor={(node) => {
-              const type = node.data?.type || 'default';
+              const type = (((node.data as unknown) as Record<string, unknown>)?.type as string) || 'default';
               const colors: Record<string, string> = {
                 start: '#10b981',
                 end: '#ef4444',

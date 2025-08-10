@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  Brain,
-  Check,
-  ChevronDown,
-  Cpu,
-  Lock,
-  Sparkles,
-  Zap,
-} from 'lucide-react';
+import { Brain, Cpu, Filter, Sparkles, Zap } from 'lucide-react';
 import { useState } from 'react';
 import {
   useCanUsePremiumModel,
@@ -18,24 +10,17 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { ModelCard } from '@/components/ui/model-card';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  ProviderFilter,
+  type ProviderFilter as ProviderFilterType,
+} from '@/components/ui/provider-filter';
 import {
   AI_MODELS,
   type AIModel,
@@ -100,7 +85,8 @@ export function ModelSelector({
   disabled = false,
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
+  const [providerFilter, setProviderFilter] =
+    useState<ProviderFilterType>('all');
 
   const subscription = useSubscriptionStatus();
   const limits = useSubscriptionLimits();
@@ -108,10 +94,15 @@ export function ModelSelector({
 
   const selectedModel = AI_MODELS.find((model) => model.id === value);
 
-  // Filter models based on subscription
-  const isAdmin = subscription?.tier === 'admin' || subscription?.isAdmin;
+  // Filter models based on subscription and provider
+  const isAdmin = subscription?.tier === 'admin';
   const availableModels = AI_MODELS.filter((model) => {
-    // Admins see all models
+    // Provider filter
+    if (providerFilter !== 'all' && model.provider !== providerFilter) {
+      return false;
+    }
+
+    // Subscription filter
     if (isAdmin) {
       return true;
     }
@@ -121,102 +112,32 @@ export function ModelSelector({
     return true; // Pro and Pro+ users can see all models
   });
 
-  const groupedModels = AI_MODELS.reduce(
-    (acc, model) => {
-      if (!acc[model.provider]) {
-        acc[model.provider] = [];
-      }
-      acc[model.provider].push(model);
-      return acc;
-    },
-    {} as Record<string, AIModel[]>
-  );
-
-  // Check if a model is accessible to current user
-  const isModelAccessible = (model: AIModel) => {
-    if (subscription?.tier === 'free') {
-      return !isPremiumModel(model);
-    }
-    if (subscription?.tier === 'pro' && isPremiumModel(model)) {
-      return canUsePremium;
-    }
-    return true;
-  };
-
-  // Get premium badge for model
-  const getPremiumBadge = (model: AIModel) => {
-    if (!isPremiumModel(model)) return null;
-
-    if (subscription?.tier === 'free') {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Badge className="gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                <Lock className="h-3 w-3" />
-                Pro
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Requires Pro or Pro+ subscription</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    }
-
-    if (subscription?.tier === 'pro' && !canUsePremium) {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Badge className="gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                <Lock className="h-3 w-3" />
-                Limit
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Premium message quota exhausted</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    }
-
-    return (
-      <Badge className="gap-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-        <Sparkles className="h-3 w-3" />
-        Premium
-      </Badge>
-    );
-  };
-
-  const providerLabels = {
-    openai: 'OpenAI',
-    anthropic: 'Anthropic',
-    google: 'Google',
-    openrouter: 'OpenRouter',
+  const handleModelSelect = (model: AIModel) => {
+    onValueChange(model.id);
+    setOpen(false);
   };
 
   return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger asChild>
         <Button
-          aria-expanded={open}
           className={cn(
             'w-full justify-between',
             !selectedModel && 'text-muted-foreground',
             className
           )}
           disabled={disabled}
-          role="combobox"
           variant="outline"
         >
           {selectedModel ? (
-            <div className="flex items-center gap-2">
-              {getProviderIcon(selectedModel.provider)}
-              <span className="truncate">{selectedModel.name}</span>
-              <div className="flex items-center gap-1">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <div className="flex flex-shrink-0 items-center gap-2">
+                {getProviderIcon(selectedModel.provider)}
+              </div>
+              <span className="flex-1 truncate text-left">
+                {selectedModel.name}
+              </span>
+              <div className="flex flex-shrink-0 items-center gap-1">
                 {getIntelligenceBadge(selectedModel.intelligence)}
                 {getSpeedIcon(selectedModel.speed)}
               </div>
@@ -224,111 +145,43 @@ export function ModelSelector({
           ) : (
             <span>Select a model...</span>
           )}
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <Filter className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-[500px] p-0">
-        <Command>
-          <CommandInput
-            onValueChange={setSearch}
-            placeholder="Search models..."
-            value={search}
-          />
-          <CommandList>
-            <CommandEmpty>No model found.</CommandEmpty>
-            {Object.entries(groupedModels).map(([provider, models]) => (
-              <CommandGroup
-                heading={
-                  providerLabels[provider as keyof typeof providerLabels]
-                }
-                key={provider}
-              >
-                {models
-                  .filter(
-                    (model) =>
-                      model.name.toLowerCase().includes(search.toLowerCase()) ||
-                      model.description
-                        .toLowerCase()
-                        .includes(search.toLowerCase())
-                  )
-                  .map((model) => {
-                    const accessible = isModelAccessible(model);
+      </DialogTrigger>
+      <DialogContent className="max-h-[80vh] max-w-6xl overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>Select AI Model</DialogTitle>
+        </DialogHeader>
 
-                    return (
-                      <CommandItem
-                        className={cn(
-                          'flex flex-col items-start gap-1 py-2',
-                          !accessible && 'cursor-not-allowed opacity-50'
-                        )}
-                        disabled={!accessible}
-                        key={model.id}
-                        onSelect={() => {
-                          if (accessible) {
-                            onValueChange(model.id);
-                            setOpen(false);
-                          }
-                        }}
-                        value={model.id}
-                      >
-                        <div className="flex w-full items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {getProviderIcon(model.provider)}
-                            <span className="font-medium">{model.name}</span>
-                            {getPremiumBadge(model)}
-                            {model.default && (
-                              <Badge
-                                className="px-1 text-xs"
-                                variant="secondary"
-                              >
-                                Default
-                              </Badge>
-                            )}
-                            {model.released && (
-                              <Badge className="px-1 text-xs" variant="outline">
-                                {model.released}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {getIntelligenceBadge(model.intelligence)}
-                            {getSpeedIcon(model.speed)}
-                            {value === model.id && (
-                              <Check className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-muted-foreground text-xs">
-                          {model.description}
-                        </p>
-                        <div className="flex items-center gap-4 text-muted-foreground text-xs">
-                          <span>
-                            Context: {(model.contextWindow / 1000).toFixed(0)}K
-                          </span>
-                          <span>
-                            ${model.pricing.input}/${model.pricing.output} per
-                            1M
-                          </span>
-                          <div className="flex gap-1">
-                            {model.capabilities.slice(0, 3).map((cap) => (
-                              <Badge
-                                className="px-1 py-0 text-xs"
-                                key={cap}
-                                variant="outline"
-                              >
-                                {cap}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </CommandItem>
-                    );
-                  })}
-              </CommandGroup>
+        {/* Provider Filter */}
+        <ProviderFilter
+          availableCount={availableModels.length}
+          onSelect={setProviderFilter}
+          selected={providerFilter}
+        />
+
+        {/* Models Grid */}
+        <div className="max-h-[60vh] overflow-y-auto">
+          <div className="grid grid-cols-1 gap-3 p-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {availableModels.map((model) => (
+              <ModelCard
+                isSelected={value === model.id}
+                key={model.id}
+                model={model}
+                onClick={handleModelSelect}
+              />
             ))}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+          </div>
+
+          {availableModels.length === 0 && (
+            <div className="py-8 text-center text-muted-foreground">
+              <Filter className="mx-auto mb-2 h-8 w-8 opacity-50" />
+              <p>No models found for the selected provider.</p>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

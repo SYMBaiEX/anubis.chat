@@ -117,6 +117,15 @@ export const create = mutation({
         gasBudget: v.optional(v.number()),
       })
     ),
+    mcpServers: v.optional(
+      v.array(
+        v.object({
+          name: v.string(),
+          enabled: v.boolean(),
+          config: v.optional(v.object({})),
+        })
+      )
+    ),
     isPublic: v.optional(v.boolean()),
     createdBy: v.string(), // walletAddress
     tools: v.optional(v.array(v.string())), // For upstream compatibility
@@ -135,6 +144,7 @@ export const create = mutation({
       temperature: args.temperature ?? 0.7,
       maxTokens: args.maxTokens,
       config: args.config,
+      mcpServers: args.mcpServers,
       isActive: true,
       isPublic: args.isPublic ?? false,
       createdBy: args.createdBy,
@@ -164,6 +174,15 @@ export const update = mutation({
         slippage: v.optional(v.number()),
         gasBudget: v.optional(v.number()),
       })
+    ),
+    mcpServers: v.optional(
+      v.array(
+        v.object({
+          name: v.string(),
+          enabled: v.boolean(),
+          config: v.optional(v.object({})),
+        })
+      )
     ),
     isActive: v.optional(v.boolean()),
     walletAddress: v.optional(v.string()), // For permission check

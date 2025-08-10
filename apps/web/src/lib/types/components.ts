@@ -88,8 +88,12 @@ export interface ChatHeaderProps extends BaseComponentProps {
   > & {
     _id: string;
   };
-  onSettingsClick?: () => void;
+  onRename?: (newTitle: string) => void;
   onClearHistory?: () => void;
+  onDelete?: () => void;
+  onSettingsClick?: () => void;
+  onModelSelectorClick?: () => void;
+  onAgentSelectorClick?: () => void;
 }
 
 export interface MessageListProps extends BaseComponentProps {
