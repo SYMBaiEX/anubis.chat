@@ -120,7 +120,7 @@ function createWebSocketTransport(url: string) {
 
 export function WebSocketChat() {
   const { messages, input, handleInputChange, handleSubmit } = useChat({
-    fetch: createWebSocketTransport('wss://api.isis.chat/stream')
+    fetch: createWebSocketTransport('wss://api.abubis.chat/stream')
   });
 }
 ```

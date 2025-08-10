@@ -37,7 +37,7 @@ export function ChatWelcome({ onCreateChat, isCreating }: ChatWelcomeProps) {
             <MessageSquare className="h-6 w-6 text-primary sm:h-8 sm:w-8" />
           </div>
           <h1 className="mb-2 font-bold text-2xl sm:text-3xl">
-            Welcome to ISIS Chat
+            Welcome to Anubis Chat
           </h1>
           <p className="px-4 text-muted-foreground text-sm sm:px-0 sm:text-base">
             Start a conversation with advanced AI models powered by real-time

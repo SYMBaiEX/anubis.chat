@@ -10,7 +10,7 @@ const testimonials = [
     name: 'Sarah Chen',
     role: 'DeFi Trader',
     content:
-      'ISIS Chat agents execute my strategies faster than any manual workflow.',
+      'anubis.chat agents execute my strategies faster than any manual workflow.',
     rating: 5,
   },
   {
@@ -50,10 +50,7 @@ function Testimonials() {
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((t) => (
-            <Card
-              className="bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6"
-              key={t.name}
-            >
+            <div className="rounded-xl p-6 ring-1 ring-border/40" key={t.name}>
               <div className="mb-3 flex gap-1">
                 {Array.from({ length: t.rating }).map((_, i) => (
                   <Star
@@ -67,7 +64,7 @@ function Testimonials() {
                 <p className="font-semibold">{t.name}</p>
                 <p className="text-muted-foreground text-sm">{t.role}</p>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       </div>

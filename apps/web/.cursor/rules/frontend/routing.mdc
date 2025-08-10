@@ -80,32 +80,32 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'ISIS Chat - Solana AI Chat SaaS',
-    template: '%s | ISIS Chat',
+    default: 'ANUBIS Chat - Solana AI Chat SaaS',
+    template: '%s | ANUBIS Chat',
   },
   description: 'Intelligent AI chat interface built on Solana blockchain',
   keywords: ['AI', 'Chat', 'Solana', 'Web3', 'SaaS'],
-  authors: [{ name: 'ISIS Chat Team' }],
-  creator: 'ISIS Chat',
+  authors: [{ name: 'ANUBIS Chat Team' }],
+  creator: 'ANUBIS Chat',
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://isis-chat.app',
-    siteName: 'ISIS Chat',
-    title: 'ISIS Chat - Solana AI Chat SaaS',
+    url: 'https://anubis-chat.app',
+    siteName: 'ANUBIS Chat',
+    title: 'ANUBIS Chat - Solana AI Chat SaaS',
     description: 'Intelligent AI chat interface built on Solana blockchain',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'ISIS Chat',
+        alt: 'ANUBIS Chat',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ISIS Chat - Solana AI Chat SaaS',
+    title: 'ANUBIS Chat - Solana AI Chat SaaS',
     description: 'Intelligent AI chat interface built on Solana blockchain',
     images: ['/og-image.png'],
   },
@@ -291,7 +291,7 @@ export function WalletGuard({
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold">Connect Your Wallet</h2>
               <p className="text-muted-foreground">
-                Connect your Solana wallet to access ISIS Chat features
+                Connect your Solana wallet to access ANUBIS Chat features
               </p>
             </div>
             
@@ -466,7 +466,7 @@ export async function generateMetadata({ params }: ChatPageProps) {
   const chat = await getChatById(params.chatId);
   
   return {
-    title: chat ? `${chat.title} - ISIS Chat` : 'Chat - ISIS Chat',
+    title: chat ? `${chat.title} - ANUBIS Chat` : 'Chat - ANUBIS Chat',
     description: chat?.description || 'AI chat conversation',
   };
 }
@@ -938,16 +938,16 @@ export async function generateMetadata(
   
   if (!chat) {
     return {
-      title: 'Chat Not Found - ISIS Chat',
+      title: 'Chat Not Found - ANUBIS Chat',
       description: 'The requested chat could not be found.',
     };
   }
   
   return {
-    title: `${chat.title} - ISIS Chat`,
+    title: `${chat.title} - ANUBIS Chat`,
     description: chat.description || `AI conversation: ${chat.title}`,
     openGraph: {
-      title: `${chat.title} - ISIS Chat`,
+      title: `${chat.title} - ANUBIS Chat`,
       description: chat.description || `AI conversation: ${chat.title}`,
       type: 'article',
       publishedTime: chat.createdAt.toISOString(),

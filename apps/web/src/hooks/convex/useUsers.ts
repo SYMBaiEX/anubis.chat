@@ -84,6 +84,20 @@ export function useUpdateUserProfile() {
 }
 
 /**
+ * Generate presigned upload URL for avatar
+ */
+export function useGenerateAvatarUploadUrl() {
+  return useConvexMutation(api.users.generateAvatarUploadUrl);
+}
+
+/**
+ * Save avatar from storageId (resolve to URL and patch user)
+ */
+export function useSetAvatarFromStorage() {
+  return useConvexMutation(api.users.setAvatarFromStorage);
+}
+
+/**
  * Track user usage
  */
 export function useTrackUsage() {

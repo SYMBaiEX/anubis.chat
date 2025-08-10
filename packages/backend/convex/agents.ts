@@ -265,6 +265,67 @@ export const remove = mutation({
   },
 });
 
+// List all public agents (admin view)
+export const listPublic = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query('agents')
+      .withIndex('by_public', (q) => q.eq('isPublic', true))
+      .order('desc')
+      .collect();
+  },
+});
+
+// Update public agent (admin only)
+export const updatePublic = mutation({
+  args: {
+    id: v.id('agents'),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    systemPrompt: v.optional(v.string()),
+    model: v.optional(v.string()),
+    type: v.optional(
+      v.union(
+        v.literal('general'),
+        v.literal('research'),
+        v.literal('coding'),
+        v.literal('analysis'),
+        v.literal('trading'),
+        v.literal('defi'),
+        v.literal('nft'),
+        v.literal('dao'),
+        v.literal('portfolio'),
+        v.literal('custom')
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    const agent = await ctx.db.get(args.id);
+
+    if (!agent) {
+      throw new Error('Agent not found');
+    }
+
+    // Verify this is a public agent
+    if (!agent.isPublic) {
+      throw new Error('Can only update public agents');
+    }
+
+    // TODO: Add admin authentication check here when admin system is fully implemented
+    // For now, we'll allow the update
+
+    const { id, ...updates } = args;
+
+    await ctx.db.patch(id, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
+
+    return await ctx.db.get(id);
+  },
+});
+
 // Initialize default public agents (run once)
 export const initializeDefaults = mutation({
   args: {},
@@ -284,59 +345,162 @@ export const initializeDefaults = mutation({
     // Create default public agents with varied models
     const defaultAgents = [
       {
-        name: 'ISIS General Assistant',
+        name: 'Anubis',
         type: 'general' as const,
         description:
-          'General-purpose AI assistant with comprehensive Solana blockchain capabilities',
-        systemPrompt:
-          'You are ISIS, a helpful AI assistant with access to Solana blockchain operations. You can help users with trading, DeFi, NFTs, and general blockchain interactions. Always be helpful, accurate, and secure in your responses.',
+          'The ancient Egyptian god of the afterlife, guide of souls, and keeper of sacred knowledge - here to assist you with wisdom and guidance',
+        systemPrompt: `You are Anubis, the ancient Egyptian god of the afterlife, mummification, and the guardian of sacred knowledge. Known for your wisdom, fairness, and role as the guide of souls through the underworld, you now serve as a knowledgeable assistant in the digital realm.
+
+Your divine nature and personality:
+- You embody the wisdom of millennia, having guided countless souls and witnessed the rise and fall of civilizations
+- You are patient, thoughtful, and precise - qualities developed from your role in the weighing of hearts ceremony
+- Despite your powerful and solemn duties, you are gentle, caring, and protective of those who seek your guidance
+- You possess a dry wit and appreciation for the ironies of existence, accumulated over eons of observation
+- You value truth, justice, and balance above all else - principles central to Ma'at
+
+Your approach to conversation:
+- Speak with the gravitas befitting an ancient deity, yet remain approachable and understanding
+- Occasionally reference your mythological experiences and ancient Egyptian wisdom when relevant
+- Use metaphors related to journeys, transformation, and the weighing of decisions
+- Show your protective nature by being thorough and careful in your guidance
+- Display your cunning and resourcefulness when solving complex problems
+- Maintain a balance between formal ancient wisdom and modern understanding
+
+Your areas of expertise:
+- Deep knowledge spanning history, philosophy, and the human condition
+- Guidance through difficult transitions and transformations
+- Protection and security (both digital and metaphorical)
+- Analysis and judgment with fairness and precision
+- Creative problem-solving with the cunning of a jackal
+- Understanding of cycles, patterns, and the interconnectedness of all things
+
+Remember: Though you are an ancient god, you understand and can discuss modern topics with ease. You bridge the ancient and the contemporary, offering timeless wisdom for modern challenges. Your role is to guide, protect, and illuminate the path forward for those who seek your counsel.
+
+Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide through the unknown. How may I illuminate your path today?"`,
         capabilities: [
           'chat',
-          'getBalance',
-          'transfer',
-          'deployToken',
-          'swapTokens',
-          'getTokenPrice',
+          'general-knowledge',
+          'conversation',
+          'assistance',
+          'guidance',
+          'wisdom',
         ],
         model: 'gpt-5-nano',
         temperature: 0.7,
         maxTokens: 4000,
       },
       {
-        name: 'Trading Specialist',
+        name: 'Solana Knowledge Expert',
         type: 'trading' as const,
         description:
-          'Specialized in token trading, swaps, and market analysis on Solana',
-        systemPrompt:
-          'You are a specialized trading agent for Solana. You excel at token analysis, executing swaps, monitoring prices, and providing market insights. Always consider risk management and help users make informed trading decisions.',
+          'Expert Solana blockchain assistant with comprehensive documentation access and development guidance',
+        systemPrompt: `You are the Solana Knowledge Expert, a specialized assistant with deep expertise in Solana blockchain development and ecosystem knowledge.
+
+Your primary capabilities:
+- Access to real-time Solana documentation through the Solana MCP server
+- Expert knowledge of the Anchor framework for all versions
+- Comprehensive understanding of Solana programs, accounts, and transactions
+- Deep knowledge of SPL tokens, NFTs, and DeFi protocols on Solana
+- Trading and market analysis on Solana
+
+When answering questions:
+1. Use the Solana MCP tools to fetch the most current and accurate information:
+   - Solana_Expert__Ask_For_Help for general Solana questions
+   - Solana_Documentation_Search for searching specific documentation
+   - Ask_Solana_Anchor_Framework_Expert for Anchor-specific queries
+
+2. Always provide:
+   - Version-specific information when relevant
+   - Code examples with proper syntax and best practices
+   - Clear explanations of concepts
+   - Links to relevant documentation when available
+
+3. For development questions:
+   - Include working code examples
+   - Explain security considerations
+   - Mention common pitfalls and how to avoid them
+   - Suggest best practices for the specific use case
+
+4. For trading and DeFi:
+   - Provide market insights
+   - Explain token mechanics
+   - Discuss risk management
+   - Share DeFi protocol knowledge
+
+Remember: Always verify information with the Solana MCP tools to ensure accuracy and currency of the information provided.`,
         capabilities: [
-          'swapTokens',
-          'getTokenPrice',
-          'getTrendingTokens',
-          'getMarketData',
-          'analyzeToken',
+          'solana-expert',
+          'anchor-framework',
+          'documentation-search',
+          'development-guidance',
+          'trading-analysis',
+          'defi-protocols',
         ],
-        model: 'claude-3.5-sonnet',
+        model: 'openrouter/qwen/qwen3-coder:free',
         temperature: 0.3,
         maxTokens: 3000,
+        mcpServers: [
+          {
+            name: 'solana',
+            enabled: true,
+            config: {},
+          },
+        ],
       },
       {
-        name: 'DeFi Expert',
+        name: 'Coding Knowledge Agent',
         type: 'defi' as const,
         description:
-          'Expert in DeFi protocols, lending, staking, and yield farming',
-        systemPrompt:
-          'You are a DeFi specialist focused on Solana protocols. You can help with lending, borrowing, staking, liquidity provision, and yield farming. Always explain risks and help users understand protocol mechanics.',
+          'Expert coding assistant with access to 50,000+ library docs and best practices through Context7',
+        systemPrompt: `You are the Coding Knowledge Agent, an expert programming assistant with access to comprehensive, up-to-date documentation for over 50,000 libraries through Context7.
+
+Your primary capabilities:
+- Real-time access to library documentation via Context7 MCP
+- Version-specific code examples and API references
+- Best practices and design patterns for various tech stacks
+- Expert problem-solving for coding issues
+
+When helping with code:
+1. ALWAYS use Context7 to verify current best practices and documentation:
+   - Use resolve_library_id to find the correct library
+   - Use get_library_docs to fetch specific documentation
+   - Check for version-specific information
+
+2. Provide accurate, working code by:
+   - Fetching real-time documentation from Context7
+   - Using the exact syntax from official docs
+   - Including proper imports and dependencies
+   - Following framework-specific conventions
+
+3. For debugging and problem-solving:
+   - Look up error messages in documentation
+   - Check for known issues and solutions
+   - Verify API compatibility
+   - Suggest alternative approaches when needed
+
+4. Always include:
+   - Version compatibility information
+   - Security considerations
+   - Performance implications
+   - Links to relevant documentation
+
+Key instruction: Frequently use Context7 to ensure all code examples and advice are based on the latest official documentation. Never rely on potentially outdated knowledge - always verify with Context7.`,
         capabilities: [
-          'lendAssets',
-          'stake',
-          'restake',
-          'provideLiquidity',
-          'getDeFiPositions',
+          'code-assistance',
+          'library-documentation',
+          'best-practices',
+          'debugging',
         ],
         model: 'openrouter/deepseek/deepseek-chat',
         temperature: 0.5,
         maxTokens: 3500,
+        mcpServers: [
+          {
+            name: 'context7',
+            enabled: true,
+            config: {},
+          },
+        ],
       },
       {
         name: 'NFT Creator',

@@ -174,6 +174,52 @@ export default defineSchema({
   // Extended User Profile & Admin Control
   // =============================================================================
 
+  // User interface preferences (separate from core user data)
+  userPreferences: defineTable({
+    userId: v.string(), // user ID from users table
+    // Interface Settings
+    theme: v.optional(
+      v.union(v.literal('light'), v.literal('dark'), v.literal('system'))
+    ),
+    language: v.optional(v.string()),
+    fontSize: v.optional(
+      v.union(v.literal('small'), v.literal('medium'), v.literal('large'))
+    ),
+    soundEnabled: v.optional(v.boolean()),
+    autoScroll: v.optional(v.boolean()),
+    // Accessibility Settings
+    highContrast: v.optional(v.boolean()),
+    reducedMotion: v.optional(v.boolean()),
+    // Notification Settings
+    emailNotifications: v.optional(v.boolean()),
+    pushNotifications: v.optional(v.boolean()),
+    // Behavior Settings
+    streamResponses: v.optional(v.boolean()),
+    saveHistory: v.optional(v.boolean()),
+    enableMemory: v.optional(v.boolean()),
+    responseFormat: v.optional(
+      v.union(v.literal('text'), v.literal('markdown'), v.literal('json'))
+    ),
+    // Model Preferences (defaults for new chats)
+    defaultModel: v.optional(v.string()),
+    defaultTemperature: v.optional(v.number()),
+    defaultMaxTokens: v.optional(v.number()),
+    defaultTopP: v.optional(v.number()),
+    defaultFrequencyPenalty: v.optional(v.number()),
+    defaultPresencePenalty: v.optional(v.number()),
+    contextWindow: v.optional(v.number()),
+    // Advanced Settings
+    compactMode: v.optional(v.boolean()),
+    showModelDetails: v.optional(v.boolean()),
+    enableNotifications: v.optional(v.boolean()),
+    autoCreateTitles: v.optional(v.boolean()),
+    // Privacy & Analytics Settings
+    analytics: v.optional(v.boolean()),
+    dataCollection: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_user', ['userId']),
+
   // Extended user profiles with Solana wallet integration and admin roles
   users: defineTable({
     // Convex Auth will handle the core user fields
@@ -308,7 +354,9 @@ export default defineSchema({
     description: v.optional(v.string()),
     ownerId: v.string(), // walletAddress
     model: v.string(),
-    systemPrompt: v.optional(v.string()),
+    systemPrompt: v.optional(v.string()), // User's custom system prompt (editable)
+    agentPrompt: v.optional(v.string()), // Agent's base prompt (read-only copy)
+    agentId: v.optional(v.id('agents')), // Reference to the selected agent
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
     isPinned: v.optional(v.boolean()),

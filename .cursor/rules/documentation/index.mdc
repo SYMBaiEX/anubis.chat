@@ -15,7 +15,7 @@ relations:
 
 # Documentation Guidelines
 
-Comprehensive documentation standards and practices for ISIS Chat.
+Comprehensive documentation standards and practices for ANUBIS Chat.
 
 ## Documentation Structure
 
@@ -42,17 +42,17 @@ Comprehensive documentation standards and practices for ISIS Chat.
 ### Code Examples
 ```typescript
 // Always include complete, runnable examples
-import { ChatClient } from '@isis/client'
+import { ChatClient } from '@anubis/client'
 
 const client = new ChatClient({
-  apiKey: process.env.ISIS_API_KEY,
+  apiKey: process.env.ANUBIS_API_KEY,
   model: 'claude-3.5-sonnet'
 })
 
 // Show both success and error handling
 try {
   const response = await client.chat({
-    message: 'Hello, ISIS!',
+    message: 'Hello, ANUBIS!',
     context: previousMessages
   })
   console.log(response)
@@ -138,7 +138,7 @@ Brief description of the feature
 
 ## Installation
 ```bash
-bun add @isis/feature
+bun add @anubis/feature
 ```
 
 ## Usage

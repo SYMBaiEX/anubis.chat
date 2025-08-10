@@ -28,7 +28,7 @@ export const qdrantClient = new QdrantClient({
 });
 
 export const COLLECTION_CONFIG = {
-  name: 'isis_knowledge_base',
+  name: 'anubis_knowledge_base',
   vectors: {
     size: 3072, // text-embedding-3-large
     distance: 'Cosine' as const,

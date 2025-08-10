@@ -24,6 +24,11 @@ export interface Agent {
   walletAddress: string;
   createdAt: number;
   updatedAt: number;
+  mcpServers?: Array<{
+    name: string;
+    enabled: boolean;
+    config?: Record<string, any>;
+  }>;
 }
 
 export interface AgentExecution {

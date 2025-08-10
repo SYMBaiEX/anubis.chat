@@ -1,8 +1,8 @@
-# ISIS Chat System Setup Guide
+# ANUBIS Chat System Setup Guide
 
 ## Overview
 
-ISIS Chat uses Convex for real-time messaging with AI streaming capabilities. The system supports multiple AI models (OpenAI, Anthropic, Google) with real-time typing indicators and optimistic updates.
+ANUBIS Chat uses Convex for real-time messaging with AI streaming capabilities. The system supports multiple AI models (OpenAI, Anthropic, Google) with real-time typing indicators and optimistic updates.
 
 ## Architecture
 
@@ -81,11 +81,13 @@ bun dev
 ## Features
 
 ### Real-time Messaging
+
 - Instant message delivery via Convex subscriptions
 - Optimistic UI updates for better UX
 - Message persistence and history
 
 ### AI Streaming
+
 - Support for 14+ cutting-edge AI models (as of August 2025):
   - **OpenAI**: GPT-5, GPT-5 Pro, o3, o4-mini, GPT-4.1, GPT-4o
   - **Anthropic**: Claude Opus 4.1, Claude Sonnet 4, Claude 3.5 Sonnet, Claude 3.5 Haiku
@@ -97,11 +99,13 @@ bun dev
 - Model persistence per chat conversation
 
 ### Typing Indicators
+
 - Real-time typing status
 - Automatic cleanup (5-second timeout)
 - Multi-user support
 
 ### Chat Management
+
 - Create, update, delete chats
 - Chat history and persistence
 - Token counting and usage tracking
@@ -116,12 +120,14 @@ bun dev
 ### Convex Functions
 
 #### Queries
+
 - `chats.getById` - Get single chat
 - `chats.getByOwner` - Get user's chats
 - `messages.getByChatId` - Get chat messages
 - `typing.getTypingUsers` - Get typing indicators
 
 #### Mutations
+
 - `chats.create` - Create new chat
 - `chats.update` - Update chat settings
 - `chats.remove` - Delete chat
@@ -131,13 +137,18 @@ bun dev
 ## Client-Side Hooks
 
 ### useConvexChat
+
 ```typescript
 const { messages, sendMessage, isStreaming } = useConvexChat(chatId);
 ```
 
 ### useTypingIndicator
+
 ```typescript
-const { typingUsers, startTyping, stopTyping } = useTypingIndicator(chatId, walletAddress);
+const { typingUsers, startTyping, stopTyping } = useTypingIndicator(
+  chatId,
+  walletAddress
+);
 ```
 
 ## Troubleshooting
@@ -145,11 +156,13 @@ const { typingUsers, startTyping, stopTyping } = useTypingIndicator(chatId, wall
 ### Common Issues
 
 1. **Streaming not working**
+
    - Check Convex HTTP action deployment
    - Verify environment variables are set
    - Check browser console for errors
 
 2. **Messages not appearing**
+
    - Verify Convex connection
    - Check authentication status
    - Ensure chat ID is valid
@@ -194,6 +207,7 @@ npx convex env list
 The system includes a comprehensive model selector with the following options:
 
 #### OpenAI Models
+
 - **GPT-5** (Default): Latest flagship model with unified reasoning and generation
 - **GPT-5 Pro**: Extended thinking variant for complex problems
 - **o3**: Most powerful reasoning model for coding, math, and science
@@ -202,12 +216,14 @@ The system includes a comprehensive model selector with the following options:
 - **GPT-4o**: Optimized GPT-4 with June 2024 knowledge
 
 #### Anthropic Models
+
 - **Claude Opus 4.1**: World's best coding model with sustained performance
 - **Claude Sonnet 4**: Excellent coding with fast responses
 - **Claude 3.5 Sonnet**: Fast, intelligent, and cost-effective
 - **Claude 3.5 Haiku**: Fastest Claude model for simple tasks
 
 #### Google Models
+
 - **Gemini 2.5 Pro**: Most intelligent model with thinking capabilities
 - **Gemini 2.5 Flash**: Fast thinking model with excellent performance
 - **Gemini 2.5 Flash-Lite**: Fastest and lowest cost Gemini model
@@ -216,6 +232,7 @@ The system includes a comprehensive model selector with the following options:
 ### Model Features Display
 
 The model selector shows:
+
 - **Provider Icon**: Visual indicator for OpenAI, Anthropic, or Google
 - **Intelligence Level**: Basic, Advanced, Expert, or Frontier
 - **Speed Indicator**: Fast, Medium, or Slow processing
@@ -226,8 +243,9 @@ The model selector shows:
 ### Automatic Provider Detection
 
 The system automatically routes to the correct provider based on model selection:
+
 - Models starting with `gpt-`, `o3`, `o4` → OpenAI
-- Models starting with `claude-` → Anthropic  
+- Models starting with `claude-` → Anthropic
 - Models starting with `gemini-` → Google
 - Unknown models → Default to GPT-4o with warning
 

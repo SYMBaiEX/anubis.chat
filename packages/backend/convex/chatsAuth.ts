@@ -57,7 +57,9 @@ export const createMyChat = mutation({
     title: v.string(),
     description: v.optional(v.string()),
     model: v.string(),
-    systemPrompt: v.optional(v.string()),
+    systemPrompt: v.optional(v.string()), // User's custom system prompt
+    agentPrompt: v.optional(v.string()), // Agent's base prompt (copy)
+    agentId: v.optional(v.id('agents')), // Reference to selected agent
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
   },
@@ -72,6 +74,8 @@ export const createMyChat = mutation({
       ownerId: user._id, // Use actual user ID, not wallet address
       model: args.model,
       systemPrompt: args.systemPrompt,
+      agentPrompt: args.agentPrompt,
+      agentId: args.agentId,
       temperature: args.temperature,
       maxTokens: args.maxTokens,
       isPinned: false,
@@ -92,7 +96,9 @@ export const updateMyChat = mutation({
     id: v.id('chats'),
     title: v.optional(v.string()),
     model: v.optional(v.string()),
-    systemPrompt: v.optional(v.string()),
+    systemPrompt: v.optional(v.string()), // Only system prompt is editable by users
+    agentPrompt: v.optional(v.string()), // Agent prompt can be updated when agent changes
+    agentId: v.optional(v.id('agents')), // Agent reference can be updated
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
@@ -114,6 +120,8 @@ export const updateMyChat = mutation({
     if (args.model !== undefined) updates.model = args.model;
     if (args.systemPrompt !== undefined)
       updates.systemPrompt = args.systemPrompt;
+    if (args.agentPrompt !== undefined) updates.agentPrompt = args.agentPrompt;
+    if (args.agentId !== undefined) updates.agentId = args.agentId;
     if (args.temperature !== undefined) updates.temperature = args.temperature;
     if (args.maxTokens !== undefined) updates.maxTokens = args.maxTokens;
     if (args.isActive !== undefined) updates.isActive = args.isActive;

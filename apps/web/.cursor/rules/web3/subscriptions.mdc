@@ -17,7 +17,7 @@ relations:
 
 ## Payment Architecture
 
-isis.chat implements a hybrid on-chain/off-chain subscription model:
+abubis.chat implements a hybrid on-chain/off-chain subscription model:
 - **On-chain**: Payment validation and subscription records
 - **Off-chain**: Convex polling for real-time status updates
 - **Fallback**: Grace period logic for network delays

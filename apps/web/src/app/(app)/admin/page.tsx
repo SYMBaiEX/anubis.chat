@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { AgentManagement } from '@/components/admin/agent-management';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
 // removed unused Button import
@@ -166,6 +167,7 @@ function AdminDashboardContent() {
       <Tabs className="space-y-4" defaultValue="users">
         <TabsList>
           <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="agents">Agents</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
           <TabsTrigger value="admins">Admins</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
@@ -304,6 +306,11 @@ function AdminDashboardContent() {
               </Table>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Agents Tab */}
+        <TabsContent className="space-y-4" value="agents">
+          <AgentManagement />
         </TabsContent>
 
         {/* Subscriptions Tab */}

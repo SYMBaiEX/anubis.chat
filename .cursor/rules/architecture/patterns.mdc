@@ -13,12 +13,12 @@ relations:
   references: ["system-design.mdc", "data-flow.mdc"]
 ---
 
-# Design Patterns & Architecture Principles for ISIS.CHAT
+# Design Patterns & Architecture Principles for abubis.chat
 
 ## SOLID Principles Implementation
 
 ::alert{type="success"}
-**Foundation**: All ISIS.CHAT code must adhere to SOLID principles for maintainable, testable, and scalable architecture.
+**Foundation**: All abubis.chat code must adhere to SOLID principles for maintainable, testable, and scalable architecture.
 ::
 
 ### 1. Single Responsibility Principle (SRP)
@@ -1251,7 +1251,7 @@ export class EmailNotificationAdapter implements NotificationPort {
     
     await this.emailService.send({
       to: user.email,
-      subject: `ISIS.CHAT - ${notification.type}`,
+      subject: `abubis.chat - ${notification.type}`,
       body: notification.message,
       data: notification.data
     })
@@ -1298,4 +1298,4 @@ export class OpenAIAdapter implements AIPort {
 ```
 ::
 
-This comprehensive pattern implementation ensures ISIS.CHAT follows proven architectural principles for maintainability, testability, and scalability.
+This comprehensive pattern implementation ensures abubis.chat follows proven architectural principles for maintainability, testability, and scalability.

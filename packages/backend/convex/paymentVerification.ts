@@ -40,7 +40,7 @@ function createSolanaConnection(): Connection {
   return new Connection(solanaConfig.rpcUrl, {
     commitment,
     httpHeaders: {
-      'User-Agent': 'ISIS-Chat/1.0',
+      'User-Agent': 'anubis.chat/1.0',
     },
     disableRetryOnRateLimit: false,
     confirmTransactionInitialTimeout: 60_000, // 60 seconds

@@ -74,6 +74,8 @@ export const create = mutation({
     ownerId: v.string(), // This should be the user ID, not wallet address
     model: v.string(),
     systemPrompt: v.optional(v.string()),
+    agentPrompt: v.optional(v.string()),
+    agentId: v.optional(v.id('agents')),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
   },
@@ -86,6 +88,8 @@ export const create = mutation({
       ownerId: args.ownerId,
       model: args.model,
       systemPrompt: args.systemPrompt,
+      agentPrompt: args.agentPrompt,
+      agentId: args.agentId,
       temperature: args.temperature,
       maxTokens: args.maxTokens,
       isPinned: false,
@@ -108,6 +112,8 @@ export const update = mutation({
     title: v.optional(v.string()),
     model: v.optional(v.string()),
     systemPrompt: v.optional(v.string()),
+    agentPrompt: v.optional(v.string()),
+    agentId: v.optional(v.id('agents')),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
@@ -127,6 +133,8 @@ export const update = mutation({
     if (args.model !== undefined) updates.model = args.model;
     if (args.systemPrompt !== undefined)
       updates.systemPrompt = args.systemPrompt;
+    if (args.agentPrompt !== undefined) updates.agentPrompt = args.agentPrompt;
+    if (args.agentId !== undefined) updates.agentId = args.agentId;
     if (args.temperature !== undefined) updates.temperature = args.temperature;
     if (args.maxTokens !== undefined) updates.maxTokens = args.maxTokens;
     if (args.isActive !== undefined) updates.isActive = args.isActive;

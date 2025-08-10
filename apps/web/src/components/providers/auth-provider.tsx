@@ -195,7 +195,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (normalizedSubscription.tier === 'free' && usagePercentage >= 50) {
       return {
         shouldShow: true,
-        title: 'Enjoying ISIS Chat?',
+        title: 'Enjoying Anubis Chat?',
         message: `You've used ${normalizedSubscription.messagesUsed} messages. Upgrade to Pro for 30x more messages and premium AI models.`,
         suggestedTier: 'pro',
         urgency: 'low',

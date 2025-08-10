@@ -13,11 +13,11 @@ relations:
   references: ["../index.mdc"]
 ---
 
-# AI/RAG System Overview - isis.chat
+# AI/RAG System Overview - abubis.chat
 
 ## Architecture Overview
 
-isis.chat implements a modern AI/RAG (Retrieval-Augmented Generation) system optimized for Solana blockchain development. The system combines multiple AI models with vector search capabilities to provide accurate, context-aware assistance.
+abubis.chat implements a modern AI/RAG (Retrieval-Augmented Generation) system optimized for Solana blockchain development. The system combines multiple AI models with vector search capabilities to provide accurate, context-aware assistance.
 
 ### Core Components
 
@@ -138,7 +138,7 @@ import { HybridSearchEngine } from './vector-search.mdc';
 import { SafePromptExecutor } from './prompt-engineering.mdc';
 import { StreamingManager } from './streaming.mdc';
 
-export class IsisRAGSystem {
+export class AnubisRAGSystem {
   constructor(
     private memory: HierarchicalMemory,
     private search: HybridSearchEngine,
@@ -218,7 +218,7 @@ cp .env.example .env
 ### 2. Initialize Components
 ```typescript
 // Initialize in your main application
-const ragSystem = new IsisRAGSystem(
+const ragSystem = new AnubisRAGSystem(
   new HierarchicalMemory('claude-3.5-sonnet'),
   new HybridSearchEngine(qdrantClient, embeddingPipeline),
   new SafePromptExecutor(promptBuilder, sanitizer),

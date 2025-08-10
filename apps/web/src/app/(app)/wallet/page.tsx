@@ -28,20 +28,24 @@ export default function WalletPage() {
   const address = publicKey?.toString() ?? '';
 
   return (
-    <div className="p-3 sm:p-4 md:p-6">
-      <div className="mx-auto flex max-w-2xl items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Wallet className="h-5 w-5" />
-          <h1 className="font-semibold text-base sm:text-lg md:text-xl">
-            Wallet
-          </h1>
+    <div className="w-full bg-gradient-to-b from-primary/5 dark:from-primary/10">
+      {/* Full-width header */}
+      <div className="w-full p-4 md:p-6">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-5 w-5" />
+            <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-transparent text-xl sm:text-2xl">
+              Wallet
+            </h1>
+          </div>
+          <Badge variant={isConnected ? 'default' : 'secondary'}>
+            {isConnected ? 'Connected' : 'Disconnected'}
+          </Badge>
         </div>
-        <Badge variant={isConnected ? 'default' : 'secondary'}>
-          {isConnected ? 'Connected' : 'Disconnected'}
-        </Badge>
       </div>
 
-      <div className="mx-auto mt-3 max-w-2xl">
+      {/* Constrained content */}
+      <div className="mx-auto mt-3 w-full max-w-6xl">
         <Card className="p-3 sm:p-4">
           {isConnected ? (
             <div className="space-y-3">

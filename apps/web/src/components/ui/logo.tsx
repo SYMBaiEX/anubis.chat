@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -11,7 +10,7 @@ interface LogoProps {
   className?: string;
   /** Whether the logo should link to home */
   asLink?: boolean;
-  /** Custom text to display (default: "ISIS Chat") */
+  /** Custom text to display (default: "anubis.chat") */
   text?: string;
   /** Text style variant */
   textVariant?: 'default' | 'gradient' | 'egypt';
@@ -20,52 +19,54 @@ interface LogoProps {
 }
 
 const sizeMap = {
-  sm: { image: 24, text: 'text-base' },
-  md: { image: 32, text: 'text-lg' },
-  lg: { image: 40, text: 'text-xl' },
-  xl: { image: 48, text: 'text-2xl' },
-};
+  sm: { text: 'text-base' },
+  md: { text: 'text-lg' },
+  lg: { text: 'text-xl' },
+  xl: { text: 'text-2xl' },
+} as const;
 
 export function Logo({
   showText = true,
   size = 'md',
   className,
   asLink = true,
-  text = 'ISIS Chat',
+  text = 'anubis.chat',
   textVariant = 'default',
   href = '/',
 }: LogoProps) {
   const dimensions = sizeMap[size];
 
-  const textClasses = cn('font-semibold tracking-wide', dimensions.text, {
-    'text-gradient': textVariant === 'gradient',
-    'egypt-text': textVariant === 'egypt',
-    '': textVariant === 'default',
-  });
+  const baseText = (
+    <span
+      className={cn(
+        'font-extrabold font-heading tracking-tight',
+        dimensions.text
+      )}
+    >
+      <span
+        className={cn(
+          'bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent',
+          textVariant === 'egypt' &&
+            'from-[var(--color-egypt-gold)] via-[var(--color-foreground)] to-[var(--color-egypt-gold)]',
+          textVariant === 'default' && 'bg-none text-foreground'
+        )}
+      >
+        anubis
+      </span>
+      <span className="text-muted-foreground">.chat</span>
+    </span>
+  );
 
   const logoContent = (
-    <div className={cn('flex items-center gap-2', className)}>
-      <Image
-        alt="ISIS logo"
-        className={cn('object-contain', {
-          'h-6 w-6': size === 'sm',
-          'h-8 w-8': size === 'md',
-          'h-10 w-10': size === 'lg',
-          'h-12 w-12': size === 'xl',
-        })}
-        height={dimensions.image}
-        priority
-        src="/favicon.png"
-        width={dimensions.image}
-      />
-      {showText && <span className={textClasses}>{text}</span>}
+    <div className={cn('inline-flex items-center gap-2', className)}>
+      {showText && baseText}
     </div>
   );
 
   if (asLink) {
     return (
       <Link
-        aria-label="ISIS Chat Home"
+        aria-label="anubis.chat Home"
         className="inline-flex transition-opacity hover:opacity-80"
         href={href}
       >
@@ -84,8 +85,37 @@ export function LogoIcon({
   size = 'md',
   className,
 }: Pick<LogoProps, 'size' | 'className'>) {
+  const containerSize = cn(
+    size === 'sm' && 'h-6 w-6',
+    size === 'md' && 'h-8 w-8',
+    size === 'lg' && 'h-10 w-10',
+    size === 'xl' && 'h-12 w-12'
+  );
+  const textSize = cn(
+    size === 'sm' && 'text-xs',
+    size === 'md' && 'text-sm',
+    size === 'lg' && 'text-base',
+    size === 'xl' && 'text-lg'
+  );
   return (
-    <Logo asLink={false} className={className} showText={false} size={size} />
+    <span
+      aria-label="Anubis"
+      className={cn(
+        'inline-flex items-center justify-center rounded-md bg-primary/10 ring-1 ring-primary/20',
+        containerSize,
+        className
+      )}
+      role="img"
+    >
+      <span
+        className={cn(
+          'bg-gradient-to-r from-primary to-accent bg-clip-text font-extrabold font-heading text-transparent',
+          textSize
+        )}
+      >
+        A
+      </span>
+    </span>
   );
 }
 

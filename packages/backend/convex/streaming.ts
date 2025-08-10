@@ -1,4 +1,4 @@
-import { createAnthropic } from '@ai-sdk/anthropic';
+// import { createAnthropic } from '@ai-sdk/anthropic'; // DISABLED FOR NOW
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
@@ -176,12 +176,13 @@ export const streamChat = httpAction(async (ctx, request) => {
 
   // Check premium model access (gpt-5-nano is not premium, it's an efficient nano model)
   const isPremiumModel = [
-    'gpt-4o',
-    'claude-3.5-sonnet',
-    'claude-sonnet-4',
+    // 'gpt-4o',  // REMOVED
+    // 'claude-3.5-sonnet',  // ANTHROPIC DISABLED
+    // 'claude-sonnet-4',   // ANTHROPIC DISABLED
     'gpt-5',
-    'gpt-5-pro',
-    'o3',
+    // 'gpt-5-pro',  // REMOVED
+    // 'o3',  // REMOVED
+    'gpt-4.1-mini',
   ].includes(modelName);
 
   // Skip premium checks for admins - they have unlimited access
@@ -301,7 +302,8 @@ export const streamChat = httpAction(async (ctx, request) => {
     modelName === 'claude-opus-4.1' ||
     modelName === 'claude-sonnet-4'
   ) {
-    // Anthropic models
+    // Anthropic models - DISABLED FOR NOW
+    /*
     const anthropic = createAnthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
@@ -321,6 +323,25 @@ export const streamChat = httpAction(async (ctx, request) => {
     }
 
     aiModel = anthropic(apiModelName);
+    */
+    return new Response(
+      JSON.stringify({
+        error: 'Anthropic models are temporarily disabled',
+        code: 'MODEL_DISABLED',
+        details: { model: modelName },
+      }),
+      {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers':
+            'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      }
+    );
   } else if (
     modelName.startsWith('gemini') ||
     modelName === 'gemini-2.5-pro' ||
@@ -361,13 +382,31 @@ export const streamChat = httpAction(async (ctx, request) => {
   // Create streaming response
   console.log('Creating streaming response with AI model...');
 
+  // Combine prompts with agent prompt first, then user's system prompt
+  const combinedSystemPrompt = [chat.agentPrompt, chat.systemPrompt]
+    .filter(Boolean)
+    .join('\n\n');
+
+  // Log for debugging
+  if (chat.agentPrompt) {
+    console.log(
+      'Agent prompt detected (first 100 chars):',
+      chat.agentPrompt.substring(0, 100)
+    );
+  }
+  if (chat.systemPrompt) {
+    console.log(
+      'User system prompt detected (first 100 chars):',
+      chat.systemPrompt.substring(0, 100)
+    );
+  }
+  console.log('Combined prompt length:', combinedSystemPrompt.length);
+
   let result;
   try {
     result = await streamText({
       model: aiModel,
-      system:
-        chat.systemPrompt ||
-        'You are ISIS, a helpful AI assistant with access to Solana blockchain operations.',
+      system: combinedSystemPrompt,
       messages: conversationHistory,
       temperature: temperature ?? chat.temperature ?? 0.7,
       maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,

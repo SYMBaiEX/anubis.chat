@@ -218,10 +218,10 @@ export const useWallet = (): UseWalletReturn => {
 
       const serialized = storeWalletState(walletState);
       if (serialized) {
-        localStorage.setItem('isis-wallet-state', serialized);
+        localStorage.setItem('anubis-wallet-state', serialized);
       }
     } else if (!connected) {
-      localStorage.removeItem('isis-wallet-state');
+      localStorage.removeItem('anubis-wallet-state');
     }
   }, [
     connected,
@@ -294,7 +294,7 @@ export const useWallet = (): UseWalletReturn => {
       retryCountRef.current = 0;
 
       // Clean up wallet state storage
-      localStorage.removeItem('isis-wallet-state');
+      localStorage.removeItem('anubis-wallet-state');
 
       // Wallet disconnected and state cleared
       // Note: In production, log to monitoring service

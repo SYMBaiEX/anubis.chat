@@ -7,6 +7,7 @@ import { openai } from '@ai-sdk/openai';
 import type { CoreMessage, ToolResultPart } from 'ai';
 import { generateText, tool } from 'ai';
 import { nanoid } from 'nanoid';
+import { MCPClientFactory } from '@/lib/mcp/mcp-client-factory';
 import type {
   Agent,
   AgentContext,
@@ -19,7 +20,10 @@ import type {
   ExecuteAgentRequest,
   ToolResult,
 } from '@/lib/types/agentic';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { getTool } from './tools';
+
+const log = createModuleLogger('agentic-engine');
 
 // =============================================================================
 // Configuration
@@ -89,6 +93,21 @@ export class AgenticEngine {
       throw error;
     } finally {
       this.activeExecutions.delete(execution.id);
+
+      // Clean up MCP clients for this agent
+      if (agent.mcpServers && agent.mcpServers.length > 0) {
+        for (const server of agent.mcpServers) {
+          if (server.enabled) {
+            try {
+              await MCPClientFactory.closeClient(server.name);
+            } catch (error) {
+              log.warn(`Failed to close MCP client for ${server.name}`, {
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
+          }
+        }
+      }
     }
   }
 
@@ -103,6 +122,26 @@ export class AgenticEngine {
     const maxSteps =
       request.maxSteps || agent.maxSteps || this.config.maxStepsPerExecution;
     const totalStartTime = Date.now();
+
+    // Get MCP tools if agent has MCP servers configured
+    let mcpTools: Record<string, any> = {};
+
+    if (agent.mcpServers && agent.mcpServers.length > 0) {
+      try {
+        // Get all tools from configured MCP servers
+        mcpTools = await MCPClientFactory.getToolsForServers(agent.mcpServers);
+
+        if (Object.keys(mcpTools).length > 0) {
+          log.info(
+            `Loaded ${Object.keys(mcpTools).length} MCP tools from ${agent.mcpServers.filter((s) => s.enabled).length} servers`
+          );
+        }
+      } catch (error) {
+        log.error('Failed to load MCP tools', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
 
     // Convert agent tools to AI SDK format
     const toolsMap = this.createToolsMap(agent.tools || []);
@@ -132,6 +171,9 @@ export class AgenticEngine {
         }),
       ])
     );
+
+    // Combine regular tools with MCP tools
+    const allTools = { ...aiTools, ...mcpTools };
 
     let currentStep = 1;
     const messages: CoreMessage[] = [
@@ -163,7 +205,7 @@ export class AgenticEngine {
         const result = await generateText({
           model: openai(agent.model),
           messages,
-          tools: aiTools,
+          tools: allTools, // Use combined tools including MCP
           temperature: agent.temperature || this.config.defaultTemperature,
           maxRetries: 3,
         });
@@ -203,7 +245,21 @@ export class AgenticEngine {
           for (let i = 0; i < result.toolCalls.length; i++) {
             const toolCall = result.toolCalls[i];
             const toolResult = result.toolResults?.[i];
+            const startTime = Date.now();
+
             toolsUsed.add(toolCall.toolName);
+
+            // Check if this is an MCP tool
+            const isMCPTool =
+              toolCall.toolName.includes('_') &&
+              (toolCall.toolName.startsWith('context7_') ||
+                toolCall.toolName.startsWith('solana_'));
+
+            if (isMCPTool) {
+              log.info(`Executing MCP tool: ${toolCall.toolName}`, {
+                parameters: (tc as any).input,
+              });
+            }
 
             // Tool results are already processed by the execute function above
             // We just need to record them
@@ -211,7 +267,7 @@ export class AgenticEngine {
               id: toolCall.toolCallId,
               success: true,
               result: toolResult || null,
-              executionTime: 0, // This would be measured in the actual execution
+              executionTime: Date.now() - startTime,
             });
           }
 

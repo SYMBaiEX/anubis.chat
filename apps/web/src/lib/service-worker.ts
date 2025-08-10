@@ -1,5 +1,5 @@
 /**
- * Service Worker Registration and Management for ISIS Chat
+ * Service Worker Registration and Management for anubis.chat
  * Handles PWA functionality with error-resistant registration
  */
 
@@ -15,7 +15,7 @@ export interface ServiceWorkerConfig {
 }
 
 /**
- * Register the ISIS Chat service worker with error handling
+ * Register the anubis.chat service worker with error handling
  */
 export async function registerServiceWorker(config: ServiceWorkerConfig = {}) {
   // Only run in browser environment

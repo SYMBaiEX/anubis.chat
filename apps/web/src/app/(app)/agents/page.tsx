@@ -49,23 +49,65 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-// Agent type colors and icons
+// Agent type colors, ring/gradient accents, and icons
 const getAgentTypeInfo = (type: string) => {
   switch (type) {
     case 'general':
-      return { color: 'bg-blue-500/10 text-blue-500', icon: Bot };
+      return {
+        color: 'bg-blue-500/10 text-blue-500',
+        ring: 'hover:ring-blue-500/25',
+        gradient: 'from-blue-500/5',
+        accent: 'border-l-blue-500/30',
+        icon: Bot,
+      };
     case 'trading':
-      return { color: 'bg-green-500/10 text-green-500', icon: Zap };
+      return {
+        color: 'bg-green-500/10 text-green-500',
+        ring: 'hover:ring-green-500/25',
+        gradient: 'from-green-500/5',
+        accent: 'border-l-green-500/30',
+        icon: Zap,
+      };
     case 'defi':
-      return { color: 'bg-purple-500/10 text-purple-500', icon: Sparkles };
+      return {
+        color: 'bg-purple-500/10 text-purple-500',
+        ring: 'hover:ring-purple-500/25',
+        gradient: 'from-purple-500/5',
+        accent: 'border-l-purple-500/30',
+        icon: Sparkles,
+      };
     case 'nft':
-      return { color: 'bg-pink-500/10 text-pink-500', icon: Brain };
+      return {
+        color: 'bg-pink-500/10 text-pink-500',
+        ring: 'hover:ring-pink-500/25',
+        gradient: 'from-pink-500/5',
+        accent: 'border-l-pink-500/30',
+        icon: Brain,
+      };
     case 'portfolio':
-      return { color: 'bg-orange-500/10 text-orange-500', icon: Brain };
+      return {
+        color: 'bg-orange-500/10 text-orange-500',
+        ring: 'hover:ring-orange-500/25',
+        gradient: 'from-orange-500/5',
+        accent: 'border-l-orange-500/30',
+        icon: Brain,
+      };
     case 'custom':
-      return { color: 'bg-gray-500/10 text-gray-500', icon: Settings };
+      return {
+        color: 'bg-gray-500/10 text-gray-500',
+        ring: 'hover:ring-gray-500/25',
+        gradient: 'from-gray-500/5',
+        accent: 'border-l-gray-500/30',
+        icon: Settings,
+      };
     default:
-      return { color: 'bg-gray-500/10 text-gray-500', icon: Bot };
+      return {
+        color: 'bg-gray-500/10 text-gray-500',
+        ring: 'hover:ring-gray-500/25',
+        gradient: 'from-gray-500/5',
+        accent: 'border-l-gray-500/30',
+        icon: Bot,
+      };
   }
 };
 
@@ -153,201 +195,214 @@ export default function AgentsPage() {
   }
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-semibold text-2xl">AI Agents</h1>
-          <p className="mt-1 text-muted-foreground text-sm">
-            Manage your custom AI agents and assistants
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setShowPublicAgents(!showPublicAgents)}
-            size="sm"
-            variant="outline"
-          >
-            {showPublicAgents ? 'Hide' : 'Show'} Public Agents
-          </Button>
-          <Button asChild>
-            <Link href="/agents/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Create New Agent
-            </Link>
-          </Button>
+    <div className="w-full bg-gradient-to-b from-primary/5 dark:from-primary/10">
+      {/* Full-width header */}
+      <div className="w-full p-4 md:p-6">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
+          <div>
+            <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl">
+              AI Agents
+            </h1>
+            <p className="mt-1 text-muted-foreground text-sm">
+              Manage your custom AI agents and assistants
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowPublicAgents(!showPublicAgents)}
+              size="sm"
+              variant="outline"
+            >
+              {showPublicAgents ? 'Hide' : 'Show'} Public Agents
+            </Button>
+            <Button asChild>
+              <Link href="/agents/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Create New Agent
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Agents Grid */}
-      {agents.length === 0 ? (
-        <Card className="p-12">
-          <EmptyState
-            action={{
-              label: 'Create Agent',
-              onClick: () => router.push('/agents/new'),
-            }}
-            description="Create your first AI agent to get started"
-            icon={<Bot className="h-12 w-12 text-muted-foreground" />}
-            title="No agents yet"
-          />
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {agents.map((agent) => {
-            const typeInfo = getAgentTypeInfo(agent.type);
-            const TypeIcon = typeInfo.icon;
+      {/* Constrained content */}
+      <div className="mx-auto w-full max-w-6xl space-y-3 p-3 sm:space-y-4 sm:p-4 md:p-6">
+        {/* Agents Grid */}
+        {agents.length === 0 ? (
+          <Card className="p-8 sm:p-10">
+            <EmptyState
+              action={{
+                label: 'Create Agent',
+                onClick: () => router.push('/agents/new'),
+              }}
+              description="Create your first AI agent to get started"
+              icon={<Bot className="h-12 w-12 text-muted-foreground" />}
+              title="No agents yet"
+            />
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-2.5">
+            {agents.map((agent) => {
+              const typeInfo = getAgentTypeInfo(agent.type);
+              const TypeIcon = typeInfo.icon;
 
-            return (
-              <Card
-                className="group relative overflow-hidden transition-all hover:shadow-lg"
-                key={agent._id}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          'flex h-10 w-10 items-center justify-center rounded-lg',
-                          typeInfo.color
-                        )}
-                      >
-                        <TypeIcon className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">
-                          {agent.name}
-                        </CardTitle>
-                        <div className="mt-1 flex items-center gap-2">
-                          {agent.isPublic && (
-                            <Badge className="text-xs" variant="secondary">
-                              Public
+              return (
+                <Card
+                  className={cn(
+                    'group relative flex h-full flex-col overflow-hidden border border-border/60 p-2.5 transition-colors sm:p-3',
+                    'bg-gradient-to-b',
+                    typeInfo.gradient,
+                    'hover:ring-1',
+                    typeInfo.ring,
+                    'border-l-2',
+                    typeInfo.accent
+                  )}
+                  key={agent._id}
+                >
+                  <CardHeader className="border-border/50 border-b pb-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="min-w-0">
+                          <CardTitle className="truncate font-semibold text-[13.5px] tracking-tight sm:text-[15.5px]">
+                            {agent.name}
+                          </CardTitle>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                            {agent.isPublic && (
+                              <Badge
+                                className="text-[10px] sm:text-xs"
+                                variant="secondary"
+                              >
+                                Public
+                              </Badge>
+                            )}
+                            <Badge
+                              className="text-[10px] sm:text-xs"
+                              variant="outline"
+                            >
+                              {agent.type}
                             </Badge>
-                          )}
-                          <Badge className="text-xs" variant="outline">
-                            {agent.type}
-                          </Badge>
-                          <Badge
-                            className="text-xs"
-                            variant={getModelBadge(agent.model)}
-                          >
-                            {agent.model}
-                          </Badge>
+                            <Badge
+                              className="text-[10px] sm:text-xs"
+                              variant={getModelBadge(agent.model)}
+                            >
+                              {agent.model}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Action Menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            className="h-8 w-8 p-0 opacity-100 transition-opacity hover:opacity-100"
+                            size="sm"
+                            variant="ghost"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {!agent.isPublic && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(`/agents/${agent._id}/edit`)
+                                }
+                              >
+                                <Settings className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => handleDuplicateAgent(agent)}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          {!agent.isPublic && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => setDeleteAgentId(agent._id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
+                  </CardHeader>
 
-                    {/* Action Menu */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          className="h-8 w-8 p-0 opacity-0 transition-opacity group-hover:opacity-100"
-                          size="sm"
-                          variant="ghost"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {!agent.isPublic && (
-                          <>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                router.push(`/agents/${agent._id}/edit`)
-                              }
-                            >
-                              <Settings className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                          </>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => handleDuplicateAgent(agent)}
-                        >
-                          <Copy className="mr-2 h-4 w-4" />
-                          Duplicate
-                        </DropdownMenuItem>
-                        {!agent.isPublic && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => setDeleteAgentId(agent._id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardHeader>
+                  <CardContent className="flex flex-1 flex-col pt-1 sm:pt-1.5">
+                    <CardDescription className="line-clamp-2 text-[12px] leading-snug sm:text-sm">
+                      {agent.description ||
+                        agent.systemPrompt ||
+                        'No description provided'}
+                    </CardDescription>
 
-                <CardContent>
-                  <CardDescription className="line-clamp-2 text-sm">
-                    {agent.description ||
-                      agent.systemPrompt ||
-                      'No description provided'}
-                  </CardDescription>
-
-                  {/* Agent Stats */}
-                  <div className="mt-4 flex items-center gap-4 text-muted-foreground text-xs">
-                    <div className="flex items-center gap-1">
-                      <span>Temp:</span>
-                      <span className="font-medium">
-                        {agent.temperature || 0.7}
-                      </span>
-                    </div>
-                    {agent.maxTokens && (
-                      <div className="flex items-center gap-1">
-                        <span>Tokens:</span>
-                        <span className="font-medium">{agent.maxTokens}</span>
-                      </div>
-                    )}
-                    {agent.capabilities && agent.capabilities.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <span>Tools:</span>
+                    {/* Agent Stats */}
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2.5 text-[11px] text-muted-foreground sm:text-xs">
+                      <div className="rounded-md border px-1.5 py-0.5 leading-none">
+                        <span>Temp:</span>
                         <span className="font-medium">
-                          {agent.capabilities.length}
+                          {agent.temperature || 0.7}
                         </span>
                       </div>
-                    )}
-                  </div>
+                      {agent.maxTokens && (
+                        <div className="rounded-md border px-1.5 py-0.5 leading-none">
+                          <span>Tokens:</span>
+                          <span className="font-medium">{agent.maxTokens}</span>
+                        </div>
+                      )}
+                      {agent.capabilities && agent.capabilities.length > 0 && (
+                        <div className="rounded-md border px-1.5 py-0.5 leading-none">
+                          <span>Tools:</span>
+                          <span className="font-medium">
+                            {agent.capabilities.length}
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Created Date */}
-                  <div className="mt-3 text-muted-foreground text-xs">
-                    Created {new Date(agent.createdAt).toLocaleDateString()}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                    {/* Created Date */}
+                    <div className="mt-auto pt-2 text-[11px] text-muted-foreground sm:text-xs">
+                      Created {new Date(agent.createdAt).toLocaleDateString()}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        onOpenChange={() => setDeleteAgentId(null)}
-        open={!!deleteAgentId}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Agent</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this agent? This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteAgent}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog
+          onOpenChange={() => setDeleteAgentId(null)}
+          open={!!deleteAgentId}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Agent</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this agent? This action cannot
+                be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteAgent}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }

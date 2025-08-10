@@ -13,7 +13,7 @@ relations:
   references: ["system-design.mdc", "performance.mdc"]
 ---
 
-# Data Flow Architecture for ISIS.CHAT
+# Data Flow Architecture for abubis.chat
 
 ## Core Data Flow Principles
 
@@ -690,4 +690,4 @@ export async function withRetry<T>(
 }
 ```
 
-This data flow architecture ensures robust, real-time, and scalable data management for ISIS.CHAT with proper error handling and optimization patterns.
+This data flow architecture ensures robust, real-time, and scalable data management for abubis.chat with proper error handling and optimization patterns.

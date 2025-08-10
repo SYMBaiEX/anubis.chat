@@ -13,11 +13,11 @@ relations:
   references: ["../frontend/wallet-integration.mdc"]
 ---
 
-# Web3 Integration Overview - isis.chat
+# Web3 Integration Overview - abubis.chat
 
 ## Architecture Philosophy
 
-isis.chat follows a wallet-native approach where the Solana wallet IS the user identity. This eliminates traditional authentication complexity while maintaining security through cryptographic signatures.
+abubis.chat follows a wallet-native approach where the Solana wallet IS the user identity. This eliminates traditional authentication complexity while maintaining security through cryptographic signatures.
 
 ## Core Technologies
 
@@ -41,7 +41,7 @@ import { Connection, PublicKey } from '@solana/web3.js';
 use anchor_lang::prelude::*;
 
 #[program]
-pub mod isis_chat {
+pub mod anubis_chat {
     use super::*;
     
     pub fn initialize_subscription(ctx: Context<InitializeSubscription>) -> Result<()> {

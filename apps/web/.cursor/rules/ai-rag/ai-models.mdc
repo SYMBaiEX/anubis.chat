@@ -17,7 +17,7 @@ relations:
 
 ## Model Selection Strategy (2025)
 
-### Primary Models for isis.chat
+### Primary Models for abubis.chat
 - **Claude 3.5 Sonnet**: Primary reasoning, code generation, complex analysis
 - **GPT-4o**: Multimodal capabilities, image analysis, vision tasks
 - **DeepSeek**: Cost-effective inference for high-volume operations
@@ -104,7 +104,7 @@ export function selectModel(
 
 ### Environment Variables
 ```bash
-# Required for isis.chat
+# Required for abubis.chat
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
 DEEPSEEK_API_KEY=sk-...

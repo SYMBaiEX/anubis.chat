@@ -45,7 +45,7 @@ import bs58 from 'bs58';
 export async function authenticateWallet(wallet: AnchorWallet) {
   const domain = window.location.host;
   const origin = window.location.origin;
-  const statement = 'Sign in to isis.chat';
+  const statement = 'Sign in to abubis.chat';
   
   // Create SIWE-compatible message
   const message = new SigninMessage({

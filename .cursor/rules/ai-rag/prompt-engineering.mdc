@@ -17,10 +17,10 @@ relations:
 
 ## System Prompt Architecture
 
-### Base System Prompt for isis.chat
+### Base System Prompt for abubis.chat
 ```typescript
 export const SYSTEM_PROMPTS = {
-  base: `You are ISIS Chat, an AI assistant for the Solana blockchain ecosystem.
+  base: `You are ANUBIS Chat, an AI assistant for the Solana blockchain ecosystem.
 
 ## Core Principles:
 - Provide accurate, helpful information about Solana development

@@ -20,7 +20,7 @@ relations:
 ### WCAG 2.1 AA Standards
 
 ```typescript
-// Accessibility compliance targets for ISIS Chat
+// Accessibility compliance targets for ANUBIS Chat
 const accessibilityStandards = {
   // Level A Requirements (must have)
   levelA: {

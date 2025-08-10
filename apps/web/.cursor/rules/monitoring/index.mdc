@@ -16,12 +16,12 @@ relations:
 # Monitoring & Observability
 
 ::alert{type="info"}
-Comprehensive monitoring and observability strategy for isis.chat's distributed architecture.
+Comprehensive monitoring and observability strategy for abubis.chat's distributed architecture.
 ::
 
 ## Overview
 
-ISIS.chat implements a multi-layer observability stack providing real-time insights into system health, performance, and user experience.
+abubis.chat implements a multi-layer observability stack providing real-time insights into system health, performance, and user experience.
 
 ## Monitoring Stack
 
@@ -205,7 +205,7 @@ const logger = pino({
   formatters: {
     level: (label) => ({ level: label }),
     bindings: () => ({
-      service: 'isis-chat',
+      service: 'anubis-chat',
       environment: process.env.NODE_ENV,
       version: process.env.npm_package_version,
     }),
@@ -260,7 +260,7 @@ export function reportWebVitals(metric: NextWebVitalsMetric) {
 ```typescript
 import { trace } from '@opentelemetry/api';
 
-const tracer = trace.getTracer('isis-chat');
+const tracer = trace.getTracer('anubis-chat');
 
 export async function processMessage(message: string, wallet: string) {
   const span = tracer.startSpan('process_message');

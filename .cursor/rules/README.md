@@ -1,4 +1,4 @@
-# ISIS Chat - Cursor Rules Directory
+# ANUBIS Chat - Cursor Rules Directory
 
 ## ✅ Status: Fully Updated (August 6, 2025)
 
@@ -33,13 +33,16 @@ This directory contains the **latest Cursor IDE rules** using the new MDC (Markd
 ## Key Features
 
 ### 🤖 Cursor Auto Model Selection (August 2025)
-ISIS Chat uses **Cursor's Auto Mode** for intelligent model routing:
+
+ANUBIS Chat uses **Cursor's Auto Mode** for intelligent model routing:
+
 - Automatically selects the best model for each task
 - No manual configuration required
 - Cost and performance optimized
 - Automatic fallback on rate limits
 
 **Available Models in Auto Mode:**
+
 - Claude 3.5 Sonnet
 - GPT-4o
 - DeepSeek v3
@@ -49,17 +52,21 @@ ISIS Chat uses **Cursor's Auto Mode** for intelligent model routing:
 - GPT-4o-mini
 
 ### 📝 MDC Format
+
 All rules use the new MDC format with proper frontmatter:
+
 ```yaml
 ---
 description: Brief description
-globs: ["**/*.ts"]  # File patterns
-alwaysApply: false  # Auto-apply setting
+globs: ["**/*.ts"] # File patterns
+alwaysApply: false # Auto-apply setting
 ---
 ```
 
 ### 🎯 Scoped Rules
+
 Rules automatically apply based on:
+
 - File patterns (via glob matching)
 - Always-apply rules for core guidelines
 - Context-aware loading in Cursor
@@ -74,12 +81,14 @@ Rules automatically apply based on:
 ## Usage in Cursor
 
 ### Keyboard Shortcuts
+
 - `Cmd/Ctrl + K` - Inline edit
 - `Cmd/Ctrl + L` - Open chat
 - `Cmd/Ctrl + I` - Open composer
 - `Tab` - Accept suggestion
 
 ### Commands
+
 - `/Generate Cursor Rules` - Generate rules from chat
 - `New Cursor Rule` - Create new MDC file
 - `Cmd+Shift+P` - Open command palette
@@ -99,6 +108,7 @@ Rules automatically apply based on:
 ## Contributing
 
 When adding new rules:
+
 1. Use the MDC format with proper frontmatter
 2. Place in appropriate category directory
 3. Update `index.mdc` with navigation links

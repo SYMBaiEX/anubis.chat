@@ -76,6 +76,38 @@ export const updateProfile = mutation({
   },
 });
 
+// Generate a presigned upload URL for avatar images (authenticated)
+export const generateAvatarUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireAuth(ctx);
+    // Clients will POST the (compressed) image blob to this URL.
+    const url = await ctx.storage.generateUploadUrl();
+    return url;
+  },
+});
+
+// Save avatar from a Convex storageId by resolving to a public URL (authenticated)
+export const setAvatarFromStorage = mutation({
+  args: {
+    storageId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { user } = await requireAuth(ctx);
+    const url = await ctx.storage.getUrl(args.storageId);
+    if (!url) {
+      return { success: false, error: 'Invalid storageId' } as const;
+    }
+    await ctx.db.patch(user._id, {
+      avatar: url,
+      updatedAt: Date.now(),
+      lastActiveAt: Date.now(),
+    });
+    const updated = await ctx.db.get(user._id);
+    return { success: true, user: updated } as const;
+  },
+});
+
 // Get current user (authenticated)
 export const getCurrentUserProfile = query({
   args: {},

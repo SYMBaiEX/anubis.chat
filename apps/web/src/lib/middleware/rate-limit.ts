@@ -1,5 +1,5 @@
 /**
- * Rate Limiting Middleware for ISIS Chat
+ * Rate Limiting Middleware for anubis.chat
  * Based on wallet addresses and August 2025 best practices
  */
 

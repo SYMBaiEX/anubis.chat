@@ -1,9 +1,9 @@
 project:
-  name: "isis-chat"
+  name: "anubis-chat"
   type: "web-application"
   created: "2025-08-06"
   description: "Chat application with Next.js frontend and Convex backend"
-  
+
 stack:
   frontend:
     framework: "nextjs-14"
@@ -15,7 +15,7 @@ stack:
     type: "baas"
   architecture: "monorepo"
   package_manager: "bun"
-  
+
 modes:
   default: "nextjs-14 + monorepo-bun + continuous-verification"
   available:
@@ -23,21 +23,21 @@ modes:
     - monorepo-bun
     - continuous-verification
     - test-driven
-  
+
 features:
   verification: true
   indexing: true
   security: true
   mcp_servers: true
   documentation: true
-  
+
 preferences:
   package_manager: "bun"
   typescript: true
   linting: "strict"
   formatter: "biome"
   git_hooks: "husky"
-  
+
 quality:
   type_safety: "strict"
   nullish_coalescing: true

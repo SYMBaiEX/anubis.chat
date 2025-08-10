@@ -14,10 +14,10 @@ const isBrowser = typeof window !== 'undefined';
 
 // Pino configuration
 const pinoConfig: pino.LoggerOptions = {
-  name: 'isis-chat',
+  name: 'anubis-chat',
   level: isDevelopment ? 'debug' : isProduction ? 'info' : 'warn',
   base: {
-    service: 'isis-chat',
+    service: 'anubis-chat',
     environment: process.env.NODE_ENV || 'development',
     version: process.env.npm_package_version || '1.0.0',
   },

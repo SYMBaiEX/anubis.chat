@@ -20,6 +20,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from 'react';
 import { FeatureGate } from '@/components/auth/feature-gate';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
@@ -73,12 +74,14 @@ type ChatSettings = {
 
   // Behavior Settings
   systemPrompt: string;
+  agentPrompt?: string; // Read-only agent prompt for display
   streamResponses: boolean;
   enableMemory: boolean;
 
   // Interface Settings
   theme: 'light' | 'dark' | 'system';
   language: string;
+  fontSize: 'small' | 'medium' | 'large';
   soundEnabled: boolean;
   autoScroll: boolean;
 
@@ -122,6 +125,25 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const [showMobileAgentSelector, setShowMobileAgentSelector] = useState(false);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
 
+  // Theme hook from next-themes
+  const { theme, setTheme } = useTheme();
+
+  // User preferences from Convex
+  const userPreferences = useQuery(
+    api.userPreferences.getUserPreferencesWithDefaults,
+    isAuthenticated ? {} : 'skip'
+  );
+  const updateUserPreferences = useMutation(
+    api.userPreferences.updateUserPreferences
+  );
+
+  // Sync theme from database to next-themes on load
+  useEffect(() => {
+    if (userPreferences?.theme && userPreferences.theme !== theme) {
+      setTheme(userPreferences.theme);
+    }
+  }, [userPreferences?.theme, theme, setTheme]);
+
   // Chat settings state - complete configuration
   const [chatSettings, setChatSettings] = useState<ChatSettings>({
     // Model Settings
@@ -132,16 +154,16 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     frequencyPenalty: 0,
     presencePenalty: 0,
 
-    // Behavior Settings
-    systemPrompt:
-      selectedAgent?.systemPrompt ||
-      'You are ISIS, a helpful AI assistant with access to Solana blockchain operations.',
+    // Behavior Settings - separate system and agent prompts
+    systemPrompt: '', // User's custom system prompt starts empty
+    agentPrompt: selectedAgent?.systemPrompt || '', // Agent's base prompt for display
     streamResponses: true,
     enableMemory: true,
 
     // Interface Settings
     theme: 'system' as const,
     language: 'en',
+    fontSize: 'medium' as const,
     soundEnabled: true,
     autoScroll: true,
 
@@ -150,6 +172,50 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     contextWindow: 10,
     responseFormat: 'markdown' as const,
   });
+
+  // Sync chat settings with user preferences when preferences are loaded
+  useEffect(() => {
+    if (userPreferences && isAuthenticated) {
+      setChatSettings((prev) => {
+        const prefsBase = userPreferences as unknown;
+        let defaults: Partial<{
+          defaultModel: string;
+          defaultTemperature: number;
+          defaultMaxTokens: number;
+          defaultTopP: number;
+          defaultFrequencyPenalty: number;
+          defaultPresencePenalty: number;
+        }> = {};
+        if (typeof prefsBase === 'object' && prefsBase !== null) {
+          defaults = prefsBase as typeof defaults;
+        }
+        return {
+          ...prev,
+          // Apply user preferences to interface and behavior settings
+          theme: userPreferences.theme || prev.theme,
+          language: userPreferences.language || prev.language,
+          fontSize: userPreferences.fontSize || prev.fontSize,
+          soundEnabled: userPreferences.soundEnabled ?? prev.soundEnabled,
+          autoScroll: userPreferences.autoScroll ?? prev.autoScroll,
+          streamResponses:
+            userPreferences.streamResponses ?? prev.streamResponses,
+          enableMemory: userPreferences.enableMemory ?? prev.enableMemory,
+          responseFormat: userPreferences.responseFormat || prev.responseFormat,
+          contextWindow: userPreferences.contextWindow || prev.contextWindow,
+          saveHistory: userPreferences.saveHistory ?? prev.saveHistory,
+          // Apply model defaults for new chats (when provided by preferences)
+          model: defaults.defaultModel ?? prev.model,
+          temperature: defaults.defaultTemperature ?? prev.temperature,
+          maxTokens: defaults.defaultMaxTokens ?? prev.maxTokens,
+          topP: defaults.defaultTopP ?? prev.topP,
+          frequencyPenalty:
+            defaults.defaultFrequencyPenalty ?? prev.frequencyPenalty,
+          presencePenalty:
+            defaults.defaultPresencePenalty ?? prev.presencePenalty,
+        };
+      });
+    }
+  }, [userPreferences, isAuthenticated]);
 
   // Debug logging
   useEffect(() => {
@@ -197,6 +263,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         | 'temperature'
       > & {
         _id: string;
+        agentPrompt?: string;
+        agentId?: string;
       })
     | undefined;
 
@@ -206,6 +274,19 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       setSelectedChatId(urlChatId);
     }
   }, [urlChatId]);
+
+  // Check for openSettings parameter and open chat settings
+  useEffect(() => {
+    const openSettings = searchParams.get('openSettings');
+    if (openSettings === 'true') {
+      setShowMobileSettings(true);
+      // Clean up the URL parameter after opening settings
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('openSettings');
+      const newUrl = `/chat${newSearchParams.toString() ? `?${newSearchParams.toString()}` : ''}`;
+      router.replace(newUrl);
+    }
+  }, [searchParams, router]);
 
   // Auto-select first chat on load if no chat is selected
   useEffect(() => {
@@ -224,18 +305,19 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       setChatSettings((prev) => ({
         ...prev,
         model: currentChat.model,
-        systemPrompt: currentChat.systemPrompt || prev.systemPrompt,
+        systemPrompt: currentChat.systemPrompt || '',
+        agentPrompt: currentChat.agentPrompt || prev.agentPrompt,
         temperature: currentChat.temperature || prev.temperature,
       }));
     }
   }, [currentChat]);
 
-  // Update system prompt when agent changes
+  // Update agent prompt when agent changes (keep system prompt separate)
   useEffect(() => {
     if (selectedAgent?.systemPrompt) {
       setChatSettings((prev) => ({
         ...prev,
-        systemPrompt: selectedAgent.systemPrompt || prev.systemPrompt,
+        agentPrompt: selectedAgent.systemPrompt,
       }));
     }
   }, [selectedAgent]);
@@ -256,9 +338,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       const newChat = await createChat({
         title: `New Chat ${new Date().toLocaleTimeString()}`,
         model: selectedModel || DEFAULT_MODEL.id,
-        systemPrompt:
-          selectedAgent?.systemPrompt ||
-          'You are ISIS, a helpful AI assistant with access to Solana blockchain operations.',
+        systemPrompt: '', // User's custom system prompt starts empty
+        agentPrompt: selectedAgent?.systemPrompt || '', // Copy agent's prompt
+        agentId: selectedAgent?._id, // Reference to the agent
       });
       // The create mutation returns the full chat document, extract the _id
       if (newChat && newChat._id) {
@@ -334,7 +416,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   };
 
-  const handleSettingsChange = (newSettings: ChatSettings) => {
+  const handleSettingsChange = async (newSettings: ChatSettings) => {
     setChatSettings(newSettings);
 
     // Update selected model if it changed
@@ -342,20 +424,76 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       setSelectedModel(newSettings.model);
     }
 
-    // Update chat model in database if needed
-    if (
-      selectedChatId &&
-      isAuthenticated &&
-      newSettings.model !== chatSettings.model
-    ) {
-      updateChat({
-        id: selectedChatId as Id<'chats'>,
-        model: newSettings.model,
-      }).catch((error: any) => {
-        log.error('Failed to update chat model from settings', {
-          error: error?.message,
+    // Update theme immediately in next-themes if changed
+    if (newSettings.theme !== theme) {
+      setTheme(newSettings.theme);
+    }
+
+    // Save interface preferences using the Convex mutation
+    if (isAuthenticated) {
+      try {
+        await updateUserPreferences({
+          // Interface Settings
+          theme: newSettings.theme,
+          language: newSettings.language,
+          fontSize: newSettings.fontSize,
+          soundEnabled: newSettings.soundEnabled,
+          autoScroll: newSettings.autoScroll,
+          // Behavior Settings
+          streamResponses: newSettings.streamResponses,
+          saveHistory: newSettings.saveHistory,
+          enableMemory: newSettings.enableMemory,
+          responseFormat: newSettings.responseFormat,
+          contextWindow: newSettings.contextWindow,
+          // Model Preferences (defaults for new chats)
+          defaultModel: newSettings.model,
+          defaultTemperature: newSettings.temperature,
+          defaultMaxTokens: newSettings.maxTokens,
+          defaultTopP: newSettings.topP,
+          defaultFrequencyPenalty: newSettings.frequencyPenalty,
+          defaultPresencePenalty: newSettings.presencePenalty,
         });
-      });
+      } catch (error: any) {
+        console.warn(
+          'Failed to save user preferences to database:',
+          error?.message
+        );
+      }
+    }
+
+    // Update chat-specific settings in database if needed
+    if (selectedChatId && isAuthenticated) {
+      const updates: {
+        model?: string;
+        systemPrompt?: string;
+        temperature?: number;
+        maxTokens?: number;
+      } = {};
+
+      if (newSettings.model !== chatSettings.model) {
+        updates.model = newSettings.model;
+      }
+      if (newSettings.systemPrompt !== chatSettings.systemPrompt) {
+        updates.systemPrompt = newSettings.systemPrompt;
+      }
+      if (newSettings.temperature !== chatSettings.temperature) {
+        updates.temperature = newSettings.temperature;
+      }
+      if (newSettings.maxTokens !== chatSettings.maxTokens) {
+        updates.maxTokens = newSettings.maxTokens;
+      }
+
+      // Only update if there are actual changes
+      if (Object.keys(updates).length > 0) {
+        updateChat({
+          id: selectedChatId as Id<'chats'>,
+          ...updates,
+        }).catch((error: any) => {
+          log.error('Failed to update chat settings', {
+            error: error?.message,
+          });
+        });
+      }
     }
   };
 
@@ -372,7 +510,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   }
 
   return (
-    <div className={cn('flex h-full min-h-0 bg-background', className)}>
+    <div className={cn('flex h-full min-h-0', className)}>
       {/* Main Chat Area */}
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Top Bar */}
@@ -469,7 +607,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
         {/* Chat Content */}
         {currentChat ? (
-          <div className="flex min-h-0 flex-1 flex-col bg-gradient-to-br from-background via-muted/10 to-background">
+          <div className="flex min-h-0 flex-1 flex-col bg-transparent">
             {/* Message List */}
             <div className="relative flex-1 overflow-hidden">
               {messages === undefined ? (
@@ -482,6 +620,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 </div>
               ) : (
                 <MessageList
+                  fontSize={chatSettings.fontSize}
                   isTyping={isAnyoneTyping}
                   messages={(messages || []).map((m) => {
                     if ((m as StreamingMessage).isStreaming) {
@@ -513,8 +652,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
             {/* Upgrade Prompt */}
             {upgradePrompt.shouldShow && upgradePrompt.urgency === 'high' && (
-              <div className="border-border/50 border-t bg-card/30 p-3 sm:p-4">
-                <div className="mx-auto max-w-3xl lg:max-w-5xl xl:max-w-6xl">
+              <div className="border-border/50 border-t bg-card/30 p-2 sm:p-3 md:p-4">
+                <div className="mx-auto w-full max-w-full sm:max-w-6xl md:max-w-7xl xl:max-w-none xl:px-8">
                   <UpgradePrompt
                     onDismiss={() => setShowUpgradePrompt(false)}
                     prompt={upgradePrompt}
@@ -526,8 +665,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
             {/* Message Input */}
             <div className="border-border/50 border-t bg-card/30 backdrop-blur">
-              <div className="p-3 sm:p-4 lg:p-6">
-                <div className="mx-auto max-w-3xl lg:max-w-5xl xl:max-w-6xl">
+              <div className="p-1.5 sm:p-2 md:p-3 lg:p-4">
+                <div className="mx-auto w-full max-w-full sm:max-w-6xl md:max-w-7xl xl:max-w-none xl:px-8">
                   <MessageInput
                     disabled={
                       !selectedChatId ||
@@ -535,13 +674,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       isStreaming ||
                       !canSendMessage
                     }
+                    fontSize={chatSettings.fontSize}
                     onSend={handleSendMessage}
                     onTyping={startTyping}
                     placeholder={
                       canSendMessage
                         ? isStreaming
-                          ? 'ISIS is responding...'
-                          : 'Ask ISIS anything...'
+                          ? 'Anubis is responding...'
+                          : 'Ask Anubis anything...'
                         : 'Message limit reached - Upgrade to continue'
                     }
                   />
@@ -550,7 +690,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background">
+          <div className="flex flex-1 items-center justify-center bg-transparent">
             {chats?.length === 0 ? (
               <ChatWelcome
                 isCreating={isCreatingChat}
@@ -584,7 +724,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
           <div className="max-h-[60vh] overflow-y-auto">
             <ModelGrid
-              columns={2}
+              columns={3}
               models={AI_MODELS}
               onModelSelect={(model) => {
                 handleModelChange(model.id);
@@ -614,9 +754,24 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               <AgentGrid
                 agents={agents}
                 columns={2}
-                onAgentSelect={(agent) => {
+                onAgentSelect={async (agent) => {
                   selectAgent(agent._id);
                   setShowMobileAgentSelector(false);
+
+                  // Update the current chat's agent prompt and reference
+                  if (selectedChatId && isAuthenticated) {
+                    try {
+                      await updateChat({
+                        id: selectedChatId as Id<'chats'>,
+                        agentPrompt: agent.systemPrompt,
+                        agentId: agent._id,
+                      });
+                    } catch (error: any) {
+                      log.error('Failed to update chat agent', {
+                        error: error?.message,
+                      });
+                    }
+                  }
                 }}
                 selectedAgentId={selectedAgent?._id}
               />

@@ -82,7 +82,7 @@ export function SubscriptionStatus({
       case 'admin':
         return <Shield className="h-5 w-5" />;
       case 'pro_plus':
-        return <Shield className="h-5 w-5" />;
+        return <Crown className="h-5 w-5" />;
       case 'pro':
         return <Zap className="h-5 w-5" />;
       default:
@@ -116,7 +116,7 @@ export function SubscriptionStatus({
   return (
     <div className={cn('space-y-6', className)}>
       {/* Subscription Overview */}
-      <Card className="p-6">
+      <Card className="p-5 ring-1 ring-primary/10">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div
@@ -125,7 +125,7 @@ export function SubscriptionStatus({
               {getTierIcon(subscription.tier)}
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
+              <h3 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-lg text-transparent">
                 {subscription.tier === 'admin'
                   ? 'Administrator'
                   : subscription.tier === 'pro_plus'
@@ -224,7 +224,7 @@ export function SubscriptionStatus({
 
       {/* Features */}
       {subscription.features && subscription.features.length > 0 && (
-        <Card className="p-6">
+        <Card className="p-5">
           <h4 className="mb-4 font-semibold text-gray-900 text-md dark:text-gray-100">
             Included Features
           </h4>
@@ -252,7 +252,7 @@ export function SubscriptionStatus({
       {/* Available Models */}
       {subscription.availableModels &&
         subscription.availableModels.length > 0 && (
-          <Card className="p-6">
+          <Card className="p-5">
             <h4 className="mb-4 font-semibold text-gray-900 text-md dark:text-gray-100">
               Available AI Models
             </h4>
@@ -270,7 +270,7 @@ export function SubscriptionStatus({
 
       {/* Subscription Period Info */}
       {subscription.currentPeriodStart && subscription.currentPeriodEnd && (
-        <Card className="p-6">
+        <Card className="p-5">
           <h4 className="mb-4 font-semibold text-gray-900 text-md dark:text-gray-100">
             Billing Period
           </h4>

@@ -178,7 +178,7 @@ describe('solana utilities', () => {
       // Mock window.location for consistent host
       Object.defineProperty(globalThis, 'window', {
         value: {
-          location: { host: 'isis.chat' },
+          location: { host: 'abubis.chat' },
           crypto: {
             getRandomValues: vi.fn((array: Uint8Array) => {
               // Mock to return predictable values for testing
@@ -202,10 +202,10 @@ describe('solana utilities', () => {
       const message = createSignInMessage(publicKey);
 
       expect(message).toContain(
-        'ISIS Chat wants you to sign in with your Solana account:'
+        'anubis.chat wants you to sign in with your Solana account:'
       );
       expect(message).toContain(publicKey);
-      expect(message).toContain('Domain: isis.chat');
+      expect(message).toContain('Domain: abubis.chat');
       expect(message).toContain('Issued At: 2024-01-15T12:00:00.000Z');
       expect(message).toContain('Chain ID: devnet');
       expect(message).toContain('Nonce:');
@@ -252,7 +252,7 @@ describe('solana utilities', () => {
       const originalWindow = globalThis.window;
       Object.defineProperty(globalThis, 'window', {
         value: {
-          location: { host: 'isis.chat' },
+          location: { host: 'abubis.chat' },
         },
         configurable: true,
       });
@@ -262,7 +262,7 @@ describe('solana utilities', () => {
       // Should still work but use fallback random generation
       const message = createSignInMessage(publicKey);
       expect(message).toContain(
-        'ISIS Chat wants you to sign in with your Solana account:'
+        'anubis.chat wants you to sign in with your Solana account:'
       );
       expect(message).toContain('Nonce:');
 

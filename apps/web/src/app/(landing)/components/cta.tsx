@@ -21,17 +21,17 @@ function CTA() {
       softEdges
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <Card className="relative overflow-hidden bg-[radial-gradient(60%_60%_at_80%_20%,rgba(20,241,149,0.12)_0%,transparent_60%)] p-10">
+        <div className="relative overflow-hidden rounded-2xl p-10 ring-1 ring-border/40">
           <div aria-hidden className="pointer-events-none absolute inset-0" />
           <div className="relative text-center">
             <h2 className="mb-3 font-bold text-3xl md:text-5xl">
               <span className="bg-gradient-to-r from-primary via-foreground to-accent bg-clip-text text-transparent">
-                Ready to build with wallet‑native AI?
+                Ready to experience the future of AI chat?
               </span>
             </h2>
             <p className="mx-auto mb-8 max-w-2xl text-muted-foreground">
-              Join thousands of crypto‑native users and teams shipping faster
-              with on‑chain intelligence.
+              Join the Web3 revolution with cutting-edge AI models and
+              wallet-based authentication. Start chatting in seconds.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="/auth">
@@ -57,7 +57,7 @@ function CTA() {
               </Link>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </AnimatedSection>
   );

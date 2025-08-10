@@ -16,12 +16,12 @@ relations:
 # Deployment Architecture
 
 ::alert{type="info"}
-This document defines deployment strategies and infrastructure patterns for isis.chat.
+This document defines deployment strategies and infrastructure patterns for abubis.chat.
 ::
 
 ## Overview
 
-ISIS.chat follows a modern edge-first deployment architecture optimized for global distribution and real-time performance.
+abubis.chat follows a modern edge-first deployment architecture optimized for global distribution and real-time performance.
 
 ## Deployment Strategy
 
@@ -31,7 +31,7 @@ ISIS.chat follows a modern edge-first deployment architecture optimized for glob
 ::tab{label="Development"}
 ```yaml
 environment: development
-url: https://dev.isis.chat
+url: https://dev.abubis.chat
 branch: develop
 auto_deploy: true
 preview_deployments: true
@@ -41,7 +41,7 @@ preview_deployments: true
 ::tab{label="Staging"}
 ```yaml
 environment: staging
-url: https://staging.isis.chat
+url: https://staging.abubis.chat
 branch: staging
 auto_deploy: true
 manual_promotion: true
@@ -51,7 +51,7 @@ manual_promotion: true
 ::tab{label="Production"}
 ```yaml
 environment: production
-url: https://isis.chat
+url: https://abubis.chat
 branch: main
 manual_deploy: true
 rollback_enabled: true

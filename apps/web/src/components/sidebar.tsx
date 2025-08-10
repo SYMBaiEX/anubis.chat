@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@convex/_generated/api';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,6 +12,7 @@ import {
   Shield,
   Sparkles,
   Sun,
+  User,
   Wallet,
   X,
   Zap,
@@ -28,6 +29,7 @@ import {
   useSubscriptionLimits,
   useSubscriptionStatus,
 } from '@/components/providers/auth-provider';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Logo, LogoIcon } from '@/components/ui/logo';
@@ -45,6 +47,18 @@ const bottomItems: Array<{
   requiresAuth?: boolean;
   icon: ReactElement;
 }> = [
+  {
+    label: 'Account',
+    href: '/account',
+    requiresAuth: true,
+    icon: <User className="h-4 w-4 flex-shrink-0" />,
+  },
+  {
+    label: 'Subscription',
+    href: '/subscription',
+    requiresAuth: true,
+    icon: <Crown className="h-4 w-4 flex-shrink-0" />,
+  },
   {
     label: 'Settings',
     href: '/settings',
@@ -69,6 +83,9 @@ export default function Sidebar() {
   const subscription = useSubscriptionStatus();
   const limits = useSubscriptionLimits();
   const { isOpen, openModal, closeModal, suggestedTier } = useUpgradeModal();
+  const updateUserPreferences = useMutation(
+    api.userPreferences.updateUserPreferences
+  );
   const usagePercent =
     subscription && subscription.messagesLimit > 0
       ? (subscription.messagesUsed / subscription.messagesLimit) * 100
@@ -111,10 +128,10 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Menu Button */}
+      {/* Mobile Menu Button (moved to right) */}
       <button
         aria-label="Toggle menu"
-        className="button-press fixed top-3 left-3 z-50 rounded-md border border-border bg-card p-1.5 lg:hidden"
+        className="button-press fixed top-3 right-3 z-50 rounded-md border border-sidebar-border bg-sidebar-background/90 p-1.5 shadow-sm backdrop-blur lg:hidden"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
       >
         {isMobileOpen ? (
@@ -135,7 +152,7 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-0 left-0 z-40 h-[calc(100vh-2.5rem)] overflow-hidden border-sidebar-border border-r bg-sidebar-background transition-all duration-300',
+          'fixed top-0 left-0 z-40 h-[calc(100vh-2.5rem)] overflow-hidden border-sidebar-border border-r bg-sidebar-background/95 backdrop-blur transition-all duration-300 supports-[backdrop-filter]:bg-sidebar-background/80',
           isCollapsed ? 'w-14' : 'w-56',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
@@ -143,17 +160,17 @@ export default function Sidebar() {
         <div className="flex h-full flex-col">
           <div
             aria-hidden="true"
-            className="aurora aurora-gold absolute inset-0"
+            className="aurora aurora-primary absolute inset-0"
           />
           {/* Logo */}
-          <div className="flex h-12 items-center justify-between border-sidebar-border border-b px-3">
+          <div className="flex h-12 items-center justify-between border-sidebar-border/80 border-b bg-sidebar-background/60 px-3">
             {isCollapsed ? (
-              <LogoIcon className="mx-auto" size="sm" />
+              <LogoIcon className="mx-auto" size="lg" />
             ) : (
               <Logo
                 href="/dashboard"
-                size="sm"
-                text="ISIS.chat"
+                size="lg"
+                text="anubis.chat"
                 textVariant="gradient"
               />
             )}
@@ -176,13 +193,13 @@ export default function Sidebar() {
           <nav className="flex-1 overflow-y-auto py-2">
             {/* Global Chat History between wallet and routes - only show when expanded */}
             {!isCollapsed && (
-              <div className="px-2 pb-2">
-                <div className="rounded-md border border-sidebar-border/60 bg-sidebar-background/60">
+              <div className="px-2 pb-8">
+                <div className="rounded-md border border-sidebar-border/60 bg-card/40 backdrop-blur">
                   <ChatSidebar />
                 </div>
               </div>
             )}
-            <ul className="space-y-0.5 px-2">
+            <ul className="space-y-1 px-2">
               {filteredItems.map((item: NavItem) => {
                 const isActive = pathname === item.href;
 
@@ -190,22 +207,29 @@ export default function Sidebar() {
                   <li key={item.href}>
                     <Link
                       className={cn(
-                        'button-press flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-all',
+                        'button-press flex items-center gap-3 rounded-md px-3 py-2.5 text-sm ring-1 ring-transparent transition-all',
                         isActive
-                          ? 'glow-primary bg-sidebar-primary text-sidebar-primary-foreground'
-                          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                          ? 'glow-primary bg-sidebar-primary text-sidebar-primary-foreground ring-primary/30'
+                          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:ring-sidebar-ring/20',
                         isCollapsed && 'justify-center'
                       )}
                       href={item.href}
                     >
                       {item.icon && (
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <item.icon
+                          className={cn(
+                            'h-5 w-5 flex-shrink-0 transition-colors',
+                            isActive
+                              ? 'text-sidebar-primary-foreground'
+                              : 'text-sidebar-primary'
+                          )}
+                        />
                       )}
                       {!isCollapsed && (
                         <>
-                          <span className="flex-1 text-xs">{item.label}</span>
+                          <span className="flex-1 text-sm">{item.label}</span>
                           {item.devOnly && (
-                            <span className="rounded-full bg-isis-accent px-1.5 py-0 text-[9px] text-white">
+                            <span className="rounded-full bg-anubis-accent px-1.5 py-0 text-[9px] text-white">
                               DEV
                             </span>
                           )}
@@ -219,7 +243,7 @@ export default function Sidebar() {
           </nav>
 
           {/* Bottom Section */}
-          <div className="space-y-1 border-sidebar-border border-t p-2">
+          <div className="space-y-1 border-sidebar-border/80 border-t bg-sidebar-background/60 p-2">
             {/* Wallet Connection */}
             <div className={cn('mb-2', isCollapsed && 'flex justify-center')}>
               <WalletConnectButton collapsed={isCollapsed} />
@@ -250,10 +274,21 @@ export default function Sidebar() {
             <button
               aria-label="Toggle theme"
               className={cn(
-                'button-press flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sidebar-foreground text-xs transition-all hover:bg-sidebar-accent',
+                'button-press flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sidebar-foreground text-xs ring-1 ring-transparent transition-all hover:bg-sidebar-accent hover:ring-sidebar-ring/20',
                 isCollapsed && 'justify-center'
               )}
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={async () => {
+                const newTheme = theme === 'dark' ? 'light' : 'dark';
+                setTheme(newTheme);
+                // Update user preferences in database if authenticated
+                if (isAuthenticated) {
+                  try {
+                    await updateUserPreferences({ theme: newTheme });
+                  } catch (error) {
+                    console.error('Failed to update theme preference:', error);
+                  }
+                }
+              }}
             >
               {mounted ? (
                 theme === 'dark' ? (
@@ -276,10 +311,10 @@ export default function Sidebar() {
               return (
                 <Link
                   className={cn(
-                    'button-press flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-all',
+                    'button-press flex items-center gap-2 rounded-md px-2 py-1.5 text-xs ring-1 ring-transparent transition-all',
                     isActive
-                      ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                      ? 'bg-sidebar-primary text-sidebar-primary-foreground ring-primary/30'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:ring-sidebar-ring/20',
                     isCollapsed && 'justify-center'
                   )}
                   href={item.href}
@@ -330,7 +365,12 @@ export default function Sidebar() {
 
                     {/* User info */}
                     <div className="mt-2 flex items-center gap-2">
-                      <div className="h-6 w-6 rounded-full bg-gradient-to-br from-isis-primary to-isis-accent" />
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage alt="Profile" src={user?.avatar} />
+                        <AvatarFallback>
+                          {(user?.displayName?.[0] || 'U').toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium text-[11px]">
                           {user?.displayName || 'User'}

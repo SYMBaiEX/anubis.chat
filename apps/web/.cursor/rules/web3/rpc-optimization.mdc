@@ -17,7 +17,7 @@ relations:
 
 ## Multi-Provider Architecture
 
-isis.chat uses a tiered RPC strategy for maximum reliability:
+abubis.chat uses a tiered RPC strategy for maximum reliability:
 - **Primary**: Helius (premium features, enhanced APIs)
 - **Fallback**: Shyft (backup reliability)
 - **Emergency**: Public Solana RPC (last resort)

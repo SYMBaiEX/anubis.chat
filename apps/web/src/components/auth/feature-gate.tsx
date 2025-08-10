@@ -66,7 +66,7 @@ const FEATURE_INFO = {
   api_access: {
     name: 'API Access',
     description:
-      'Integrate ISIS Chat into your applications with our powerful API.',
+      'Integrate anubis.chat into your applications with our powerful API.',
     requiredTier: 'pro_plus' as const,
     icon: <Crown className="h-5 w-5" />,
   },

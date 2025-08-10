@@ -13,11 +13,11 @@ relations:
   references: ["../web3/wallet-auth.mdc", "../ai/chat-streaming.mdc"]
 ---
 
-# Frontend Architecture & UI/UX Standards for ISIS.Chat
+# Frontend Architecture & UI/UX Standards for abubis.chat
 
 ## Project Overview
 
-ISIS.Chat is a Solana-native AI chat SaaS built with modern web technologies:
+abubis.chat is a Solana-native AI chat SaaS built with modern web technologies:
 
 - **Framework**: Next.js 15 with App Router
 - **Runtime**: React 19 with Server Components

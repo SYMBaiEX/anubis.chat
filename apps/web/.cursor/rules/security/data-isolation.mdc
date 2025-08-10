@@ -482,7 +482,7 @@ export class MemoryIsolationService {
   private generateVectorStoreKey(walletAddress: string): string {
     // Create deterministic collection name for wallet
     return crypto.createHash('sha256')
-      .update(`isis_chat_vectors:${walletAddress}`)
+      .update(`anubis_chat_vectors:${walletAddress}`)
       .digest('hex')
       .substring(0, 32); // Qdrant collection name limit
   }

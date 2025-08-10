@@ -334,20 +334,37 @@ export const DEFAULT_MCP_SERVERS: MCPServerConfig[] = [
       headers: {
         'Content-Type': 'application/json',
         ...(process.env.CONTEXT7_API_KEY && {
-          'Authorization': `Bearer ${process.env.CONTEXT7_API_KEY}`,
+          Authorization: `Bearer ${process.env.CONTEXT7_API_KEY}`,
         }),
       },
-      timeout: 30000, // 30 second timeout
+      timeout: 30_000, // 30 second timeout
     },
-    description: 'Access to library documentation, code examples, and best practices',
+    description:
+      'Access to library documentation, code examples, and best practices',
     toolSchemas: {
       resolve_library_id: z.object({
-        libraryName: z.string().describe('Library name to search for and retrieve a Context7-compatible library ID'),
+        libraryName: z
+          .string()
+          .describe(
+            'Library name to search for and retrieve a Context7-compatible library ID'
+          ),
       }),
       get_library_docs: z.object({
-        context7CompatibleLibraryID: z.string().describe('Exact Context7-compatible library ID (e.g., /mongodb/docs, /vercel/next.js)'),
-        tokens: z.number().optional().describe('Maximum number of tokens of documentation to retrieve (default: 10000)'),
-        topic: z.string().optional().describe('Topic to focus documentation on (e.g., hooks, routing)'),
+        context7CompatibleLibraryID: z
+          .string()
+          .describe(
+            'Exact Context7-compatible library ID (e.g., /mongodb/docs, /vercel/next.js)'
+          ),
+        tokens: z
+          .number()
+          .optional()
+          .describe(
+            'Maximum number of tokens of documentation to retrieve (default: 10000)'
+          ),
+        topic: z
+          .string()
+          .optional()
+          .describe('Topic to focus documentation on (e.g., hooks, routing)'),
       }),
     },
   },
@@ -359,18 +376,31 @@ export const DEFAULT_MCP_SERVERS: MCPServerConfig[] = [
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 30000, // 30 second timeout
+      timeout: 30_000, // 30 second timeout
     },
-    description: 'Solana developer assistant with documentation search and Anchor framework expertise',
+    description:
+      'Solana developer assistant with documentation search and Anchor framework expertise',
     toolSchemas: {
-      'Solana_Expert__Ask_For_Help': z.object({
-        question: z.string().describe('A Solana related question (how-to, concepts, APIs, SDKs, errors). Provide as much context about the problem as needed.'),
+      Solana_Expert__Ask_For_Help: z.object({
+        question: z
+          .string()
+          .describe(
+            'A Solana related question (how-to, concepts, APIs, SDKs, errors). Provide as much context about the problem as needed.'
+          ),
       }),
-      'Solana_Documentation_Search': z.object({
-        query: z.string().describe('A search query that will be matched against a corpus of Solana documentation using RAG'),
+      Solana_Documentation_Search: z.object({
+        query: z
+          .string()
+          .describe(
+            'A search query that will be matched against a corpus of Solana documentation using RAG'
+          ),
       }),
-      'Ask_Solana_Anchor_Framework_Expert': z.object({
-        question: z.string().describe('Any question about the Anchor Framework (how-to, concepts, APIs, SDKs, errors)'),
+      Ask_Solana_Anchor_Framework_Expert: z.object({
+        question: z
+          .string()
+          .describe(
+            'Any question about the Anchor Framework (how-to, concepts, APIs, SDKs, errors)'
+          ),
       }),
     },
   },

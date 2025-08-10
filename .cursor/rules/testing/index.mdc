@@ -13,11 +13,11 @@ relations:
   references: ["../index.mdc"]
 ---
 
-# Testing Strategy Overview - isis.chat
+# Testing Strategy Overview - abubis.chat
 
 ## Testing Architecture
 
-isis.chat implements a comprehensive testing strategy designed for AI-powered Web3 applications. The testing pyramid emphasizes automated testing at all levels with specialized patterns for AI responses, blockchain interactions, and real-time streaming.
+abubis.chat implements a comprehensive testing strategy designed for AI-powered Web3 applications. The testing pyramid emphasizes automated testing at all levels with specialized patterns for AI responses, blockchain interactions, and real-time streaming.
 
 ### Testing Pyramid Distribution
 

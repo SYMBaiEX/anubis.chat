@@ -13,11 +13,11 @@ relations:
   references: ["./ai-rag/index.mdc", "./testing/index.mdc"]
 ---
 
-# ISIS Chat - Cursor Rules Master Index
+# ANUBIS Chat - Cursor Rules Master Index
 
 ## 🚀 Project Overview
 
-ISIS Chat is a Solana-native AI chat SaaS platform that combines advanced AI/RAG capabilities with Web3 blockchain integration. This comprehensive rule system provides development guidelines, patterns, and best practices optimized for Cursor IDE.
+ANUBIS Chat is a Solana-native AI chat SaaS platform that combines advanced AI/RAG capabilities with Web3 blockchain integration. This comprehensive rule system provides development guidelines, patterns, and best practices optimized for Cursor IDE.
 
 ### Technology Stack
 - **AI Models**: Claude 3.5 Sonnet, GPT-4o, DeepSeek
@@ -219,7 +219,7 @@ const aiService = new AIService({
 
 // Set up vector search with Qdrant
 const vectorSearch = new VectorSearchService(qdrantClient, {
-  collection: 'isis_knowledge_base',
+  collection: 'anubis_knowledge_base',
   searchType: 'hybrid',
   retrievalStrategy: 'contextual'
 });
@@ -394,4 +394,4 @@ ci_pipeline:
 4. **Implement Core Features**: Use rule files as implementation guides
 5. **Monitor and Optimize**: Track performance and quality metrics
 
-**Happy coding with ISIS Chat! 🎉**
+**Happy coding with ANUBIS Chat! 🎉**

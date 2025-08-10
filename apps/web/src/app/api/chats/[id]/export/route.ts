@@ -113,7 +113,7 @@ async function generatePDF(
   // Set up document properties
   doc.setProperties({
     title,
-    creator: 'ISIS Chat',
+    creator: 'anubis.chat',
     subject: 'Chat Export',
     keywords: 'chat, export, pdf',
   });

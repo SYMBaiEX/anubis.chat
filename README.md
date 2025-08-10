@@ -1,6 +1,6 @@
-# ISIS Chat
+# Anubis Chat
 
-A next-generation AI chat platform combining advanced RAG (Retrieval-Augmented Generation) capabilities with Solana Web3 integration. ISIS Chat enables users to upload documents, create intelligent chatbots, and interact with multiple AI models through a secure, wallet-based authentication system.
+A next-generation AI chat platform combining advanced RAG (Retrieval-Augmented Generation) capabilities with Solana Web3 integration. Anubis Chat enables users to upload documents, create intelligent chatbots, and interact with multiple AI models through a secure, wallet-based authentication system.
 
 ## 🚀 Key Features
 
@@ -73,8 +73,8 @@ A next-generation AI chat platform combining advanced RAG (Retrieval-Augmented G
 
 1. **Clone and install dependencies**
 ```bash
-git clone https://github.com/your-username/isis-chat.git
-cd isis-chat
+git clone https://github.com/your-username/anubis-chat.git
+cd anubis-chat
 bun install
 ```
 
@@ -120,7 +120,7 @@ cd apps/web && bun generate-pwa-assets  # Generate PWA icons
 ## 📁 Project Structure
 
 ```
-isis-chat/
+anubis-chat/
 ├── apps/
 │   └── web/                    # Next.js frontend application
 │       ├── src/

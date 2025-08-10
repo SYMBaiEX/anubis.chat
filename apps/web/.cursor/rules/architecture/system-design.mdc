@@ -13,11 +13,11 @@ relations:
   references: ["data-flow.mdc", "scalability.mdc"]
 ---
 
-# ISIS.CHAT System Design Architecture
+# abubis.chat System Design Architecture
 
 ## Core System Overview
 
-ISIS.CHAT is a Solana-native AI chat SaaS built on modern edge computing principles with real-time capabilities.
+abubis.chat is a Solana-native AI chat SaaS built on modern edge computing principles with real-time capabilities.
 
 ::alert{type="info"}
 **System Philosophy**: Edge-first, real-time, blockchain-native architecture optimizing for sub-100ms response times and global scalability.

@@ -2,8 +2,8 @@
 
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import AnubisAurora from '@/components/AnubisAurora';
 import { RosettaHieroglyphs } from '@/components/effects/rosetta-hieroglyphs';
-import IsisAurora from '@/components/IsisAurora';
 import { HieroglyphicAnimations } from '@/components/landing/hieroglyphic-animations';
 import { TombBackground } from '@/components/landing/tomb-background';
 
@@ -133,9 +133,9 @@ export default function AnimatedSection({
       </div>
       {auroraVariant !== undefined &&
         (auroraVariant ? (
-          <IsisAurora variant={auroraVariant} />
+          <AnubisAurora variant={auroraVariant} />
         ) : (
-          <IsisAurora />
+          <AnubisAurora />
         ))}
 
       {/* Soft section transitions to avoid hard seams */}

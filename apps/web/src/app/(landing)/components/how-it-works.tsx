@@ -9,22 +9,22 @@ const steps = [
   {
     icon: Wallet,
     title: 'Connect Wallet',
-    text: 'Authenticate with Phantom, Backpack, or your preferred Solana wallet.',
-  },
-  {
-    icon: Upload,
-    title: 'Add Knowledge',
-    text: 'Upload docs, notes, or URLs. We embed and index your knowledge.',
+    text: 'Sign in securely with Phantom, Solflare, or any Solana wallet.',
   },
   {
     icon: MessagesSquare,
-    title: 'Chat & Retrieve',
-    text: 'Ask anything. Responses are context‑aware with secure retrieval.',
+    title: 'Start Chatting',
+    text: 'Choose your AI model and begin conversing instantly.',
+  },
+  {
+    icon: Upload,
+    title: 'Switch Models',
+    text: 'Seamlessly switch between GPT-5, Gemini, and free models instantly.',
   },
   {
     icon: Rocket,
-    title: 'Execute On‑chain',
-    text: 'Approve actions with signatures — swaps, transfers, or agent tasks.',
+    title: 'Save & Continue',
+    text: 'Your conversations are saved and synced across all devices.',
   },
 ];
 
@@ -48,7 +48,7 @@ function HowItWorks() {
             </span>
           </h2>
           <p className="text-muted-foreground">
-            Four steps, end‑to‑end and secure.
+            Get started in seconds with Web3 authentication.
           </p>
         </div>
 

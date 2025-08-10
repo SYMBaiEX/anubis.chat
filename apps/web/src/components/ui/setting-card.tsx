@@ -151,13 +151,15 @@ export function SettingCard({
 
       case 'switch':
         return (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div className="space-y-0.5">
-              <Label className="font-medium text-sm" htmlFor={id}>
+              <Label className="font-medium text-sm leading-tight" htmlFor={id}>
                 {title}
               </Label>
               {description && (
-                <p className="text-muted-foreground text-xs">{description}</p>
+                <p className="text-muted-foreground text-xs leading-snug">
+                  {description}
+                </p>
               )}
             </div>
             <Switch
@@ -172,11 +174,11 @@ export function SettingCard({
       case 'textarea':
         return (
           <div className="space-y-2">
-            <Label className="font-medium text-sm" htmlFor={id}>
+            <Label className="font-medium text-sm leading-tight" htmlFor={id}>
               {title}
             </Label>
             <Textarea
-              className={cn(compact && 'text-sm')}
+              className={cn('leading-snug', compact && 'text-sm')}
               disabled={disabled}
               id={id}
               onChange={(e) => onChange?.(e.target.value)}
@@ -185,47 +187,63 @@ export function SettingCard({
               value={value}
             />
             {description && (
-              <p className="text-muted-foreground text-xs">{description}</p>
+              <p className="text-muted-foreground text-xs leading-snug">
+                {description}
+              </p>
             )}
           </div>
         );
 
       case 'display':
         return (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div className="space-y-0.5">
-              <Label className="font-medium text-sm">{title}</Label>
+              <Label className="font-medium text-sm leading-tight">
+                {title}
+              </Label>
               {description && (
-                <p className="text-muted-foreground text-xs">{description}</p>
+                <p className="text-muted-foreground text-xs leading-snug">
+                  {description}
+                </p>
               )}
             </div>
             <div className="flex items-center gap-2">
               {badge && (
-                <Badge className="text-xs" variant={badgeVariant}>
+                <Badge
+                  className="h-5 px-1.5 text-[10px]"
+                  variant={badgeVariant}
+                >
                   {badge}
                 </Badge>
               )}
-              <span className="text-sm">{value}</span>
+              <span className="text-sm leading-tight">{value}</span>
             </div>
           </div>
         );
 
       case 'action':
         return (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex-1 space-y-0.5">
-              <Label className="font-medium text-sm">{title}</Label>
+              <Label className="font-medium text-sm leading-tight">
+                {title}
+              </Label>
               {description && (
-                <p className="text-muted-foreground text-xs">{description}</p>
+                <p className="text-muted-foreground text-xs leading-snug">
+                  {description}
+                </p>
               )}
             </div>
             <div className="flex items-center gap-2">
               {badge && (
-                <Badge className="text-xs" variant={badgeVariant}>
+                <Badge
+                  className="h-5 px-1.5 text-[10px]"
+                  variant={badgeVariant}
+                >
                   {badge}
                 </Badge>
               )}
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
             </div>
           </div>
         );
@@ -239,7 +257,7 @@ export function SettingCard({
     return (
       <Card
         className={cn(
-          'transition-all duration-200',
+          'transition-all duration-200 hover:ring-1 hover:ring-primary/20',
           type === 'action' && 'cursor-pointer hover:shadow-md',
           isSelected && 'border-primary ring-2 ring-primary',
           disabled && 'opacity-50',
@@ -264,7 +282,7 @@ export function SettingCard({
   return (
     <Card
       className={cn(
-        'transition-all duration-200',
+        'transition-all duration-200 hover:ring-1 hover:ring-primary/20',
         isSelected && 'border-primary ring-2 ring-primary',
         disabled && 'opacity-50',
         compact ? 'min-h-[100px]' : 'min-h-[120px]',
@@ -274,7 +292,12 @@ export function SettingCard({
       <CardHeader className={cn('pb-2', compact && 'p-3 pb-2')}>
         <div className="flex items-center gap-2">
           {icon}
-          <CardTitle className={cn('text-sm', compact && 'text-xs')}>
+          <CardTitle
+            className={cn(
+              'text-[13px] leading-tight sm:text-sm',
+              compact && 'text-xs'
+            )}
+          >
             {type !== 'slider' && title}
           </CardTitle>
           {isSelected && (
@@ -282,7 +305,9 @@ export function SettingCard({
           )}
         </div>
         {description && type !== 'slider' && (
-          <CardDescription className={cn('text-xs', compact && 'text-xs')}>
+          <CardDescription
+            className={cn('text-xs leading-snug', compact && 'text-xs')}
+          >
             {description}
           </CardDescription>
         )}

@@ -828,7 +828,7 @@ export function UpgradeModal({
       <div>
         <h3 className="mb-2 font-semibold text-xl">Payment Successful!</h3>
         <p className="text-muted-foreground">
-          Welcome to ISIS Chat {selectedConfig.name}! Your account has been
+          Welcome to Anubis Chat {selectedConfig.name}! Your account has been
           upgraded.
         </p>
         {paymentDetails.txSignature && (
@@ -954,7 +954,9 @@ export function UpgradeModal({
           )}
 
           <Button
-            onClick={() => window.open('mailto:support@isischat.ai', '_blank')}
+            onClick={() =>
+              window.open('mailto:support@anubischat.ai', '_blank')
+            }
             variant="outline"
           >
             Contact Support

@@ -13,7 +13,7 @@ function Hero() {
       allowOverlap
       aria-label="Hero"
       auroraVariant="primary"
-      className="isolate overflow-hidden pt-28 pb-24 md:pt-36 md:pb-32"
+      className="isolate overflow-visible pt-28 pb-24 md:pt-36 md:pb-32"
       dustIntensity="low"
       glyphIntensity="medium"
       includeHieroglyphs={false}
@@ -25,18 +25,19 @@ function Hero() {
         <div>
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[linear-gradient(180deg,rgba(16,185,129,0.16),transparent_70%)] px-3 py-1 text-emerald-300/90">
             <span className="font-medium text-xs tracking-wide">
-              New: Wallet‑native Agents
+              Powered by GPT-5, Gemini 2.5, & Free Models
             </span>
           </div>
 
           <h1 className="mb-4 font-extrabold text-4xl leading-tight tracking-tight md:text-6xl">
             <span className="bg-gradient-to-br from-primary via-foreground to-primary bg-clip-text text-transparent">
-              Solana‑Native AI, from chat to on‑chain actions
+              Ancient Wisdom Meets Modern AI
             </span>
           </h1>
           <p className="mb-8 max-w-xl text-balance text-base text-muted-foreground leading-relaxed md:text-lg">
-            Connect your wallet, bring your knowledge, and deploy autonomous
-            agents that read, reason, and execute — safely gated by signatures.
+            Experience the future of AI conversation with Solana wallet
+            authentication, multi-model intelligence, and seamless Web3
+            integration.
           </p>
 
           <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
@@ -65,11 +66,12 @@ function Hero() {
 
           <ul className="flex flex-wrap gap-x-6 gap-y-2 text-muted-foreground text-sm">
             <li className="inline-flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-emerald-400" />{' '}
-              Signature‑gated
+              <ShieldCheck className="h-4 w-4 text-emerald-400" /> Secure Wallet
+              Auth
             </li>
             <li className="inline-flex items-center gap-2">
-              <Zap className="h-4 w-4 text-emerald-400" /> Realtime streaming
+              <Zap className="h-4 w-4 text-emerald-400" /> Real-time AI
+              Responses
             </li>
           </ul>
         </div>
@@ -82,7 +84,7 @@ function Hero() {
             className="-inset-8 -z-10 absolute rounded-[2rem] bg-[conic-gradient(from_90deg_at_50%_50%,rgba(16,185,129,0.35),transparent_50%,rgba(168,85,247,0.3))] blur-3xl"
           />
           {/* Card */}
-          <div className="relative overflow-hidden rounded-2xl bg-[radial-gradient(80%_100%_at_50%_0%,rgba(255,255,255,0.08),transparent_70%)] p-6 shadow-2xl backdrop-blur">
+          <div className="relative overflow-hidden rounded-2xl p-6 shadow-2xl">
             {/* Scanlines */}
             <div
               aria-hidden
@@ -99,31 +101,29 @@ function Hero() {
             </div>
             <HeroLogo className="mb-6" iconSize="lg" showIcon />
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4 backdrop-blur-sm">
+              <div className="rounded-lg p-4 ring-1 ring-border/40">
                 <p className="text-muted-foreground text-xs uppercase tracking-wide">
-                  Models
+                  AI Models
                 </p>
-                <p className="mt-1 font-medium">
-                  GPT‑5, Claude 4.1, Gemini 2.5
-                </p>
+                <p className="mt-1 font-medium">GPT-5, Gemini 2.5, o4-mini</p>
               </div>
-              <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4 backdrop-blur-sm">
+              <div className="rounded-lg p-4 ring-1 ring-border/40">
                 <p className="text-muted-foreground text-xs uppercase tracking-wide">
-                  RAG
+                  Authentication
                 </p>
-                <p className="mt-1 font-medium">Wallet‑scoped Qdrant vectors</p>
+                <p className="mt-1 font-medium">Solana Wallet Integration</p>
               </div>
-              <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4 backdrop-blur-sm">
+              <div className="rounded-lg p-4 ring-1 ring-border/40">
                 <p className="text-muted-foreground text-xs uppercase tracking-wide">
-                  Agents
+                  Platform
                 </p>
-                <p className="mt-1 font-medium">On‑chain DeFi execution</p>
+                <p className="mt-1 font-medium">Web3-Native AI Chat</p>
               </div>
-              <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4 backdrop-blur-sm">
+              <div className="rounded-lg p-4 ring-1 ring-border/40">
                 <p className="text-muted-foreground text-xs uppercase tracking-wide">
-                  Auth
+                  Experience
                 </p>
-                <p className="mt-1 font-medium">Wallet signatures only</p>
+                <p className="mt-1 font-medium">Real-time Streaming</p>
               </div>
             </div>
           </div>

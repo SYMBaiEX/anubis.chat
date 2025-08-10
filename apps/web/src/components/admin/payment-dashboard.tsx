@@ -439,7 +439,9 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
 
           <Button
             className="w-full"
-            onClick={() => window.open('mailto:support@isischat.ai', '_blank')}
+            onClick={() =>
+              window.open('mailto:support@anubischat.ai', '_blank')
+            }
             variant="outline"
           >
             <Users className="mr-2 h-4 w-4" />

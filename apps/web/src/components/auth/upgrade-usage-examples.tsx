@@ -75,7 +75,7 @@ export function UpgradeUsageExamples() {
                 <Badge variant="secondary">Pro+</Badge>
               </div>
               <p className="mt-2 text-muted-foreground text-sm">
-                You can now use our REST API to integrate ISIS Chat into your
+                You can now use our REST API to integrate anubis.chat into your
                 applications.
               </p>
             </div>

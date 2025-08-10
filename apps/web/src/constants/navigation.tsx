@@ -5,7 +5,6 @@ import {
   MessageSquare,
   Server,
   Shield,
-  User,
   Workflow,
 } from 'lucide-react';
 import type { ElementType } from 'react';
@@ -64,22 +63,14 @@ const allItems: NavItem[] = [
     inHeader: true,
     inSidebar: true,
   },
-  {
-    label: 'MCP',
-    href: '/mcp',
-    icon: Server,
-    requiresAuth: true,
-    inHeader: true,
-    inSidebar: true,
-  },
-  {
-    label: 'Account',
-    href: '/account',
-    icon: User,
-    requiresAuth: true,
-    inHeader: true,
-    inSidebar: true,
-  },
+  // {
+  //   label: 'MCP',
+  //   href: '/mcp',
+  //   icon: Server,
+  //   requiresAuth: true,
+  //   inHeader: true,
+  //   inSidebar: true,
+  // },
   {
     label: 'Admin',
     href: '/admin',

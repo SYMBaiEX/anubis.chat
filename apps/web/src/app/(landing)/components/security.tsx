@@ -43,38 +43,38 @@ function Security() {
             </li>
           </ul>
         </div>
-        <Card
+        <div
           aria-label="Security panel"
-          className="relative overflow-hidden bg-[radial-gradient(60%_60%_at_30%_20%,rgba(20,241,149,0.08)_0%,transparent_60%)] p-8"
+          className="relative overflow-hidden rounded-2xl p-8 ring-1 ring-border/40"
         >
           <div aria-hidden className="pointer-events-none absolute inset-0" />
           <div className="relative grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4">
+            <div className="rounded-lg p-4 ring-1 ring-border/40">
               <h3 className="mb-1 font-semibold">JWT + Convex</h3>
               <p className="text-muted-foreground text-sm">
                 Edge‑secure sessions with reactive data.
               </p>
             </div>
-            <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4">
+            <div className="rounded-lg p-4 ring-1 ring-border/40">
               <h3 className="mb-1 font-semibold">Sanitized Inputs</h3>
               <p className="text-muted-foreground text-sm">
                 XSS‑safe chat and uploads by default.
               </p>
             </div>
-            <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4">
+            <div className="rounded-lg p-4 ring-1 ring-border/40">
               <h3 className="mb-1 font-semibold">Rate Limits</h3>
               <p className="text-muted-foreground text-sm">
                 Protection against abuse and spam.
               </p>
             </div>
-            <div className="rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-4">
+            <div className="rounded-lg p-4 ring-1 ring-border/40">
               <h3 className="mb-1 font-semibold">On‑chain Receipts</h3>
               <p className="text-muted-foreground text-sm">
                 Subscription proof recorded on Solana.
               </p>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </AnimatedSection>
   );

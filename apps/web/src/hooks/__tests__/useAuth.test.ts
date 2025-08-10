@@ -94,7 +94,7 @@ describe('useAuth', () => {
     expect(result.current.isAuthenticated).toBe(true);
     expect(result.current.user).toEqual(mockUser);
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-      'isis-auth-token',
+      'anubis-auth-token',
       mockAuthSession.token
     );
   });
@@ -140,7 +140,9 @@ describe('useAuth', () => {
 
     expect(result.current.isAuthenticated).toBe(false);
     expect(result.current.user).toBeNull();
-    expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('isis-auth-token');
+    expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
+      'anubis-auth-token'
+    );
   });
 
   it('should validate token on initialization', async () => {
@@ -154,8 +156,8 @@ describe('useAuth', () => {
 
     // Set up localStorage with both token and user data
     mockLocalStorage.getItem.mockImplementation((key) => {
-      if (key === 'isis-auth-token') return mockToken;
-      if (key === 'isis-auth-user') return JSON.stringify(mockUser);
+      if (key === 'anubis-auth-token') return mockToken;
+      if (key === 'anubis-auth-user') return JSON.stringify(mockUser);
       return null;
     });
 
@@ -184,7 +186,7 @@ describe('useAuth', () => {
         expect(result.current.isAuthenticated).toBe(false);
         expect(result.current.user).toBeNull();
         expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-          'isis-auth-token'
+          'anubis-auth-token'
         );
       },
       { container: document.body }
@@ -202,8 +204,8 @@ describe('useAuth', () => {
 
     // Set up initial state with token and user
     mockLocalStorage.getItem.mockImplementation((key) => {
-      if (key === 'isis-auth-token') return mockOldToken;
-      if (key === 'isis-auth-user') return JSON.stringify(mockUser);
+      if (key === 'anubis-auth-token') return mockOldToken;
+      if (key === 'anubis-auth-user') return JSON.stringify(mockUser);
       return null;
     });
 
@@ -222,7 +224,7 @@ describe('useAuth', () => {
     });
 
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-      'isis-auth-token',
+      'anubis-auth-token',
       mockNewToken
     );
   });

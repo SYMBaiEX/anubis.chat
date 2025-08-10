@@ -260,7 +260,7 @@ export const createWalletChallenge = mutation({
       Math.random().toString(36).substring(2, 15) +
       Math.random().toString(36).substring(2, 15);
 
-    const challenge = `Sign this message to authenticate with ISIS Chat:\nNonce: ${nonce}\nTimestamp: ${now}`;
+    const challenge = `Sign this message to authenticate with anubis.chat:\nNonce: ${nonce}\nTimestamp: ${now}`;
 
     // Clean up any existing challenges for this public key
     const existingChallenges = await ctx.db

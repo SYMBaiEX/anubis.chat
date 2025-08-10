@@ -17,7 +17,7 @@ relations:
 
 ## Embedding Models Selection
 
-### Primary Models for isis.chat
+### Primary Models for abubis.chat
 ```typescript
 export const EMBEDDING_MODELS = {
   // Primary - High quality, balanced performance

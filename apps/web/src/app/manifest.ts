@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'ISIS Chat',
-    short_name: 'ISIS Chat',
+    name: 'anubis.chat',
+    short_name: 'anubis.chat',
     description:
       'Next-generation AI chat platform with Web3 integration and RAG capabilities',
     start_url: '/',

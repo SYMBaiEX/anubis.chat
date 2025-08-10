@@ -13,7 +13,7 @@ relations:
   references: ["system-design.mdc", "scalability.mdc"]
 ---
 
-# Performance Architecture for ISIS.CHAT
+# Performance Architecture for abubis.chat
 
 ## Performance Philosophy
 
@@ -812,4 +812,4 @@ const nextConfig = {
 module.exports = withBundleAnalyzer(nextConfig)
 ```
 
-This performance architecture ensures ISIS.CHAT delivers consistent sub-100ms response times while maintaining scalability and user experience quality.
+This performance architecture ensures abubis.chat delivers consistent sub-100ms response times while maintaining scalability and user experience quality.

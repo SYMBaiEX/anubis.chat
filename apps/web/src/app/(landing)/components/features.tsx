@@ -8,41 +8,42 @@ import { Card } from '@/components/ui/card';
 const featureList = [
   {
     icon: Brain,
-    title: 'Model Multiplex',
+    title: 'Multi-Model AI',
     description:
-      'Switch across GPT‑5, Claude, Gemini and more with streaming responses.',
+      'Access GPT-5, Gemini 2.5 Pro, and free models like GPT-OSS-20B in one platform.',
     gradient: 'from-primary to-accent',
   },
   {
     icon: Shield,
-    title: 'Wallet Security',
-    description: 'Auth and actions secured by on‑chain signature verification.',
+    title: 'Wallet Authentication',
+    description:
+      'Secure access with Solana wallet signatures - no passwords needed.',
     gradient: 'from-emerald-400 to-primary',
   },
   {
     icon: Zap,
-    title: 'Real‑time',
-    description: 'Ultra‑low latency streams powered by Convex edge functions.',
+    title: 'Real-time Streaming',
+    description:
+      'Instant AI responses with ultra-low latency streaming technology.',
     gradient: 'from-accent to-emerald-400',
   },
   {
     icon: Globe,
-    title: 'RAG System',
-    description:
-      'Upload docs and query with semantic retrieval tuned for Web3.',
+    title: 'Web3 Native',
+    description: 'Built for the blockchain era with native Solana integration.',
     gradient: 'from-primary to-emerald-400',
   },
   {
     icon: Database,
-    title: 'Vector Search',
-    description: 'Qdrant‑backed vectors with wallet‑scoped namespaces.',
+    title: 'Conversation History',
+    description: 'Persistent chat history synced across all your devices.',
     gradient: 'from-accent to-primary',
   },
   {
     icon: Network,
-    title: 'On‑chain Agents',
+    title: 'Egyptian-Themed UI',
     description:
-      'Autonomous agents that read, reason, and execute DeFi actions.',
+      'Unique ancient Egyptian aesthetics with modern design principles.',
     gradient: 'from-emerald-400 to-accent',
   },
 ];
@@ -64,25 +65,22 @@ function Features() {
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <h2 className="mb-3 font-bold text-3xl md:text-5xl">
             <span className="bg-gradient-to-r from-primary via-foreground to-accent bg-clip-text text-transparent">
-              Build faster with wallet‑native primitives
+              Powerful Features for the Modern Web3 Era
             </span>
           </h2>
           <p className="text-muted-foreground">
-            Streaming chat, retrieval, vectors, and on‑chain execution — all in
-            one.
+            Experience cutting-edge AI models with blockchain authentication and
+            Egyptian-inspired design.
           </p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {featureList.map((f, i) => {
             const Icon = f.icon;
             return (
-              <Card
-                className="group relative overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6 backdrop-blur hover:shadow-lg"
-                key={f.title + i}
-              >
+              <div className="group hover:-translate-y-0.5 relative rounded-xl p-6 ring-1 ring-border/40 transition-transform">
                 <div
                   aria-hidden
-                  className={`absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity group-hover:opacity-15 ${f.gradient}`}
+                  className={`-z-10 absolute inset-0 rounded-xl bg-gradient-to-br opacity-0 blur-2xl transition-opacity group-hover:opacity-20 ${f.gradient}`}
                 />
                 <div className="relative">
                   <div
@@ -95,7 +93,7 @@ function Features() {
                     {f.description}
                   </p>
                 </div>
-              </Card>
+              </div>
             );
           })}
         </div>

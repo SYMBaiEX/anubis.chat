@@ -28,12 +28,14 @@ const getProviderIcon = (provider: AIModel['provider']) => {
   switch (provider) {
     case 'openai':
       return <Sparkles className="h-3 w-3" />;
-    case 'anthropic':
-      return <Brain className="h-3 w-3" />;
+    // case 'anthropic':  // DISABLED FOR NOW
+    //   return <Brain className="h-3 w-3" />;
     case 'google':
       return <Cpu className="h-3 w-3" />;
     case 'openrouter':
       return <Sparkles className="h-3 w-3" />;
+    default:
+      return <Brain className="h-3 w-3" />; // fallback icon
   }
 };
 
@@ -88,51 +90,61 @@ export function ModelCard({
     return true;
   };
 
-  // Get premium badge for model
-  const getPremiumBadge = (model: AIModel) => {
-    if (!isPremiumModel(model)) return null;
+  // Get tier badge for model (Premium, Standard, Free)
+  const getTierBadge = (model: AIModel) => {
+    // Determine tier based on model pricing and capabilities
+    const isPremium = isPremiumModel(model);
+    const isFree = model.pricing.input === 0 && model.pricing.output === 0;
 
-    if (subscription?.tier === 'free') {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Badge className="gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                <Lock className="h-3 w-3" />
-                Pro
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Requires Pro or Pro+ subscription</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
+    let tier: 'Free' | 'Standard' | 'Premium';
+    let badgeClass: string;
+    let icon: React.ReactNode = null;
+
+    if (isFree) {
+      tier = 'Free';
+      badgeClass =
+        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+    } else if (isPremium) {
+      tier = 'Premium';
+      badgeClass =
+        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      icon = <Sparkles className="h-3 w-3" />;
+    } else {
+      tier = 'Standard';
+      badgeClass =
+        'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
     }
 
-    if (subscription?.tier === 'pro' && !canUsePremium) {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Badge className="gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                <Lock className="h-3 w-3" />
-                Limit
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Premium message quota exhausted</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
+    // Show lock icon if not accessible
+    if (!isModelAccessible(model)) {
+      icon = <Lock className="h-3 w-3" />;
     }
 
     return (
-      <Badge className="gap-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-        <Sparkles className="h-3 w-3" />
-        Premium
-      </Badge>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <Badge
+              className={cn(
+                'gap-1 px-1.5 py-0.5 font-medium text-xs',
+                badgeClass
+              )}
+            >
+              {icon}
+              {tier}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>
+              {isModelAccessible(model)
+                ? `${tier} tier model`
+                : subscription?.tier === 'free'
+                  ? 'Requires Pro or Pro+ subscription'
+                  : 'Premium message quota exhausted'}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   };
 
@@ -141,10 +153,10 @@ export function ModelCard({
   return (
     <Card
       className={cn(
-        'cursor-pointer transition-all duration-200 hover:shadow-md',
-        isSelected && 'border-primary ring-2 ring-primary',
-        !accessible && 'cursor-not-allowed opacity-50',
-        compact ? 'min-h-[120px]' : 'min-h-[140px]',
+        'group cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg',
+        isSelected && 'border-primary shadow-md ring-2 ring-primary',
+        !accessible && 'cursor-not-allowed opacity-60',
+        'min-h-[100px] border border-border/50',
         className
       )}
       onClick={() => {
@@ -153,85 +165,72 @@ export function ModelCard({
         }
       }}
     >
-      <CardHeader className={cn('p-3', compact ? 'pb-1' : 'pb-2')}>
-        <div className="flex items-start justify-between gap-2">
+      <CardContent className="p-3">
+        {/* Header with model name and selection indicator */}
+        <div className="mb-2 flex items-start justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            {getProviderIcon(model.provider)}
-            <h3
-              className={cn(
-                'truncate font-medium',
-                compact ? 'text-xs' : 'text-sm'
-              )}
-              title={model.name}
-            >
-              {model.name
-                .replace(' – OpenRouter', '')
-                .replace(' – ', ' ')
-                .replace(' (Free)', '')}
-            </h3>
+            <div className="flex-shrink-0">
+              {getProviderIcon(model.provider)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3
+                className="truncate font-semibold text-sm leading-tight"
+                title={model.name}
+              >
+                {model.name
+                  .replace(' – OpenRouter', '')
+                  .replace(' – ', ' ')
+                  .replace(' (Free)', '')}
+              </h3>
+            </div>
           </div>
           {isSelected && (
             <Check className="h-4 w-4 flex-shrink-0 text-primary" />
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* Badges row */}
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          {getTierBadge(model)}
           {getIntelligenceBadge(model.intelligence)}
-          {getSpeedIcon(model.speed)}
-          {getPremiumBadge(model)}
+          <div className="flex items-center">{getSpeedIcon(model.speed)}</div>
           {model.default && (
-            <Badge
-              className={cn(
-                'px-1.5 py-0',
-                compact ? 'h-4 text-xs' : 'h-5 text-xs'
-              )}
-              variant="secondary"
-            >
+            <Badge className="px-1.5 py-0.5 text-xs" variant="secondary">
               Default
             </Badge>
           )}
         </div>
-      </CardHeader>
 
-      <CardContent className={cn('p-3', compact ? 'pt-0' : 'pt-1')}>
-        {!compact && (
-          <p className="mb-2 line-clamp-2 text-muted-foreground text-xs">
-            {model.description}
-          </p>
-        )}
+        {/* Description - condensed */}
+        <p className="mb-2 line-clamp-2 text-muted-foreground text-xs leading-relaxed">
+          {model.description}
+        </p>
 
+        {/* Bottom info */}
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>Context: {(model.contextWindow / 1000).toFixed(0)}K</span>
-            <span>
-              ${model.pricing.input}/${model.pricing.output}/1M
-            </span>
-          </div>
-
+          {/* Main capabilities - limit to 2 most important */}
           <div className="flex flex-wrap gap-1">
-            {model.capabilities.slice(0, compact ? 1 : 2).map((cap) => (
+            {model.capabilities.slice(0, 2).map((cap) => (
               <Badge
-                className={cn('px-1.5 py-0 text-xs', compact ? 'h-4' : 'h-5')}
+                className="h-4 px-1.5 py-0 text-xs"
                 key={cap}
                 variant="outline"
               >
                 {cap}
               </Badge>
             ))}
-            {model.capabilities.length > (compact ? 1 : 2) && (
+            {model.capabilities.length > 2 && (
               <Badge
-                className={cn(
-                  'px-1.5 py-0 text-muted-foreground text-xs',
-                  compact ? 'h-4' : 'h-5'
-                )}
+                className="h-4 px-1.5 py-0 text-muted-foreground text-xs"
                 variant="outline"
               >
-                +{model.capabilities.length - (compact ? 1 : 2)}
+                +{model.capabilities.length - 2}
               </Badge>
             )}
           </div>
 
-          {model.released && !compact && (
+          {/* Release date - only if available and accurate */}
+          {model.released && (
             <div className="text-muted-foreground text-xs">
               Released: {model.released}
             </div>

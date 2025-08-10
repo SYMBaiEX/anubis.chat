@@ -30,8 +30,8 @@ interface CacheOptions {
 
 class AuthCache {
   private memoryCache: Map<string, AuthCacheData> = new Map();
-  private readonly CACHE_KEY = 'isis_auth_cache';
-  private readonly SECURE_CACHE_KEY = 'isis_auth_secure';
+  private readonly CACHE_KEY = 'anubis_auth_cache';
+  private readonly SECURE_CACHE_KEY = 'anubis_auth_secure';
   private readonly DEFAULT_TTL = 1000 * 60 * 60; // 1 hour
   private readonly REFRESH_THRESHOLD = 1000 * 60 * 5; // 5 minutes before expiry
 

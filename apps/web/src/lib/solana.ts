@@ -83,7 +83,7 @@ export const createSignInMessage = (publicKey: string): string => {
   const domain =
     typeof window !== 'undefined'
       ? window.location.host
-      : process.env.NEXT_PUBLIC_APP_DOMAIN || 'isis.chat';
+      : process.env.NEXT_PUBLIC_APP_DOMAIN || 'abubis.chat';
   const now = new Date();
   // Generate cryptographically secure nonce
   const nonceArray = new Uint8Array(12);
@@ -97,7 +97,7 @@ export const createSignInMessage = (publicKey: string): string => {
   }
   const nonce = Array.from(nonceArray, (byte) => byte.toString(36)).join('');
 
-  const message = `ISIS Chat wants you to sign in with your Solana account:
+  const message = `anubis.chat wants you to sign in with your Solana account:
 ${publicKey}
 
 Domain: ${domain}
@@ -124,6 +124,12 @@ export const INITIAL_WALLET_STATE: WalletConnectionState = {
   balance: null,
   error: null,
 };
+
+// Track confirmation metadata for transactions without mutating their types
+const transactionMetaMap = new WeakMap<
+  Transaction,
+  { blockhash: string; lastValidBlockHeight: number }
+>();
 
 // Helper function to check if a transaction has been processed
 export const checkTransactionStatus = async (
@@ -194,6 +200,9 @@ export const createPaymentTransaction = async (
 
     transaction.add(transferInstruction);
 
+    // Track confirmation metadata without mutating Transaction type
+    transactionMetaMap.set(transaction, { blockhash, lastValidBlockHeight });
+
     return transaction;
   } catch (error) {
     throw new Error(
@@ -239,38 +248,44 @@ export const processPaymentTransaction = async (
     // The sentSignature is the actual transaction ID we should use
     console.log('Transaction sent with signature:', sentSignature);
 
-    // Confirm the transaction with timeout
+    // Use stored confirmation metadata if available
+    const meta = transactionMetaMap.get(transaction);
+    if (meta) {
+      // Confirm using blockhash window per web3.js API
+      const confirmation = await connection.confirmTransaction(
+        {
+          signature: sentSignature,
+          blockhash: meta.blockhash,
+          lastValidBlockHeight: meta.lastValidBlockHeight,
+        },
+        'confirmed'
+      );
+
+      if (confirmation.value?.err) {
+        throw new Error(
+          `Transaction failed: ${JSON.stringify(confirmation.value.err)}`
+        );
+      }
+
+      return sentSignature;
+    }
+
+    // Fallback: poll for confirmation with timeout if metadata is unavailable
     const confirmationTimeout = 30_000; // 30 seconds
     const startTime = Date.now();
-
-    const { blockhash, lastValidBlockHeight } = transaction;
-
-    // Poll for confirmation with timeout
     while (Date.now() - startTime < confirmationTimeout) {
       const status = await connection.getSignatureStatus(sentSignature);
-
       if (
         status?.value?.confirmationStatus === 'confirmed' ||
         status?.value?.confirmationStatus === 'finalized'
       ) {
-        // Transaction confirmed successfully
         return sentSignature;
       }
-
       if (status?.value?.err) {
-        // Transaction failed on-chain
         throw new Error(
           `Transaction failed: ${JSON.stringify(status.value.err)}`
         );
       }
-
-      // Check if blockhash is still valid
-      const currentHeight = await connection.getBlockHeight('confirmed');
-      if (currentHeight > lastValidBlockHeight!) {
-        throw new Error('Transaction expired: blockhash is no longer valid');
-      }
-
-      // Wait before next check
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 

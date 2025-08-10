@@ -374,7 +374,9 @@ function WorkflowCanvasContent({
           <Background color="#0f172a" variant={BackgroundVariant.Dots} />
           <MiniMap
             nodeColor={(node) => {
-              const type = (((node.data as unknown) as Record<string, unknown>)?.type as string) || 'default';
+              const type =
+                ((node.data as unknown as Record<string, unknown>)
+                  ?.type as string) || 'default';
               const colors: Record<string, string> = {
                 start: '#10b981',
                 end: '#ef4444',

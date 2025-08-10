@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import React, { useEffect } from 'react';
+import LandingFooter from '@/components/landing/landing-footer';
 import LandingHeader from '@/components/landing/landing-header';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import CTA from './(landing)/components/cta';
@@ -25,17 +26,20 @@ export default function LandingPage() {
   }, [isAuthenticated, user, router]);
 
   return (
-    <div className="bg-background">
+    <div className="w-full bg-gradient-to-b from-primary/5 dark:from-primary/10">
       <LandingHeader />
-      <Hero />
-      <Features />
-      <HowItWorks />
-      <Security />
-      <Models />
-      <Pricing />
-      <Testimonials />
-      <FAQ />
-      <CTA />
+      <LandingFooter />
+      <div className="pt-16 pb-10">
+        <Hero />
+        <Features />
+        <HowItWorks />
+        <Security />
+        <Models />
+        <Pricing />
+        <Testimonials />
+        <FAQ />
+        <CTA />
+      </div>
     </div>
   );
 }

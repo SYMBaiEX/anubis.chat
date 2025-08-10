@@ -13,11 +13,11 @@ relations:
   references: ["../backend/database-schema.mdc"]
 ---
 
-# Security Overview - isis.chat
+# Security Overview - abubis.chat
 
 ## Security Philosophy
 
-isis.chat employs a **wallet-native security model** where the Solana wallet serves as the primary identity and authentication mechanism. This eliminates traditional password-based vulnerabilities while introducing Web3-specific security considerations.
+abubis.chat employs a **wallet-native security model** where the Solana wallet serves as the primary identity and authentication mechanism. This eliminates traditional password-based vulnerabilities while introducing Web3-specific security considerations.
 
 ## Core Security Principles
 

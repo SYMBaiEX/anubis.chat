@@ -21,7 +21,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'ISIS Chat - Ancient Wisdom • Modern AI',
+  title: 'anubis.chat - Ancient Wisdom • Modern AI',
   description:
     'Solana-native AI chat platform with RAG capabilities. Authenticate with your wallet, chat with AI, and unlock the power of ancient wisdom through modern technology.',
   keywords: [
@@ -35,18 +35,18 @@ export const metadata: Metadata = {
     'Claude',
     'GPT-4',
   ],
-  authors: [{ name: 'ISIS Chat Team' }],
-  creator: 'ISIS Chat',
-  publisher: 'ISIS Chat',
+  authors: [{ name: 'anubis.chat Team' }],
+  creator: 'anubis.chat',
+  publisher: 'anubis.chat',
   openGraph: {
-    title: 'ISIS Chat - Ancient Wisdom • Modern AI',
+    title: 'anubis.chat - Ancient Wisdom • Modern AI',
     description: 'Solana-native AI chat platform with RAG capabilities',
     type: 'website',
     locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ISIS Chat - Ancient Wisdom • Modern AI',
+    title: 'anubis.chat - Ancient Wisdom • Modern AI',
     description: 'Solana-native AI chat platform with RAG capabilities',
   },
   robots: {

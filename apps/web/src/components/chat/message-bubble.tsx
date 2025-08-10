@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { MessageProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
+import { type FontSize, getFontSizeClasses } from '@/lib/utils/font-sizes';
 import { createModuleLogger } from '@/lib/utils/logger';
 import { MarkdownRenderer } from './markdown-renderer';
 
@@ -43,13 +44,17 @@ export function MessageBubble({
   showActions = true,
   className,
   children,
-}: MessageProps) {
+  fontSize = 'medium',
+}: MessageProps & { fontSize?: FontSize }) {
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
   const isAssistant = message.role === 'assistant';
+
+  // Get dynamic font size classes
+  const fontSizes = getFontSizeClasses(fontSize);
 
   const handleCopy = async () => {
     try {
@@ -132,7 +137,8 @@ export function MessageBubble({
         {/* Message Header */}
         <div
           className={cn(
-            'flex items-center gap-2 text-muted-foreground text-xs',
+            'flex items-center gap-1 text-muted-foreground sm:gap-2',
+            fontSizes.messageHeader,
             isUser ? 'flex-row-reverse' : 'flex-row'
           )}
         >
@@ -160,7 +166,7 @@ export function MessageBubble({
         </div>
 
         {/* Message Bubble */}
-        <div className="relative max-w-2xl">
+        <div className="relative w-full max-w-full sm:max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
           <div
             className={cn(
               'rounded-2xl px-4 py-3 shadow-sm',
@@ -168,9 +174,21 @@ export function MessageBubble({
             )}
           >
             {/* Message Content */}
-            <div className="prose prose-sm dark:prose-invert max-w-none">
+            <div
+              className={cn(
+                'prose prose-xs dark:prose-invert max-w-none',
+                fontSizes.messageContent
+              )}
+            >
               {isUser ? (
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                <p
+                  className={cn(
+                    'whitespace-pre-wrap',
+                    fontSizes.messageContent
+                  )}
+                >
+                  {message.content}
+                </p>
               ) : (
                 <MarkdownRenderer content={message.content} />
               )}

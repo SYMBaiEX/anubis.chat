@@ -6,11 +6,12 @@ import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { StreamingMessage } from '@/lib/types/api';
+import type { ChatMessage, StreamingMessage } from '@/lib/types/api';
 import type { MessageListProps, MinimalMessage } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
+import { type FontSize, getFontSizeClasses } from '@/lib/utils/font-sizes';
 import { MessageBubble } from './message-bubble';
-import { StreamingMessage } from './streaming-message';
+import { StreamingMessage as StreamingMessageComponent } from './streaming-message';
 import { TypingIndicator } from './typing-indicator';
 
 /**
@@ -24,10 +25,14 @@ export function MessageList({
   isTyping = false,
   className,
   children,
-}: MessageListProps & { isTyping?: boolean }) {
+  fontSize = 'medium',
+}: MessageListProps & { isTyping?: boolean; fontSize?: FontSize }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [lastMessageCount, setLastMessageCount] = useState(0);
+
+  // Get dynamic font size classes
+  const fontSizes = getFontSizeClasses(fontSize);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -56,15 +61,17 @@ export function MessageList({
   };
 
   // Group messages by date for date separators
-  const groupMessagesByDate = (messages: typeof messages) => {
-    if (!messages) return [];
+  const groupMessagesByDate = (
+    list: Array<ChatMessage | StreamingMessage | MinimalMessage>
+  ) => {
+    if (!list) return [] as Array<{ date: string; messages: typeof list }>;
 
     const groups: Array<{
       date: string;
-      messages: typeof messages;
+      messages: Array<ChatMessage | StreamingMessage | MinimalMessage>;
     }> = [];
 
-    messages.forEach((message) => {
+    list.forEach((message) => {
       const createdAt =
         'createdAt' in message && message.createdAt
           ? message.createdAt
@@ -140,51 +147,62 @@ export function MessageList({
         onScrollCapture={handleScroll}
         ref={scrollRef}
       >
-        <div className="mx-auto w-full max-w-3xl space-y-4 p-3 sm:p-4 lg:max-w-5xl lg:p-6 xl:max-w-6xl">
+        <div className="mx-auto w-full max-w-full space-y-2 p-2 sm:max-w-6xl sm:space-y-4 sm:p-4 md:max-w-7xl lg:p-6 xl:max-w-none xl:px-8">
           {messageGroups.map((group, groupIndex) => (
             <div key={group.date}>
               {/* Date Separator */}
-              <div className="flex items-center justify-center py-2">
-                <div className="rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground sm:px-3 sm:text-xs">
+              <div className="flex items-center justify-center py-1 sm:py-2">
+                <div
+                  className={cn(
+                    'rounded-full bg-muted px-2 py-1 text-muted-foreground sm:px-3',
+                    fontSizes.dateSeparator
+                  )}
+                >
                   {formatDateSeparator(group.date)}
                 </div>
               </div>
 
               {/* Messages for this date */}
-              <div className="space-y-4">
-                {group.messages.map((message, messageIndex) => {
-                  // Check if this is a streaming message
-                  if (
-                    'isStreaming' in message &&
-                    (message as StreamingMessage).isStreaming
-                  ) {
+              <div className="space-y-2 sm:space-y-3 md:space-y-4">
+                {group.messages.map(
+                  (
+                    message: ChatMessage | StreamingMessage | MinimalMessage,
+                    messageIndex: number
+                  ) => {
+                    // Check if this is a streaming message
+                    if (
+                      'isStreaming' in message &&
+                      (message as StreamingMessage).isStreaming
+                    ) {
+                      return (
+                        <StreamingMessageComponent
+                          content={(message as StreamingMessage).content}
+                          key={(message as StreamingMessage).id}
+                        />
+                      );
+                    }
+
                     return (
-                      <StreamingMessage
-                        content={(message as StreamingMessage).content}
-                        key={(message as StreamingMessage).id}
+                      <MessageBubble
+                        fontSize={fontSize}
+                        key={(message as ChatMessage | MinimalMessage)._id}
+                        message={message as ChatMessage}
+                        onCopy={() => {
+                          navigator.clipboard.writeText(
+                            (message as ChatMessage | MinimalMessage).content
+                          );
+                        }}
+                        onEdit={(_newContent) => {}}
+                        onRegenerate={() =>
+                          onMessageRegenerate?.(
+                            (message as ChatMessage | MinimalMessage)._id
+                          )
+                        }
+                        showActions={true}
                       />
                     );
                   }
-
-                  return (
-                    <MessageBubble
-                      key={(message as ChatMessage | MinimalMessage)._id}
-                      message={message as ChatMessage}
-                      onCopy={() => {
-                        navigator.clipboard.writeText(
-                          (message as ChatMessage | MinimalMessage).content
-                        );
-                      }}
-                      onEdit={(_newContent) => {}}
-                      onRegenerate={() =>
-                        onMessageRegenerate?.(
-                          (message as ChatMessage | MinimalMessage)._id
-                        )
-                      }
-                      showActions={true}
-                    />
-                  );
-                })}
+                )}
               </div>
             </div>
           ))}

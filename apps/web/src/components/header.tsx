@@ -26,14 +26,14 @@ export default function Header() {
             href={isAuthenticated ? '/dashboard' : '/'}
           >
             <Image
-              alt="ISIS Logo"
+              alt="Anubis Logo"
               className="h-9 w-9"
               height={36}
               src="/favicon.png"
               width={36}
             />
             <h1 className="egypt-text font-light text-xl tracking-wider">
-              ISIS
+              ANUBIS
             </h1>
           </Link>
 

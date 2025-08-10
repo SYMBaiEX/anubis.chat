@@ -6,6 +6,7 @@ import React, { memo } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 const tiers = [
   {
@@ -14,7 +15,7 @@ const tiers = [
     period: 'forever',
     features: [
       '50 messages / month',
-      'GPT-4o Mini & DeepSeek',
+      'Free models (GPT-OSS-20B, GLM-4.5)',
       'Basic chat features',
       'Community support',
     ],
@@ -30,11 +31,11 @@ const tiers = [
     originalPrice: '0.1 SOL',
     features: [
       '1,500 messages / month',
-      '100 premium messages (GPT-4o, Claude)',
-      'All standard models unlimited',
-      'Document uploads',
-      'Basic agents',
-      'Chat history',
+      '100 premium model messages',
+      'Access to GPT-5, Gemini 2.5 Pro',
+      'Standard models (o4-mini, GPT-5 Nano)',
+      'Conversation history',
+      'Model switching',
     ],
     cta: 'Start Pro Plan',
     href: '/auth',
@@ -49,11 +50,11 @@ const tiers = [
     originalPrice: '0.2 SOL',
     features: [
       '3,000 messages / month',
-      '300 premium messages',
-      'All models unlimited',
-      'Large file uploads (100MB)',
-      'Advanced agents',
-      'API access',
+      '300 premium model messages',
+      'Access to all available models',
+      'Advanced features',
+      'Custom preferences',
+      'API access (coming soon)',
       'Priority support',
     ],
     cta: 'Go Pro+',
@@ -87,8 +88,11 @@ function Pricing() {
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
           {tiers.map((t) => (
-            <Card
-              className={`relative bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6 ${t.highlighted ? 'shadow-xl ring-1 ring-primary/40' : ''}`}
+            <div
+              className={cn(
+                'relative rounded-2xl p-6 ring-1 ring-border/40',
+                t.highlighted && 'shadow-xl ring-primary/40'
+              )}
               key={t.name}
             >
               {t.popular ? (
@@ -130,7 +134,7 @@ function Pricing() {
                   {t.cta}
                 </Button>
               </Link>
-            </Card>
+            </div>
           ))}
         </div>
       </div>

@@ -31,7 +31,7 @@ import { Redis } from '@upstash/redis';
 
 export class RedisService {
   private client: Redis;
-  private readonly keyPrefix = 'isis_chat';
+  private readonly keyPrefix = 'anubis_chat';
   
   constructor() {
     this.client = new Redis({

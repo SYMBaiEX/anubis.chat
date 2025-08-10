@@ -44,7 +44,7 @@ export function createSecureAuthMessage(
   return {
     domain: window.location.host,
     publicKey,
-    statement: 'Sign in to isis.chat',
+    statement: 'Sign in to abubis.chat',
     uri: window.location.origin,
     version: '1',
     chainId: 1, // Solana mainnet
@@ -54,9 +54,9 @@ export function createSecureAuthMessage(
     notBefore: now.toISOString(),
     requestId: generateSecureId(),
     resources: [
-      'https://isis.chat/api/chat',
-      'https://isis.chat/api/memory',
-      'https://isis.chat/api/subscription'
+      'https://abubis.chat/api/chat',
+      'https://abubis.chat/api/memory',
+      'https://abubis.chat/api/subscription'
     ]
   };
 }
@@ -197,7 +197,7 @@ export class SecureSignatureVerifier {
     }
 
     // Verify statement contains expected text
-    if (!message.statement.includes('isis.chat')) {
+    if (!message.statement.includes('abubis.chat')) {
       return { isValid: false, error: 'Invalid statement' };
     }
 
@@ -325,8 +325,8 @@ export class SessionSecurityManager {
       process.env.JWT_SECRET!,
       {
         algorithm: 'HS256',
-        issuer: 'isis.chat',
-        audience: 'isis.chat'
+        issuer: 'abubis.chat',
+        audience: 'abubis.chat'
       }
     );
 

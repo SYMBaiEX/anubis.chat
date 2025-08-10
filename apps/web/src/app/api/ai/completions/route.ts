@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         if (stream) {
           const result = streamText({
             model: aiModel,
-            system: systemPrompt || 'You are a helpful AI assistant.',
+            system: systemPrompt || '',
             prompt,
             temperature: temperature ?? 0.7,
             maxOutputTokens: maxTokens,
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         // Handle non-streaming response
         const result = await generateText({
           model: aiModel,
-          system: systemPrompt || 'You are a helpful AI assistant.',
+          system: systemPrompt || '',
           prompt,
           temperature: temperature ?? 0.7,
           maxOutputTokens: maxTokens,

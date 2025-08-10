@@ -5,8 +5,10 @@ import type { Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import { useCallback, useState } from 'react';
 import type { StreamingMessage as UIStreamingMessage } from '@/lib/types/api';
+import { MessageRole } from '@/lib/types/api';
 
-export interface StreamingMessage extends UIStreamingMessage {}
+// Avoid duplicate identifier by reusing the imported name directly
+type StreamingMessage = UIStreamingMessage;
 
 export function useConvexChat(chatId: string | undefined) {
   const [streamingMessage, setStreamingMessage] =
@@ -84,7 +86,7 @@ export function useConvexChat(chatId: string | undefined) {
         setStreamingMessage({
           id: tempId,
           content: '',
-          role: 'assistant',
+          role: MessageRole.ASSISTANT as any,
           isStreaming: true,
         });
 
@@ -108,7 +110,7 @@ export function useConvexChat(chatId: string | undefined) {
           setStreamingMessage({
             id: tempId,
             content: accumulatedContent,
-            role: 'assistant',
+            role: MessageRole.ASSISTANT as any,
             isStreaming: true,
           });
         }

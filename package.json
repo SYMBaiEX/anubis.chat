@@ -1,5 +1,5 @@
 {
-  "name": "isis-chat",
+  "name": "anubis-chat",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -12,8 +12,8 @@
     "check-types": "turbo check-types",
     "dev:native": "turbo -F native dev",
     "dev:web": "turbo -F web dev",
-    "dev:server": "turbo -F @isis-chat/backend dev",
-    "dev:setup": "turbo -F @isis-chat/backend dev:setup",
+    "dev:server": "turbo -F @anubis-chat/backend dev",
+    "dev:setup": "turbo -F @anubis-chat/backend dev:setup",
     "claude:verify": "claude verify --all",
     "claude:index": "claude index:codebase",
     "claude:docs": "claude docs:cache --popular",

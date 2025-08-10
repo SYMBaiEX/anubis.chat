@@ -57,6 +57,13 @@ export const userPreferencesSchema = z.object({
   streamResponses: z.boolean().optional(),
   saveHistory: z.boolean().optional(),
   compactMode: z.boolean().optional(),
+  // Chat/UI preferences
+  fontSize: z.enum(['small', 'medium', 'large']).optional(),
+  autoScroll: z.boolean().optional(),
+  // Behavior/memory
+  enableMemory: z.boolean().optional(),
+  // Model defaults
+  defaultModel: z.string().optional(),
 });
 
 export const userProfileSchema = z.object({

@@ -2,7 +2,6 @@
 
 import {
   Activity,
-  BarChart2,
   Cable,
   CheckCircle2,
   Layers,
@@ -11,6 +10,7 @@ import {
   ShieldCheck,
   Sparkles,
   User2,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -65,7 +65,7 @@ export default function ActivityFooter() {
   return (
     <footer
       className={cn(
-        'fixed inset-x-0 bottom-0 z-40 border-border/60 border-t bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/70'
+        'fixed inset-x-0 bottom-0 z-40 border-t bg-gradient-to-r from-primary/10 via-card/80 to-primary/10 backdrop-blur supports-[backdrop-filter]:bg-card/70'
       )}
       role="contentinfo"
     >
@@ -134,10 +134,13 @@ export function NavIcon({
         <Button
           aria-label={label}
           asChild
-          className={cn('h-7 w-7 p-0')}
+          className={cn(
+            'h-7 w-7 p-0',
+            active ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+          )}
           size="sm"
           type="button"
-          variant={active ? 'secondary' : 'ghost'}
+          variant="ghost"
         >
           <Link href={href}>{icon}</Link>
         </Button>
@@ -210,7 +213,12 @@ export function StatsSection({
   return (
     <div className="hidden items-center gap-4 md:flex">
       <StatItem
-        icon={<Sparkles aria-hidden="true" className="h-3.5 w-3.5" />}
+        icon={
+          <MessageSquarePlus
+            aria-hidden="true"
+            className="h-3.5 w-3.5 text-primary"
+          />
+        }
         label="Messages"
         value={
           typeof limits.messagesRemaining === 'number'
@@ -222,7 +230,12 @@ export function StatsSection({
         <TooltipTrigger asChild>
           <div>
             <StatItem
-              icon={<Sparkles aria-hidden="true" className="h-3.5 w-3.5" />}
+              icon={
+                <Zap
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 text-amber-500"
+                />
+              }
               label="Premium Messages"
               value={
                 typeof limits.premiumMessagesRemaining === 'number'
@@ -237,7 +250,12 @@ export function StatsSection({
         </TooltipContent>
       </Tooltip>
       <StatItem
-        icon={<ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />}
+        icon={
+          <ShieldCheck
+            aria-hidden="true"
+            className="h-3.5 w-3.5 text-blue-600"
+          />
+        }
         label="Days Until Reset"
         value={
           typeof limits.daysUntilReset === 'number'
@@ -270,12 +288,7 @@ export function ActionsSection({ pathname }: { pathname: string | null }) {
         icon={<Layers className="h-4 w-4" />}
         label="Agents"
       />
-      <NavIcon
-        active={pathname?.startsWith('/workflows')}
-        href="/workflows"
-        icon={<BarChart2 className="h-4 w-4" />}
-        label="Workflows"
-      />
+      {/* Workflows removed per request */}
       <NavIcon
         active={pathname?.startsWith('/subscription')}
         href="/subscription"

@@ -1,8 +1,8 @@
-// ISIS Chat Service Worker
-// This is a basic service worker for ISIS Chat platform
+// Anubis Chat Service Worker
+// This is a basic service worker for Anubis Chat platform
 
-const CACHE_NAME = 'isis-chat-v1';
-const STATIC_CACHE = 'isis-chat-static-v1';
+const CACHE_NAME = 'anubis-chat-v1';
+const STATIC_CACHE = 'anubis-chat-static-v1';
 
 // Install event - cache essential resources
 self.addEventListener('install', (event) => {
@@ -72,7 +72,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/@vite-plugin-pwa/') ||
     url.pathname === '/src/main.tsx'
   ) {
-    console.warn('ISIS Chat SW: Blocking Vite request:', url.pathname);
+    console.warn('Anubis Chat SW: Blocking Vite request:', url.pathname);
     return;
   }
 

@@ -13,12 +13,12 @@ relations:
   references: ["../frontend/", "../backend/", "../infrastructure/"]
 ---
 
-# ISIS.CHAT Architecture Overview
+# abubis.chat Architecture Overview
 
 ## Project Vision
 
 ::alert{type="success"}
-**ISIS.CHAT** is a Solana-native AI chat SaaS platform built for the future of decentralized communication with real-time AI integration, edge computing, and blockchain-native features.
+**abubis.chat** is a Solana-native AI chat SaaS platform built for the future of decentralized communication with real-time AI integration, edge computing, and blockchain-native features.
 ::
 
 ### Technology Stack Summary
@@ -369,8 +369,8 @@ const alertThresholds = {
 
 1. **Clone and Setup**:
    ```bash
-   git clone https://github.com/isis-chat/isis-chat
-   cd isis-chat
+   git clone https://github.com/anubis-chat/anubis-chat
+   cd anubis-chat
    bun install
    ```
 
@@ -415,4 +415,4 @@ const alertThresholds = {
 
 ---
 
-This architecture overview provides a comprehensive guide to ISIS.CHAT's system design, enabling developers to understand, contribute to, and extend the platform effectively while maintaining high standards of performance, security, and scalability.
+This architecture overview provides a comprehensive guide to abubis.chat's system design, enabling developers to understand, contribute to, and extend the platform effectively while maintaining high standards of performance, security, and scalability.

@@ -1,5 +1,5 @@
 /**
- * API Types and Interfaces for ISIS Chat
+ * API Types and Interfaces for anubis.chat
  * Forward-thinking design with extensibility and type safety
  * Strict TypeScript - No any, unknown, or void types allowed
  */
@@ -128,6 +128,13 @@ export interface UserPreferences {
   streamResponses?: boolean;
   saveHistory?: boolean;
   compactMode?: boolean;
+  // Chat/UI preferences
+  fontSize?: 'small' | 'medium' | 'large';
+  autoScroll?: boolean;
+  // Behavior/memory
+  enableMemory?: boolean;
+  // Model defaults
+  defaultModel?: string;
 }
 
 export enum SubscriptionTier {

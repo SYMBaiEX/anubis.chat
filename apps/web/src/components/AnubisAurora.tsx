@@ -3,12 +3,15 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-interface IsisAuroraProps {
+interface AnubisAuroraProps {
   className?: string;
   variant?: 'primary' | 'gold' | 'both';
 }
 
-export function IsisAurora({ className, variant = 'both' }: IsisAuroraProps) {
+export function AnubisAurora({
+  className,
+  variant = 'both',
+}: AnubisAuroraProps) {
   return (
     <div
       aria-hidden="true"
@@ -24,4 +27,4 @@ export function IsisAurora({ className, variant = 'both' }: IsisAuroraProps) {
   );
 }
 
-export default IsisAurora;
+export default AnubisAurora;

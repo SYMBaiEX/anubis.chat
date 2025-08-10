@@ -323,16 +323,16 @@ bandit -r backend/
 gitleaks detect --source .
 
 # 4. Container security scanning
-trivy image isis-chat:latest
+trivy image anubis-chat:latest
 
 # 5. Infrastructure as Code scanning
 checkov -d infrastructure/
 
 # 6. Web application security testing
-zap-baseline.py -t https://isis.chat
+zap-baseline.py -t https://abubis.chat
 
 # 7. API security testing
-nuclei -u https://api.isis.chat -t exposures/
+nuclei -u https://api.abubis.chat -t exposures/
 
 # 8. Smart contract security testing
 anchor test

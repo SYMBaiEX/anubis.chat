@@ -17,7 +17,7 @@
     "@ai-sdk/anthropic": "^2.0.1",
     "@ai-sdk/google": "^2.0.2",
     "@ai-sdk/openai": "^2.0.2",
-    "@isis-chat/backend": "workspace:*",
+    "@anubis-chat/backend": "workspace:*",
     "@langchain/core": "^0.3.66",
     "@langchain/openai": "^0.6.3",
     "@modelcontextprotocol/sdk": "^1.17.1",

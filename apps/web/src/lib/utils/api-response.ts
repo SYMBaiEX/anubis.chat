@@ -1,5 +1,5 @@
 /**
- * API Response Utilities for ISIS Chat
+ * API Response Utilities for anubis.chat
  * Based on latest AI SDK patterns and August 2025 best practices
  */
 

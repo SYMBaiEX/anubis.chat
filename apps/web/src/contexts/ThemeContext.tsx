@@ -34,9 +34,9 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'isis-chat-theme';
+const STORAGE_KEY = 'anubis-chat-theme';
 
-// ISIS.chat brand colors from PRD
+// anubis.chat brand colors from PRD
 const colors = {
   primary: '#14F195',
   accent: '#8247E5',

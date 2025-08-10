@@ -1,14 +1,20 @@
 'use client';
 
-import { Bell, Palette, Settings, User, Wallet } from 'lucide-react';
-import { useState } from 'react';
+import { Camera, Settings } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { FormWrapper } from '@/components/forms/form-wrapper';
 import { ValidatedInput } from '@/components/forms/validated-input';
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  useGenerateAvatarUploadUrl,
+  useSetAvatarFromStorage,
+} from '@/hooks/convex/useUsers';
 import type {
   SubscriptionStatus as SubscriptionData,
   SubscriptionLimits,
@@ -44,6 +50,81 @@ export function UserProfile({
 }: ExtendedUserProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [pendingName, setPendingName] = useState(user?.displayName ?? '');
+  const [savingName, setSavingName] = useState(false);
+  const { mutateAsync: generateUploadUrl } = useGenerateAvatarUploadUrl();
+  const { mutateAsync: setAvatarFromStorage } = useSetAvatarFromStorage();
+
+  useEffect(() => {
+    setPendingName(user?.displayName ?? '');
+  }, [user?.displayName]);
+
+  const handleSaveName = async () => {
+    const trimmed = (pendingName ?? '').trim();
+    if (!trimmed || trimmed === user?.displayName) {
+      setIsEditingName(false);
+      return;
+    }
+    try {
+      setSavingName(true);
+      await handleProfileUpdate({ displayName: trimmed });
+      setIsEditingName(false);
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  // Image preprocessing: compress to WebP 256x256
+  const compressImage = async (file: File): Promise<Blob> => {
+    const bitmap = await createImageBitmap(file);
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    const scale = Math.min(size / bitmap.width, size / bitmap.height, 1);
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx2d = canvas.getContext('2d');
+    if (!ctx2d) throw new Error('Canvas not supported');
+    ctx2d.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob: Blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('Compression failed'))),
+        'image/webp',
+        0.82
+      );
+    });
+    return blob;
+  };
+
+  const onAvatarClick = async () => {
+    try {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error('Please choose an image under 5MB.');
+          return;
+        }
+        try {
+          const compressed = await compressImage(file);
+          const url: string = await generateUploadUrl({});
+          const res = await fetch(url, { method: 'POST', body: compressed });
+          if (!res.ok) throw new Error('Upload failed');
+          const { storageId } = await res.json();
+          await setAvatarFromStorage({ storageId });
+          toast.success('Profile photo updated');
+        } catch (err) {
+          toast.error('Failed to update photo');
+        }
+      };
+      input.click();
+    } catch (e) {
+      toast.error('Unable to start upload');
+    }
+  };
 
   const handleProfileUpdate = async (data: any) => {
     try {
@@ -68,12 +149,25 @@ export function UserProfile({
 
   const getSubscriptionTierColor = (tier: string) => {
     switch (tier) {
-      case 'enterprise':
+      case 'pro_plus':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
       case 'pro':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      case 'free':
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+    }
+  };
+
+  const formatTierLabel = (tier?: string) => {
+    switch (tier) {
+      case 'pro_plus':
+        return 'Pro+';
+      case 'pro':
+        return 'Pro';
+      case 'free':
+      default:
+        return 'Free';
     }
   };
 
@@ -82,23 +176,78 @@ export function UserProfile({
       id: 'profile',
       label: 'Profile',
       content: (
-        <div className="space-y-6">
-          <div className="flex items-center space-x-4">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 pb-2">
             <Avatar
-              fallback={user?.displayName?.[0] ?? 'U'}
-              size="xl"
-              src={user?.avatar}
-            />
+              className="h-12 w-12 cursor-pointer ring-1 ring-border transition hover:ring-primary/40 sm:h-14 sm:w-14"
+              onClick={onAvatarClick}
+            >
+              <AvatarImage alt="avatar" src={user?.avatar} />
+              <AvatarFallback>{user?.displayName?.[0] ?? 'U'}</AvatarFallback>
+            </Avatar>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
-                {user?.displayName ?? 'Anonymous User'}
-              </h3>
-              <p className="text-gray-600 text-sm dark:text-gray-400">
+              <div className="flex items-center gap-2">
+                {isEditingName ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      autoFocus
+                      className="h-8 w-48"
+                      onChange={(e) => setPendingName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          void handleSaveName();
+                        }
+                        if (e.key === 'Escape') {
+                          setIsEditingName(false);
+                          setPendingName(user?.displayName ?? '');
+                        }
+                      }}
+                      placeholder="Enter name"
+                      value={pendingName}
+                    />
+                    <Button
+                      className="h-8"
+                      disabled={savingName}
+                      onClick={handleSaveName}
+                      size="sm"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      className="h-8"
+                      onClick={() => {
+                        setIsEditingName(false);
+                        setPendingName(user?.displayName ?? '');
+                      }}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <h3
+                    className="cursor-pointer rounded-md bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text px-2 py-1 font-semibold text-[18px] text-transparent transition hover:bg-primary/10 hover:ring-1 hover:ring-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:text-xl"
+                    onClick={() => editable && setIsEditingName(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        editable && setIsEditingName(true);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    {user?.displayName ?? 'Anonymous User'}
+                  </h3>
+                )}
+              </div>
+              <p className="text-muted-foreground text-sm">
                 {user?.walletAddress
                   ? formatWalletAddress(user.walletAddress)
                   : 'No wallet connected'}
               </p>
-              <div className="mt-2 flex items-center space-x-2">
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 <Badge
                   size="sm"
                   variant={user?.isActive ? 'success' : 'default'}
@@ -111,14 +260,9 @@ export function UserProfile({
                   )}
                   size="sm"
                 >
-                  {(subscription?.tier || user?.subscription?.tier || 'free')
-                    .charAt(0)
-                    .toUpperCase() +
-                    (
-                      subscription?.tier ||
-                      user?.subscription?.tier ||
-                      'free'
-                    ).slice(1)}
+                  {formatTierLabel(
+                    subscription?.tier || user?.subscription?.tier || 'free'
+                  )}
                 </Badge>
               </div>
             </div>
@@ -133,6 +277,7 @@ export function UserProfile({
               </Button>
             )}
           </div>
+          <div className="border-border/60 border-b" />
 
           {isEditing ? (
             <FormWrapper
@@ -167,34 +312,43 @@ export function UserProfile({
               </div>
             </FormWrapper>
           ) : (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <Card className="p-4">
-                <div className="flex items-center space-x-3">
-                  <Wallet className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                      Wallet Address
-                    </h4>
-                    <p className="font-mono text-gray-600 text-sm dark:text-gray-400">
-                      {user?.walletAddress || 'Not available'}
-                    </p>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Card className="border border-border/60 bg-gradient-to-b from-primary/5 p-3 hover:ring-1 hover:ring-primary/20 sm:p-4">
+                <div>
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <Badge className="text-[10px]" variant="outline">
+                      Wallet
+                    </Badge>
+                    {user?.walletAddress && (
+                      <Badge className="text-[10px]" variant="secondary">
+                        Connected
+                      </Badge>
+                    )}
                   </div>
+                  <h4 className="font-medium text-foreground">
+                    Wallet Address
+                  </h4>
+                  <p className="font-mono text-muted-foreground text-sm">
+                    {user?.walletAddress || 'Not available'}
+                  </p>
                 </div>
               </Card>
 
-              <Card className="p-4">
-                <div className="flex items-center space-x-3">
-                  <User className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                      Account Created
-                    </h4>
-                    <p className="text-gray-600 text-sm dark:text-gray-400">
-                      {user?.createdAt
-                        ? new Date(user.createdAt).toLocaleDateString()
-                        : 'Unknown'}
-                    </p>
+              <Card className="border border-border/60 bg-gradient-to-b from-primary/5 p-3 hover:ring-1 hover:ring-primary/20 sm:p-4">
+                <div>
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <Badge className="text-[10px]" variant="outline">
+                      Account
+                    </Badge>
                   </div>
+                  <h4 className="font-medium text-foreground">
+                    Account Created
+                  </h4>
+                  <p className="text-muted-foreground text-sm">
+                    {user?.createdAt
+                      ? new Date(user.createdAt).toLocaleDateString()
+                      : 'Unknown'}
+                  </p>
                 </div>
               </Card>
             </div>
@@ -206,51 +360,111 @@ export function UserProfile({
       id: 'preferences',
       label: 'Preferences',
       content: (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <Card className="p-4">
-              <div className="flex items-center space-x-3">
-                <Palette className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                    Theme
-                  </h4>
-                  <p className="text-gray-600 text-sm dark:text-gray-400">
-                    {user.preferences?.theme
-                      ? user.preferences.theme.charAt(0).toUpperCase() +
-                        user.preferences.theme.slice(1)
-                      : 'Not set'}
-                  </p>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Card className="border border-border/60 bg-gradient-to-b from-primary/5 p-3 hover:ring-1 hover:ring-primary/20 sm:p-4">
+              <div>
+                <div className="mb-1.5 flex items-center gap-2">
+                  <Badge className="text-[10px]" variant="outline">
+                    Interface
+                  </Badge>
                 </div>
+                <h4 className="font-medium text-foreground">Theme</h4>
+                <p className="text-muted-foreground text-sm">
+                  {user.preferences?.theme
+                    ? user.preferences.theme.charAt(0).toUpperCase() +
+                      user.preferences.theme.slice(1)
+                    : 'System default'}
+                </p>
               </div>
             </Card>
 
-            <Card className="p-4">
-              <div className="flex items-center space-x-3">
-                <Bell className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                    Notifications
-                  </h4>
-                  <p className="text-gray-600 text-sm dark:text-gray-400">
-                    {user.preferences?.notifications !== undefined
-                      ? user.preferences.notifications
-                        ? 'Enabled'
-                        : 'Disabled'
-                      : 'Not set'}
-                  </p>
+            <Card className="border border-border/60 bg-gradient-to-b from-primary/5 p-3 hover:ring-1 hover:ring-primary/20 sm:p-4">
+              <div>
+                <div className="mb-1.5 flex items-center gap-2">
+                  <Badge className="text-[10px]" variant="outline">
+                    Chat
+                  </Badge>
                 </div>
+                <h4 className="font-medium text-foreground">Font Size</h4>
+                <p className="text-muted-foreground text-sm">
+                  {user.preferences?.fontSize
+                    ? user.preferences.fontSize.charAt(0).toUpperCase() +
+                      user.preferences.fontSize.slice(1)
+                    : 'Medium'}
+                </p>
               </div>
             </Card>
           </div>
 
-          <Card className="p-4">
-            <h4 className="mb-2 font-medium text-gray-900 dark:text-gray-100">
-              AI Model Preference
-            </h4>
-            <p className="text-gray-600 text-sm dark:text-gray-400">
-              {user.preferences?.aiModel || 'Not set'}
-            </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Card className="border border-border/60 bg-gradient-to-b from-primary/5 p-3 hover:ring-1 hover:ring-primary/20 sm:p-4">
+              <div>
+                <div className="mb-1.5 flex items-center gap-2">
+                  <Badge className="text-[10px]" variant="outline">
+                    AI
+                  </Badge>
+                </div>
+                <h4 className="font-medium text-foreground">
+                  Default AI Model
+                </h4>
+                <p className="text-muted-foreground text-sm">
+                  {user.preferences?.defaultModel || 'GPT-OSS-20B (Free)'}
+                </p>
+              </div>
+            </Card>
+
+            <Card className="border border-border/60 bg-gradient-to-b from-primary/5 p-3 hover:ring-1 hover:ring-primary/20 sm:p-4">
+              <div>
+                <div className="mb-1.5 flex items-center gap-2">
+                  <Badge className="text-[10px]" variant="outline">
+                    Behavior
+                  </Badge>
+                </div>
+                <h4 className="font-medium text-foreground">
+                  Stream Responses
+                </h4>
+                <p className="text-muted-foreground text-sm">
+                  {user.preferences?.streamResponses !== false
+                    ? 'Enabled'
+                    : 'Disabled'}
+                </p>
+              </div>
+            </Card>
+          </div>
+
+          <Card className="border border-border/60 bg-gradient-to-b from-primary/5 p-3 hover:ring-1 hover:ring-primary/20 sm:p-4">
+            <div>
+              <div className="mb-1.5 flex items-center gap-2">
+                <Badge className="text-[10px]" variant="outline">
+                  Privacy
+                </Badge>
+              </div>
+              <h4 className="mb-1 font-medium text-foreground">Chat History</h4>
+              <p className="mb-2 text-muted-foreground text-sm">
+                {user.preferences?.saveHistory !== false
+                  ? 'Saved'
+                  : 'Not saved'}
+              </p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Memory:</span>
+                  <span className="ml-1">
+                    {user.preferences?.enableMemory !== false
+                      ? 'Enabled'
+                      : 'Disabled'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Auto-scroll:</span>
+                  <span className="ml-1">
+                    {user.preferences?.autoScroll !== false
+                      ? 'Enabled'
+                      : 'Disabled'}
+                  </span>
+                </div>
+              </div>
+            </div>
           </Card>
         </div>
       ),

@@ -16,12 +16,12 @@ relations:
 # Documentation Standards
 
 ::alert{type="info"}
-Comprehensive documentation guidelines ensuring isis.chat remains maintainable and accessible to all team members.
+Comprehensive documentation guidelines ensuring abubis.chat remains maintainable and accessible to all team members.
 ::
 
 ## Documentation Philosophy
 
-ISIS.chat follows a **docs-as-code** approach where documentation lives alongside the code and is treated with the same rigor as production code.
+abubis.chat follows a **docs-as-code** approach where documentation lives alongside the code and is treated with the same rigor as production code.
 
 ## Documentation Types
 
@@ -149,7 +149,7 @@ We will use Convex as our primary database.
 ```yaml
 openapi: 3.1.0
 info:
-  title: ISIS Chat API
+  title: ANUBIS Chat API
   version: 1.0.0
   description: Solana-native AI chat platform API
 
@@ -189,7 +189,7 @@ paths:
 ### README Structure
 
 ```markdown
-# ISIS Chat
+# ANUBIS Chat
 
 > Solana-native AI chat platform with RAG capabilities
 

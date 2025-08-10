@@ -17,7 +17,7 @@ relations:
 
 ## Comprehensive CSP Configuration
 
-### 1. isis.chat CSP Policy
+### 1. abubis.chat CSP Policy
 ```typescript
 export interface CSPDirectives {
   'default-src': string[];
@@ -314,7 +314,7 @@ export class SecurityHeaderManager {
   }
 
   private generatePermissionsPolicy(): string {
-    // Restrict browser APIs that isis.chat doesn't need
+    // Restrict browser APIs that abubis.chat doesn't need
     const policies = [
       'accelerometer=()', // Disable accelerometer
       'ambient-light-sensor=()', // Disable ambient light sensor
@@ -473,7 +473,7 @@ const nextConfig = {
             value: 'http'
           }
         ],
-        destination: 'https://isis.chat/:path*',
+        destination: 'https://abubis.chat/:path*',
         permanent: true
       }
     ];

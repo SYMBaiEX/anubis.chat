@@ -1,5 +1,5 @@
 {
-  "name": "@isis-chat/backend",
+  "name": "@anubis-chat/backend",
   "version": "1.0.0",
   "scripts": {
     "dev": "convex dev",

@@ -1,5 +1,5 @@
 /**
- * Environment Configuration for ISIS Chat
+ * Environment Configuration for anubis.chat
  * Centralized environment variable management with validation
  */
 
@@ -102,7 +102,7 @@ const envSchema = z.object({
     .string()
     .url()
     .default('https://api.devnet.solana.com'),
-  NEXT_PUBLIC_APP_DOMAIN: z.string().default('isis.chat'),
+  NEXT_PUBLIC_APP_DOMAIN: z.string().default('abubis.chat'),
   NEXT_PUBLIC_SOLANA_PAYMENT_ADDRESS: z
     .string()
     .min(32, 'Invalid Solana address')

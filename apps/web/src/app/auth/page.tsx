@@ -23,6 +23,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { EmptyState } from '@/components/data/empty-states';
 import { RosettaHieroglyphs } from '@/components/effects/rosetta-hieroglyphs';
+import LandingFooter from '@/components/landing/landing-footer';
+import LandingHeader from '@/components/landing/landing-header';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -104,17 +106,24 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 dark:from-primary/10">
+      <LandingHeader />
+
       {/* Background Effects */}
       <RosettaHieroglyphs />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-background" />
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:radial-gradient(white,transparent_70%)]" />
 
-      <div className="relative flex min-h-screen flex-col items-center justify-center p-8">
+      <div className="relative z-0 mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-7xl flex-col items-center justify-center px-4 pt-16 pb-10">
         <div className="w-full max-w-md space-y-8">
           {/* Back Button */}
           <Link href="/">
-            <Button className="button-press" size="sm" variant="ghost">
+            <Button
+              className="button-press"
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
             </Button>
@@ -126,7 +135,7 @@ export default function AuthPage() {
               <div className="absolute inset-0 mx-auto h-24 w-24 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 opacity-50 blur-xl" />
             </div>
             <h1 className="mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text font-bold text-4xl text-transparent tracking-tight">
-              Welcome to ISIS Chat
+              Welcome to anubis.chat
             </h1>
             <p className="text-lg text-muted-foreground">
               Connect your wallet to unlock AI-powered Web3
@@ -146,12 +155,18 @@ export default function AuthPage() {
                     {authError}
                   </p>
                   <div className="mt-3 flex gap-2">
-                    <Button onClick={clearError} size="sm" variant="outline">
+                    <Button
+                      onClick={clearError}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
                       Try Again
                     </Button>
                     <Button
                       onClick={handleSwitchWallet}
                       size="sm"
+                      type="button"
                       variant="outline"
                     >
                       Switch Wallet
@@ -237,6 +252,7 @@ export default function AuthPage() {
                         disabled={isSigningIn}
                         onClick={handleWalletSignIn}
                         size="lg"
+                        type="button"
                       >
                         <Shield className="mr-2 h-5 w-5" />
                         Sign In with Wallet
@@ -385,10 +401,12 @@ export default function AuthPage() {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-muted-foreground text-xs">
-            Protected by Solana blockchain • Powered by ISIS Intelligence
+            Protected by Solana blockchain • Powered by Anubis Intelligence
           </p>
         </div>
       </div>
+
+      <LandingFooter />
     </div>
   );
 }

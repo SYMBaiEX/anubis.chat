@@ -23,7 +23,7 @@ relations:
 
 # Frontend Development Guidelines
 
-Comprehensive frontend development standards for ISIS Chat using Next.js 15, React 19, and TypeScript.
+Comprehensive frontend development standards for ANUBIS Chat using Next.js 15, React 19, and TypeScript.
 
 ## Architecture Overview
 
@@ -449,7 +449,7 @@ export default withPWA({
   disable: process.env.NODE_ENV === 'development',
   runtimeCaching: [
     {
-      urlPattern: /^https:\/\/api\.isis\.chat\/.*/i,
+      urlPattern: /^https:\/\/api\.anubis\.chat\/.*/i,
       handler: 'NetworkFirst',
       options: {
         cacheName: 'api-cache',

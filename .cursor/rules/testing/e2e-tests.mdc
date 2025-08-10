@@ -314,7 +314,7 @@ test.describe('Authentication and Onboarding', () => {
     await walletPage.connectWallet();
 
     // Should show welcome message
-    await expect(page.getByText('Welcome to ISIS Chat!')).toBeVisible();
+    await expect(page.getByText('Welcome to ANUBIS Chat!')).toBeVisible();
     
     // Should show feature highlights
     await expect(page.getByText('AI-powered Solana assistance')).toBeVisible();

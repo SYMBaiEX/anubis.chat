@@ -1,5 +1,5 @@
 /**
- * CORS Utility for ISIS Chat API Routes
+ * CORS Utility for anubis.chat API Routes
  * Provides secure CORS configuration with environment-based origin validation
  */
 

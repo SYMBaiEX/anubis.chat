@@ -1,10 +1,10 @@
 project:
-  name: "isis-chat-web"
+  name: "anubis-chat-web"
   type: "web-application"
   created: "2025-08-06"
-  description: "Next.js web app for ISIS Chat - Solana-native AI chat SaaS platform"
+  description: "Next.js web app for ANUBIS Chat - Solana-native AI chat SaaS platform"
   scope: "Web app only - /apps/web directory within monorepo"
-  
+
 stack:
   frontend:
     framework: "nextjs-15"
@@ -20,7 +20,7 @@ stack:
     realtime: true
   architecture: "monorepo-web-app"
   package_manager: "bun"
-  
+
 context:
   working_directory: "/apps/web"
   monorepo_root: "../../"
@@ -35,7 +35,7 @@ context:
     - "lib/" # Utilities and services
     - "public/" # Static assets
     - "convex/" # Convex backend functions
-  
+
 modes:
   default: "nextjs-15 + solana-2025 + continuous-verification"
   available:
@@ -44,21 +44,21 @@ modes:
     - continuous-verification
     - test-driven
     - ai-agent-protocol
-  
+
 features:
   verification: true
   indexing: true
   security: true
   mcp_servers: true
   documentation: true
-  
+
 preferences:
   package_manager: "bun"
   typescript: true
   linting: "strict"
   formatter: "biome"
   git_hooks: "husky"
-  
+
 quality:
   type_safety: "strict"
   nullish_coalescing: true

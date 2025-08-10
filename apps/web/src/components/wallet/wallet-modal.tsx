@@ -99,7 +99,7 @@ export function WalletModal({ open, onClose }: WalletModalProps) {
 
         <div className="space-y-4">
           <p className="text-center text-amber-200/80 text-sm">
-            Choose your preferred wallet to connect to isis.chat
+            Choose your preferred wallet to connect to abubis.chat
           </p>
 
           {error && (

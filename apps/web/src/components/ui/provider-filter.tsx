@@ -8,7 +8,7 @@ import { AI_MODELS, type AIModel } from '@/lib/constants/ai-models';
 export type ProviderFilter =
   | 'all'
   | 'openai'
-  | 'anthropic'
+  // | 'anthropic'  // DISABLED FOR NOW
   | 'google'
   | 'openrouter';
 
@@ -54,11 +54,14 @@ export function ProviderFilter({
       label: 'OpenAI',
       count: AI_MODELS.filter((m) => m.provider === 'openai').length,
     },
+    // Anthropic disabled for now
+    /*
     {
       value: 'anthropic' as const,
       label: 'Anthropic',
       count: AI_MODELS.filter((m) => m.provider === 'anthropic').length,
     },
+    */
     {
       value: 'google' as const,
       label: 'Google',

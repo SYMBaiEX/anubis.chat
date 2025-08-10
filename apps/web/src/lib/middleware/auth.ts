@@ -1,5 +1,5 @@
 /**
- * Authentication Middleware for ISIS Chat
+ * Authentication Middleware for anubis.chat
  * Based on latest Solana wallet patterns and August 2025 best practices
  */
 

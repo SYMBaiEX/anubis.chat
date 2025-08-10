@@ -68,8 +68,20 @@ const AGENT_CONFIG = {
     enableMCPTools: false,
     tools: [] as string[],
     mcpServers: [
-      { name: 'context7', enabled: false, label: 'Context7 - Library Documentation', description: 'Access to library docs, code examples, and best practices' },
-      { name: 'solana', enabled: false, label: 'Solana Developer Assistant', description: 'Expert guidance for Solana development, Anchor framework, and real-time documentation search' },
+      {
+        name: 'context7',
+        enabled: false,
+        label: 'Context7 - Library Documentation',
+        description:
+          'Access to library docs, code examples, and best practices',
+      },
+      {
+        name: 'solana',
+        enabled: false,
+        label: 'Solana Developer Assistant',
+        description:
+          'Expert guidance for Solana development, Anchor framework, and real-time documentation search',
+      },
     ],
   },
 } as const;
@@ -177,10 +189,10 @@ export default function NewAgentPage() {
       maxTokens: AGENT_CONFIG.defaults.maxTokens,
       maxSteps: AGENT_CONFIG.defaults.maxSteps,
       enableMCPTools: AGENT_CONFIG.defaults.enableMCPTools,
-      mcpServers: AGENT_CONFIG.defaults.mcpServers.map(s => ({ 
-        name: s.name, 
-        enabled: s.enabled, 
-        config: {} 
+      mcpServers: AGENT_CONFIG.defaults.mcpServers.map((s) => ({
+        name: s.name,
+        enabled: s.enabled,
+        config: {},
       })),
     } as CreateAgentFormData,
     onSubmit: async ({ value }) => {
@@ -233,7 +245,7 @@ export default function NewAgentPage() {
           maxSteps: validation.data.maxSteps,
           createdBy: user.walletAddress,
           tools: AGENT_CONFIG.defaults.tools,
-          mcpServers: validation.data.mcpServers?.filter(s => s.enabled),
+          mcpServers: validation.data.mcpServers?.filter((s) => s.enabled),
         };
 
         console.log('Creating agent with data:', agentData);
@@ -576,8 +588,8 @@ export default function NewAgentPage() {
             )}
           </form.Field>
 
-          {/* MCP Server Configuration */}
-          <div className="space-y-4">
+          {/* MCP Server Configuration - Temporarily disabled */}
+          {/* <div className="space-y-4">
             <div>
               <Label>MCP Server Tools</Label>
               <p className="mb-3 text-muted-foreground text-sm">
@@ -651,7 +663,7 @@ export default function NewAgentPage() {
                 ))}
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-2">

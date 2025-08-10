@@ -691,7 +691,7 @@ export function WalletSelectionModal({
         <div className="wallet-selection__header">
           <h2 className="text-xl font-semibold">Connect Your Wallet</h2>
           <p className="text-muted-foreground mt-1">
-            Choose a wallet to connect to ISIS Chat
+            Choose a wallet to connect to ANUBIS Chat
           </p>
         </div>
         
@@ -1168,7 +1168,7 @@ export function WalletOnboarding() {
     {
       id: 'connect',
       title: 'Connect Your Wallet',
-      description: 'Connect your wallet to ISIS Chat',
+      description: 'Connect your wallet to ANUBIS Chat',
       action: 'Connect',
       completed: false,
     },
@@ -1225,7 +1225,7 @@ export function WalletOnboarding() {
         <div className="wallet-onboarding__header">
           <h2 className="text-2xl font-semibold">Welcome to Web3</h2>
           <p className="text-muted-foreground">
-            Let's set up your wallet to get started with ISIS Chat
+            Let's set up your wallet to get started with ANUBIS Chat
           </p>
         </div>
         

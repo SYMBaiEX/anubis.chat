@@ -1,12 +1,12 @@
 # AGENTS.md
 
-*Last updated: August 6, 2025*
+_Last updated: August 6, 2025_
 
-> **Purpose**: This file provides comprehensive guidance for AI agents (OpenAI Codex, Claude Code, Cursor, GitHub Copilot, and others) working with the ISIS Chat codebase. It encodes our coding standards, development workflows, and architectural patterns to ensure consistent, high-quality contributions.
+> **Purpose**: This file provides comprehensive guidance for AI agents (OpenAI Codex, Claude Code, Cursor, GitHub Copilot, and others) working with the ANUBIS Chat codebase. It encodes our coding standards, development workflows, and architectural patterns to ensure consistent, high-quality contributions.
 
 ## Project Context
 
-ISIS Chat is a **Solana-native AI chat SaaS platform** combining advanced AI/RAG capabilities with Web3 blockchain integration. This monorepo uses **Turborepo** for build orchestration, **Bun** as the package manager, and follows a modular architecture with strict TypeScript and quality standards.
+ANUBIS Chat is a **Solana-native AI chat SaaS platform** combining advanced AI/RAG capabilities with Web3 blockchain integration. This monorepo uses **Turborepo** for build orchestration, **Bun** as the package manager, and follows a modular architecture with strict TypeScript and quality standards.
 
 ## Quick Navigation
 
@@ -48,6 +48,7 @@ bun build       # Production build for all apps
 ### Pre-commit Requirements
 
 **NEVER use `--no-verify` flag**. All commits must pass:
+
 1. `bun check` - Code formatting and linting
 2. `bun check-types` - TypeScript validation
 3. Commit message format validation
@@ -55,7 +56,7 @@ bun build       # Production build for all apps
 ## Project Structure
 
 ```
-isis-chat/
+anubis-chat/
 ├── apps/
 │   └── web/                 # Next.js 15 frontend application
 │       ├── src/
@@ -90,16 +91,15 @@ isis-chat/
 
 ```typescript
 // ALWAYS use strict mode - NO 'any' types
-interface UserData {  // Prefer interfaces for object shapes
+interface UserData {
+  // Prefer interfaces for object shapes
   id: string;
   name: string;
   createdAt: Date;
 }
 
 // Use Result pattern for fallible operations
-type Result<T, E = Error> = 
-  | { ok: true; value: T }
-  | { ok: false; error: E };
+type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E };
 
 // Implement proper error handling
 async function fetchUser(id: string): Promise<Result<UserData>> {
@@ -146,9 +146,9 @@ export const getUser = query({
 
 // Type-safe mutations
 export const createUser = mutation({
-  args: { 
+  args: {
     name: v.string(),
-    email: v.string() 
+    email: v.string(),
   },
   handler: async (ctx, args) => {
     // Validation with Zod
@@ -166,7 +166,7 @@ import { useState } from "react";
 import { z } from "zod";
 
 // 2. Internal packages
-import { api } from "@isis-chat/backend";
+import { api } from "@anubis-chat/backend";
 
 // 3. Local imports
 import { Button } from "@/components/ui/button";
@@ -212,17 +212,17 @@ The project is designed for multi-model AI with RAG capabilities:
 ```typescript
 // AI service initialization (planned implementation)
 const aiService = new AIService({
-  models: ['claude-3.5-sonnet', 'gpt-4o', 'deepseek-v3'],
+  models: ["claude-3.5-sonnet", "gpt-4o", "deepseek-v3"],
   vectorDb: qdrantClient,
   streaming: true,
-  fallbackChain: true
+  fallbackChain: true,
 });
 
 // Vector search configuration
 const vectorSearch = new VectorSearchService({
-  collection: 'isis_knowledge_base',
-  searchType: 'hybrid', // semantic + keyword
-  retrievalStrategy: 'contextual'
+  collection: "anubis_knowledge_base",
+  searchType: "hybrid", // semantic + keyword
+  retrievalStrategy: "contextual",
 });
 ```
 
@@ -263,20 +263,24 @@ Before submitting a PR, ensure:
 
 ```markdown
 ## Summary
+
 Brief description of changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Testing
+
 - [ ] Unit tests pass
 - [ ] Integration tests pass
 - [ ] Manual testing completed
 
 ## Screenshots (if UI changes)
+
 [Add screenshots here]
 ```
 
@@ -353,7 +357,7 @@ QDRANT_API_KEY=
 // ALWAYS validate with Zod
 const userInputSchema = z.object({
   message: z.string().min(1).max(10000),
-  userId: z.string().uuid()
+  userId: z.string().uuid(),
 });
 
 // Validate before processing
@@ -415,6 +419,7 @@ If you discover new patterns, fix issues, or establish new conventions while wor
 **Remember**: The goal is to write code that is maintainable, performant, secure, and follows the established patterns in this codebase. When in doubt, look at existing implementations for guidance.
 
 ## Before Writing Code
+
 1. Analyze existing patterns in the codebase
 2. Consider edge cases and error scenarios
 3. Follow the rules below strictly
@@ -423,6 +428,7 @@ If you discover new patterns, fix issues, or establish new conventions while wor
 ## Rules
 
 ### Accessibility (a11y)
+
 - Don't use `accessKey` attribute on any HTML element.
 - Don't set `aria-hidden="true"` on focusable elements.
 - Don't add ARIA roles, states, and properties to elements that don't support them.
@@ -459,6 +465,7 @@ If you discover new patterns, fix issues, or establish new conventions while wor
 - Use correct ISO language/country codes for the `lang` attribute.
 
 ### Code Complexity and Quality
+
 - Don't use consecutive spaces in regular expression literals.
 - Don't use the `arguments` object.
 - Don't use primitive type aliases or misleading types.
@@ -514,6 +521,7 @@ If you discover new patterns, fix issues, or establish new conventions while wor
 - Don't use literal numbers that lose precision.
 
 ### React and JSX Best Practices
+
 - Don't use the return value of React.render.
 - Make sure all dependencies are correctly specified in React hooks.
 - Make sure all React hooks are called from the top level of component functions.
@@ -532,6 +540,7 @@ If you discover new patterns, fix issues, or establish new conventions while wor
 - Watch out for possible "wrong" semicolons inside JSX elements.
 
 ### Correctness and Safety
+
 - Don't assign a value to itself.
 - Don't return a value from a setter.
 - Don't compare expressions that modify string case with non-compliant values.
@@ -556,7 +565,7 @@ If you discover new patterns, fix issues, or establish new conventions while wor
 - Don't use bitwise operators.
 - Don't use expressions where the operation doesn't change the value.
 - Make sure Promise-like statements are handled appropriately.
-- Don't use __dirname and __filename in the global scope.
+- Don't use **dirname and **filename in the global scope.
 - Prevent import cycles.
 - Don't use configured elements.
 - Don't hardcode sensitive data like API keys and tokens.
@@ -587,6 +596,7 @@ If you discover new patterns, fix issues, or establish new conventions while wor
 - Don't use `target="_blank"` without `rel="noopener"`.
 
 ### TypeScript Best Practices
+
 - Don't use TypeScript enums.
 - Don't export imported variables.
 - Don't add type annotations to variables, parameters, and class properties that are initialized with literal expressions.
@@ -611,6 +621,7 @@ If you discover new patterns, fix issues, or establish new conventions while wor
 - Use the namespace keyword instead of the module keyword to declare TypeScript namespaces.
 
 ### Style and Consistency
+
 - Don't use global `eval()`.
 - Don't use callbacks in asynchronous tests and hooks.
 - Don't use negation in `if` statements that have `else` clauses.
@@ -698,12 +709,14 @@ If you discover new patterns, fix issues, or establish new conventions while wor
 - Make sure to use the "use strict" directive in script files.
 
 ### Next.js Specific Rules
+
 - Don't use `<img>` elements in Next.js projects.
 - Don't use `<head>` elements in Next.js projects.
-- Don't import next/document outside of pages/_document.jsx in Next.js projects.
-- Don't use the next/head module in pages/_document.js on Next.js projects.
+- Don't import next/document outside of pages/\_document.jsx in Next.js projects.
+- Don't use the next/head module in pages/\_document.js on Next.js projects.
 
 ### Testing Best Practices
+
 - Don't use export or module.exports in test files.
 - Don't use focused tests.
 - Make sure the assertion function, like expect, is placed inside an it() function call.
@@ -719,7 +732,7 @@ The project uses Ultracite (via Biome) for formatting and linting:
 # Format and fix code automatically
 npx ultracite format
 
-# Check for issues without fixing  
+# Check for issues without fixing
 npx ultracite lint
 
 # Initialize Ultracite in new projects
@@ -727,13 +740,14 @@ npx ultracite init
 ```
 
 ## Example: Error Handling
+
 ```typescript
 // ✅ Good: Comprehensive error handling
 try {
   const result = await fetchData();
   return { success: true, data: result };
 } catch (error) {
-  console.error('API call failed:', error);
+  console.error("API call failed:", error);
   return { success: false, error: error.message };
 }
 

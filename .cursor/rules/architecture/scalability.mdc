@@ -13,7 +13,7 @@ relations:
   references: ["system-design.mdc", "performance.mdc"]
 ---
 
-# Scalability Architecture for ISIS.CHAT
+# Scalability Architecture for abubis.chat
 
 ## Scalability Philosophy
 
@@ -928,4 +928,4 @@ export class PredictiveScaler {
 }
 ```
 
-This scalability architecture ensures ISIS.CHAT can grow seamlessly from thousands to millions of users while maintaining optimal performance and cost efficiency.
+This scalability architecture ensures abubis.chat can grow seamlessly from thousands to millions of users while maintaining optimal performance and cost efficiency.

@@ -101,7 +101,7 @@ describe('AuthProvider', () => {
     await waitFor(() => {
       expect(screen.getByTestId('authenticated')).toHaveTextContent('false');
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        'isis-auth-token'
+        'anubis-auth-token'
       );
     });
   });

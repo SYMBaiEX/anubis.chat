@@ -17,7 +17,7 @@ relations:
 
 ## Program Structure
 
-### 1. isis.chat Subscription Program
+### 1. abubis.chat Subscription Program
 ```rust
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
@@ -25,7 +25,7 @@ use anchor_lang::system_program::{transfer, Transfer};
 declare_id!("11111111111111111111111111111111"); // Replace with actual program ID
 
 #[program]
-pub mod isis_chat_subscriptions {
+pub mod anubis_chat_subscriptions {
     use super::*;
 
     pub fn initialize_subscription(
@@ -483,7 +483,7 @@ cluster = "mainnet"
 wallet = "~/.config/solana/id.json"
 
 [programs.mainnet]
-isis_chat_subscriptions = "YourProgramId11111111111111111111111"
+anubis_chat_subscriptions = "YourProgramId11111111111111111111111"
 
 [registry]
 url = "https://api.apr.dev"

@@ -1,8 +1,11 @@
 'use client';
 
+import { api } from '@convex/_generated/api';
+import { useMutation } from 'convex/react';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import * as React from 'react';
+import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,6 +16,10 @@ import {
 
 export function ModeToggle() {
   const { setTheme } = useTheme();
+  const { isAuthenticated } = useAuthContext();
+  const updateUserPreferences = useMutation(
+    api.userPreferences.updateUserPreferences
+  );
 
   return (
     <DropdownMenu>
@@ -24,13 +31,46 @@ export function ModeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme('light')}>
+        <DropdownMenuItem
+          onClick={async () => {
+            setTheme('light');
+            if (isAuthenticated) {
+              try {
+                await updateUserPreferences({ theme: 'light' });
+              } catch (error) {
+                console.error('Failed to update theme preference:', error);
+              }
+            }
+          }}
+        >
           Light
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>
+        <DropdownMenuItem
+          onClick={async () => {
+            setTheme('dark');
+            if (isAuthenticated) {
+              try {
+                await updateUserPreferences({ theme: 'dark' });
+              } catch (error) {
+                console.error('Failed to update theme preference:', error);
+              }
+            }
+          }}
+        >
           Dark
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
+        <DropdownMenuItem
+          onClick={async () => {
+            setTheme('system');
+            if (isAuthenticated) {
+              try {
+                await updateUserPreferences({ theme: 'system' });
+              } catch (error) {
+                console.error('Failed to update theme preference:', error);
+              }
+            }
+          }}
+        >
           System
         </DropdownMenuItem>
       </DropdownMenuContent>

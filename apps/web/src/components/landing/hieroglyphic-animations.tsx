@@ -218,10 +218,10 @@ export function HieroglyphicAnimations({
 
   const isDark = resolvedTheme === 'dark';
 
-  // Use ISIS primary (bright green) and Egyptian gold for dark theme
+  // Use ANUBIS primary (bright green) and Egyptian gold for dark theme
   // Use Egyptian bronze and amber for light theme for better contrast
   const glyphColors = isDark
-    ? ['var(--isis-primary)', 'var(--egypt-gold)', 'var(--egypt-amber)']
+    ? ['var(--anubis-primary)', 'var(--egypt-gold)', 'var(--egypt-amber)']
     : ['var(--egypt-bronze)', 'var(--egypt-dark-stone)', 'var(--egypt-stone)'];
 
   return (
@@ -267,7 +267,7 @@ export function HieroglyphicAnimations({
               animationDelay: '2s',
               animationDuration: '15s',
               textShadow: isDark
-                ? '0 0 30px var(--egypt-gold), 0 0 60px var(--isis-primary)'
+                ? '0 0 30px var(--egypt-gold), 0 0 60px var(--anubis-primary)'
                 : '0 2px 8px rgba(0,0,0,0.15)',
             }}
           >
@@ -281,12 +281,14 @@ export function HieroglyphicAnimations({
           <div
             className="font-bold text-5xl tracking-wider"
             style={{
-              color: isDark ? 'var(--isis-primary)' : 'var(--egypt-dark-stone)',
+              color: isDark
+                ? 'var(--anubis-primary)'
+                : 'var(--egypt-dark-stone)',
               opacity: isDark ? 0.12 : 0.1,
               animationDelay: '5s',
               animationDuration: '12s',
               textShadow: isDark
-                ? '0 0 35px var(--isis-primary), 0 0 70px var(--isis-accent)'
+                ? '0 0 35px var(--anubis-primary), 0 0 70px var(--anubis-accent)'
                 : '0 3px 10px rgba(0,0,0,0.12)',
             }}
           >
@@ -300,12 +302,12 @@ export function HieroglyphicAnimations({
           <div
             className="font-bold text-6xl tracking-wider"
             style={{
-              color: isDark ? 'var(--isis-accent)' : 'var(--egypt-amber)',
+              color: isDark ? 'var(--anubis-accent)' : 'var(--egypt-amber)',
               opacity: isDark ? 0.1 : 0.08,
               animationDelay: '8s',
               animationDuration: '18s',
               textShadow: isDark
-                ? '0 0 40px var(--isis-accent), 0 0 80px var(--isis-primary)'
+                ? '0 0 40px var(--anubis-accent), 0 0 80px var(--anubis-primary)'
                 : '0 4px 12px rgba(0,0,0,0.1)',
             }}
           >

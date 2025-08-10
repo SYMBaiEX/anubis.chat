@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Core Development
+
 ```bash
 # Install dependencies (using Bun package manager)
 bun install
@@ -30,6 +31,7 @@ bun check-types           # TypeScript validation across monorepo
 ```
 
 ### Convex Backend Commands
+
 ```bash
 cd packages/backend
 bun dev                   # Start Convex dev server
@@ -37,6 +39,7 @@ bun dev:setup            # Configure Convex project
 ```
 
 ### Frontend Specific
+
 ```bash
 cd apps/web
 bun dev                   # Start Next.js dev server on port 3001
@@ -47,11 +50,14 @@ bun generate-pwa-assets   # Generate PWA icons and manifest
 ## Architecture Overview
 
 ### Monorepo Structure
-ISIS Chat uses **Turborepo** with a modular architecture:
+
+ANUBIS Chat uses **Turborepo** with a modular architecture:
+
 - **apps/web**: Next.js 15 frontend with App Router, React 19, TypeScript
 - **packages/backend**: Convex backend-as-a-service for real-time data
 
 ### Frontend Architecture (apps/web)
+
 - **Framework**: Next.js 15 with App Router and React Server Components
 - **Styling**: Tailwind CSS v4 with Shadcn UI components
 - **State**: Convex reactive queries and mutations
@@ -63,6 +69,7 @@ ISIS Chat uses **Turborepo** with a modular architecture:
   - Providers wrapped in `src/components/providers.tsx`
 
 ### Backend Architecture (packages/backend)
+
 - **Platform**: Convex serverless backend
 - **Schema**: Type-safe schema in `convex/schema.ts`
 - **Functions**: Query/mutation functions in `convex/` directory
@@ -74,13 +81,16 @@ ISIS Chat uses **Turborepo** with a modular architecture:
   - Built-in authentication (when configured)
 
 ### AI/RAG System Design (Planned)
+
 Based on `.cursor/rules/`, the system is designed for:
+
 - **Multi-model AI**: Claude 3.5, GPT-4o, DeepSeek v3, Gemini 2.0
 - **Vector Search**: Qdrant for semantic search
 - **Streaming**: Vercel AI SDK for real-time responses
 - **RAG Pipeline**: Embeddings → Vector Store → Contextual Retrieval
 
 ### Web3 Integration (Planned)
+
 - **Blockchain**: Solana with Web3.js and Anchor
 - **Wallet**: Multi-wallet support (Phantom, Solflare)
 - **Smart Contracts**: Anchor framework integration
@@ -88,6 +98,7 @@ Based on `.cursor/rules/`, the system is designed for:
 ## Critical Context from Cursor Rules
 
 ### Code Quality Standards
+
 - **TypeScript strict mode** - No `any` types allowed
 - **Result<T, E> pattern** for error handling
 - **Functional programming** where appropriate
@@ -95,12 +106,14 @@ Based on `.cursor/rules/`, the system is designed for:
 - **Test coverage targets**: 90%+ unit, 85%+ branch
 
 ### Performance Requirements
+
 - Frontend: <3s load on 3G, <100ms interactions
 - API: <200ms average, <500ms P95
 - AI responses: <2s time-to-first-token
 - Vector search: <100ms query time
 
 ### Security Mandates
+
 - Zod validation for all inputs
 - Prompt injection prevention for AI
 - Parameterized database queries
@@ -108,6 +121,7 @@ Based on `.cursor/rules/`, the system is designed for:
 - CSRF protection and session management
 
 ### AI Implementation Approach
+
 - Uses Cursor's Auto Model Selection for optimal routing
 - Streaming with backpressure management
 - Hybrid semantic + keyword search
@@ -116,6 +130,7 @@ Based on `.cursor/rules/`, the system is designed for:
 ## Development Workflow
 
 ### Git Conventions
+
 ```bash
 # Commit message format (enforced by tooling)
 feat: New feature
@@ -131,18 +146,21 @@ chore: Maintenance
 ```
 
 ### File Organization
+
 - Components: `src/components/` with UI subfolder for primitives
 - App routes: `src/app/` following Next.js conventions
 - Backend functions: `packages/backend/convex/`
 - Shared types: Define in backend, import in frontend
 
 ### Convex Development Pattern
+
 1. Define schema in `packages/backend/convex/schema.ts`
 2. Create query/mutation functions in `convex/` directory
 3. Use generated hooks in frontend via `convex/react`
 4. Mutations modify data, queries read reactively
 
 ### Component Development Pattern
+
 1. Server Components for data fetching (default)
 2. Client Components for interactivity (use client directive)
 3. Compose with Shadcn UI primitives
@@ -152,6 +170,7 @@ chore: Maintenance
 ## Technology Stack Reference
 
 ### Core Dependencies
+
 - **Runtime**: Bun 1.2.18 (package manager and runtime)
 - **Framework**: Next.js 15 with React 19
 - **Backend**: Convex 1.25.4
@@ -161,6 +180,7 @@ chore: Maintenance
 - **Code Quality**: Biome, Ultracite, Husky
 
 ### Development Tools
+
 - **Cursor IDE**: Auto model selection enabled
 - **TypeScript**: Strict mode configuration
 - **Git Hooks**: Husky + lint-staged for pre-commit
@@ -169,12 +189,14 @@ chore: Maintenance
 ## Known Patterns and Constraints
 
 ### Current Implementation Status
+
 - Basic Convex todo example implemented
 - PWA manifest and icons configured
 - Theme switching (dark/light mode) enabled
 - Component library initialized with Shadcn
 
 ### Pending Features (from rules)
+
 - AI/RAG system integration
 - Vector database setup
 - Solana wallet integration
@@ -182,15 +204,18 @@ chore: Maintenance
 - Testing infrastructure
 
 ### Important Files
+
 - `packages/backend/convex/schema.ts`: Database schema
 - `apps/web/src/components/providers.tsx`: App providers
 - `apps/web/src/app/layout.tsx`: Root layout
 - `.cursor/rules/main.mdc`: Primary development guidelines
 
 ## Code Research Guidance
+
 - **Research Best Practices**:
   - NEVER USE ANY TYPES, USE CONTEXT7 AND THE GREP MCP TO RESEARCH GITHUB FOR BEST PRACTICES AND DOCS
 
 ## Development Restrictions
+
 - **Key Constraint**:
   - Dont touch auth, convex, or api

@@ -83,7 +83,7 @@ export function ModelGrid({
         />
       )}
 
-      <div className={`grid ${getGridCols()} gap-3 ${gridClassName}`}>
+      <div className={`grid ${getGridCols()} gap-2 sm:gap-3 ${gridClassName}`}>
         {availableModels.map((model) => (
           <ModelCard
             compact={compact}

@@ -1,5 +1,5 @@
 /**
- * Component Types and Interfaces for ISIS Chat UI Components
+ * Component Types and Interfaces for anubis.chat UI Components
  * Comprehensive type definitions for all UI components
  */
 

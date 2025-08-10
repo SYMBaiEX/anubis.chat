@@ -11,9 +11,9 @@ import { type AuthenticatedRequest, withAuth } from '@/lib/middleware/auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
 import {
   addSecurityHeaders,
+  errorResponse,
   successResponse,
   validationErrorResponse,
-  errorResponse,
 } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
 
@@ -31,7 +31,7 @@ interface CacheEntry {
 
 class Context7Cache {
   private cache: Map<string, CacheEntry> = new Map();
-  private readonly DEFAULT_TTL = 3600000; // 1 hour in milliseconds
+  private readonly DEFAULT_TTL = 3_600_000; // 1 hour in milliseconds
 
   get(key: string): unknown | null {
     const entry = this.cache.get(key);
@@ -77,7 +77,7 @@ const resolveLibrarySchema = z.object({
 const getDocsSchema = z.object({
   action: z.literal('get_docs'),
   libraryId: z.string().min(1).max(200),
-  tokens: z.number().min(100).max(50000).optional().default(10000),
+  tokens: z.number().min(100).max(50_000).optional().default(10_000),
   topic: z.string().max(100).optional(),
 });
 
@@ -98,7 +98,7 @@ interface RateLimitEntry {
 class Context7RateLimiter {
   private limits: Map<string, RateLimitEntry> = new Map();
   private readonly MAX_REQUESTS_PER_HOUR = 100;
-  private readonly WINDOW_MS = 3600000; // 1 hour
+  private readonly WINDOW_MS = 3_600_000; // 1 hour
 
   canProceed(userId: string): boolean {
     const now = Date.now();
@@ -123,7 +123,7 @@ class Context7RateLimiter {
   getRemainingRequests(userId: string): number {
     const entry = this.limits.get(userId);
     if (!entry) return this.MAX_REQUESTS_PER_HOUR;
-    
+
     const now = Date.now();
     if (now > entry.resetTime) {
       return this.MAX_REQUESTS_PER_HOUR;
@@ -135,7 +135,7 @@ class Context7RateLimiter {
   getResetTime(userId: string): number | null {
     const entry = this.limits.get(userId);
     if (!entry) return null;
-    
+
     const now = Date.now();
     if (now > entry.resetTime) {
       return null;
@@ -166,7 +166,8 @@ export async function POST(request: NextRequest) {
           const response = NextResponse.json(
             {
               error: 'Rate limit exceeded',
-              message: 'You have exceeded the maximum number of Context7 requests',
+              message:
+                'You have exceeded the maximum number of Context7 requests',
               resetTime,
             },
             { status: 429 }
@@ -196,10 +197,7 @@ export async function POST(request: NextRequest) {
 
         // Check if Context7 server is connected
         if (!mcpManager.isServerConnected('context7')) {
-          return errorResponse(
-            'Context7 server is not connected',
-            503
-          );
+          return errorResponse('Context7 server is not connected', 503);
         }
 
         let result: unknown;
@@ -207,7 +205,7 @@ export async function POST(request: NextRequest) {
 
         if (requestData.action === 'resolve_library') {
           cacheKey = `resolve:${requestData.libraryName}`;
-          
+
           // Check cache first
           const cached = context7Cache.get(cacheKey);
           if (cached) {
@@ -220,7 +218,7 @@ export async function POST(request: NextRequest) {
               'resolve_library_id',
               { libraryName: requestData.libraryName }
             );
-            
+
             // Cache the result
             context7Cache.set(cacheKey, result);
             log.info('Context7 library resolved and cached', {
@@ -231,7 +229,7 @@ export async function POST(request: NextRequest) {
           // Get documentation
           const { libraryId, tokens, topic } = requestData;
           cacheKey = `docs:${libraryId}:${tokens}:${topic || 'general'}`;
-          
+
           // Check cache first
           const cached = context7Cache.get(cacheKey);
           if (cached) {
@@ -239,18 +237,14 @@ export async function POST(request: NextRequest) {
             result = cached;
           } else {
             // Call Context7 to get documentation
-            result = await mcpManager.callTool(
-              'context7',
-              'get_library_docs',
-              {
-                context7CompatibleLibraryID: libraryId,
-                tokens,
-                ...(topic && { topic }),
-              }
-            );
-            
+            result = await mcpManager.callTool('context7', 'get_library_docs', {
+              context7CompatibleLibraryID: libraryId,
+              tokens,
+              ...(topic && { topic }),
+            });
+
             // Cache the result with shorter TTL for docs
-            context7Cache.set(cacheKey, result, 1800000); // 30 minutes
+            context7Cache.set(cacheKey, result, 1_800_000); // 30 minutes
             log.info('Context7 docs fetched and cached', {
               libraryId,
               tokens,
@@ -262,7 +256,7 @@ export async function POST(request: NextRequest) {
         // Add rate limit headers
         const remaining = rateLimiter.getRemainingRequests(userId);
         const resetTime = rateLimiter.getResetTime(userId);
-        
+
         const response = successResponse({
           result,
           cached: !!context7Cache.get(cacheKey),
@@ -283,19 +277,13 @@ export async function POST(request: NextRequest) {
         log.error('Context7 API error', {
           error: error instanceof Error ? error.message : String(error),
         });
-        
+
         // Check if it's a Context7 server error
         if (error instanceof Error && error.message.includes('context7')) {
-          return errorResponse(
-            'Context7 service temporarily unavailable',
-            503
-          );
+          return errorResponse('Context7 service temporarily unavailable', 503);
         }
-        
-        return errorResponse(
-          'Failed to process Context7 request',
-          500
-        );
+
+        return errorResponse('Failed to process Context7 request', 500);
       }
     });
   });
@@ -309,7 +297,7 @@ export async function GET(request: NextRequest) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const userId = authReq.user.id;
-        
+
         // Ensure MCP servers are initialized
         await ensureMCPServersInitialized();
 
@@ -332,11 +320,8 @@ export async function GET(request: NextRequest) {
         log.error('Context7 status error', {
           error: error instanceof Error ? error.message : String(error),
         });
-        
-        return errorResponse(
-          'Failed to get Context7 status',
-          500
-        );
+
+        return errorResponse('Failed to get Context7 status', 500);
       }
     });
   });
@@ -372,11 +357,8 @@ export async function DELETE(request: NextRequest) {
         log.error('Context7 cache clear error', {
           error: error instanceof Error ? error.message : String(error),
         });
-        
-        return errorResponse(
-          'Failed to clear Context7 cache',
-          500
-        );
+
+        return errorResponse('Failed to clear Context7 cache', 500);
       }
     });
   });

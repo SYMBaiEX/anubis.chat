@@ -105,70 +105,6 @@ export const AI_MODELS: AIModel[] = [
     speed: 'medium',
     intelligence: 'advanced',
   }),
-  {
-    id: 'openrouter/anthropic/claude-3.7-sonnet:thinking',
-    name: 'Claude 3.7 Sonnet (Thinking) – OpenRouter',
-    provider: 'openrouter',
-    description: 'Anthropic Claude 3.7 Sonnet with Thinking on OpenRouter',
-    contextWindow: 200_000,
-    maxOutput: 8192,
-    pricing: { input: 0, output: 0 },
-    capabilities: ['reasoning', 'coding', 'analysis'],
-    speed: 'medium',
-    intelligence: 'expert',
-    released: 'August 2025',
-    default: false,
-  },
-  {
-    id: 'openrouter/openai/gpt-4o-mini',
-    name: 'GPT-4o Mini – OpenRouter',
-    provider: 'openrouter',
-    description: 'OpenAI GPT-4o Mini via OpenRouter, fast and low-cost',
-    contextWindow: 128_000,
-    maxOutput: 4096,
-    pricing: { input: 0, output: 0 },
-    capabilities: ['general', 'coding', 'analysis'],
-    speed: 'fast',
-    intelligence: 'advanced',
-    released: '2025',
-  },
-  {
-    id: 'openrouter/deepseek/deepseek-chat',
-    name: 'DeepSeek Chat – OpenRouter',
-    provider: 'openrouter',
-    description: 'DeepSeek chat model via OpenRouter',
-    contextWindow: 32_768,
-    maxOutput: 8192,
-    pricing: { input: 0, output: 0 },
-    capabilities: ['coding', 'math', 'reasoning'],
-    speed: 'fast',
-    intelligence: 'advanced',
-  },
-  {
-    id: 'openrouter/qwen/qwen2.5-coder:32b',
-    name: 'Qwen2.5 Coder 32B – OpenRouter',
-    provider: 'openrouter',
-    description: 'Qwen2.5 Coder 32B free-tier on OpenRouter',
-    contextWindow: 128_000,
-    maxOutput: 8192,
-    pricing: { input: 0, output: 0 },
-    capabilities: ['coding', 'reasoning'],
-    speed: 'fast',
-    intelligence: 'advanced',
-    released: 'August 2025',
-  },
-  {
-    id: 'openrouter/meta/llama-3.1-70b-instruct',
-    name: 'Llama 3.1 70B Instruct – OpenRouter',
-    provider: 'openrouter',
-    description: 'Meta Llama 3.1 70B instruct via OpenRouter',
-    contextWindow: 131_072,
-    maxOutput: 8192,
-    pricing: { input: 0, output: 0 },
-    capabilities: ['general', 'coding', 'analysis'],
-    speed: 'medium',
-    intelligence: 'advanced',
-  },
   // OpenAI Models (August 2025)
   {
     id: 'gpt-5',
@@ -193,32 +129,6 @@ export const AI_MODELS: AIModel[] = [
     default: false,
   },
   {
-    id: 'gpt-5-pro',
-    name: 'GPT-5 Pro',
-    provider: 'openai',
-    description: 'Extended thinking variant for complex problems',
-    contextWindow: 128_000,
-    maxOutput: 32_768,
-    pricing: { input: 60, output: 240 },
-    capabilities: ['deep-reasoning', 'complex-coding', 'research', 'analysis'],
-    speed: 'slow',
-    intelligence: 'frontier',
-    released: 'August 2025',
-  },
-  {
-    id: 'o3',
-    name: 'OpenAI o3',
-    provider: 'openai',
-    description: 'Most powerful reasoning model for coding, math, and science',
-    contextWindow: 128_000,
-    maxOutput: 16_384,
-    pricing: { input: 15, output: 60 },
-    capabilities: ['reasoning', 'coding', 'math', 'science', 'visual'],
-    speed: 'slow',
-    intelligence: 'frontier',
-    released: '2025',
-  },
-  {
     id: 'o4-mini',
     name: 'OpenAI o4-mini',
     provider: 'openai',
@@ -232,33 +142,21 @@ export const AI_MODELS: AIModel[] = [
     released: '2025',
   },
   {
-    id: 'gpt-4.1',
-    name: 'GPT-4.1',
+    id: 'gpt-4.1-mini',
+    name: 'GPT-4.1 Mini',
     provider: 'openai',
-    description: 'Enhanced GPT-4 with 1M token context',
-    contextWindow: 1_000_000,
-    maxOutput: 8192,
-    pricing: { input: 10, output: 30 },
-    capabilities: ['coding', 'analysis', 'creative', 'long-context'],
-    speed: 'medium',
-    intelligence: 'expert',
-    released: '2025',
-  },
-  {
-    id: 'gpt-4o',
-    name: 'GPT-4o',
-    provider: 'openai',
-    description: 'Optimized GPT-4 with June 2024 knowledge',
+    description: 'Compact and efficient model with enhanced reasoning',
     contextWindow: 128_000,
     maxOutput: 4096,
-    pricing: { input: 5, output: 15 },
-    capabilities: ['general', 'coding', 'analysis'],
+    pricing: { input: 0.4, output: 1.6 },
+    capabilities: ['coding', 'analysis', 'reasoning'],
     speed: 'fast',
     intelligence: 'advanced',
-    default: false,
+    released: '2025',
   },
 
-  // Anthropic Models (August 2025)
+  // Anthropic Models (August 2025) - COMMENTED OUT FOR NOW
+  /*
   {
     id: 'claude-opus-4.1',
     name: 'Claude Opus 4.1',
@@ -309,6 +207,7 @@ export const AI_MODELS: AIModel[] = [
     speed: 'fast',
     intelligence: 'basic',
   },
+  */
 
   // Google Models (August 2025)
   {
@@ -398,7 +297,7 @@ export const isPremiumModel = (model: AIModel): boolean => {
     model.intelligence === 'frontier' ||
     model.intelligence === 'expert' ||
     // Specific high-value models
-    ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4'].includes(model.id)
+    ['gpt-4.1-mini'].includes(model.id)
   );
 };
 

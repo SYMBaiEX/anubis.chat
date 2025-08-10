@@ -203,7 +203,7 @@ export function useWalletAuthFlow() {
       > => {
         const nonce = crypto.randomUUID();
         const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-        const challenge = `Sign this message to authenticate with ISIS Chat.\n\nNonce: ${nonce}\nExpires: ${new Date(expiresAt).toISOString()}`;
+        const challenge = `Sign this message to authenticate with Anubis Chat.\n\nNonce: ${nonce}\nExpires: ${new Date(expiresAt).toISOString()}`;
 
         const storeResult = await storeNonce({
           publicKey,

@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/tooltip';
 import type { MessageInputProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
+import { type FontSize, getFontSizeClasses } from '@/lib/utils/font-sizes';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
@@ -45,7 +46,8 @@ export function MessageInput({
   maxLength = 4000,
   className,
   children,
-}: MessageInputProps & { onTyping?: () => void }) {
+  fontSize = 'medium',
+}: MessageInputProps & { onTyping?: () => void; fontSize?: FontSize }) {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -53,6 +55,9 @@ export function MessageInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { theme } = useTheme();
+
+  // Get dynamic font size classes
+  const fontSizes = getFontSizeClasses(fontSize);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -136,10 +141,15 @@ export function MessageInput({
 
   return (
     <TooltipProvider>
-      <div className={cn('flex flex-col space-y-2', className)}>
+      <div className={cn('flex flex-col space-y-1 sm:space-y-2', className)}>
         {/* Character Count */}
         {message.length > maxLength * 0.8 && (
-          <div className="text-right text-muted-foreground text-xs">
+          <div
+            className={cn(
+              'text-right text-muted-foreground',
+              fontSizes.characterCount
+            )}
+          >
             <span className={cn(isAtMaxLength && 'text-red-500')}>
               {message.length}/{maxLength}
             </span>
@@ -147,19 +157,19 @@ export function MessageInput({
         )}
 
         {/* Input Container */}
-        <div className="flex items-end gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {/* Attachment Buttons - Stacked vertically */}
-          <div className="flex flex-col gap-0.5">
+          <div className="hidden flex-col gap-0 sm:flex">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  className="h-7 w-7 p-0"
+                  className="h-[22px] w-5 p-0"
                   disabled={disabled}
                   onClick={() => fileInputRef.current?.click()}
                   size="icon"
                   variant="ghost"
                 >
-                  <Paperclip className="h-3.5 w-3.5" />
+                  <Paperclip className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="left">Attach file</TooltipContent>
@@ -168,13 +178,13 @@ export function MessageInput({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  className="h-7 w-7 p-0"
+                  className="h-[22px] w-5 p-0"
                   disabled={disabled}
                   onClick={() => imageInputRef.current?.click()}
                   size="icon"
                   variant="ghost"
                 >
-                  <Image className="h-3.5 w-3.5" />
+                  <Image className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="left">Attach image</TooltipContent>
@@ -184,7 +194,10 @@ export function MessageInput({
           {/* Main Input Area */}
           <div className="relative flex-1">
             <Textarea
-              className="max-h-[200px] min-h-[56px] resize-none pr-12"
+              className={cn(
+                'max-h-[200px] min-h-[36px] resize-none pr-10 sm:min-h-[44px] sm:pr-12',
+                fontSizes.inputText
+              )}
               disabled={disabled}
               maxLength={maxLength}
               onChange={(e) => {
@@ -201,18 +214,18 @@ export function MessageInput({
             />
 
             {/* Emoji Button - Vertically centered in the right side of input */}
-            <div className="-translate-y-1/2 absolute top-1/2 right-2">
+            <div className="-translate-y-1/2 absolute top-1/2 right-1 sm:right-2">
               <Popover onOpenChange={setShowEmojiPicker} open={showEmojiPicker}>
                 <PopoverTrigger asChild>
                   <Button
-                    className="h-8 w-8 p-0"
+                    className="h-5 w-5 p-0 sm:h-6 sm:w-6"
                     disabled={disabled}
                     size="icon"
                     variant="ghost"
                   >
                     <Smile
                       className={cn(
-                        'h-4 w-4 transition-colors',
+                        'h-3 w-3 transition-colors sm:h-3.5 sm:w-3.5',
                         showEmojiPicker && 'text-primary'
                       )}
                     />
@@ -241,13 +254,13 @@ export function MessageInput({
           </div>
 
           {/* Voice/Send Buttons - Stacked vertically */}
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0">
             {/* Voice Recording */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   className={cn(
-                    'h-7 w-7 p-0',
+                    'h-[18px] w-6 p-0 sm:h-[22px] sm:w-7',
                     isRecording && 'bg-red-500 text-white hover:bg-red-600'
                   )}
                   disabled={disabled}
@@ -256,9 +269,9 @@ export function MessageInput({
                   variant={isRecording ? 'default' : 'ghost'}
                 >
                   {isRecording ? (
-                    <Square className="h-3.5 w-3.5" />
+                    <Square className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   ) : (
-                    <Mic className="h-3.5 w-3.5" />
+                    <Mic className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   )}
                 </Button>
               </TooltipTrigger>
@@ -271,13 +284,13 @@ export function MessageInput({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  className="h-7 w-7 p-0"
+                  className="h-[18px] w-6 p-0 sm:h-[22px] sm:w-7"
                   disabled={disabled || !isMessageValid}
                   onClick={handleSend}
                   size="icon"
                   variant="default"
                 >
-                  <Send className="h-3.5 w-3.5" />
+                  <Send className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">Send message (Enter)</TooltipContent>
@@ -299,7 +312,7 @@ export function MessageInput({
                 style={{ animationDelay: '1s' }}
               />
             </div>
-            <span className="font-medium text-sm">Recording...</span>
+            <span className="font-medium text-xs sm:text-sm">Recording...</span>
             <Button onClick={handleVoiceToggle} size="sm" variant="ghost">
               <MicOff className="h-4 w-4" />
             </Button>
