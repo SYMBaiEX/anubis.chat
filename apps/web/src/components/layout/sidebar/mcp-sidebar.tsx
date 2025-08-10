@@ -1,8 +1,15 @@
 'use client';
 
-import { Server, Plus, Power, Settings, AlertCircle, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import {
+  AlertCircle,
+  CheckCircle,
+  Plus,
+  Power,
+  Server,
+  Settings,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 // Mock MCP servers data
 const mockServers = [
@@ -57,11 +64,23 @@ export function McpSidebar() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'connected':
-        return <Badge variant="outline" className="bg-green-500/10 text-green-600">Connected</Badge>;
+        return (
+          <Badge className="bg-green-500/10 text-green-600" variant="outline">
+            Connected
+          </Badge>
+        );
       case 'disconnected':
-        return <Badge variant="outline" className="bg-gray-500/10 text-gray-600">Disconnected</Badge>;
+        return (
+          <Badge className="bg-gray-500/10 text-gray-600" variant="outline">
+            Disconnected
+          </Badge>
+        );
       case 'error':
-        return <Badge variant="outline" className="bg-red-500/10 text-red-600">Error</Badge>;
+        return (
+          <Badge className="bg-red-500/10 text-red-600" variant="outline">
+            Error
+          </Badge>
+        );
       default:
         return null;
     }
@@ -74,11 +93,11 @@ export function McpSidebar() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-semibold text-lg">MCP Servers</h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Manage your MCP connections
             </p>
           </div>
-          <Button size="sm" variant="outline" className="h-8">
+          <Button className="h-8" size="sm" variant="outline">
             <Plus className="h-4 w-4" />
           </Button>
         </div>
@@ -89,8 +108,8 @@ export function McpSidebar() {
         <div className="space-y-2 pb-4">
           {mockServers.map((server) => (
             <div
-              key={server.id}
               className="group rounded-lg border p-3 transition-colors hover:bg-muted"
+              key={server.id}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -98,29 +117,21 @@ export function McpSidebar() {
                     {getStatusIcon(server.status)}
                     <span className="font-medium text-sm">{server.name}</span>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="mt-1 text-muted-foreground text-xs">
                     {server.description}
                   </p>
                   <div className="mt-2 flex items-center gap-2">
                     {getStatusBadge(server.status)}
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       Port: {server.port}
                     </span>
                   </div>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7"
-                  >
+                  <Button className="h-7 w-7" size="icon" variant="ghost">
                     <Power className="h-3 w-3" />
                   </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7"
-                  >
+                  <Button className="h-7 w-7" size="icon" variant="ghost">
                     <Settings className="h-3 w-3" />
                   </Button>
                 </div>

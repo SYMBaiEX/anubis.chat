@@ -9,10 +9,10 @@ import type {
   AIModel,
   Chat,
   ChatMessage,
-  StreamingMessage,
   Document,
   MessageMetadata,
   SearchResult,
+  StreamingMessage,
   User,
 } from './api';
 
@@ -77,7 +77,15 @@ export interface ChatItemProps extends BaseComponentProps {
 }
 
 export interface ChatHeaderProps extends BaseComponentProps {
-  chat: Pick<Chat, 'title' | 'model' | 'lastMessageAt' | 'updatedAt' | 'systemPrompt' | 'temperature'> & {
+  chat: Pick<
+    Chat,
+    | 'title'
+    | 'model'
+    | 'lastMessageAt'
+    | 'updatedAt'
+    | 'systemPrompt'
+    | 'temperature'
+  > & {
     _id: string;
   };
   onSettingsClick?: () => void;

@@ -1,8 +1,8 @@
 'use client';
 
-import { GitBranch, Play, Pause, Plus, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Clock, GitBranch, Pause, Play, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 const mockWorkflows = [
   {
@@ -35,9 +35,9 @@ export function WorkflowSidebar() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-semibold text-lg">Workflows</h2>
-            <p className="text-sm text-muted-foreground">Automation tasks</p>
+            <p className="text-muted-foreground text-sm">Automation tasks</p>
           </div>
-          <Button size="sm" variant="outline" className="h-8">
+          <Button className="h-8" size="sm" variant="outline">
             <Plus className="h-4 w-4" />
           </Button>
         </div>
@@ -47,8 +47,8 @@ export function WorkflowSidebar() {
         <div className="space-y-2 pb-4">
           {mockWorkflows.map((workflow) => (
             <div
+              className="group cursor-pointer rounded-lg border p-3 transition-colors hover:bg-muted"
               key={workflow.id}
-              className="group rounded-lg border p-3 transition-colors hover:bg-muted cursor-pointer"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -58,21 +58,23 @@ export function WorkflowSidebar() {
                   </div>
                   <div className="mt-2 flex items-center gap-2">
                     <Badge
-                      variant={workflow.status === 'running' ? 'default' : 'secondary'}
                       className="h-5 text-xs"
+                      variant={
+                        workflow.status === 'running' ? 'default' : 'secondary'
+                      }
                     >
                       {workflow.status}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       <Clock className="mr-1 inline h-3 w-3" />
                       {workflow.nextRun}
                     </span>
                   </div>
                 </div>
                 <Button
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100"
                   size="icon"
                   variant="ghost"
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100"
                 >
                   {workflow.status === 'running' ? (
                     <Pause className="h-3 w-3" />

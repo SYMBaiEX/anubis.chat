@@ -9,8 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type {
+  SubscriptionStatus as SubscriptionData,
+  SubscriptionLimits,
+  UpgradePrompt,
+} from '@/hooks/use-subscription';
 import type { UserProfileProps } from '@/lib/types/components';
-import type { SubscriptionStatus as SubscriptionData, SubscriptionLimits, UpgradePrompt } from '@/hooks/use-subscription';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
 import { SubscriptionStatus } from './subscription-status';
@@ -90,7 +94,9 @@ export function UserProfile({
                 {user?.displayName ?? 'Anonymous User'}
               </h3>
               <p className="text-gray-600 text-sm dark:text-gray-400">
-                {user?.walletAddress ? formatWalletAddress(user.walletAddress) : 'No wallet connected'}
+                {user?.walletAddress
+                  ? formatWalletAddress(user.walletAddress)
+                  : 'No wallet connected'}
               </p>
               <div className="mt-2 flex items-center space-x-2">
                 <Badge
@@ -100,11 +106,19 @@ export function UserProfile({
                   {user?.isActive ? 'Active' : 'Inactive'}
                 </Badge>
                 <Badge
-                  className={getSubscriptionTierColor(subscription?.tier || user?.subscription?.tier || 'free')}
+                  className={getSubscriptionTierColor(
+                    subscription?.tier || user?.subscription?.tier || 'free'
+                  )}
                   size="sm"
                 >
-                  {(subscription?.tier || user?.subscription?.tier || 'free').charAt(0).toUpperCase() +
-                    (subscription?.tier || user?.subscription?.tier || 'free').slice(1)}
+                  {(subscription?.tier || user?.subscription?.tier || 'free')
+                    .charAt(0)
+                    .toUpperCase() +
+                    (
+                      subscription?.tier ||
+                      user?.subscription?.tier ||
+                      'free'
+                    ).slice(1)}
                 </Badge>
               </div>
             </div>
@@ -176,7 +190,9 @@ export function UserProfile({
                       Account Created
                     </h4>
                     <p className="text-gray-600 text-sm dark:text-gray-400">
-                      {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+                      {user?.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString()
+                        : 'Unknown'}
                     </p>
                   </div>
                 </div>
@@ -200,8 +216,9 @@ export function UserProfile({
                     Theme
                   </h4>
                   <p className="text-gray-600 text-sm dark:text-gray-400">
-                    {user.preferences?.theme 
-                      ? user.preferences.theme.charAt(0).toUpperCase() + user.preferences.theme.slice(1)
+                    {user.preferences?.theme
+                      ? user.preferences.theme.charAt(0).toUpperCase() +
+                        user.preferences.theme.slice(1)
                       : 'Not set'}
                   </p>
                 </div>
@@ -216,8 +233,10 @@ export function UserProfile({
                     Notifications
                   </h4>
                   <p className="text-gray-600 text-sm dark:text-gray-400">
-                    {user.preferences?.notifications !== undefined 
-                      ? (user.preferences.notifications ? 'Enabled' : 'Disabled')
+                    {user.preferences?.notifications !== undefined
+                      ? user.preferences.notifications
+                        ? 'Enabled'
+                        : 'Disabled'
                       : 'Not set'}
                   </p>
                 </div>
@@ -241,10 +260,12 @@ export function UserProfile({
       label: 'Subscription',
       content: (
         <SubscriptionStatus
-          subscription={subscription || user?.subscription}
           limits={limits}
+          showUpgrade={
+            (subscription?.tier || user?.subscription?.tier) === 'free'
+          }
+          subscription={subscription || user?.subscription}
           upgradePrompt={upgradePrompt}
-          showUpgrade={(subscription?.tier || user?.subscription?.tier) === 'free'}
         />
       ),
     },

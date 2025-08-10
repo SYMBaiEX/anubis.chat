@@ -1,9 +1,9 @@
 'use client';
 
-import React, { memo } from 'react';
 import { Star } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import React, { memo } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
+import { Card } from '@/components/ui/card';
 
 const testimonials = [
   {
@@ -30,14 +30,14 @@ const testimonials = [
 function Testimonials() {
   return (
     <AnimatedSection
-      className="py-20 md:py-28 lg:py-32"
-      auroraVariant="gold"
-      includeRosetta={false}
-      includeHieroglyphs={false}
-      dustIntensity="low"
       allowOverlap
-      softEdges
+      auroraVariant="gold"
+      className="py-20 md:py-28 lg:py-32"
       data-bg-variant="gold"
+      dustIntensity="low"
+      includeHieroglyphs={false}
+      includeRosetta={false}
+      softEdges
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-3xl text-center">
@@ -50,16 +50,22 @@ function Testimonials() {
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((t) => (
-            <Card key={t.name} className="bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6">
+            <Card
+              className="bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6"
+              key={t.name}
+            >
               <div className="mb-3 flex gap-1">
                 {Array.from({ length: t.rating }).map((_, i) => (
-                  <Star className="h-4 w-4 fill-egypt-gold text-egypt-gold" key={i} />
+                  <Star
+                    className="h-4 w-4 fill-egypt-gold text-egypt-gold"
+                    key={i}
+                  />
                 ))}
               </div>
               <p className="mb-4 text-muted-foreground">“{t.content}”</p>
               <div>
                 <p className="font-semibold">{t.name}</p>
-                <p className="text-sm text-muted-foreground">{t.role}</p>
+                <p className="text-muted-foreground text-sm">{t.role}</p>
               </div>
             </Card>
           ))}
@@ -70,5 +76,3 @@ function Testimonials() {
 }
 
 export default memo(Testimonials);
-
-

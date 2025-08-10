@@ -1,15 +1,15 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useSidebar } from './sidebar-context';
+import { AgentsSidebar } from './agents-sidebar';
 import { ChatSidebar } from './chat-sidebar';
 import { DashboardSidebar } from './dashboard-sidebar';
-import { AgentsSidebar } from './agents-sidebar';
-import { McpSidebar } from './mcp-sidebar';
 import { MarketplaceSidebar } from './marketplace-sidebar';
+import { McpSidebar } from './mcp-sidebar';
+import { useSidebar } from './sidebar-context';
 import { WorkflowSidebar } from './workflow-sidebar';
 
 export function PageSidebar() {
@@ -51,14 +51,18 @@ export function PageSidebar() {
       {/* Sidebar */}
       <div
         className={cn(
-          'fixed left-0 top-[65px] z-40 h-[calc(100vh-65px)] border-r border-border/50 bg-card/95 backdrop-blur-sm transition-all duration-300',
+          'fixed top-[65px] left-0 z-40 h-[calc(100vh-65px)] border-border/50 border-r bg-card/95 backdrop-blur-sm transition-all duration-300',
           isOpen ? 'w-80' : 'w-0'
         )}
       >
-        <div className={cn('h-full overflow-hidden', isOpen ? 'block' : 'hidden')}>
+        <div
+          className={cn('h-full overflow-hidden', isOpen ? 'block' : 'hidden')}
+        >
           {/* Sidebar Header */}
-          <div className="flex h-14 items-center justify-between border-b border-border/50 px-4">
-            <div className="flex-1">{/* Title will be set by individual sidebars */}</div>
+          <div className="flex h-14 items-center justify-between border-border/50 border-b px-4">
+            <div className="flex-1">
+              {/* Title will be set by individual sidebars */}
+            </div>
             <Button
               className="h-8 w-8 p-0"
               onClick={() => setIsOpen(false)}
@@ -70,16 +74,15 @@ export function PageSidebar() {
           </div>
 
           {/* Sidebar Content */}
-          <div className="h-[calc(100%-56px)] overflow-y-auto">{sidebarContent}</div>
+          <div className="h-[calc(100%-56px)] overflow-y-auto">
+            {sidebarContent}
+          </div>
         </div>
       </div>
 
       {/* Main content offset */}
       <div
-        className={cn(
-          'transition-all duration-300',
-          isOpen ? 'ml-80' : 'ml-0'
-        )}
+        className={cn('transition-all duration-300', isOpen ? 'ml-80' : 'ml-0')}
       />
     </>
   );

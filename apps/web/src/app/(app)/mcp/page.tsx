@@ -24,9 +24,7 @@ interface MCPApiResponse {
 function isMCPStatusResponse(obj: unknown): obj is MCPStatusResponse {
   if (obj == null || typeof obj !== 'object') return false;
   const maybe = obj as Partial<MCPStatusResponse> & Record<string, unknown>;
-  return (
-    typeof maybe.initialized === 'boolean' && Array.isArray(maybe.servers)
-  );
+  return typeof maybe.initialized === 'boolean' && Array.isArray(maybe.servers);
 }
 
 export default function MCPServersPage() {

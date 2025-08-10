@@ -1,17 +1,23 @@
 'use client';
 
+import { api } from '@convex/_generated/api';
 import { useForm } from '@tanstack/react-form';
+import { useMutation } from 'convex/react';
+import { AlertTriangle, Crown, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { Crown, Zap, AlertTriangle } from 'lucide-react';
+import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
+import {
+  useAuthContext,
+  useSubscriptionStatus,
+} from '@/components/providers/auth-provider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -19,9 +25,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAuthContext, useSubscriptionStatus } from '@/components/providers/auth-provider';
-import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
-import { getModelsForTier, isPremiumModel, getModelById } from '@/lib/constants/ai-models';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  getModelById,
+  getModelsForTier,
+  isPremiumModel,
+} from '@/lib/constants/ai-models';
 import { failure, type Result, safeAsync, success } from '@/lib/utils/result';
 
 // =============================================================================
@@ -31,9 +40,9 @@ import { failure, type Result, safeAsync, success } from '@/lib/utils/result';
 // Dynamic model configuration based on subscription tier
 const getAvailableModels = (tier: 'free' | 'pro' | 'pro_plus' | undefined) => {
   if (!tier) return [];
-  
+
   const availableModels = getModelsForTier(tier);
-  return availableModels.map(model => ({
+  return availableModels.map((model) => ({
     value: model.id,
     label: model.name,
     isPremium: isPremiumModel(model),
@@ -86,7 +95,13 @@ const createAgentFormSchema = z.object({
     .enum(['general', 'research', 'analysis', 'blockchain', 'custom'])
     .default(AGENT_CONFIG.defaults.template),
   model: z
-    .enum(['gpt-5-nano', 'gpt-4o', 'gpt-4o-mini', 'claude-3-5-sonnet', 'gemini-2.0-flash'])
+    .enum([
+      'gpt-5-nano',
+      'gpt-4o',
+      'gpt-4o-mini',
+      'claude-3-5-sonnet',
+      'gemini-2.0-flash',
+    ])
     .default(AGENT_CONFIG.defaults.model),
   temperature: z
     .number()
@@ -120,78 +135,22 @@ interface CreateAgentError {
   details?: Record<string, string[]>;
 }
 
-async function createAgent(
-  data: CreateAgentFormData
-): Promise<Result<void, CreateAgentError>> {
-  try {
-    const payload = {
-      name: data.name,
-      description: data.description || undefined,
-      template: data.template,
-      model: data.model,
-      temperature: data.temperature,
-      maxTokens: data.maxTokens,
-      systemPrompt: data.systemPrompt || undefined,
-      tools: AGENT_CONFIG.defaults.tools,
-      maxSteps: data.maxSteps,
-      enableMCPTools: data.enableMCPTools,
-    };
-
-    const response = await fetch('/api/agents', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-
-      if (response.status === 422) {
-        return failure<CreateAgentError>({
-          code: 'VALIDATION_ERROR',
-          message: 'Please check your input and try again.',
-          details: errorData.details || {},
-        });
-      }
-
-      return failure<CreateAgentError>({
-        code: 'API_ERROR',
-        message: errorData.message || `Server error: ${response.status}`,
-      });
-    }
-
-    return success(undefined);
-  } catch (error) {
-    const err = error as Error;
-    if (err.name === 'TypeError' && err.message.includes('fetch')) {
-      return failure<CreateAgentError>({
-        code: 'NETWORK_ERROR',
-        message:
-          'Network connection failed. Please check your connection and try again.',
-      });
-    }
-
-    return failure<CreateAgentError>({
-      code: 'UNKNOWN_ERROR',
-      message: err.message || 'An unexpected error occurred.',
-    });
-  }
-}
-
 export default function NewAgentPage() {
   const router = useRouter();
   const { user } = useAuthContext();
   const subscription = useSubscriptionStatus();
-  
+  const createAgentMutation = useMutation(api.agents.create);
+
   // Check if user has reached agent creation limits
-  const canCreateAgent = subscription ? (
-    subscription.tier === 'free' ? true : // Free tier can create basic agents
-    subscription.tier === 'pro' ? true :  // Pro tier can create advanced agents
-    true // Pro+ tier can create unlimited agents
-  ) : false;
+  const canCreateAgent = subscription
+    ? subscription.tier === 'free'
+      ? true
+      : // Free tier can create basic agents
+        subscription.tier === 'pro'
+        ? true
+        : // Pro tier can create advanced agents
+          true // Pro+ tier can create unlimited agents
+    : false;
 
   const form = useForm({
     defaultValues: {
@@ -219,33 +178,50 @@ export default function NewAgentPage() {
         return;
       }
 
-      // Submit to API
-      const result = await createAgent(validation.data);
+      // Check if user wallet is available
+      if (!user?.walletAddress) {
+        toast.error('Please connect your wallet first');
+        return;
+      }
 
-      if (result.success) {
+      try {
+        // Prepare agent data
+        const agentData = {
+          name: validation.data.name,
+          type:
+            validation.data.template === 'custom'
+              ? 'custom'
+              : validation.data.template === 'blockchain'
+                ? 'trading'
+                : validation.data.template === 'analysis'
+                  ? 'portfolio'
+                  : validation.data.template === 'research'
+                    ? 'general'
+                    : ('general' as const),
+          description: validation.data.description || '',
+          systemPrompt:
+            validation.data.systemPrompt || 'You are a helpful AI assistant.',
+          capabilities: AGENT_CONFIG.defaults.tools,
+          model: validation.data.model,
+          temperature: validation.data.temperature,
+          maxTokens: validation.data.maxTokens,
+          maxSteps: validation.data.maxSteps,
+          createdBy: user.walletAddress,
+          tools: AGENT_CONFIG.defaults.tools,
+        };
+
+        console.log('Creating agent with data:', agentData);
+
+        // Submit to Convex
+        const result = await createAgentMutation(agentData);
+
+        console.log('Agent created successfully:', result);
         toast.success('Agent created successfully!');
-        router.push('/dashboard');
-      } else {
-        const { error } = result;
-
-        switch (error.code) {
-          case 'VALIDATION_ERROR':
-            toast.error(error.message);
-            if (error.details) {
-              Object.entries(error.details).forEach(([field, messages]) => {
-                if (messages.length > 0) {
-                  toast.error(`${field}: ${messages[0]}`);
-                }
-              });
-            }
-            break;
-          case 'NETWORK_ERROR':
-          case 'API_ERROR':
-          case 'UNKNOWN_ERROR':
-          default:
-            toast.error(error.message);
-            break;
-        }
+        router.push('/agents');
+      } catch (error) {
+        console.error('Failed to create agent:', error);
+        const err = error as Error;
+        toast.error(err.message || 'Failed to create agent');
       }
     },
   });
@@ -258,7 +234,9 @@ export default function NewAgentPage() {
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <h2 className="font-semibold text-xl">Loading subscription...</h2>
-          <p className="text-muted-foreground">Please wait while we load your subscription details.</p>
+          <p className="text-muted-foreground">
+            Please wait while we load your subscription details.
+          </p>
         </div>
       </div>
     );
@@ -269,14 +247,20 @@ export default function NewAgentPage() {
       <div className="mb-6">
         <h1 className="mb-2 font-semibold text-2xl">Create Agent</h1>
         <div className="flex items-center gap-3">
-          <Badge variant={subscription.tier === 'free' ? 'secondary' : 'default'} className="gap-1">
+          <Badge
+            className="gap-1"
+            variant={subscription.tier === 'free' ? 'secondary' : 'default'}
+          >
             <Crown className="h-3 w-3" />
             {subscription.tier} Plan
           </Badge>
           <p className="text-muted-foreground text-sm">
-            {subscription.tier === 'free' && 'Access to basic models and features'}
-            {subscription.tier === 'pro' && 'Access to premium models with limits'}
-            {subscription.tier === 'pro_plus' && 'Full access to all models and features'}
+            {subscription.tier === 'free' &&
+              'Access to basic models and features'}
+            {subscription.tier === 'pro' &&
+              'Access to premium models with limits'}
+            {subscription.tier === 'pro_plus' &&
+              'Full access to all models and features'}
           </p>
         </div>
       </div>
@@ -286,7 +270,8 @@ export default function NewAgentPage() {
         <Alert className="mb-6">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Free tier agents are limited to basic models. Upgrade to Pro or Pro+ to access premium AI models and advanced features.
+            Free tier agents are limited to basic models. Upgrade to Pro or Pro+
+            to access premium AI models and advanced features.
           </AlertDescription>
         </Alert>
       )}
@@ -437,7 +422,9 @@ export default function NewAgentPage() {
           {/* AI Model Selection */}
           <form.Field name="model">
             {(field) => {
-              const selectedModel = availableModels.find(m => m.value === field.state.value);
+              const selectedModel = availableModels.find(
+                (m) => m.value === field.state.value
+              );
               return (
                 <div className="space-y-2">
                   <Label htmlFor={field.name}>
@@ -446,9 +433,9 @@ export default function NewAgentPage() {
                   <Select
                     id={field.name}
                     name={field.name}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    value={field.state.value}
                   >
                     <option value="">Select an AI model</option>
                     {availableModels.map((model) => (
@@ -460,23 +447,30 @@ export default function NewAgentPage() {
                   {selectedModel && (
                     <div className="flex items-center gap-2">
                       {selectedModel.isPremium && (
-                        <Badge variant="outline" className="gap-1 text-xs">
+                        <Badge className="gap-1 text-xs" variant="outline">
                           <Zap className="h-3 w-3" />
                           Premium
                         </Badge>
                       )}
-                      <Badge variant="secondary" className="text-xs capitalize">
+                      <Badge className="text-xs capitalize" variant="secondary">
                         {selectedModel.tier}
                       </Badge>
                     </div>
                   )}
                   <p className="text-muted-foreground text-sm">
-                    {field.state.value === 'gpt-5-nano' && 'Ultra-efficient nano model with GPT-5 intelligence'}
-                    {field.state.value === 'gpt-4o' && 'Optimized GPT-4 with enhanced capabilities'}
-                    {field.state.value === 'gpt-4o-mini' && 'Fast and cost-effective for simple tasks'}
-                    {field.state.value === 'claude-3-5-sonnet' && 'Fast, intelligent, and cost-effective'}
-                    {field.state.value === 'gemini-2.0-flash' && 'Superior speed with native tool use'}
-                    {subscription.tier === 'free' && !field.state.value && 'Free tier has access to basic models. Upgrade for premium models.'}
+                    {field.state.value === 'gpt-5-nano' &&
+                      'Ultra-efficient nano model with GPT-5 intelligence'}
+                    {field.state.value === 'gpt-4o' &&
+                      'Optimized GPT-4 with enhanced capabilities'}
+                    {field.state.value === 'gpt-4o-mini' &&
+                      'Fast and cost-effective for simple tasks'}
+                    {field.state.value === 'claude-3-5-sonnet' &&
+                      'Fast, intelligent, and cost-effective'}
+                    {field.state.value === 'gemini-2.0-flash' &&
+                      'Superior speed with native tool use'}
+                    {subscription.tier === 'free' &&
+                      !field.state.value &&
+                      'Free tier has access to basic models. Upgrade for premium models.'}
                   </p>
                 </div>
               );
@@ -489,18 +483,22 @@ export default function NewAgentPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor={field.name}>Temperature</Label>
-                  <span className="text-muted-foreground text-sm">{field.state.value}</span>
+                  <span className="text-muted-foreground text-sm">
+                    {field.state.value}
+                  </span>
                 </div>
                 <Input
-                  type="range"
-                  id={field.name}
-                  name={field.name}
-                  min={0}
-                  max={2}
-                  step={0.1}
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(parseFloat(e.target.value))}
                   className="w-full"
+                  id={field.name}
+                  max={2}
+                  min={0}
+                  name={field.name}
+                  onChange={(e) =>
+                    field.handleChange(Number.parseFloat(e.target.value))
+                  }
+                  step={0.1}
+                  type="range"
+                  value={field.state.value}
                 />
                 <p className="text-muted-foreground text-xs">
                   Controls randomness: 0 = focused, 2 = creative
@@ -515,14 +513,16 @@ export default function NewAgentPage() {
               <div className="space-y-2">
                 <Label htmlFor={field.name}>Max Tokens</Label>
                 <Input
-                  type="number"
                   id={field.name}
-                  name={field.name}
+                  max={128_000}
                   min={1}
-                  max={128000}
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(parseInt(e.target.value, 10))}
+                  name={field.name}
+                  onChange={(e) =>
+                    field.handleChange(Number.parseInt(e.target.value, 10))
+                  }
                   placeholder="4096"
+                  type="number"
+                  value={field.state.value}
                 />
                 <p className="text-muted-foreground text-xs">
                   Maximum response length (1 token ≈ 4 characters)

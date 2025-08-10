@@ -667,12 +667,11 @@ export const getAgentStats = query({
     let allExecutions: Array<Array<Doc<'agentExecutions'>>> = [];
     try {
       allExecutions = await Promise.all(
-        agents.map(
-          (agent) =>
-            ctx.db
-              .query('agentExecutions')
-              .withIndex('by_agent', (q) => q.eq('agentId', agent._id))
-              .collect()
+        agents.map((agent) =>
+          ctx.db
+            .query('agentExecutions')
+            .withIndex('by_agent', (q) => q.eq('agentId', agent._id))
+            .collect()
         )
       );
     } catch {

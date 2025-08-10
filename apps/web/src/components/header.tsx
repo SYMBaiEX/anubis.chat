@@ -21,7 +21,10 @@ export default function Header() {
       />
       <div className="flex flex-row items-center justify-between px-4 py-3">
         <nav className="flex items-center gap-6">
-          <Link className="flex items-center gap-2" href={isAuthenticated ? "/dashboard" : "/"}>
+          <Link
+            className="flex items-center gap-2"
+            href={isAuthenticated ? '/dashboard' : '/'}
+          >
             <Image
               alt="ISIS Logo"
               className="h-9 w-9"

@@ -4,14 +4,17 @@
  */
 
 import 'server-only';
-import type { NextRequest } from 'next/server';
-import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@convex/_generated/api';
+import { ConvexHttpClient } from 'convex/browser';
+import type { NextRequest } from 'next/server';
 import { convexConfig } from '@/lib/env';
 import { APIErrorCode } from '@/lib/types/api';
-import { createErrorResponse, createSuccessResponse } from '@/lib/utils/api-response';
+import {
+  createErrorResponse,
+  createSuccessResponse,
+} from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { verifyJWTToken, isValidSolanaAddress } from './auth';
+import { isValidSolanaAddress, verifyJWTToken } from './auth';
 
 const log = createModuleLogger('subscription-auth-middleware');
 
@@ -23,7 +26,7 @@ export interface SubscriptionSession {
   walletAddress: string;
   publicKey: string;
   subscription: {
-    tier: 'free' | 'pro' | 'pro_plus';
+    tier: 'free' | 'pro' | 'pro_plus' | 'admin';
     messagesUsed: number;
     messagesLimit: number;
     premiumMessagesUsed: number;
@@ -32,6 +35,7 @@ export interface SubscriptionSession {
     currentPeriodEnd: number;
     autoRenew: boolean;
     planPriceSol: number;
+    isAdmin?: boolean;
   };
   limits: {
     canSendMessage: boolean;
@@ -56,26 +60,37 @@ async function getSubscriptionStatus(walletAddress: string) {
   try {
     const convexUrl = convexConfig.publicUrl;
     if (!convexUrl) {
-      throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is required');
+      throw new Error(
+        'NEXT_PUBLIC_CONVEX_URL environment variable is required'
+      );
     }
 
     const convexClient = new ConvexHttpClient(convexUrl);
-    
-    const subscription = await convexClient.query(api.subscriptions.getSubscriptionStatus, {
-      walletAddress,
-    });
+
+    const subscription = await convexClient.query(
+      api.subscriptions.getSubscriptionStatus,
+      {
+        walletAddress,
+      }
+    );
 
     if (!subscription) {
       // Create default free subscription if none exists
-      await convexClient.mutation(api.subscriptions.initializeUserSubscription, {
-        walletAddress,
-      });
-      
+      await convexClient.mutation(
+        api.subscriptions.initializeUserSubscription,
+        {
+          walletAddress,
+        }
+      );
+
       // Retry getting the subscription
-      const newSubscription = await convexClient.query(api.subscriptions.getSubscriptionStatus, {
-        walletAddress,
-      });
-      
+      const newSubscription = await convexClient.query(
+        api.subscriptions.getSubscriptionStatus,
+        {
+          walletAddress,
+        }
+      );
+
       return newSubscription;
     }
 
@@ -90,12 +105,34 @@ async function getSubscriptionStatus(walletAddress: string) {
 }
 
 function calculateLimits(subscription: any) {
-  const messagesRemaining = Math.max(0, subscription.messagesLimit - subscription.messagesUsed);
-  const premiumMessagesRemaining = Math.max(0, subscription.premiumMessagesLimit - subscription.premiumMessagesUsed);
+  const isAdmin = subscription.tier === 'admin' || subscription.isAdmin;
+
+  // Admins have unlimited access
+  if (isAdmin) {
+    return {
+      canSendMessage: true,
+      canUsePremiumModel: true,
+      canUploadLargeFiles: true,
+      canAccessAdvancedFeatures: true,
+      canUseAPI: true,
+      messagesRemaining: Number.MAX_SAFE_INTEGER,
+      premiumMessagesRemaining: Number.MAX_SAFE_INTEGER,
+    };
+  }
+
+  const messagesRemaining = Math.max(
+    0,
+    subscription.messagesLimit - subscription.messagesUsed
+  );
+  const premiumMessagesRemaining = Math.max(
+    0,
+    subscription.premiumMessagesLimit - subscription.premiumMessagesUsed
+  );
 
   return {
     canSendMessage: messagesRemaining > 0,
-    canUsePremiumModel: premiumMessagesRemaining > 0 && subscription.tier !== 'free',
+    canUsePremiumModel:
+      premiumMessagesRemaining > 0 && subscription.tier !== 'free',
     canUploadLargeFiles: subscription.tier === 'pro_plus',
     canAccessAdvancedFeatures: subscription.tier === 'pro_plus',
     canUseAPI: subscription.tier === 'pro_plus',
@@ -122,7 +159,9 @@ export interface AuthResult {
 // Core Authentication Functions
 // =============================================================================
 
-export async function verifyAuthToken(request: NextRequest): Promise<AuthResult> {
+export async function verifyAuthToken(
+  request: NextRequest
+): Promise<AuthResult> {
   try {
     // Extract token from Authorization header
     const authHeader = request.headers.get('Authorization');
@@ -235,7 +274,11 @@ export async function requireMessagesRemaining<T extends NextRequest>(
   handler: (req: SubscriptionAuthenticatedRequest) => Promise<Response>
 ): Promise<Response> {
   return withSubscriptionAuth(request, async (req) => {
-    if (!req.user.limits.canSendMessage) {
+    // Admin users always have messages remaining
+    const isAdmin =
+      req.user.subscription.tier === 'admin' || req.user.subscription.isAdmin;
+
+    if (!(isAdmin || req.user.limits.canSendMessage)) {
       return createErrorResponse(
         APIErrorCode.QUOTA_EXCEEDED,
         'Message limit reached for current subscription tier',
@@ -256,7 +299,11 @@ export async function requirePremiumAccess<T extends NextRequest>(
   handler: (req: SubscriptionAuthenticatedRequest) => Promise<Response>
 ): Promise<Response> {
   return withSubscriptionAuth(request, async (req) => {
-    if (!req.user.limits.canUsePremiumModel) {
+    // Admin users always have premium access
+    const isAdmin =
+      req.user.subscription.tier === 'admin' || req.user.subscription.isAdmin;
+
+    if (!(isAdmin || req.user.limits.canUsePremiumModel)) {
       return createErrorResponse(
         APIErrorCode.FEATURE_RESTRICTED,
         'Premium model access requires Pro or Pro+ subscription',
@@ -278,7 +325,10 @@ export async function requireProPlusAccess<T extends NextRequest>(
   handler: (req: SubscriptionAuthenticatedRequest) => Promise<Response>
 ): Promise<Response> {
   return withSubscriptionAuth(request, async (req) => {
-    const hasAccess = req.user.subscription.tier === 'pro_plus';
+    const hasAccess =
+      req.user.subscription.tier === 'pro_plus' ||
+      req.user.subscription.tier === 'admin' ||
+      req.user.subscription.isAdmin === true;
 
     if (!hasAccess) {
       const featureNames = {
@@ -312,44 +362,52 @@ export async function trackMessageUsage<T extends NextRequest>(
   handler: (req: SubscriptionAuthenticatedRequest) => Promise<Response>
 ): Promise<Response> {
   return withSubscriptionAuth(request, async (req) => {
-    // Check if user can send message
-    if (!req.user.limits.canSendMessage) {
-      return createErrorResponse(
-        APIErrorCode.QUOTA_EXCEEDED,
-        'Message limit reached'
-      );
-    }
+    // Skip all checks for admin users
+    const isAdmin =
+      req.user.subscription.tier === 'admin' || req.user.subscription.isAdmin;
 
-    // Check premium model access
-    if (isPremiumModel && !req.user.limits.canUsePremiumModel) {
-      return createErrorResponse(
-        APIErrorCode.FEATURE_RESTRICTED,
-        'Premium model access not available for current tier'
-      );
+    if (!isAdmin) {
+      // Check if user can send message
+      if (!req.user.limits.canSendMessage) {
+        return createErrorResponse(
+          APIErrorCode.QUOTA_EXCEEDED,
+          'Message limit reached'
+        );
+      }
+
+      // Check premium model access
+      if (isPremiumModel && !req.user.limits.canUsePremiumModel) {
+        return createErrorResponse(
+          APIErrorCode.FEATURE_RESTRICTED,
+          'Premium model access not available for current tier'
+        );
+      }
     }
 
     try {
       // Execute the handler first
       const response = await handler(req);
 
-      // Only track usage on successful responses
-      if (response.ok) {
+      // Only track usage on successful responses (skip for admin users)
+      if (response.ok && !isAdmin) {
         // Track message usage asynchronously (don't block the response)
         const convexUrl = convexConfig.publicUrl;
         if (convexUrl) {
           const convexClient = new ConvexHttpClient(convexUrl);
-          
+
           // Fire and forget - don't await to avoid blocking response
-          convexClient.mutation(api.subscriptions.trackMessageUsage, {
-            walletAddress: req.user.walletAddress,
-            isPremiumModel,
-          }).catch((error) => {
-            log.error('Failed to track message usage', {
+          convexClient
+            .mutation(api.subscriptions.trackMessageUsage, {
               walletAddress: req.user.walletAddress,
               isPremiumModel,
-              error: error instanceof Error ? error.message : String(error),
+            })
+            .catch((error) => {
+              log.error('Failed to track message usage', {
+                walletAddress: req.user.walletAddress,
+                isPremiumModel,
+                error: error instanceof Error ? error.message : String(error),
+              });
             });
-          });
         }
       }
 
@@ -371,7 +429,7 @@ export async function getUserSubscriptionStatus(walletAddress: string) {
   try {
     const subscription = await getSubscriptionStatus(walletAddress);
     const limits = calculateLimits(subscription);
-    
+
     return {
       subscription,
       limits,

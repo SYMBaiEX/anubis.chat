@@ -1,14 +1,14 @@
 'use client';
 
-import { 
-  Settings, 
-  User, 
-  Shield, 
-  Activity, 
-  CreditCard,
+import {
+  Activity,
   Bell,
+  CreditCard,
   FileText,
-  HelpCircle
+  HelpCircle,
+  Settings,
+  Shield,
+  User,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -73,7 +73,7 @@ export function DashboardSidebar() {
       {/* Header */}
       <div className="p-4">
         <h2 className="font-semibold text-lg">Dashboard</h2>
-        <p className="text-sm text-muted-foreground">Manage your account</p>
+        <p className="text-muted-foreground text-sm">Manage your account</p>
       </div>
 
       {/* Navigation Items */}
@@ -83,19 +83,17 @@ export function DashboardSidebar() {
             const isActive = pathname === item.href;
             return (
               <Link
-                key={item.href}
-                href={item.href}
                 className={cn(
                   'flex items-start gap-3 rounded-lg px-3 py-2 transition-colors',
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'hover:bg-muted'
+                  isActive ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
                 )}
+                href={item.href}
+                key={item.href}
               >
                 <item.icon className="mt-0.5 h-5 w-5 flex-shrink-0" />
                 <div className="flex-1">
                   <div className="font-medium text-sm">{item.label}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-muted-foreground text-xs">
                     {item.description}
                   </div>
                 </div>

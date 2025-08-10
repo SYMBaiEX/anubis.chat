@@ -1,5 +1,8 @@
 'use client';
 
+import { useAuthActions } from '@convex-dev/auth/react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { Authenticated, AuthLoading, Unauthenticated } from 'convex/react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -18,8 +21,6 @@ import {
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Authenticated, Unauthenticated, AuthLoading } from 'convex/react';
-import { useAuthActions } from '@convex-dev/auth/react';
 import { EmptyState } from '@/components/data/empty-states';
 import { RosettaHieroglyphs } from '@/components/effects/rosetta-hieroglyphs';
 import { useAuthContext } from '@/components/providers/auth-provider';
@@ -28,7 +29,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useWallet } from '@/hooks/useWallet';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 
 const log = createModuleLogger('auth-page');
 
@@ -38,7 +38,7 @@ export default function AuthPage() {
   const { signIn } = useAuthActions();
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
-  
+
   const {
     isConnected,
     publicKey,
@@ -49,11 +49,8 @@ export default function AuthPage() {
     disconnect,
   } = useWallet();
   const { setVisible } = useWalletModal();
-  
-  const {
-    isAuthenticated,
-    user,
-  } = useAuthContext();
+
+  const { isAuthenticated, user } = useAuthContext();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -66,7 +63,7 @@ export default function AuthPage() {
 
   // Handle Solana wallet sign-in using Convex Auth
   const handleWalletSignIn = async () => {
-    if (!isConnected || !publicKey) {
+    if (!(isConnected && publicKey)) {
       setAuthError('Please connect your wallet first');
       return;
     }
@@ -82,7 +79,8 @@ export default function AuthPage() {
 
       log.info('Convex Auth sign-in successful');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Authentication failed';
       log.error('Convex Auth sign-in failed', { error: errorMessage });
       setAuthError(errorMessage);
     } finally {
@@ -151,7 +149,11 @@ export default function AuthPage() {
                     <Button onClick={clearError} size="sm" variant="outline">
                       Try Again
                     </Button>
-                    <Button onClick={handleSwitchWallet} size="sm" variant="outline">
+                    <Button
+                      onClick={handleSwitchWallet}
+                      size="sm"
+                      variant="outline"
+                    >
                       Switch Wallet
                     </Button>
                   </div>
@@ -232,15 +234,20 @@ export default function AuthPage() {
                     <>
                       <Button
                         className="button-press w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                        disabled={isSigningIn}
                         onClick={handleWalletSignIn}
                         size="lg"
-                        disabled={isSigningIn}
                       >
                         <Shield className="mr-2 h-5 w-5" />
                         Sign In with Wallet
                       </Button>
                       <div className="mt-2 text-center">
-                        <Button onClick={handleSwitchWallet} size="sm" type="button" variant="outline">
+                        <Button
+                          onClick={handleSwitchWallet}
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
                           Switch Wallet
                         </Button>
                       </div>
@@ -259,7 +266,9 @@ export default function AuthPage() {
                       onClick: connectWallet,
                     }}
                     description="Connect your Solana wallet to get started"
-                    icon={<Wallet className="h-12 w-12 text-muted-foreground" />}
+                    icon={
+                      <Wallet className="h-12 w-12 text-muted-foreground" />
+                    }
                     title="Connect Your Wallet"
                   />
 
@@ -312,17 +321,19 @@ export default function AuthPage() {
 
           <Authenticated>
             <Card className="border-border/50 bg-card/50 p-8 shadow-xl backdrop-blur">
-              <div className="text-center space-y-4">
-                <div className="mx-auto w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center">
+              <div className="space-y-4 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
                   <CheckCircle className="h-8 w-8 text-green-500" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">Successfully Authenticated!</h3>
+                  <h3 className="font-semibold text-lg">
+                    Successfully Authenticated!
+                  </h3>
                   <p className="text-muted-foreground text-sm">
                     Redirecting you to the dashboard...
                   </p>
                 </div>
-                <div className="h-4 w-4 mx-auto animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <div className="mx-auto h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               </div>
             </Card>
           </Authenticated>

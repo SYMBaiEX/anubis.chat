@@ -88,28 +88,41 @@ export const create = mutation({
     if (args.role === 'user') {
       const user = await ctx.db
         .query('users')
-        .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
+        .withIndex('by_wallet', (q) =>
+          q.eq('walletAddress', args.walletAddress)
+        )
         .unique();
 
       if (user && user.subscription) {
         // Check if user has reached message limits
-        if ((user.subscription.messagesUsed ?? 0) >= (user.subscription.messagesLimit ?? 0)) {
-          throw new Error('Monthly message limit reached. Please upgrade your subscription.');
+        if (
+          (user.subscription.messagesUsed ?? 0) >=
+          (user.subscription.messagesLimit ?? 0)
+        ) {
+          throw new Error(
+            'Monthly message limit reached. Please upgrade your subscription.'
+          );
         }
 
         // Check premium model limits if this is a premium model
-        const isPremiumModel = args.metadata?.model && 
-          ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4'].includes(args.metadata.model);
-        
+        const isPremiumModel =
+          args.metadata?.model &&
+          ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4'].includes(
+            args.metadata.model
+          );
+
         if (isPremiumModel && user.subscription.tier === 'free') {
           throw new Error('Premium models require Pro or Pro+ subscription.');
         }
 
         if (
           isPremiumModel &&
-          (user.subscription.premiumMessagesUsed ?? 0) >= (user.subscription.premiumMessagesLimit ?? 0)
+          (user.subscription.premiumMessagesUsed ?? 0) >=
+            (user.subscription.premiumMessagesLimit ?? 0)
         ) {
-          throw new Error('Premium message quota exhausted. Please upgrade or wait for next billing cycle.');
+          throw new Error(
+            'Premium message quota exhausted. Please upgrade or wait for next billing cycle.'
+          );
         }
       }
     }
@@ -130,12 +143,14 @@ export const create = mutation({
     });
 
     // Update chat's last message timestamp and counters
-    const tokenCount = args.tokenCount ?? args.metadata?.usage?.totalTokens ?? 0;
+    const tokenCount =
+      args.tokenCount ?? args.metadata?.usage?.totalTokens ?? 0;
     await ctx.db.patch(args.chatId, {
       lastMessageAt: now,
       updatedAt: now,
       messageCount: (await ctx.db.get(args.chatId))?.messageCount! + 1,
-      totalTokens: ((await ctx.db.get(args.chatId))?.totalTokens ?? 0) + tokenCount,
+      totalTokens:
+        ((await ctx.db.get(args.chatId))?.totalTokens ?? 0) + tokenCount,
     });
 
     return await ctx.db.get(messageId);

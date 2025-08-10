@@ -1,18 +1,17 @@
 'use client';
 
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-  useMemo,
-} from 'react';
-import { useQuery } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import { useAuthActions, useAuthToken } from '@convex-dev/auth/react';
+import { useQuery } from 'convex/react';
+import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import type {
+  SubscriptionLimits,
+  SubscriptionStatus,
+  UpgradePrompt,
+} from '@/hooks/use-subscription';
 import { useWallet } from '@/hooks/useWallet';
 import type { AuthSession, User } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';
-import type { SubscriptionStatus, SubscriptionLimits, UpgradePrompt } from '@/hooks/use-subscription';
 
 const log = createModuleLogger('auth-provider');
 
@@ -61,30 +60,79 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user ? {} : 'skip'
   );
 
+  const normalizedSubscription = useMemo((): SubscriptionStatus | null => {
+    if (!subscription) return null;
+    const allowedTiers = ['free', 'pro', 'pro_plus', 'admin'] as const;
+    const tier = (allowedTiers as readonly string[]).includes(subscription.tier)
+      ? (subscription.tier as (typeof allowedTiers)[number])
+      : 'free';
+
+    const computedDaysRemaining = Math.max(
+      0,
+      Math.ceil(
+        ((subscription.currentPeriodEnd ?? Date.now()) - Date.now()) /
+          (1000 * 60 * 60 * 24)
+      )
+    );
+
+    const maybeSubscription = subscription as Record<string, unknown>;
+    const providedDaysRemaining =
+      typeof maybeSubscription.daysRemaining === 'number'
+        ? (maybeSubscription.daysRemaining as number)
+        : undefined;
+
+    return {
+      tier,
+      messagesUsed: subscription.messagesUsed ?? 0,
+      messagesLimit: subscription.messagesLimit ?? 0,
+      premiumMessagesUsed: subscription.premiumMessagesUsed ?? 0,
+      premiumMessagesLimit: subscription.premiumMessagesLimit ?? 0,
+      currentPeriodStart: subscription.currentPeriodStart ?? Date.now(),
+      currentPeriodEnd: subscription.currentPeriodEnd ?? Date.now(),
+      autoRenew: Boolean(subscription.autoRenew),
+      planPriceSol: subscription.planPriceSol ?? 0,
+      features: Array.isArray(subscription.features)
+        ? subscription.features
+        : [],
+      daysRemaining: providedDaysRemaining ?? computedDaysRemaining,
+    };
+  }, [subscription]);
+
   // Calculate subscription limits
   const limits = useMemo((): SubscriptionLimits | null => {
-    if (!subscription) return null;
+    if (!normalizedSubscription) return null;
 
-    const messagesRemaining = Math.max(0, subscription.messagesLimit - subscription.messagesUsed);
-    const premiumMessagesRemaining = Math.max(0, subscription.premiumMessagesLimit - subscription.premiumMessagesUsed);
-    const msUntilReset = subscription.currentPeriodEnd - Date.now();
-    const daysUntilReset = Math.max(0, Math.ceil(msUntilReset / (1000 * 60 * 60 * 24)));
+    const messagesRemaining = Math.max(
+      0,
+      normalizedSubscription.messagesLimit - normalizedSubscription.messagesUsed
+    );
+    const premiumMessagesRemaining = Math.max(
+      0,
+      normalizedSubscription.premiumMessagesLimit -
+        normalizedSubscription.premiumMessagesUsed
+    );
+    const msUntilReset = normalizedSubscription.currentPeriodEnd - Date.now();
+    const daysUntilReset = Math.max(
+      0,
+      Math.ceil(msUntilReset / (1000 * 60 * 60 * 24))
+    );
 
     return {
       canSendMessage: messagesRemaining > 0,
-      canUsePremiumModel: premiumMessagesRemaining > 0 && subscription.tier !== 'free',
-      canUploadLargeFiles: subscription.tier === 'pro_plus',
-      canAccessAdvancedFeatures: subscription.tier === 'pro_plus',
-      canUseAPI: subscription.tier === 'pro_plus',
+      canUsePremiumModel:
+        premiumMessagesRemaining > 0 && normalizedSubscription.tier !== 'free',
+      canUploadLargeFiles: normalizedSubscription.tier === 'pro_plus',
+      canAccessAdvancedFeatures: normalizedSubscription.tier === 'pro_plus',
+      canUseAPI: normalizedSubscription.tier === 'pro_plus',
       messagesRemaining,
       premiumMessagesRemaining,
       daysUntilReset,
     };
-  }, [subscription]);
+  }, [normalizedSubscription]);
 
   // Calculate upgrade prompts
   const upgradePrompt = useMemo((): UpgradePrompt => {
-    if (!subscription) {
+    if (!normalizedSubscription) {
       return {
         shouldShow: false,
         title: '',
@@ -94,28 +142,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
       };
     }
 
-    const usagePercentage = (subscription.messagesUsed / subscription.messagesLimit) * 100;
-    const premiumUsagePercentage = subscription.premiumMessagesLimit > 0 
-      ? (subscription.premiumMessagesUsed / subscription.premiumMessagesLimit) * 100 
-      : 0;
+    const usagePercentage =
+      (normalizedSubscription.messagesUsed /
+        normalizedSubscription.messagesLimit) *
+      100;
+    const premiumUsagePercentage =
+      normalizedSubscription.premiumMessagesLimit > 0
+        ? (normalizedSubscription.premiumMessagesUsed /
+            normalizedSubscription.premiumMessagesLimit) *
+          100
+        : 0;
 
     // Critical usage (>95%)
     if (usagePercentage >= 95) {
       return {
         shouldShow: true,
         title: 'Message Limit Reached',
-        message: `You've used ${subscription.messagesUsed}/${subscription.messagesLimit} messages this month. Upgrade to continue chatting.`,
-        suggestedTier: subscription.tier === 'free' ? 'pro' : 'pro_plus',
+        message: `You've used ${normalizedSubscription.messagesUsed}/${normalizedSubscription.messagesLimit} messages this month. Upgrade to continue chatting.`,
+        suggestedTier:
+          normalizedSubscription.tier === 'free' ? 'pro' : 'pro_plus',
         urgency: 'high',
       };
     }
 
     // High premium usage (>90%)
-    if (premiumUsagePercentage >= 90 && subscription.tier !== 'pro_plus') {
+    if (
+      premiumUsagePercentage >= 90 &&
+      normalizedSubscription.tier !== 'pro_plus'
+    ) {
       return {
         shouldShow: true,
         title: 'Premium Messages Running Low',
-        message: `You've used ${subscription.premiumMessagesUsed}/${subscription.premiumMessagesLimit} premium messages. Upgrade for unlimited access.`,
+        message: `You've used ${normalizedSubscription.premiumMessagesUsed}/${normalizedSubscription.premiumMessagesLimit} premium messages. Upgrade for unlimited access.`,
         suggestedTier: 'pro_plus',
         urgency: 'high',
       };
@@ -127,17 +185,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
         shouldShow: true,
         title: 'Usage Warning',
         message: `You've used ${Math.round(usagePercentage)}% of your monthly messages. Consider upgrading to avoid interruptions.`,
-        suggestedTier: subscription.tier === 'free' ? 'pro' : 'pro_plus',
+        suggestedTier:
+          normalizedSubscription.tier === 'free' ? 'pro' : 'pro_plus',
         urgency: 'medium',
       };
     }
 
     // Free tier encouragement (>50%)
-    if (subscription.tier === 'free' && usagePercentage >= 50) {
+    if (normalizedSubscription.tier === 'free' && usagePercentage >= 50) {
       return {
         shouldShow: true,
         title: 'Enjoying ISIS Chat?',
-        message: `You've used ${subscription.messagesUsed} messages. Upgrade to Pro for 30x more messages and premium AI models.`,
+        message: `You've used ${normalizedSubscription.messagesUsed} messages. Upgrade to Pro for 30x more messages and premium AI models.`,
         suggestedTier: 'pro',
         urgency: 'low',
       };
@@ -150,7 +209,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       suggestedTier: null,
       urgency: 'low',
     };
-  }, [subscription]);
+  }, [normalizedSubscription]);
 
   // Refresh subscription data
   const refreshSubscription = async () => {
@@ -164,13 +223,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAuthenticated: !!user,
       isLoading: wallet.isConnecting,
       user: user as User | null,
-      token: token,
+      token,
       error: null,
 
-      // Auth methods - using Convex Auth actions 
+      // Auth methods - using Convex Auth actions
       login: async () => {
-        // This would be handled by your existing wallet auth flow
-        return { user: user as User, token: token || '', expiresAt: Date.now() + 3600000 };
+        // Minimal placeholder to satisfy type; actual login is handled elsewhere
+        return {
+          walletAddress: wallet.publicKey?.toString() ?? '',
+          publicKey: wallet.publicKey?.toString() ?? '',
+          token: token || '',
+          refreshToken: token || '',
+          expiresAt: Date.now() + 3_600_000,
+          user: (user as User) ?? ({} as User),
+        };
       },
       logout: signOut,
       refreshToken: async () => token,
@@ -182,7 +248,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       publicKey: wallet.publicKey?.toString() ?? null,
 
       // Subscription integration
-      subscription,
+      subscription: normalizedSubscription,
       limits,
       upgradePrompt,
       isSubscriptionLoading: subscription === undefined,
@@ -196,6 +262,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       wallet.isConnected,
       wallet.publicKey,
       subscription,
+      normalizedSubscription,
       limits,
       upgradePrompt,
       refreshSubscription,

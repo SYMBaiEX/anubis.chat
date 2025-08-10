@@ -1,7 +1,20 @@
 'use client';
 
-import { Brain, Check, ChevronDown, Cpu, Lock, Sparkles, Zap } from 'lucide-react';
+import {
+  Brain,
+  Check,
+  ChevronDown,
+  Cpu,
+  Lock,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
 import { useState } from 'react';
+import {
+  useCanUsePremiumModel,
+  useSubscriptionLimits,
+  useSubscriptionStatus,
+} from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,9 +30,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useSubscriptionStatus, useSubscriptionLimits, useCanUsePremiumModel } from '@/components/providers/auth-provider';
-import { AI_MODELS, type AIModel, isPremiumModel } from '@/lib/constants/ai-models';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  AI_MODELS,
+  type AIModel,
+  isPremiumModel,
+} from '@/lib/constants/ai-models';
 import { cn } from '@/lib/utils';
 
 interface ModelSelectorProps {
@@ -80,7 +101,7 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  
+
   const subscription = useSubscriptionStatus();
   const limits = useSubscriptionLimits();
   const canUsePremium = useCanUsePremiumModel();
@@ -125,7 +146,7 @@ export function ModelSelector({
   // Get premium badge for model
   const getPremiumBadge = (model: AIModel) => {
     if (!isPremiumModel(model)) return null;
-    
+
     if (subscription?.tier === 'free') {
       return (
         <TooltipProvider>
@@ -143,7 +164,7 @@ export function ModelSelector({
         </TooltipProvider>
       );
     }
-    
+
     if (subscription?.tier === 'pro' && !canUsePremium) {
       return (
         <TooltipProvider>
@@ -161,7 +182,7 @@ export function ModelSelector({
         </TooltipProvider>
       );
     }
-    
+
     return (
       <Badge className="gap-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
         <Sparkles className="h-3 w-3" />
@@ -232,13 +253,14 @@ export function ModelSelector({
                   )
                   .map((model) => {
                     const accessible = isModelAccessible(model);
-                    
+
                     return (
                       <CommandItem
                         className={cn(
-                          "flex flex-col items-start gap-1 py-2",
-                          !accessible && "opacity-50 cursor-not-allowed"
+                          'flex flex-col items-start gap-1 py-2',
+                          !accessible && 'cursor-not-allowed opacity-50'
                         )}
+                        disabled={!accessible}
                         key={model.id}
                         onSelect={() => {
                           if (accessible) {
@@ -247,56 +269,59 @@ export function ModelSelector({
                           }
                         }}
                         value={model.id}
-                        disabled={!accessible}
                       >
-                      <div className="flex w-full items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {getProviderIcon(model.provider)}
-                          <span className="font-medium">{model.name}</span>
-                          {getPremiumBadge(model)}
-                          {model.default && (
-                            <Badge className="px-1 text-xs" variant="secondary">
-                              Default
-                            </Badge>
-                          )}
-                          {model.released && (
-                            <Badge className="px-1 text-xs" variant="outline">
-                              {model.released}
-                            </Badge>
-                          )}
+                        <div className="flex w-full items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getProviderIcon(model.provider)}
+                            <span className="font-medium">{model.name}</span>
+                            {getPremiumBadge(model)}
+                            {model.default && (
+                              <Badge
+                                className="px-1 text-xs"
+                                variant="secondary"
+                              >
+                                Default
+                              </Badge>
+                            )}
+                            {model.released && (
+                              <Badge className="px-1 text-xs" variant="outline">
+                                {model.released}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getIntelligenceBadge(model.intelligence)}
+                            {getSpeedIcon(model.speed)}
+                            {value === model.id && (
+                              <Check className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {getIntelligenceBadge(model.intelligence)}
-                          {getSpeedIcon(model.speed)}
-                          {value === model.id && (
-                            <Check className="h-4 w-4 text-primary" />
-                          )}
+                        <p className="text-muted-foreground text-xs">
+                          {model.description}
+                        </p>
+                        <div className="flex items-center gap-4 text-muted-foreground text-xs">
+                          <span>
+                            Context: {(model.contextWindow / 1000).toFixed(0)}K
+                          </span>
+                          <span>
+                            ${model.pricing.input}/${model.pricing.output} per
+                            1M
+                          </span>
+                          <div className="flex gap-1">
+                            {model.capabilities.slice(0, 3).map((cap) => (
+                              <Badge
+                                className="px-1 py-0 text-xs"
+                                key={cap}
+                                variant="outline"
+                              >
+                                {cap}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                      <p className="text-muted-foreground text-xs">
-                        {model.description}
-                      </p>
-                      <div className="flex items-center gap-4 text-muted-foreground text-xs">
-                        <span>
-                          Context: {(model.contextWindow / 1000).toFixed(0)}K
-                        </span>
-                        <span>
-                          ${model.pricing.input}/${model.pricing.output} per 1M
-                        </span>
-                        <div className="flex gap-1">
-                          {model.capabilities.slice(0, 3).map((cap) => (
-                            <Badge
-                              className="px-1 py-0 text-xs"
-                              key={cap}
-                              variant="outline"
-                            >
-                              {cap}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </CommandItem>
-                  );
+                      </CommandItem>
+                    );
                   })}
               </CommandGroup>
             ))}

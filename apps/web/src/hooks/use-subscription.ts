@@ -1,11 +1,11 @@
 'use client';
 
-import { useQuery } from 'convex/react';
 import { api } from '@convex/_generated/api';
+import { useQuery } from 'convex/react';
 import { useMemo } from 'react';
 
 export interface SubscriptionStatus {
-  tier: 'free' | 'pro' | 'pro_plus';
+  tier: 'free' | 'pro' | 'pro_plus' | 'admin';
   messagesUsed: number;
   messagesLimit: number;
   premiumMessagesUsed: number;
@@ -15,6 +15,7 @@ export interface SubscriptionStatus {
   autoRenew: boolean;
   planPriceSol: number;
   features: string[];
+  daysRemaining?: number;
 }
 
 export interface SubscriptionLimits {
@@ -38,14 +39,52 @@ export interface UpgradePrompt {
 
 export function useSubscription() {
   const user = useQuery(api.users.getCurrentUserProfile);
-  
+
   const subscription = useQuery(
     api.subscriptions.getSubscriptionStatus,
     user ? {} : 'skip'
   );
 
+  const normalizedSubscription = useMemo((): SubscriptionStatus | null => {
+    if (!subscription) return null;
+    const allowedTiers = ['free', 'pro', 'pro_plus', 'admin'] as const;
+    const tier = (allowedTiers as readonly string[]).includes(subscription.tier)
+      ? (subscription.tier as (typeof allowedTiers)[number])
+      : 'free';
+
+    const computedDaysRemaining = Math.max(
+      0,
+      Math.ceil(
+        ((subscription.currentPeriodEnd ?? Date.now()) - Date.now()) /
+          (1000 * 60 * 60 * 24)
+      )
+    );
+
+    const maybeSubscription = subscription as Record<string, unknown>;
+    const providedDaysRemaining =
+      typeof maybeSubscription.daysRemaining === 'number'
+        ? (maybeSubscription.daysRemaining as number)
+        : undefined;
+
+    return {
+      tier,
+      messagesUsed: subscription.messagesUsed ?? 0,
+      messagesLimit: subscription.messagesLimit ?? 0,
+      premiumMessagesUsed: subscription.premiumMessagesUsed ?? 0,
+      premiumMessagesLimit: subscription.premiumMessagesLimit ?? 0,
+      currentPeriodStart: subscription.currentPeriodStart ?? Date.now(),
+      currentPeriodEnd: subscription.currentPeriodEnd ?? Date.now(),
+      autoRenew: Boolean(subscription.autoRenew),
+      planPriceSol: subscription.planPriceSol ?? 0,
+      features: Array.isArray(subscription.features)
+        ? subscription.features
+        : [],
+      daysRemaining: providedDaysRemaining ?? computedDaysRemaining,
+    };
+  }, [subscription]);
+
   const limits = useMemo((): SubscriptionLimits => {
-    if (!subscription) {
+    if (!normalizedSubscription) {
       return {
         canSendMessage: false,
         canUsePremiumModel: false,
@@ -58,25 +97,36 @@ export function useSubscription() {
       };
     }
 
-    const messagesRemaining = Math.max(0, subscription.messagesLimit - subscription.messagesUsed);
-    const premiumMessagesRemaining = Math.max(0, subscription.premiumMessagesLimit - subscription.premiumMessagesUsed);
-    const msUntilReset = subscription.currentPeriodEnd - Date.now();
-    const daysUntilReset = Math.max(0, Math.ceil(msUntilReset / (1000 * 60 * 60 * 24)));
+    const messagesRemaining = Math.max(
+      0,
+      normalizedSubscription.messagesLimit - normalizedSubscription.messagesUsed
+    );
+    const premiumMessagesRemaining = Math.max(
+      0,
+      normalizedSubscription.premiumMessagesLimit -
+        normalizedSubscription.premiumMessagesUsed
+    );
+    const msUntilReset = normalizedSubscription.currentPeriodEnd - Date.now();
+    const daysUntilReset = Math.max(
+      0,
+      Math.ceil(msUntilReset / (1000 * 60 * 60 * 24))
+    );
 
     return {
       canSendMessage: messagesRemaining > 0,
-      canUsePremiumModel: premiumMessagesRemaining > 0 && subscription.tier !== 'free',
-      canUploadLargeFiles: subscription.tier === 'pro_plus',
-      canAccessAdvancedFeatures: subscription.tier === 'pro_plus',
-      canUseAPI: subscription.tier === 'pro_plus',
+      canUsePremiumModel:
+        premiumMessagesRemaining > 0 && normalizedSubscription.tier !== 'free',
+      canUploadLargeFiles: normalizedSubscription.tier === 'pro_plus',
+      canAccessAdvancedFeatures: normalizedSubscription.tier === 'pro_plus',
+      canUseAPI: normalizedSubscription.tier === 'pro_plus',
       messagesRemaining,
       premiumMessagesRemaining,
       daysUntilReset,
     };
-  }, [subscription]);
+  }, [normalizedSubscription]);
 
   const upgradePrompt = useMemo((): UpgradePrompt => {
-    if (!subscription) {
+    if (!normalizedSubscription) {
       return {
         shouldShow: false,
         title: '',
@@ -86,28 +136,38 @@ export function useSubscription() {
       };
     }
 
-    const usagePercentage = (subscription.messagesUsed / subscription.messagesLimit) * 100;
-    const premiumUsagePercentage = subscription.premiumMessagesLimit > 0 
-      ? (subscription.premiumMessagesUsed / subscription.premiumMessagesLimit) * 100 
-      : 0;
+    const usagePercentage =
+      (normalizedSubscription.messagesUsed /
+        normalizedSubscription.messagesLimit) *
+      100;
+    const premiumUsagePercentage =
+      normalizedSubscription.premiumMessagesLimit > 0
+        ? (normalizedSubscription.premiumMessagesUsed /
+            normalizedSubscription.premiumMessagesLimit) *
+          100
+        : 0;
 
     // Critical usage (>95%)
     if (usagePercentage >= 95) {
       return {
         shouldShow: true,
         title: 'Message Limit Reached',
-        message: `You've used ${subscription.messagesUsed}/${subscription.messagesLimit} messages this month. Upgrade to continue chatting.`,
-        suggestedTier: subscription.tier === 'free' ? 'pro' : 'pro_plus',
+        message: `You've used ${normalizedSubscription.messagesUsed}/${normalizedSubscription.messagesLimit} messages this month. Upgrade to continue chatting.`,
+        suggestedTier:
+          normalizedSubscription.tier === 'free' ? 'pro' : 'pro_plus',
         urgency: 'high',
       };
     }
 
     // High premium usage (>90%)
-    if (premiumUsagePercentage >= 90 && subscription.tier !== 'pro_plus') {
+    if (
+      premiumUsagePercentage >= 90 &&
+      normalizedSubscription.tier !== 'pro_plus'
+    ) {
       return {
         shouldShow: true,
         title: 'Premium Messages Running Low',
-        message: `You've used ${subscription.premiumMessagesUsed}/${subscription.premiumMessagesLimit} premium messages. Upgrade for unlimited access.`,
+        message: `You've used ${normalizedSubscription.premiumMessagesUsed}/${normalizedSubscription.premiumMessagesLimit} premium messages. Upgrade for unlimited access.`,
         suggestedTier: 'pro_plus',
         urgency: 'high',
       };
@@ -119,17 +179,18 @@ export function useSubscription() {
         shouldShow: true,
         title: 'Usage Warning',
         message: `You've used ${Math.round(usagePercentage)}% of your monthly messages. Consider upgrading to avoid interruptions.`,
-        suggestedTier: subscription.tier === 'free' ? 'pro' : 'pro_plus',
+        suggestedTier:
+          normalizedSubscription.tier === 'free' ? 'pro' : 'pro_plus',
         urgency: 'medium',
       };
     }
 
     // Free tier encouragement (>50%)
-    if (subscription.tier === 'free' && usagePercentage >= 50) {
+    if (normalizedSubscription.tier === 'free' && usagePercentage >= 50) {
       return {
         shouldShow: true,
         title: 'Enjoying ISIS Chat?',
-        message: `You've used ${subscription.messagesUsed} messages. Upgrade to Pro for 30x more messages and premium AI models.`,
+        message: `You've used ${normalizedSubscription.messagesUsed} messages. Upgrade to Pro for 30x more messages and premium AI models.`,
         suggestedTier: 'pro',
         urgency: 'low',
       };
@@ -142,10 +203,10 @@ export function useSubscription() {
       suggestedTier: null,
       urgency: 'low',
     };
-  }, [subscription]);
+  }, [normalizedSubscription]);
 
   return {
-    subscription,
+    subscription: normalizedSubscription,
     limits,
     upgradePrompt,
     isLoading: subscription === undefined,
@@ -154,14 +215,20 @@ export function useSubscription() {
 }
 
 // Helper functions for feature gating
-export function requiresPremium(feature: 'advanced_agents' | 'api_access' | 'large_files' | 'priority_support') {
-  return feature === 'api_access' || feature === 'large_files' || feature === 'priority_support' ? 'pro_plus' : 'pro';
+export function requiresPremium(
+  feature: 'advanced_agents' | 'api_access' | 'large_files' | 'priority_support'
+) {
+  return feature === 'api_access' ||
+    feature === 'large_files' ||
+    feature === 'priority_support'
+    ? 'pro_plus'
+    : 'pro';
 }
 
 export function canAccessFeature(tier: string, feature: string): boolean {
   const tierLevel = tier === 'pro_plus' ? 2 : tier === 'pro' ? 1 : 0;
   const requiredTier = requiresPremium(feature as any);
   const requiredLevel = requiredTier === 'pro_plus' ? 2 : 1;
-  
+
   return tierLevel >= requiredLevel;
 }

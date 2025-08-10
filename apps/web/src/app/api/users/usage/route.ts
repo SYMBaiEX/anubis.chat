@@ -12,8 +12,8 @@ import { createModuleLogger } from '@/lib/utils/logger';
 // Initialize logger
 const log = createModuleLogger('api/users/usage');
 
-import { withSubscriptionAuth } from '@/lib/middleware/subscription-auth';
 import { generalRateLimit } from '@/lib/middleware/rate-limit';
+import { withSubscriptionAuth } from '@/lib/middleware/subscription-auth';
 import {
   addSecurityHeaders,
   successResponse,
@@ -98,9 +98,7 @@ export async function GET(request: NextRequest) {
 
         const { period, includeModels } = queryValidation.data;
 
-        const usageData = await fetchQuery(api.users.getUsage, {
-          walletAddress,
-        });
+        const usageData = await fetchQuery(api.users.getUsage, {});
 
         const usageStats: UsageStats = {
           current: {
@@ -114,18 +112,38 @@ export async function GET(request: NextRequest) {
           daily: [], // Could implement daily breakdowns
           models: includeModels ? [] : [], // Could implement model-specific stats
           subscription: {
-            tier: subscription.tier === 'pro_plus' ? 'enterprise' : subscription.tier,
+            tier:
+              subscription.tier === 'pro_plus' || subscription.tier === 'admin'
+                ? 'enterprise'
+                : subscription.tier,
             expiresAt: subscription.currentPeriodEnd,
             features: [
               'basic_chat',
               ...(subscription.tier !== 'free' ? ['premium_models'] : []),
-              ...(subscription.tier === 'pro_plus' ? ['api_access', 'large_files', 'advanced_features'] : []),
+              ...(subscription.tier === 'pro_plus'
+                ? ['api_access', 'large_files', 'advanced_features']
+                : []),
             ],
             limits: {
-              messagesPerMinute: subscription.tier === 'free' ? 10 : subscription.tier === 'pro' ? 30 : 60,
-              aiRequestsPerMinute: subscription.tier === 'free' ? 5 : subscription.tier === 'pro' ? 20 : 50,
+              messagesPerMinute:
+                subscription.tier === 'free'
+                  ? 10
+                  : subscription.tier === 'pro'
+                    ? 30
+                    : 60,
+              aiRequestsPerMinute:
+                subscription.tier === 'free'
+                  ? 5
+                  : subscription.tier === 'pro'
+                    ? 20
+                    : 50,
               documentsPerMinute: subscription.tier === 'pro_plus' ? 20 : 5,
-              searchesPerMinute: subscription.tier === 'free' ? 10 : subscription.tier === 'pro' ? 30 : 100,
+              searchesPerMinute:
+                subscription.tier === 'free'
+                  ? 10
+                  : subscription.tier === 'pro'
+                    ? 30
+                    : 100,
             },
           },
         };

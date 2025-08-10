@@ -8,8 +8,8 @@ import { z } from 'zod';
 import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
 import { agenticEngine } from '@/lib/agentic/engine';
 import { api, convex } from '@/lib/database/convex';
-import { trackMessageUsage } from '@/lib/middleware/subscription-auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
+import { trackMessageUsage } from '@/lib/middleware/subscription-auth';
 import type { Agent, ExecuteAgentRequest } from '@/lib/types/agentic';
 import { convexAgentToApiFormat } from '@/lib/utils/agent-conversion';
 import {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return aiRateLimit(request, async (req) => {
     // Agent streaming likely uses premium models, so mark as premium
     const isPremiumModel = true;
-    
+
     return trackMessageUsage(req, isPremiumModel, async (authReq) => {
       const { walletAddress } = authReq.user;
       const { agentId } = await context.params;

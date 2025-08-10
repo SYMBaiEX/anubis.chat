@@ -1,8 +1,8 @@
 'use client';
 
 import React, { memo } from 'react';
-import { Card } from '@/components/ui/card';
 import AnimatedSection from '@/components/landing/animated-section';
+import { Card } from '@/components/ui/card';
 
 const faqs = [
   {
@@ -26,14 +26,14 @@ const faqs = [
 function FAQ() {
   return (
     <AnimatedSection
-      className="py-20 md:py-28 lg:py-32"
-      auroraVariant="primary"
-      includeRosetta={false}
-      includeHieroglyphs={false}
-      dustIntensity="low"
       allowOverlap
-      softEdges
+      auroraVariant="primary"
+      className="py-20 md:py-28 lg:py-32"
       data-bg-variant="primary"
+      dustIntensity="low"
+      includeHieroglyphs={false}
+      includeRosetta={false}
+      softEdges
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-3xl text-center">
@@ -45,9 +45,12 @@ function FAQ() {
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           {faqs.map((f) => (
-            <Card key={f.q} className="bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6">
+            <Card
+              className="bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6"
+              key={f.q}
+            >
               <h3 className="mb-1 font-semibold">{f.q}</h3>
-              <p className="text-sm text-muted-foreground">{f.a}</p>
+              <p className="text-muted-foreground text-sm">{f.a}</p>
             </Card>
           ))}
         </div>
@@ -57,5 +60,3 @@ function FAQ() {
 }
 
 export default memo(FAQ);
-
-

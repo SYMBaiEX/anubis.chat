@@ -6,8 +6,8 @@ import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { MessageListProps, MinimalMessage } from '@/lib/types/components';
 import type { StreamingMessage } from '@/lib/types/api';
+import type { MessageListProps, MinimalMessage } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { MessageBubble } from './message-bubble';
 import { StreamingMessage } from './streaming-message';
@@ -65,9 +65,10 @@ export function MessageList({
     }> = [];
 
     messages.forEach((message) => {
-      const createdAt = 'createdAt' in message && message.createdAt
-        ? message.createdAt
-        : Date.now();
+      const createdAt =
+        'createdAt' in message && message.createdAt
+          ? message.createdAt
+          : Date.now();
       const messageDate = new Date(createdAt).toDateString();
       const lastGroup = groups[groups.length - 1];
 
@@ -118,10 +119,12 @@ export function MessageList({
 
   if (!messages || messages.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center p-8">
+      <div className="flex h-full items-center justify-center p-4 sm:p-8">
         <EmptyState
           description="Start the conversation by sending a message below"
-          icon={<MessageSquare className="h-12 w-12 text-muted-foreground" />}
+          icon={
+            <MessageSquare className="h-10 w-10 text-muted-foreground sm:h-12 sm:w-12" />
+          }
           title="No messages yet"
         />
       </div>
@@ -137,38 +140,47 @@ export function MessageList({
         onScrollCapture={handleScroll}
         ref={scrollRef}
       >
-        <div className="space-y-4 p-4">
+        <div className="mx-auto w-full max-w-3xl space-y-4 p-3 sm:p-4 lg:max-w-5xl lg:p-6 xl:max-w-6xl">
           {messageGroups.map((group, groupIndex) => (
             <div key={group.date}>
               {/* Date Separator */}
               <div className="flex items-center justify-center py-2">
-                <div className="rounded-full bg-muted px-3 py-1 text-muted-foreground text-xs">
+                <div className="rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground sm:px-3 sm:text-xs">
                   {formatDateSeparator(group.date)}
                 </div>
               </div>
 
               {/* Messages for this date */}
               <div className="space-y-4">
-                 {group.messages.map((message, messageIndex) => {
+                {group.messages.map((message, messageIndex) => {
                   // Check if this is a streaming message
-                   if ('isStreaming' in message && (message as StreamingMessage).isStreaming) {
+                  if (
+                    'isStreaming' in message &&
+                    (message as StreamingMessage).isStreaming
+                  ) {
                     return (
                       <StreamingMessage
-                         content={(message as StreamingMessage).content}
-                         key={(message as StreamingMessage).id}
+                        content={(message as StreamingMessage).content}
+                        key={(message as StreamingMessage).id}
                       />
                     );
                   }
 
                   return (
                     <MessageBubble
-                       key={(message as ChatMessage | MinimalMessage)._id}
-                       message={message as ChatMessage}
+                      key={(message as ChatMessage | MinimalMessage)._id}
+                      message={message as ChatMessage}
                       onCopy={() => {
-                         navigator.clipboard.writeText((message as ChatMessage | MinimalMessage).content);
+                        navigator.clipboard.writeText(
+                          (message as ChatMessage | MinimalMessage).content
+                        );
                       }}
                       onEdit={(_newContent) => {}}
-                       onRegenerate={() => onMessageRegenerate?.((message as ChatMessage | MinimalMessage)._id)}
+                      onRegenerate={() =>
+                        onMessageRegenerate?.(
+                          (message as ChatMessage | MinimalMessage)._id
+                        )
+                      }
                       showActions={true}
                     />
                   );

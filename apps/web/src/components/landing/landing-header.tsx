@@ -27,16 +27,16 @@ export default function LandingHeader() {
   return (
     <header
       className={
-        `sticky top-0 z-40 overflow-visible bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 transition-transform duration-300` +
+        'sticky top-0 z-40 overflow-visible bg-background/80 backdrop-blur-md transition-transform duration-300 supports-[backdrop-filter]:bg-background/70' +
         ` ${hidden ? '-translate-y-full' : 'translate-y-0'}`
       }
     >
       <div className="relative mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4">
         {/* Brand */}
-        <LogoWithText 
-          href={isAuthenticated ? '/dashboard' : '/'} 
-          size="md" 
-          textVariant="gradient" 
+        <LogoWithText
+          href={isAuthenticated ? '/dashboard' : '/'}
+          size="md"
+          textVariant="gradient"
         />
 
         {/* Actions */}
@@ -50,7 +50,10 @@ export default function LandingHeader() {
         </div>
       </div>
       {/* soft edge fade under header to avoid hard line */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 -bottom-4 h-8 bg-gradient-to-b from-background/0 to-background" />
+      <div
+        aria-hidden
+        className="-bottom-4 pointer-events-none absolute inset-x-0 h-8 bg-gradient-to-b from-background/0 to-background"
+      />
     </header>
   );
 }

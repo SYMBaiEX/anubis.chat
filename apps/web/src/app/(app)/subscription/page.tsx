@@ -1,33 +1,45 @@
 'use client';
 
-import { useState } from 'react';
-import { Crown, Check, Zap, Calendar, TrendingUp, AlertTriangle, CreditCard, Clock } from 'lucide-react';
-import { useAuthContext, useSubscriptionStatus, useSubscriptionLimits, useUpgradePrompt } from '@/components/providers/auth-provider';
+import { AlertTriangle, Calendar, Check, Clock, Crown, TrendingUp, Zap } from 'lucide-react';
+import { UpgradeModal } from '@/components/auth/upgrade-modal';
+import { UsageIndicator } from '@/components/chat/usage-indicator';
+import {
+  useAuthContext,
+  useSubscriptionLimits,
+  useSubscriptionStatus,
+  useUpgradePrompt,
+} from '@/components/providers/auth-provider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { UsageIndicator } from '@/components/chat/usage-indicator';
-import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
+import { useUpgradeModal } from '@/hooks/use-upgrade-modal';
+import { getModelsForTier, isPremiumModel } from '@/lib/constants/ai-models';
 
 export default function SubscriptionPage() {
   const { user } = useAuthContext();
   const subscription = useSubscriptionStatus();
   const limits = useSubscriptionLimits();
   const upgradePrompt = useUpgradePrompt();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { isOpen, openModal, closeModal, suggestedTier } = useUpgradeModal();
 
   if (!subscription) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <h2 className="font-semibold text-xl">Loading subscription...</h2>
-          <p className="text-muted-foreground">Please wait while we load your subscription details.</p>
+          <p className="text-muted-foreground">
+            Please wait while we load your subscription details.
+          </p>
         </div>
       </div>
     );
   }
+
+  const usagePercent =
+    subscription.messagesLimit > 0
+      ? Math.round((subscription.messagesUsed / subscription.messagesLimit) * 100)
+      : 0;
 
   const getTierColor = (tier: string) => {
     switch (tier) {
@@ -59,12 +71,20 @@ export default function SubscriptionPage() {
     return new Date(timestamp).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
-  const isExpiringSoon = subscription.daysRemaining <= 7 && subscription.tier !== 'free';
-  const isNearLimit = subscription.messageUsagePercent >= 75;
+  const isExpiringSoon =
+    subscription.tier !== 'free' &&
+    (subscription.daysRemaining ?? Number.POSITIVE_INFINITY) <= 7;
+  const isNearLimit = usagePercent >= 75;
+
+  const tierForModels: 'free' | 'pro' | 'pro_plus' =
+    subscription.tier === 'admin'
+      ? 'pro_plus'
+      : (subscription.tier as 'free' | 'pro' | 'pro_plus');
+  const models = getModelsForTier(tierForModels);
 
   return (
     <div className="space-y-6 p-6">
@@ -82,8 +102,12 @@ export default function SubscriptionPage() {
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Your {subscription.tier} subscription expires in {subscription.daysRemaining} days on {formatDate(subscription.currentPeriodEnd)}. 
-            {subscription.autoRenew ? ' Auto-renewal is enabled.' : ' Consider renewing to avoid service interruption.'}
+            Your {subscription.tier} subscription expires in{' '}
+            {subscription.daysRemaining ?? limits?.daysUntilReset ?? 0} days on{' '}
+            {formatDate(subscription.currentPeriodEnd)}.
+            {subscription.autoRenew
+              ? ' Auto-renewal is enabled.'
+              : ' Consider renewing to avoid service interruption.'}
           </AlertDescription>
         </Alert>
       )}
@@ -92,8 +116,9 @@ export default function SubscriptionPage() {
         <Alert>
           <TrendingUp className="h-4 w-4" />
           <AlertDescription>
-            You've used {Math.round(subscription.messageUsagePercent)}% of your monthly message allowance. 
-            Consider upgrading to avoid hitting limits.
+            You've used {usagePercent}% of your
+            monthly message allowance. Consider upgrading to avoid hitting
+            limits.
           </AlertDescription>
         </Alert>
       )}
@@ -107,7 +132,9 @@ export default function SubscriptionPage() {
             </div>
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="font-bold text-2xl capitalize">{subscription.tier} Plan</h2>
+                <h2 className="font-bold text-2xl capitalize">
+                  {subscription.tier} Plan
+                </h2>
                 {subscription.tier !== 'free' && (
                   <Badge variant="outline">
                     {subscription.planPriceSol} SOL/month
@@ -115,27 +142,35 @@ export default function SubscriptionPage() {
                 )}
               </div>
               <p className="text-muted-foreground">
-                {subscription.tier === 'free' && 'Basic features with limited access to AI models'}
-                {subscription.tier === 'pro' && 'Enhanced features with premium model access'}
-                {subscription.tier === 'pro_plus' && 'Full access to all features and unlimited premium models'}
+                {subscription.tier === 'free' &&
+                  'Basic features with limited access to AI models'}
+                {subscription.tier === 'pro' &&
+                  'Enhanced features with premium model access'}
+                {subscription.tier === 'pro_plus' &&
+                  'Full access to all features and unlimited premium models'}
               </p>
               {subscription.tier !== 'free' && (
-                <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="mt-2 flex items-center gap-4 text-muted-foreground text-sm">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     Renews {formatDate(subscription.currentPeriodEnd)}
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    {subscription.daysRemaining} days remaining
+                    {subscription.daysRemaining ?? limits?.daysUntilReset ?? 0} days remaining
                   </div>
                 </div>
               )}
             </div>
           </div>
           <div className="text-right">
-            <Button 
-              onClick={() => setShowUpgradeModal(true)}
+            <Button
+              onClick={() =>
+                openModal({
+                  tier: subscription.tier === 'pro' ? 'pro_plus' : 'pro',
+                  trigger: 'manual',
+                })
+              }
               variant={subscription.tier === 'pro_plus' ? 'outline' : 'default'}
             >
               {subscription.tier === 'free' && 'Upgrade Plan'}
@@ -148,24 +183,32 @@ export default function SubscriptionPage() {
 
       {/* Usage Overview */}
       <Card className="p-6">
-        <h3 className="font-semibold text-lg mb-4">Usage Overview</h3>
-        <UsageIndicator variant="detailed" showUpgrade={false} />
-        
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <h3 className="mb-4 font-semibold text-lg">Usage Overview</h3>
+        <UsageIndicator showUpgrade={false} variant="detailed" />
+
+        <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="text-center">
-            <div className="font-bold text-2xl">{subscription.messagesUsed}</div>
+            <div className="font-bold text-2xl">
+              {subscription.messagesUsed}
+            </div>
             <div className="text-muted-foreground text-sm">Messages Used</div>
           </div>
           <div className="text-center">
-            <div className="font-bold text-2xl">{subscription.messagesRemaining}</div>
+            <div className="font-bold text-2xl">
+              {limits?.messagesRemaining ?? 0}
+            </div>
             <div className="text-muted-foreground text-sm">Messages Left</div>
           </div>
           <div className="text-center">
-            <div className="font-bold text-2xl">{subscription.premiumMessagesUsed}</div>
+            <div className="font-bold text-2xl">
+              {subscription.premiumMessagesUsed}
+            </div>
             <div className="text-muted-foreground text-sm">Premium Used</div>
           </div>
           <div className="text-center">
-            <div className="font-bold text-2xl">{Math.round(subscription.messageUsagePercent)}%</div>
+            <div className="font-bold text-2xl">
+              {usagePercent}%
+            </div>
             <div className="text-muted-foreground text-sm">Usage Rate</div>
           </div>
         </div>
@@ -173,12 +216,14 @@ export default function SubscriptionPage() {
 
       {/* Features Comparison */}
       <Card className="p-6">
-        <h3 className="font-semibold text-lg mb-6">Plan Features</h3>
-        
-        <div className="grid md:grid-cols-3 gap-6">
+        <h3 className="mb-6 font-semibold text-lg">Plan Features</h3>
+
+        <div className="grid gap-6 md:grid-cols-3">
           {/* Free Plan */}
-          <div className={`border rounded-lg p-4 ${subscription.tier === 'free' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-            <div className="text-center mb-4">
+          <div
+            className={`rounded-lg border p-4 ${subscription.tier === 'free' ? 'border-primary bg-primary/5' : 'border-border'}`}
+          >
+            <div className="mb-4 text-center">
               <h4 className="font-semibold text-lg">Free</h4>
               <div className="font-bold text-2xl">$0</div>
               <div className="text-muted-foreground text-sm">Forever</div>
@@ -202,8 +247,10 @@ export default function SubscriptionPage() {
           </div>
 
           {/* Pro Plan */}
-          <div className={`border rounded-lg p-4 ${subscription.tier === 'pro' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-            <div className="text-center mb-4">
+          <div
+            className={`rounded-lg border p-4 ${subscription.tier === 'pro' ? 'border-primary bg-primary/5' : 'border-border'}`}
+          >
+            <div className="mb-4 text-center">
               <h4 className="font-semibold text-lg">Pro</h4>
               <div className="font-bold text-2xl">0.05 SOL</div>
               <div className="text-muted-foreground text-sm">per month</div>
@@ -231,15 +278,22 @@ export default function SubscriptionPage() {
               </li>
             </ul>
             {subscription.tier !== 'pro' && (
-              <Button className="w-full mt-4" onClick={() => setShowUpgradeModal(true)}>
-                {subscription.tier === 'free' ? 'Upgrade to Pro' : 'Downgrade to Pro'}
+              <Button
+                className="mt-4 w-full"
+                onClick={() => openModal({ tier: 'pro', trigger: 'manual' })}
+              >
+                {subscription.tier === 'free'
+                  ? 'Upgrade to Pro'
+                  : 'Downgrade to Pro'}
               </Button>
             )}
           </div>
 
           {/* Pro+ Plan */}
-          <div className={`border rounded-lg p-4 ${subscription.tier === 'pro_plus' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-            <div className="text-center mb-4">
+          <div
+            className={`rounded-lg border p-4 ${subscription.tier === 'pro_plus' ? 'border-primary bg-primary/5' : 'border-border'}`}
+          >
+            <div className="mb-4 text-center">
               <h4 className="font-semibold text-lg">Pro+</h4>
               <div className="font-bold text-2xl">0.1 SOL</div>
               <div className="text-muted-foreground text-sm">per month</div>
@@ -271,7 +325,12 @@ export default function SubscriptionPage() {
               </li>
             </ul>
             {subscription.tier !== 'pro_plus' && (
-              <Button className="w-full mt-4" onClick={() => setShowUpgradeModal(true)}>
+              <Button
+                className="mt-4 w-full"
+                onClick={() =>
+                  openModal({ tier: 'pro_plus', trigger: 'manual' })
+                }
+              >
                 Upgrade to Pro+
               </Button>
             )}
@@ -281,43 +340,51 @@ export default function SubscriptionPage() {
 
       {/* Available AI Models */}
       <Card className="p-6">
-        <h3 className="font-semibold text-lg mb-4">Available AI Models</h3>
-        <div className="grid md:grid-cols-2 gap-4">
+        <h3 className="mb-4 font-semibold text-lg">Available AI Models</h3>
+        <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <h4 className="font-medium mb-2">Standard Models</h4>
+            <h4 className="mb-2 font-medium">Standard Models</h4>
             <div className="space-y-1 text-sm">
-              {subscription.availableModels?.filter(model => 
-                !['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4'].includes(model)
-              ).map(model => (
-                <div key={model} className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500" />
-                  {model}
-                </div>
-              )) || (
+              {models.filter((m) => !isPremiumModel(m)).length > 0 ? (
+                models
+                  .filter((m) => !isPremiumModel(m))
+                  .map((model) => (
+                    <div className="flex items-center gap-2" key={model.id}>
+                      <Check className="h-4 w-4 text-green-500" />
+                      {model.name}
+                    </div>
+                  ))
+              ) : (
                 <div className="text-muted-foreground">Basic models available</div>
               )}
             </div>
           </div>
           <div>
-            <h4 className="font-medium mb-2 flex items-center gap-2">
+            <h4 className="mb-2 flex items-center gap-2 font-medium">
               Premium Models
               <Zap className="h-4 w-4 text-amber-500" />
             </h4>
             <div className="space-y-1 text-sm">
               {subscription.tier !== 'free' ? (
-                subscription.availableModels?.filter(model => 
-                  ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4'].includes(model)
-                ).map(model => (
-                  <div key={model} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    {model}
-                    <Badge variant="secondary" className="text-xs">Premium</Badge>
-                  </div>
-                )) || (
+                models.filter((m) => isPremiumModel(m)).length > 0 ? (
+                  models
+                    .filter((m) => isPremiumModel(m))
+                    .map((model) => (
+                      <div className="flex items-center gap-2" key={model.id}>
+                        <Check className="h-4 w-4 text-green-500" />
+                        {model.name}
+                        <Badge className="text-xs" variant="secondary">
+                          Premium
+                        </Badge>
+                      </div>
+                    ))
+                ) : (
                   <div className="text-green-600">Premium models included</div>
                 )
               ) : (
-                <div className="text-muted-foreground">Requires Pro or Pro+ subscription</div>
+                <div className="text-muted-foreground">
+                  Requires Pro or Pro+ subscription
+                </div>
               )}
             </div>
           </div>
@@ -325,13 +392,12 @@ export default function SubscriptionPage() {
       </Card>
 
       {/* Upgrade Modal */}
-      {showUpgradeModal && (
-        <UpgradePrompt
-          prompt={upgradePrompt}
-          variant="modal"
-          onDismiss={() => setShowUpgradeModal(false)}
-        />
-      )}
+      <UpgradeModal
+        isOpen={isOpen}
+        onClose={closeModal}
+        suggestedTier={suggestedTier}
+        trigger="manual"
+      />
     </div>
   );
 }

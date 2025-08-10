@@ -1,6 +1,6 @@
+import { authTables } from '@convex-dev/auth/server';
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
-import { authTables } from '@convex-dev/auth/server';
 
 // =============================================================================
 // Common Schema Definitions
@@ -182,64 +182,72 @@ export default defineSchema({
     publicKey: v.optional(v.string()), // Solana public key
     displayName: v.optional(v.string()),
     avatar: v.optional(v.string()),
-    
+
     // Admin role system integrated with Convex Auth
-    role: v.optional(v.union(
-      v.literal('user'),
-      v.literal('moderator'),
-      v.literal('admin'), 
-      v.literal('super_admin')
-    )),
-    permissions: v.optional(v.array(
+    role: v.optional(
       v.union(
-        v.literal('user_management'),
-        v.literal('subscription_management'),
-        v.literal('content_moderation'),
-        v.literal('system_settings'),
-        v.literal('financial_data'),
-        v.literal('usage_analytics'),
-        v.literal('admin_management')
+        v.literal('user'),
+        v.literal('moderator'),
+        v.literal('admin'),
+        v.literal('super_admin')
       )
-    )),
-    
-    preferences: v.optional(v.object({
-      theme: v.union(v.literal('light'), v.literal('dark')),
-      aiModel: v.string(),
-      notifications: v.boolean(),
-      language: v.optional(v.string()),
-      temperature: v.optional(v.number()),
-      maxTokens: v.optional(v.number()),
-      streamResponses: v.optional(v.boolean()),
-      saveHistory: v.optional(v.boolean()),
-      compactMode: v.optional(v.boolean()),
-    })),
-    
-    subscription: v.optional(v.object({
-      tier: v.union(
-        v.literal('free'),
-        v.literal('pro'),
-        v.literal('pro_plus')
-      ),
-      // Message-based limits instead of tokens
-      messagesUsed: v.optional(v.number()),
-      messagesLimit: v.optional(v.number()),
-      premiumMessagesUsed: v.optional(v.number()), // GPT-4o, Claude usage
-      premiumMessagesLimit: v.optional(v.number()),
-      // Billing information
-      currentPeriodStart: v.optional(v.number()),
-      currentPeriodEnd: v.optional(v.number()),
-      subscriptionTxSignature: v.optional(v.string()), // Solana transaction
-      autoRenew: v.optional(v.boolean()),
-      planPriceSol: v.optional(v.number()), // Price in SOL
-      // Legacy token fields (will migrate)
-      tokensUsed: v.optional(v.number()),
-      tokensLimit: v.optional(v.number()),
-      features: v.optional(v.array(v.string())),
-      billingCycle: v.optional(
-        v.union(v.literal('monthly'), v.literal('yearly'))
-      ),
-    })),
-    
+    ),
+    permissions: v.optional(
+      v.array(
+        v.union(
+          v.literal('user_management'),
+          v.literal('subscription_management'),
+          v.literal('content_moderation'),
+          v.literal('system_settings'),
+          v.literal('financial_data'),
+          v.literal('usage_analytics'),
+          v.literal('admin_management')
+        )
+      )
+    ),
+
+    preferences: v.optional(
+      v.object({
+        theme: v.union(v.literal('light'), v.literal('dark')),
+        aiModel: v.string(),
+        notifications: v.boolean(),
+        language: v.optional(v.string()),
+        temperature: v.optional(v.number()),
+        maxTokens: v.optional(v.number()),
+        streamResponses: v.optional(v.boolean()),
+        saveHistory: v.optional(v.boolean()),
+        compactMode: v.optional(v.boolean()),
+      })
+    ),
+
+    subscription: v.optional(
+      v.object({
+        tier: v.union(
+          v.literal('free'),
+          v.literal('pro'),
+          v.literal('pro_plus')
+        ),
+        // Message-based limits instead of tokens
+        messagesUsed: v.optional(v.number()),
+        messagesLimit: v.optional(v.number()),
+        premiumMessagesUsed: v.optional(v.number()), // GPT-4o, Claude usage
+        premiumMessagesLimit: v.optional(v.number()),
+        // Billing information
+        currentPeriodStart: v.optional(v.number()),
+        currentPeriodEnd: v.optional(v.number()),
+        subscriptionTxSignature: v.optional(v.string()), // Solana transaction
+        autoRenew: v.optional(v.boolean()),
+        planPriceSol: v.optional(v.number()), // Price in SOL
+        // Legacy token fields (will migrate)
+        tokensUsed: v.optional(v.number()),
+        tokensLimit: v.optional(v.number()),
+        features: v.optional(v.array(v.string())),
+        billingCycle: v.optional(
+          v.union(v.literal('monthly'), v.literal('yearly'))
+        ),
+      })
+    ),
+
     createdAt: v.optional(v.number()), // User creation timestamp
     lastActiveAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()), // Last update timestamp
@@ -273,7 +281,7 @@ export default defineSchema({
   blacklistedTokens: defineTable({
     token: v.optional(v.string()), // Made optional for migration
     tokenId: v.optional(v.string()), // Legacy field
-    userId: v.optional(v.string()), // Legacy field  
+    userId: v.optional(v.string()), // Legacy field
     blacklistedAt: v.optional(v.number()), // Legacy field
     reason: v.optional(v.string()),
     expiresAt: v.number(),
@@ -472,6 +480,17 @@ export default defineSchema({
     ),
     confirmations: v.optional(v.number()),
     errorMessage: v.optional(v.string()),
+    verificationDetails: v.optional(
+      v.object({
+        signature: v.string(),
+        recipient: v.string(),
+        sender: v.string(),
+        amount: v.number(),
+        timestamp: v.number(),
+        slot: v.number(),
+        confirmationStatus: v.string(),
+      })
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -497,11 +516,7 @@ export default defineSchema({
 
   // Model access quotas per tier
   modelQuotas: defineTable({
-    tier: v.union(
-      v.literal('free'),
-      v.literal('pro'),
-      v.literal('pro_plus')
-    ),
+    tier: v.union(v.literal('free'), v.literal('pro'), v.literal('pro_plus')),
     model: v.string(),
     modelCategory: v.union(v.literal('premium'), v.literal('standard')),
     monthlyLimit: v.number(), // -1 for unlimited within total tier limit
@@ -1993,4 +2008,53 @@ export default defineSchema({
       searchField: 'fileName',
       filterFields: ['walletAddress', 'purpose'],
     }),
+
+  // =============================================================================
+  // Payment Monitoring & Logging
+  // =============================================================================
+
+  // Payment system events for monitoring
+  paymentEvents: defineTable({
+    eventType: v.union(
+      v.literal('payment_initiated'),
+      v.literal('payment_processing'),
+      v.literal('payment_verified'),
+      v.literal('payment_failed'),
+      v.literal('payment_timeout'),
+      v.literal('payment_retry'),
+      v.literal('wallet_connected'),
+      v.literal('wallet_disconnected'),
+      v.literal('verification_started'),
+      v.literal('verification_completed'),
+      v.literal('verification_failed'),
+      v.literal('blockchain_error'),
+      v.literal('rpc_error')
+    ),
+    timestamp: v.number(),
+    userId: v.optional(v.id('users')),
+    sessionId: v.optional(v.string()),
+    metadata: v.object({
+      txSignature: v.optional(v.string()),
+      tier: v.optional(v.union(v.literal('pro'), v.literal('pro_plus'))),
+      amount: v.optional(v.number()),
+      walletAddress: v.optional(v.string()),
+      errorMessage: v.optional(v.string()),
+      errorCode: v.optional(v.string()),
+      retryAttempt: v.optional(v.number()),
+      processingTime: v.optional(v.number()),
+      network: v.optional(v.string()),
+      rpcEndpoint: v.optional(v.string()),
+    }),
+    severity: v.union(
+      v.literal('info'),
+      v.literal('warning'),
+      v.literal('error'),
+      v.literal('critical')
+    ),
+    createdAt: v.number(),
+  })
+    .index('by_timestamp', ['timestamp'])
+    .index('by_severity_timestamp', ['severity', 'timestamp'])
+    .index('by_event_type', ['eventType', 'timestamp'])
+    .index('by_user', ['userId', 'timestamp']),
 });

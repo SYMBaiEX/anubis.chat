@@ -11,7 +11,7 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { SolanaAgentKit } from 'solana-agent-kit';
+import type { SolanaAgentKit } from 'solana-agent-kit';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuthContext } from './auth-provider';
 
@@ -179,7 +179,9 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   // Initialize Solana Agent Kit when wallet connects
   useEffect(() => {
     const initializeAgentKit = async () => {
-      if (!(wallet.isConnected && wallet.publicKey && isAuthenticated && user)) {
+      if (
+        !(wallet.isConnected && wallet.publicKey && isAuthenticated && user)
+      ) {
         setAgentKit(null);
         setIsInitialized(false);
         return;
@@ -189,27 +191,20 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
         // In production, the private key should NOT be stored on the frontend
         // Instead, the agent operations should be executed on the backend
         // For now, we'll create the kit without the private key and use it for read-only operations
-        const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 
+        const rpcUrl =
+          process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
           process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta'
             ? 'https://api.mainnet-beta.solana.com'
             : process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'testnet'
-            ? 'https://api.testnet.solana.com'
-            : 'https://api.devnet.solana.com';
+              ? 'https://api.testnet.solana.com'
+              : 'https://api.devnet.solana.com';
 
-        // Create a minimal agent kit for read operations
-        // In a production environment, transaction operations should be handled server-side
-        const kit = new SolanaAgentKit(
-          '', // Empty private key for read-only operations
-          rpcUrl,
-          {
-            OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-          }
-        );
-
-        setAgentKit(kit);
+        // Skip agent kit instantiation on the client for read-only operations
+        // Server-side should handle transaction-capable agent actions
+        setAgentKit(null);
         setIsInitialized(true);
         setError(null);
-        
+
         console.log('Solana Agent Kit initialized for read-only operations', {
           publicKey: wallet.publicKey?.toString(),
           network: process.env.NEXT_PUBLIC_SOLANA_NETWORK,
@@ -266,7 +261,9 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   const executeTool = useCallback(
     async (execution: ToolExecution): Promise<any> => {
       if (!(agentKit && selectedAgent && wallet.isConnected)) {
-        throw new Error('Agent kit not initialized, no agent selected, or wallet not connected');
+        throw new Error(
+          'Agent kit not initialized, no agent selected, or wallet not connected'
+        );
       }
 
       try {
@@ -288,7 +285,9 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
           case 'deployToken':
           case 'transfer':
           case 'swap':
-            throw new Error(`Tool '${execution.toolName}' requires server-side execution for security`);
+            throw new Error(
+              `Tool '${execution.toolName}' requires server-side execution for security`
+            );
 
           // Add more read-only tools as needed
           default:

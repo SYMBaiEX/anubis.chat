@@ -1,7 +1,7 @@
 'use client';
 
-import { useAuthContext } from '@/components/providers/auth-provider';
 import { ChatInterface } from '@/components/chat/chat-interface';
+import { useAuthContext } from '@/components/providers/auth-provider';
 
 export default function ChatPage() {
   const { isLoading } = useAuthContext();

@@ -1,5 +1,6 @@
 'use client';
 
+import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import {
   FileText,
   Image,
@@ -10,8 +11,14 @@ import {
   Smile,
   Square,
 } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Tooltip,
@@ -45,6 +52,7 @@ export function MessageInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const { theme } = useTheme();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -61,6 +69,12 @@ export function MessageInput({
 
     onSend(trimmedMessage);
     setMessage('');
+    setShowEmojiPicker(false);
+  };
+
+  const handleEmojiClick = (emojiData: any) => {
+    setMessage((prev) => prev + emojiData.emoji);
+    textareaRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -133,42 +147,44 @@ export function MessageInput({
         )}
 
         {/* Input Container */}
-        <div className="flex items-end space-x-2">
-          {/* Attachment Buttons */}
-          <div className="flex flex-col space-y-1">
+        <div className="flex items-end gap-2">
+          {/* Attachment Buttons - Stacked vertically */}
+          <div className="flex flex-col gap-0.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  className="h-7 w-7 p-0"
                   disabled={disabled}
                   onClick={() => fileInputRef.current?.click()}
-                  size="sm"
+                  size="icon"
                   variant="ghost"
                 >
-                  <Paperclip className="h-4 w-4" />
+                  <Paperclip className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Attach file</TooltipContent>
+              <TooltipContent side="left">Attach file</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  className="h-7 w-7 p-0"
                   disabled={disabled}
                   onClick={() => imageInputRef.current?.click()}
-                  size="sm"
+                  size="icon"
                   variant="ghost"
                 >
-                  <Image className="h-4 w-4" />
+                  <Image className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Attach image</TooltipContent>
+              <TooltipContent side="left">Attach image</TooltipContent>
             </Tooltip>
           </div>
 
           {/* Main Input Area */}
           <div className="relative flex-1">
             <Textarea
-              className="max-h-[200px] min-h-[44px] resize-none pr-20"
+              className="max-h-[200px] min-h-[56px] resize-none pr-12"
               disabled={disabled}
               maxLength={maxLength}
               onChange={(e) => {
@@ -184,46 +200,69 @@ export function MessageInput({
               value={message}
             />
 
-            {/* Emoji Button */}
-            <div className="absolute right-16 bottom-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
+            {/* Emoji Button - Vertically centered in the right side of input */}
+            <div className="-translate-y-1/2 absolute top-1/2 right-2">
+              <Popover onOpenChange={setShowEmojiPicker} open={showEmojiPicker}>
+                <PopoverTrigger asChild>
                   <Button
+                    className="h-8 w-8 p-0"
                     disabled={disabled}
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    size="sm"
+                    size="icon"
                     variant="ghost"
                   >
-                    <Smile className="h-4 w-4" />
+                    <Smile
+                      className={cn(
+                        'h-4 w-4 transition-colors',
+                        showEmojiPicker && 'text-primary'
+                      )}
+                    />
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent>Add emoji</TooltipContent>
-              </Tooltip>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  className="w-auto border-0 p-0"
+                  side="top"
+                  sideOffset={8}
+                >
+                  <EmojiPicker
+                    emojiStyle={EmojiStyle.NATIVE}
+                    height={400}
+                    onEmojiClick={handleEmojiClick}
+                    previewConfig={{
+                      showPreview: false,
+                    }}
+                    searchPlaceHolder="Search emoji..."
+                    theme={theme === 'dark' ? Theme.DARK : Theme.LIGHT}
+                    width={320}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
-          {/* Voice/Send Buttons */}
-          <div className="flex flex-col space-y-1">
+          {/* Voice/Send Buttons - Stacked vertically */}
+          <div className="flex flex-col gap-0.5">
             {/* Voice Recording */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   className={cn(
+                    'h-7 w-7 p-0',
                     isRecording && 'bg-red-500 text-white hover:bg-red-600'
                   )}
                   disabled={disabled}
                   onClick={handleVoiceToggle}
-                  size="sm"
+                  size="icon"
                   variant={isRecording ? 'default' : 'ghost'}
                 >
                   {isRecording ? (
-                    <Square className="h-4 w-4" />
+                    <Square className="h-3.5 w-3.5" />
                   ) : (
-                    <Mic className="h-4 w-4" />
+                    <Mic className="h-3.5 w-3.5" />
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent side="right">
                 {isRecording ? 'Stop recording' : 'Voice message'}
               </TooltipContent>
             </Tooltip>
@@ -232,14 +271,16 @@ export function MessageInput({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  className="h-7 w-7 p-0"
                   disabled={disabled || !isMessageValid}
                   onClick={handleSend}
-                  size="sm"
+                  size="icon"
+                  variant="default"
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Send message (Enter)</TooltipContent>
+              <TooltipContent side="right">Send message (Enter)</TooltipContent>
             </Tooltip>
           </div>
         </div>

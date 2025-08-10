@@ -103,9 +103,9 @@ export default function AnimatedSection({
 
   return (
     <section
-      className={`relative ${allowOverlap ? 'overflow-visible' : 'overflow-hidden'} bg-background light:papyrus-surface dark:basalt-surface ${className ?? ''}`}
-      style={{ contain: 'paint' }}
+      className={`relative ${allowOverlap ? 'overflow-visible' : 'overflow-hidden'} light:papyrus-surface dark:basalt-surface bg-background ${className ?? ''}`}
       ref={ref}
+      style={{ contain: 'paint' }}
       {...rest}
     >
       {/* Background layers (non-interactive) */}

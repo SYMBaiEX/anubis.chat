@@ -5,11 +5,11 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { convexConfig } from '@/lib/env';
-import { verifyAuthToken } from '@/lib/middleware/auth';
+import { verifyAuthToken } from '@/lib/middleware/subscription-auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import {
   addSecurityHeaders,
-  serverErrorResponse,
+  internalErrorResponse,
   successResponse,
   unauthorizedResponse,
 } from '@/lib/utils/api-response';
@@ -26,28 +26,31 @@ export async function GET(request: NextRequest) {
     try {
       // Verify authentication
       const authResult = await verifyAuthToken(req);
-      if (!authResult.success || !authResult.walletAddress) {
+      if (!(authResult.success && authResult.walletAddress)) {
         return unauthorizedResponse('Authentication required');
       }
 
       // Initialize Convex client
       const convexUrl = convexConfig.publicUrl;
       if (!convexUrl) {
-        throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is required');
+        throw new Error(
+          'NEXT_PUBLIC_CONVEX_URL environment variable is required'
+        );
       }
 
-      const convexClient = new (await import('convex/browser')).ConvexHttpClient(convexUrl);
+      const convexClient = new (
+        await import('convex/browser')
+      ).ConvexHttpClient(convexUrl);
 
       // Get subscription status
+      const { api } = await import('@convex/_generated/api');
       const subscriptionStatus = await convexClient.query(
-        (await import('@convex/_generated/api')).api.subscriptions.getSubscriptionStatus,
-        {
-          walletAddress: authResult.walletAddress,
-        }
+        api.subscriptions.getSubscriptionStatusByWallet,
+        { walletAddress: authResult.walletAddress }
       );
 
       if (!subscriptionStatus) {
-        return serverErrorResponse('Subscription status not found');
+        return internalErrorResponse('Subscription status not found');
       }
 
       log.info('Subscription status retrieved', {
@@ -63,7 +66,7 @@ export async function GET(request: NextRequest) {
         error: error instanceof Error ? error.message : String(error),
       });
 
-      return serverErrorResponse('Failed to get subscription status');
+      return internalErrorResponse('Failed to get subscription status');
     }
   });
 }

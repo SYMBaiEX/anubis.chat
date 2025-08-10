@@ -1,16 +1,9 @@
 'use client';
 
+import { Brain, Database, Globe, Network, Shield, Zap } from 'lucide-react';
 import React, { memo } from 'react';
-import {
-  Brain,
-  Shield,
-  Zap,
-  Globe,
-  Database,
-  Network,
-} from 'lucide-react';
-import { Card } from '@/components/ui/card';
 import AnimatedSection from '@/components/landing/animated-section';
+import { Card } from '@/components/ui/card';
 
 const featureList = [
   {
@@ -35,7 +28,8 @@ const featureList = [
   {
     icon: Globe,
     title: 'RAG System',
-    description: 'Upload docs and query with semantic retrieval tuned for Web3.',
+    description:
+      'Upload docs and query with semantic retrieval tuned for Web3.',
     gradient: 'from-primary to-emerald-400',
   },
   {
@@ -47,7 +41,8 @@ const featureList = [
   {
     icon: Network,
     title: 'On‑chain Agents',
-    description: 'Autonomous agents that read, reason, and execute DeFi actions.',
+    description:
+      'Autonomous agents that read, reason, and execute DeFi actions.',
     gradient: 'from-emerald-400 to-accent',
   },
 ];
@@ -55,15 +50,15 @@ const featureList = [
 function Features() {
   return (
     <AnimatedSection
-      id="features"
-      className="py-20 md:py-28 lg:py-32"
-      auroraVariant="primary"
-      includeRosetta={false}
-      includeHieroglyphs={false}
-      dustIntensity="low"
       allowOverlap
-      softEdges
+      auroraVariant="primary"
+      className="py-20 md:py-28 lg:py-32"
       data-bg-variant="primary"
+      dustIntensity="low"
+      id="features"
+      includeHieroglyphs={false}
+      includeRosetta={false}
+      softEdges
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-3xl text-center">
@@ -73,7 +68,8 @@ function Features() {
             </span>
           </h2>
           <p className="text-muted-foreground">
-            Streaming chat, retrieval, vectors, and on‑chain execution — all in one.
+            Streaming chat, retrieval, vectors, and on‑chain execution — all in
+            one.
           </p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -89,11 +85,15 @@ function Features() {
                   className={`absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity group-hover:opacity-15 ${f.gradient}`}
                 />
                 <div className="relative">
-                  <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br ${f.gradient} shadow-md shadow-emerald-500/20`}>
+                  <div
+                    className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br ${f.gradient} shadow-emerald-500/20 shadow-md`}
+                  >
                     <Icon aria-hidden className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="mb-1 font-semibold text-xl">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground">{f.description}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {f.description}
+                  </p>
                 </div>
               </Card>
             );
@@ -105,5 +105,3 @@ function Features() {
 }
 
 export default memo(Features);
-
-

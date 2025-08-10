@@ -1,18 +1,31 @@
 'use client';
 
+import {
+  AlertTriangle,
+  Bell,
+  CreditCard,
+  Crown,
+  Loader,
+  Shield,
+} from 'lucide-react';
 import Link from 'next/link';
-import { Crown, CreditCard, Bell, Shield, AlertTriangle, Loader } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuthContext } from '@/components/providers/auth-provider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuthContext } from '@/components/providers/auth-provider';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSubscription } from '@/hooks/use-subscription';
 
 export default function SettingsPage() {
   const { user, isLoading: authLoading } = useAuthContext();
-  const { subscription, limits, upgradePrompt, isLoading: subscriptionLoading, error } = useSubscription();
+  const {
+    subscription,
+    limits,
+    upgradePrompt,
+    isLoading: subscriptionLoading,
+    error,
+  } = useSubscription();
 
   const isLoading = authLoading || subscriptionLoading;
 
@@ -22,7 +35,9 @@ export default function SettingsPage() {
         <div className="text-center">
           <Loader className="mx-auto mb-4 h-8 w-8 animate-spin" />
           <h2 className="font-semibold text-xl">Loading settings...</h2>
-          <p className="text-muted-foreground">Please wait while we load your settings.</p>
+          <p className="text-muted-foreground">
+            Please wait while we load your settings.
+          </p>
         </div>
       </div>
     );
@@ -33,12 +48,15 @@ export default function SettingsPage() {
       <div className="space-y-6 p-6">
         <div>
           <h1 className="font-semibold text-2xl">Settings</h1>
-          <p className="text-muted-foreground">Manage your preferences and integrations</p>
+          <p className="text-muted-foreground">
+            Manage your preferences and integrations
+          </p>
         </div>
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Unable to load subscription data. Some features may not be available.
+            Unable to load subscription data. Some features may not be
+            available.
           </AlertDescription>
         </Alert>
       </div>
@@ -68,7 +86,7 @@ export default function SettingsPage() {
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         {/* Subscription Management */}
         <Card className="p-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex items-center justify-between">
             <h2 className="font-medium">Subscription</h2>
             <Crown className="h-5 w-5 text-muted-foreground" />
           </div>
@@ -77,34 +95,39 @@ export default function SettingsPage() {
           </p>
           <div className="mb-4 space-y-2">
             <div className="flex items-center gap-2">
-              <Badge variant={(subscription?.tier || 'free') === 'free' ? 'secondary' : 'default'}>
+              <Badge
+                variant={
+                  (subscription?.tier || 'free') === 'free'
+                    ? 'secondary'
+                    : 'default'
+                }
+              >
                 {subscription?.tier || 'free'} Plan
               </Badge>
               {subscription?.tier !== 'free' && subscription?.planPriceSol && (
-                <Badge variant="outline" className="text-xs">
+                <Badge className="text-xs" variant="outline">
                   {subscription.planPriceSol} SOL/month
                 </Badge>
               )}
             </div>
-            <div className="text-xs text-muted-foreground">
-              {subscription?.messagesUsed || 0} / {subscription?.messagesLimit || 0} messages used
+            <div className="text-muted-foreground text-xs">
+              {subscription?.messagesUsed || 0} /{' '}
+              {subscription?.messagesLimit || 0} messages used
             </div>
             {limits && !limits.canSendMessage && (
-              <Badge variant="destructive" className="text-xs">
+              <Badge className="text-xs" variant="destructive">
                 Message limit reached
               </Badge>
             )}
           </div>
           <Button asChild size="sm">
-            <Link href="/subscription">
-              Manage subscription
-            </Link>
+            <Link href="/subscription">Manage subscription</Link>
           </Button>
         </Card>
 
         {/* Billing & Payments */}
         <Card className="p-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex items-center justify-between">
             <h2 className="font-medium">Billing</h2>
             <CreditCard className="h-5 w-5 text-muted-foreground" />
           </div>
@@ -112,28 +135,42 @@ export default function SettingsPage() {
             Payment methods and transaction history.
           </p>
           <div className="mb-4 space-y-1">
-            {subscription?.tier !== 'free' && subscription?.currentPeriodEnd && (
-              <>
-                <div className="text-sm">Next billing: {new Date(subscription.currentPeriodEnd).toLocaleDateString()}</div>
-                <div className="text-xs text-muted-foreground">
-                  {subscription?.daysRemaining || Math.max(0, Math.ceil((subscription.currentPeriodEnd - Date.now()) / (1000 * 60 * 60 * 24)))} days remaining
-                </div>
-              </>
-            )}
+            {subscription?.tier !== 'free' &&
+              subscription?.currentPeriodEnd && (
+                <>
+                  <div className="text-sm">
+                    Next billing:{' '}
+                    {new Date(
+                      subscription.currentPeriodEnd
+                    ).toLocaleDateString()}
+                  </div>
+                  <div className="text-muted-foreground text-xs">
+                    {subscription?.daysRemaining ||
+                      Math.max(
+                        0,
+                        Math.ceil(
+                          (subscription.currentPeriodEnd - Date.now()) /
+                            (1000 * 60 * 60 * 24)
+                        )
+                      )}{' '}
+                    days remaining
+                  </div>
+                </>
+              )}
             {(!subscription || subscription?.tier === 'free') && (
-              <div className="text-sm text-muted-foreground">No active subscription</div>
+              <div className="text-muted-foreground text-sm">
+                No active subscription
+              </div>
             )}
           </div>
           <Button asChild size="sm" variant="outline">
-            <Link href="/billing">
-              View billing
-            </Link>
+            <Link href="/billing">View billing</Link>
           </Button>
         </Card>
 
         {/* MCP Servers */}
         <Card className="p-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex items-center justify-between">
             <h2 className="font-medium">MCP Servers</h2>
             <Shield className="h-5 w-5 text-muted-foreground" />
           </div>
@@ -142,20 +179,18 @@ export default function SettingsPage() {
           </p>
           <div className="mb-4">
             {subscription?.tier && subscription.tier !== 'free' ? (
-              <Badge variant="outline" className="gap-1">
+              <Badge className="gap-1" variant="outline">
                 <Crown className="h-3 w-3" />
                 Premium features available
               </Badge>
             ) : (
-              <Badge variant="secondary" className="text-xs">
+              <Badge className="text-xs" variant="secondary">
                 Basic MCP access
               </Badge>
             )}
           </div>
           <Button asChild size="sm" variant="outline">
-            <Link href="/mcp">
-              Open MCP settings
-            </Link>
+            <Link href="/mcp">Open MCP settings</Link>
           </Button>
         </Card>
 
@@ -166,18 +201,17 @@ export default function SettingsPage() {
             Profile, security, and preferences.
           </p>
           <div className="mb-4 space-y-1">
-            <div className="text-sm">{user?.displayName || 'No display name'}</div>
-            <div className="text-xs text-muted-foreground">
-              {user?.walletAddress ? 
-                `${user.walletAddress.slice(0, 8)}...${user.walletAddress.slice(-4)}` :
-                'No wallet connected'
-              }
+            <div className="text-sm">
+              {user?.displayName || 'No display name'}
+            </div>
+            <div className="text-muted-foreground text-xs">
+              {user?.walletAddress
+                ? `${user.walletAddress.slice(0, 8)}...${user.walletAddress.slice(-4)}`
+                : 'No wallet connected'}
             </div>
           </div>
           <Button asChild size="sm" variant="outline">
-            <Link href="/account">
-              Manage account
-            </Link>
+            <Link href="/account">Manage account</Link>
           </Button>
         </Card>
       </div>
@@ -223,8 +257,10 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <h3 className="font-medium text-sm">Auto-renewal</h3>
               <div className="text-muted-foreground text-sm">
-                {subscription?.autoRenew ? 'Enabled' : 'Disabled'} - 
-                {subscription?.tier !== 'free' ? ' Your subscription will auto-renew' : ' No active subscription'}
+                {subscription?.autoRenew ? 'Enabled' : 'Disabled'} -
+                {subscription?.tier !== 'free'
+                  ? ' Your subscription will auto-renew'
+                  : ' No active subscription'}
               </div>
             </div>
             <div className="space-y-2">
@@ -237,13 +273,22 @@ export default function SettingsPage() {
               <h3 className="font-medium text-sm">Feature Access</h3>
               <div className="space-y-1">
                 <div className="text-sm">
-                  • Workflows: {subscription?.tier === 'pro_plus' ? '✅ Available' : '❌ Requires Pro+'}
+                  • Workflows:{' '}
+                  {subscription?.tier === 'pro_plus'
+                    ? '✅ Available'
+                    : '❌ Requires Pro+'}
                 </div>
                 <div className="text-sm">
-                  • Premium Models: {subscription?.tier && subscription.tier !== 'free' ? '✅ Available' : '❌ Requires Pro or Pro+'}
+                  • Premium Models:{' '}
+                  {subscription?.tier && subscription.tier !== 'free'
+                    ? '✅ Available'
+                    : '❌ Requires Pro or Pro+'}
                 </div>
                 <div className="text-sm">
-                  • API Access: {subscription?.tier === 'pro_plus' ? '✅ Available' : '❌ Requires Pro+'}
+                  • API Access:{' '}
+                  {subscription?.tier === 'pro_plus'
+                    ? '✅ Available'
+                    : '❌ Requires Pro+'}
                 </div>
               </div>
             </div>

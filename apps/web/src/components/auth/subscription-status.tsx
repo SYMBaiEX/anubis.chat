@@ -1,12 +1,17 @@
 'use client';
 
-import { ArrowUpRight, Crown, Shield, Zap } from 'lucide-react';
+import { Crown, Shield, Zap } from 'lucide-react';
+import { UpgradeModal } from '@/components/auth/upgrade-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import type { SubscriptionStatusProps } from '@/lib/types/components';
-import type { SubscriptionStatus as SubscriptionData, SubscriptionLimits, UpgradePrompt } from '@/hooks/use-subscription';
+import type {
+  SubscriptionStatus as SubscriptionData,
+  SubscriptionLimits,
+  UpgradePrompt,
+} from '@/hooks/use-subscription';
+import { useUpgradeModal } from '@/hooks/use-upgrade-modal';
 import { cn } from '@/lib/utils';
 
 /**
@@ -30,6 +35,7 @@ export function SubscriptionStatus({
   className,
   children,
 }: ExtendedSubscriptionStatusProps) {
+  const { isOpen, openModal, closeModal, suggestedTier } = useUpgradeModal();
   // Handle missing subscription data
   if (!subscription) {
     return (
@@ -44,21 +50,32 @@ export function SubscriptionStatus({
   }
 
   // Use messagesUsed/messagesLimit for new subscription system
-  const messagesUsed = subscription.messagesUsed ?? subscription.tokensUsed ?? 0;
-  const messagesLimit = subscription.messagesLimit ?? subscription.tokensLimit ?? 10000;
+  const messagesUsed =
+    subscription.messagesUsed ?? subscription.tokensUsed ?? 0;
+  const messagesLimit =
+    subscription.messagesLimit ?? subscription.tokensLimit ?? 10_000;
   const premiumMessagesUsed = subscription.premiumMessagesUsed ?? 0;
   const premiumMessagesLimit = subscription.premiumMessagesLimit ?? 0;
-  
+
   // Handle admin unlimited access (Infinity values)
   const isAdmin = subscription.tier === 'admin' || subscription.isAdmin;
-  const usagePercentage = isAdmin ? 0 : (messagesLimit > 0 ? Math.round((messagesUsed / messagesLimit) * 100) : 0);
-  const premiumUsagePercentage = isAdmin ? 0 : (premiumMessagesLimit > 0 ? Math.round((premiumMessagesUsed / premiumMessagesLimit) * 100) : 0);
+  const usagePercentage = isAdmin
+    ? 0
+    : messagesLimit > 0
+      ? Math.round((messagesUsed / messagesLimit) * 100)
+      : 0;
+  const premiumUsagePercentage = isAdmin
+    ? 0
+    : premiumMessagesLimit > 0
+      ? Math.round((premiumMessagesUsed / premiumMessagesLimit) * 100)
+      : 0;
 
   // Use limits from the hook if available, otherwise calculate from subscription
-  const canSendMessage = limits?.canSendMessage ?? (messagesUsed < messagesLimit);
-  const canUsePremiumModel = limits?.canUsePremiumModel ?? (premiumMessagesUsed < premiumMessagesLimit && subscription.tier !== 'free');
-  const messagesRemaining = limits?.messagesRemaining ?? Math.max(0, messagesLimit - messagesUsed);
-  const premiumMessagesRemaining = limits?.premiumMessagesRemaining ?? Math.max(0, premiumMessagesLimit - premiumMessagesUsed);
+  const canSendMessage = limits?.canSendMessage ?? messagesUsed < messagesLimit;
+  const canUsePremiumModel =
+    limits?.canUsePremiumModel ??
+    (premiumMessagesUsed < premiumMessagesLimit &&
+      subscription.tier !== 'free');
 
   const getTierIcon = (tier: string) => {
     switch (tier) {
@@ -111,24 +128,19 @@ export function SubscriptionStatus({
               <h3 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
                 {subscription.tier === 'admin'
                   ? 'Administrator'
-                  : subscription.tier === 'pro_plus' 
-                  ? 'Pro+' 
-                  : subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1)}{' '}
+                  : subscription.tier === 'pro_plus'
+                    ? 'Pro+'
+                    : subscription.tier.charAt(0).toUpperCase() +
+                      subscription.tier.slice(1)}{' '}
                 {subscription.tier !== 'admin' && 'Plan'}
               </h3>
               <p className="text-gray-600 text-sm dark:text-gray-400">
-                {subscription.tier === 'admin' 
+                {subscription.tier === 'admin'
                   ? 'Unlimited access to all features'
                   : 'Current subscription tier'}
               </p>
             </div>
           </div>
-          {showUpgrade && (
-            <Button size="sm" variant="outline">
-              <ArrowUpRight className="mr-2 h-4 w-4" />
-              Upgrade
-            </Button>
-          )}
         </div>
 
         {/* Message Usage */}
@@ -141,11 +153,11 @@ export function SubscriptionStatus({
               </span>
               <div className="flex items-center space-x-2">
                 <span className="text-gray-600 text-sm dark:text-gray-400">
-                  {isAdmin 
-                    ? 'Unlimited' 
+                  {isAdmin
+                    ? 'Unlimited'
                     : `${formatNumber(messagesUsed)} / ${formatNumber(messagesLimit)}`}
                 </span>
-                {!isAdmin && !canSendMessage && (
+                {!(isAdmin || canSendMessage) && (
                   <Badge size="sm" variant="error">
                     Limit Reached
                   </Badge>
@@ -154,7 +166,6 @@ export function SubscriptionStatus({
             </div>
             <Progress
               max={100}
-              showValue
               size="md"
               value={usagePercentage}
               variant={getProgressVariant(usagePercentage)}
@@ -185,25 +196,25 @@ export function SubscriptionStatus({
                 </span>
                 <div className="flex items-center space-x-2">
                   <span className="text-gray-600 text-sm dark:text-gray-400">
-                    {isAdmin 
-                      ? 'Unlimited' 
+                    {isAdmin
+                      ? 'Unlimited'
                       : `${formatNumber(premiumMessagesUsed)} / ${formatNumber(premiumMessagesLimit)}`}
                   </span>
-                  {!isAdmin && !canUsePremiumModel && subscription.tier !== 'free' && (
-                    <Badge size="sm" variant="error">
-                      Limit Reached
-                    </Badge>
-                  )}
+                  {!(isAdmin || canUsePremiumModel) &&
+                    subscription.tier !== 'free' && (
+                      <Badge size="sm" variant="error">
+                        Limit Reached
+                      </Badge>
+                    )}
                 </div>
               </div>
               <Progress
                 max={100}
-                showValue
                 size="md"
                 value={premiumUsagePercentage}
                 variant={getProgressVariant(premiumUsagePercentage)}
               />
-              <div className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="text-gray-500 text-xs dark:text-gray-400">
                 Includes GPT-4o, Claude 3.5 Sonnet, and other premium AI models
               </div>
             </div>
@@ -223,7 +234,7 @@ export function SubscriptionStatus({
               const formattedFeature = feature
                 .replace(/_/g, ' ')
                 .replace(/\b\w/g, (l) => l.toUpperCase());
-              
+
               return (
                 <div
                   className="flex items-center space-x-2 text-gray-600 text-sm dark:text-gray-400"
@@ -239,20 +250,23 @@ export function SubscriptionStatus({
       )}
 
       {/* Available Models */}
-      {subscription.availableModels && subscription.availableModels.length > 0 && (
-        <Card className="p-6">
-          <h4 className="mb-4 font-semibold text-gray-900 text-md dark:text-gray-100">
-            Available AI Models
-          </h4>
-          <div className="flex flex-wrap gap-2">
-            {subscription.availableModels.map((model: string, index: number) => (
-              <Badge key={index} variant="secondary">
-                {model}
-              </Badge>
-            ))}
-          </div>
-        </Card>
-      )}
+      {subscription.availableModels &&
+        subscription.availableModels.length > 0 && (
+          <Card className="p-6">
+            <h4 className="mb-4 font-semibold text-gray-900 text-md dark:text-gray-100">
+              Available AI Models
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {subscription.availableModels.map(
+                (model: string, index: number) => (
+                  <Badge key={index} variant="secondary">
+                    {model}
+                  </Badge>
+                )
+              )}
+            </div>
+          </Card>
+        )}
 
       {/* Subscription Period Info */}
       {subscription.currentPeriodStart && subscription.currentPeriodEnd && (
@@ -262,20 +276,35 @@ export function SubscriptionStatus({
           </h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400">Current Period:</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Current Period:
+              </span>
               <span className="text-gray-900 dark:text-gray-100">
-                {new Date(subscription.currentPeriodStart).toLocaleDateString()} - {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                {new Date(subscription.currentPeriodStart).toLocaleDateString()}{' '}
+                - {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400">Days Remaining:</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Days Remaining:
+              </span>
               <span className="text-gray-900 dark:text-gray-100">
-                {subscription.daysRemaining || Math.max(0, Math.ceil((subscription.currentPeriodEnd - Date.now()) / (1000 * 60 * 60 * 24)))} days
+                {subscription.daysRemaining ||
+                  Math.max(
+                    0,
+                    Math.ceil(
+                      (subscription.currentPeriodEnd - Date.now()) /
+                        (1000 * 60 * 60 * 24)
+                    )
+                  )}{' '}
+                days
               </span>
             </div>
             {subscription.isExpired && (
               <div className="flex justify-between">
-                <span className="text-red-600 dark:text-red-400 font-medium">Status:</span>
+                <span className="font-medium text-red-600 dark:text-red-400">
+                  Status:
+                </span>
                 <Badge variant="destructive">Expired</Badge>
               </div>
             )}
@@ -293,14 +322,26 @@ export function SubscriptionStatus({
                 {upgradePrompt?.title || 'Usage Recommendation'}
               </h5>
               <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                {upgradePrompt?.message || 
-                 (usagePercentage >= 90
-                   ? 'Consider upgrading your plan to get more messages or wait for your monthly reset.'
-                   : 'You may want to monitor your message usage more closely or consider upgrading your plan.')}
+                {upgradePrompt?.message ||
+                  (usagePercentage >= 90
+                    ? 'Consider upgrading your plan to get more messages or wait for your monthly reset.'
+                    : 'You may want to monitor your message usage more closely or consider upgrading your plan.')}
               </p>
               {(showUpgrade || upgradePrompt?.suggestedTier) && (
-                <Button className="mt-2" size="sm" variant="outline">
-                  {upgradePrompt?.suggestedTier 
+                <Button
+                  className="mt-2"
+                  onClick={() =>
+                    openModal({
+                      tier:
+                        upgradePrompt?.suggestedTier ||
+                        (subscription?.tier === 'free' ? 'pro' : 'pro_plus'),
+                      trigger: 'limit_reached',
+                    })
+                  }
+                  size="sm"
+                  variant="outline"
+                >
+                  {upgradePrompt?.suggestedTier
                     ? `Upgrade to ${upgradePrompt.suggestedTier.charAt(0).toUpperCase() + upgradePrompt.suggestedTier.slice(1)}`
                     : 'View Upgrade Options'}
                 </Button>
@@ -311,6 +352,14 @@ export function SubscriptionStatus({
       )}
 
       {children}
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={isOpen}
+        onClose={closeModal}
+        suggestedTier={suggestedTier}
+        trigger="manual"
+      />
     </div>
   );
 }

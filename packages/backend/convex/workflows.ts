@@ -151,8 +151,8 @@ export const create = mutation({
         workflowId,
         stepId: step.stepId,
         name: step.name,
-         type: 'task',
-         position: step.order,
+        type: 'task',
+        position: step.order,
         config: {
           originalType: step.type,
           agentId: step.agentId,
@@ -163,7 +163,7 @@ export const create = mutation({
         },
         createdAt: now,
         updatedAt: now,
-         order: step.order,
+        order: step.order,
       });
     }
 

@@ -12,7 +12,7 @@ const convexEnvSchema = z.object({
   JWKS: z.string().optional(),
   SITE_URL: z.string().url().optional(),
   AUTH_LOG_LEVEL: z.string().optional(),
-  
+
   // OAuth Provider Configuration (Optional)
   AUTH_GITHUB_ID: z.string().optional(),
   AUTH_GITHUB_SECRET: z.string().optional(),
@@ -20,7 +20,7 @@ const convexEnvSchema = z.object({
   AUTH_GOOGLE_SECRET: z.string().optional(),
   AUTH_APPLE_ID: z.string().optional(),
   AUTH_APPLE_SECRET: z.string().optional(),
-  
+
   // Email Provider Configuration (Optional)
   AUTH_RESEND_KEY: z.string().optional(),
 
@@ -38,35 +38,87 @@ const convexEnvSchema = z.object({
   SUPABASE_ANON_KEY: z.string().optional(),
 
   // Solana Blockchain Configuration
-  SOLANA_NETWORK: z.enum(['mainnet-beta', 'testnet', 'devnet', 'localhost']).default('devnet'),
+  SOLANA_NETWORK: z
+    .enum(['mainnet-beta', 'testnet', 'devnet', 'localhost'])
+    .default('devnet'),
   SOLANA_RPC_URL: z.string().url().default('https://api.devnet.solana.com'),
-  SOLANA_PAYMENT_ADDRESS: z.string().min(32, 'Invalid Solana address').optional(),
-  SOLANA_COMMITMENT_LEVEL: z.enum(['processed', 'confirmed', 'finalized']).default('confirmed'),
+  SOLANA_PAYMENT_ADDRESS: z
+    .string()
+    .min(32, 'Invalid Solana address')
+    .optional(),
+  SOLANA_COMMITMENT_LEVEL: z
+    .enum(['processed', 'confirmed', 'finalized'])
+    .default('confirmed'),
 
   // Subscription Configuration
-  SUBSCRIPTION_PRO_PRICE_SOL: z.string().default('0.05').transform(val => parseFloat(val)),
-  SUBSCRIPTION_PRO_PLUS_PRICE_SOL: z.string().default('0.1').transform(val => parseFloat(val)),
-  SUBSCRIPTION_PRO_PRICE_USD: z.string().default('12').transform(val => parseInt(val)),
-  SUBSCRIPTION_PRO_PLUS_PRICE_USD: z.string().default('25').transform(val => parseInt(val)),
-  
+  SUBSCRIPTION_PRO_PRICE_SOL: z
+    .string()
+    .default('0.05')
+    .transform((val) => Number.parseFloat(val)),
+  SUBSCRIPTION_PRO_PLUS_PRICE_SOL: z
+    .string()
+    .default('0.1')
+    .transform((val) => Number.parseFloat(val)),
+  SUBSCRIPTION_PRO_PRICE_USD: z
+    .string()
+    .default('12')
+    .transform((val) => Number.parseInt(val)),
+  SUBSCRIPTION_PRO_PLUS_PRICE_USD: z
+    .string()
+    .default('25')
+    .transform((val) => Number.parseInt(val)),
+
   // Message limits
-  SUBSCRIPTION_FREE_MESSAGE_LIMIT: z.string().default('50').transform(val => parseInt(val)),
-  SUBSCRIPTION_PRO_MESSAGE_LIMIT: z.string().default('1500').transform(val => parseInt(val)),
-  SUBSCRIPTION_PRO_PLUS_MESSAGE_LIMIT: z.string().default('3000').transform(val => parseInt(val)),
-  SUBSCRIPTION_PRO_PREMIUM_LIMIT: z.string().default('100').transform(val => parseInt(val)),
-  SUBSCRIPTION_PRO_PLUS_PREMIUM_LIMIT: z.string().default('300').transform(val => parseInt(val)),
+  SUBSCRIPTION_FREE_MESSAGE_LIMIT: z
+    .string()
+    .default('50')
+    .transform((val) => Number.parseInt(val)),
+  SUBSCRIPTION_PRO_MESSAGE_LIMIT: z
+    .string()
+    .default('1500')
+    .transform((val) => Number.parseInt(val)),
+  SUBSCRIPTION_PRO_PLUS_MESSAGE_LIMIT: z
+    .string()
+    .default('3000')
+    .transform((val) => Number.parseInt(val)),
+  SUBSCRIPTION_PRO_PREMIUM_LIMIT: z
+    .string()
+    .default('100')
+    .transform((val) => Number.parseInt(val)),
+  SUBSCRIPTION_PRO_PLUS_PREMIUM_LIMIT: z
+    .string()
+    .default('300')
+    .transform((val) => Number.parseInt(val)),
 
   // Payment Processing
-  PAYMENT_WEBHOOK_SECRET: z.string().min(32, 'Webhook secret must be at least 32 characters').optional(),
-  PAYMENT_CONFIRMATION_TIMEOUT_MS: z.string().default('300000').transform(val => parseInt(val)),
+  PAYMENT_WEBHOOK_SECRET: z
+    .string()
+    .min(32, 'Webhook secret must be at least 32 characters')
+    .optional(),
+  PAYMENT_CONFIRMATION_TIMEOUT_MS: z
+    .string()
+    .default('300000')
+    .transform((val) => Number.parseInt(val)),
 
   // Security
-  JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters').optional(),
+  JWT_SECRET: z
+    .string()
+    .min(32, 'JWT secret must be at least 32 characters')
+    .optional(),
   JWT_EXPIRES_IN: z.string().default('24h'),
-  RATE_LIMIT_MAX_REQUESTS: z.string().default('100').transform(val => parseInt(val)),
-  RATE_LIMIT_WINDOW_MS: z.string().default('900000').transform(val => parseInt(val)),
+  RATE_LIMIT_MAX_REQUESTS: z
+    .string()
+    .default('100')
+    .transform((val) => Number.parseInt(val)),
+  RATE_LIMIT_WINDOW_MS: z
+    .string()
+    .default('900000')
+    .transform((val) => Number.parseInt(val)),
   ALLOWED_ORIGINS: z.string().default('http://localhost:3001'),
-  CORS_CREDENTIALS: z.string().default('true').transform(val => val === 'true'),
+  CORS_CREDENTIALS: z
+    .string()
+    .default('true')
+    .transform((val) => val === 'true'),
 
   // Application Settings
   NODE_ENV: z
@@ -86,7 +138,7 @@ function parseConvexEnv() {
     JWKS: process.env.JWKS,
     SITE_URL: process.env.SITE_URL,
     AUTH_LOG_LEVEL: process.env.AUTH_LOG_LEVEL,
-    
+
     // OAuth Provider Configuration
     AUTH_GITHUB_ID: process.env.AUTH_GITHUB_ID,
     AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET,
@@ -94,10 +146,10 @@ function parseConvexEnv() {
     AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
     AUTH_APPLE_ID: process.env.AUTH_APPLE_ID,
     AUTH_APPLE_SECRET: process.env.AUTH_APPLE_SECRET,
-    
+
     // Email Provider Configuration
     AUTH_RESEND_KEY: process.env.AUTH_RESEND_KEY,
-    
+
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_ORG_ID: process.env.OPENAI_ORG_ID,
     STORAGE_TYPE: process.env.STORAGE_TYPE || 'convex',
@@ -106,20 +158,30 @@ function parseConvexEnv() {
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
     SOLANA_NETWORK: process.env.SOLANA_NETWORK || 'devnet',
-    SOLANA_RPC_URL: process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com',
+    SOLANA_RPC_URL:
+      process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com',
     SOLANA_PAYMENT_ADDRESS: process.env.SOLANA_PAYMENT_ADDRESS,
     SOLANA_COMMITMENT_LEVEL: process.env.SOLANA_COMMITMENT_LEVEL || 'confirmed',
-    SUBSCRIPTION_PRO_PRICE_SOL: process.env.SUBSCRIPTION_PRO_PRICE_SOL || '0.05',
-    SUBSCRIPTION_PRO_PLUS_PRICE_SOL: process.env.SUBSCRIPTION_PRO_PLUS_PRICE_SOL || '0.1',
+    SUBSCRIPTION_PRO_PRICE_SOL:
+      process.env.SUBSCRIPTION_PRO_PRICE_SOL || '0.05',
+    SUBSCRIPTION_PRO_PLUS_PRICE_SOL:
+      process.env.SUBSCRIPTION_PRO_PLUS_PRICE_SOL || '0.1',
     SUBSCRIPTION_PRO_PRICE_USD: process.env.SUBSCRIPTION_PRO_PRICE_USD || '12',
-    SUBSCRIPTION_PRO_PLUS_PRICE_USD: process.env.SUBSCRIPTION_PRO_PLUS_PRICE_USD || '25',
-    SUBSCRIPTION_FREE_MESSAGE_LIMIT: process.env.SUBSCRIPTION_FREE_MESSAGE_LIMIT || '50',
-    SUBSCRIPTION_PRO_MESSAGE_LIMIT: process.env.SUBSCRIPTION_PRO_MESSAGE_LIMIT || '1500',
-    SUBSCRIPTION_PRO_PLUS_MESSAGE_LIMIT: process.env.SUBSCRIPTION_PRO_PLUS_MESSAGE_LIMIT || '3000',
-    SUBSCRIPTION_PRO_PREMIUM_LIMIT: process.env.SUBSCRIPTION_PRO_PREMIUM_LIMIT || '100',
-    SUBSCRIPTION_PRO_PLUS_PREMIUM_LIMIT: process.env.SUBSCRIPTION_PRO_PLUS_PREMIUM_LIMIT || '300',
+    SUBSCRIPTION_PRO_PLUS_PRICE_USD:
+      process.env.SUBSCRIPTION_PRO_PLUS_PRICE_USD || '25',
+    SUBSCRIPTION_FREE_MESSAGE_LIMIT:
+      process.env.SUBSCRIPTION_FREE_MESSAGE_LIMIT || '50',
+    SUBSCRIPTION_PRO_MESSAGE_LIMIT:
+      process.env.SUBSCRIPTION_PRO_MESSAGE_LIMIT || '1500',
+    SUBSCRIPTION_PRO_PLUS_MESSAGE_LIMIT:
+      process.env.SUBSCRIPTION_PRO_PLUS_MESSAGE_LIMIT || '3000',
+    SUBSCRIPTION_PRO_PREMIUM_LIMIT:
+      process.env.SUBSCRIPTION_PRO_PREMIUM_LIMIT || '100',
+    SUBSCRIPTION_PRO_PLUS_PREMIUM_LIMIT:
+      process.env.SUBSCRIPTION_PRO_PLUS_PREMIUM_LIMIT || '300',
     PAYMENT_WEBHOOK_SECRET: process.env.PAYMENT_WEBHOOK_SECRET,
-    PAYMENT_CONFIRMATION_TIMEOUT_MS: process.env.PAYMENT_CONFIRMATION_TIMEOUT_MS || '300000',
+    PAYMENT_CONFIRMATION_TIMEOUT_MS:
+      process.env.PAYMENT_CONFIRMATION_TIMEOUT_MS || '300000',
     JWT_SECRET: process.env.JWT_SECRET,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
     RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || '100',
@@ -256,7 +318,9 @@ export const securityConfig = {
     windowMs: convexEnv.RATE_LIMIT_WINDOW_MS,
   },
   cors: {
-    origins: convexEnv.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()),
+    origins: convexEnv.ALLOWED_ORIGINS.split(',').map((origin) =>
+      origin.trim()
+    ),
     credentials: convexEnv.CORS_CREDENTIALS,
   },
 };

@@ -27,7 +27,9 @@ export const healthCheck = query({
 
     // Calculate active users (last 24 hours)
     const dayAgo = now - 24 * 60 * 60 * 1000;
-    const activeUsers = users.filter((user) => (user.lastActiveAt ?? 0) > dayAgo);
+    const activeUsers = users.filter(
+      (user) => (user.lastActiveAt ?? 0) > dayAgo
+    );
 
     // Calculate storage usage
     const totalDocumentSize = documents.reduce(

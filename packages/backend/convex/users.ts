@@ -1,14 +1,29 @@
 import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
-import { 
+import {
+  checkMessageUsage,
   getCurrentUser,
+  getUserStats,
   requireAuth,
   requirePermission,
-  checkMessageUsage,
-  getUserStats
 } from './authHelpers';
 
+// Get user by wallet address (used for streaming and legacy compatibility)
+export const getUserByWallet = query({
+  args: {
+    walletAddress: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Try to find user by wallet address
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
+      .first();
+    
+    return user;
+  },
+});
 
 // Update user preferences (authenticated)
 export const updatePreferences = mutation({
@@ -75,7 +90,7 @@ export const getUsage = query({
   args: {},
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);
-    
+
     if (!user) {
       return null;
     }
@@ -121,7 +136,8 @@ export const getUsage = query({
         limit: user.subscription?.tokensLimit ?? 0,
         remaining: Math.max(
           0,
-          (user.subscription?.tokensLimit ?? 0) - (user.subscription?.tokensUsed ?? 0)
+          (user.subscription?.tokensLimit ?? 0) -
+            (user.subscription?.tokensUsed ?? 0)
         ),
       },
     };
@@ -175,7 +191,10 @@ export const trackUsage = mutation({
     // Update user's token count
     await ctx.db.patch(user._id, {
       subscription: user.subscription
-        ? { ...user.subscription, tokensUsed: (user.subscription.tokensUsed ?? 0) + args.tokensUsed }
+        ? {
+            ...user.subscription,
+            tokensUsed: (user.subscription.tokensUsed ?? 0) + args.tokensUsed,
+          }
         : undefined,
       lastActiveAt: Date.now(),
       updatedAt: Date.now(),
@@ -184,7 +203,6 @@ export const trackUsage = mutation({
     return await ctx.db.get(usageId);
   },
 });
-
 
 // Deactivate current user account (authenticated)
 export const deactivateAccount = mutation({

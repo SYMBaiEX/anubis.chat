@@ -1,9 +1,9 @@
 'use client';
 
-import React, { memo } from 'react';
 import { BrainCircuit } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import React, { memo } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
+import { Card } from '@/components/ui/card';
 
 const models = [
   { name: 'GPT‑5', provider: 'OpenAI' },
@@ -15,14 +15,14 @@ const models = [
 function Models() {
   return (
     <AnimatedSection
-      className="py-20 md:py-28 lg:py-32"
-      auroraVariant="primary"
-      includeRosetta={false}
-      includeHieroglyphs={false}
-      dustIntensity="low"
       allowOverlap
-      softEdges
+      auroraVariant="primary"
+      className="py-20 md:py-28 lg:py-32"
       data-bg-variant="primary"
+      dustIntensity="low"
+      includeHieroglyphs={false}
+      includeRosetta={false}
+      softEdges
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-3xl text-center">
@@ -31,22 +31,27 @@ function Models() {
               Best‑in‑class models
             </span>
           </h2>
-          <p className="text-muted-foreground">Choose the brain that fits the task.</p>
+          <p className="text-muted-foreground">
+            Choose the brain that fits the task.
+          </p>
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {models.map((m) => (
-            <Card key={m.name} className="bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6">
+            <Card
+              className="bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6"
+              key={m.name}
+            >
               <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
                 <BrainCircuit aria-hidden className="h-6 w-6 text-accent" />
               </div>
               <h3 className="font-semibold">{m.name}</h3>
-              <p className="text-sm text-muted-foreground">{m.provider}</p>
+              <p className="text-muted-foreground text-sm">{m.provider}</p>
             </Card>
           ))}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <div className="mt-6 flex items-center justify-center gap-2 text-muted-foreground text-sm">
           <span>Hot‑swap models anytime during a conversation.</span>
         </div>
       </div>
@@ -55,5 +60,3 @@ function Models() {
 }
 
 export default memo(Models);
-
-

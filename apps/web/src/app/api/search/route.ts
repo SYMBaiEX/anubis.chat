@@ -12,8 +12,8 @@ const log = createModuleLogger('api/search');
 
 import { api } from '@convex/_generated/api';
 import { fetchQuery } from 'convex/nextjs';
-import { withSubscriptionAuth } from '@/lib/middleware/subscription-auth';
 import { searchRateLimit } from '@/lib/middleware/rate-limit';
+import { withSubscriptionAuth } from '@/lib/middleware/subscription-auth';
 import type {
   Document,
   DocumentSearchRequest,
@@ -248,7 +248,7 @@ export async function GET(request: NextRequest) {
           resultCount: results.length,
           contextLength: context.length,
           limit,
-          hasFilters: !!searchOptions.filters,
+          hasFilters: false,
           hasContext: !!context,
         });
 

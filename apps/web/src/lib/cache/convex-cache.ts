@@ -33,7 +33,7 @@ class ConvexCache {
   cacheQuery<T>(
     key: string,
     data: T,
-    ttl = 60000 // Default 1 minute
+    ttl = 60_000 // Default 1 minute
   ): void {
     this.queryCache.set(key, {
       data,
@@ -45,7 +45,7 @@ class ConvexCache {
     // Notify subscribers
     const subscribers = this.subscriptions.get(key);
     if (subscribers) {
-      subscribers.forEach(callback => callback(data));
+      subscribers.forEach((callback) => callback(data));
     }
   }
 
@@ -54,7 +54,7 @@ class ConvexCache {
    */
   getCachedQuery<T>(key: string): T | null {
     const cached = this.queryCache.get(key);
-    
+
     if (!cached) return null;
 
     // Check if cache is still valid
@@ -74,7 +74,7 @@ class ConvexCache {
     queryFn: () => Promise<T>,
     options: QueryOptions = {}
   ): Promise<T> {
-    const { ttl = 60000, force = false, background = false } = options;
+    const { ttl = 60_000, force = false, background = false } = options;
 
     // Return cached if valid and not forced
     if (!force) {
@@ -117,8 +117,8 @@ class ConvexCache {
    */
   invalidate(pattern: string | RegExp): void {
     const keys = Array.from(this.queryCache.keys());
-    
-    keys.forEach(key => {
+
+    keys.forEach((key) => {
       if (typeof pattern === 'string') {
         if (key.includes(pattern)) {
           this.queryCache.delete(key);
@@ -193,13 +193,13 @@ class ConvexCache {
       newestEntry: null as Date | null,
     };
 
-    let oldest = Infinity;
+    let oldest = Number.POSITIVE_INFINITY;
     let newest = 0;
 
-    this.queryCache.forEach(entry => {
+    this.queryCache.forEach((entry) => {
       // Rough memory estimation
       stats.memoryUsage += JSON.stringify(entry.data).length;
-      
+
       if (entry.timestamp < oldest) {
         oldest = entry.timestamp;
       }
@@ -208,7 +208,7 @@ class ConvexCache {
       }
     });
 
-    if (oldest !== Infinity) {
+    if (oldest !== Number.POSITIVE_INFINITY) {
       stats.oldestEntry = new Date(oldest);
     }
     if (newest !== 0) {
@@ -249,7 +249,7 @@ export const cachedQueries = {
   getUser: async (
     walletAddress: string,
     queryFn: () => Promise<any>,
-    ttl = 300000 // 5 minutes
+    ttl = 300_000 // 5 minutes
   ) => {
     const key = `user:${walletAddress}`;
     return convexCache.queryWithCache(key, queryFn, { ttl });
@@ -261,7 +261,7 @@ export const cachedQueries = {
   getChats: async (
     ownerId: string,
     queryFn: () => Promise<any>,
-    ttl = 60000 // 1 minute
+    ttl = 60_000 // 1 minute
   ) => {
     const key = `chats:${ownerId}`;
     return convexCache.queryWithCache(key, queryFn, { ttl });
@@ -273,7 +273,7 @@ export const cachedQueries = {
   getMessages: async (
     chatId: string,
     queryFn: () => Promise<any>,
-    ttl = 30000 // 30 seconds
+    ttl = 30_000 // 30 seconds
   ) => {
     const key = `messages:${chatId}`;
     return convexCache.queryWithCache(key, queryFn, { ttl });
@@ -297,7 +297,10 @@ export const cachedQueries = {
 
 // Auto-optimize cache every 5 minutes
 if (typeof window !== 'undefined') {
-  setInterval(() => {
-    convexCache.optimize();
-  }, 5 * 60 * 1000);
+  setInterval(
+    () => {
+      convexCache.optimize();
+    },
+    5 * 60 * 1000
+  );
 }

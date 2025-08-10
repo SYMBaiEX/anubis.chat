@@ -29,26 +29,33 @@ export function ChatWelcome({ onCreateChat, isCreating }: ChatWelcomeProps) {
   ];
 
   return (
-    <div className="flex h-full items-center justify-center p-8">
-      <div className="max-w-2xl space-y-6">
+    <div className="flex h-full items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-2xl space-y-4 sm:space-y-6">
         {/* Welcome Header */}
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20">
-            <MessageSquare className="h-8 w-8 text-primary" />
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 sm:mb-4 sm:h-16 sm:w-16">
+            <MessageSquare className="h-6 w-6 text-primary sm:h-8 sm:w-8" />
           </div>
-          <h1 className="mb-2 text-3xl font-bold">Welcome to ISIS Chat</h1>
-          <p className="text-muted-foreground">
-            Start a conversation with advanced AI models powered by real-time streaming
+          <h1 className="mb-2 font-bold text-2xl sm:text-3xl">
+            Welcome to ISIS Chat
+          </h1>
+          <p className="px-4 text-muted-foreground text-sm sm:px-0 sm:text-base">
+            Start a conversation with advanced AI models powered by real-time
+            streaming
           </p>
         </div>
 
         {/* Feature Cards */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           {features.map((feature, index) => (
-            <Card key={index} className="p-4">
+            <Card className="p-3 sm:p-4" key={index}>
               <div className="mb-2">{feature.icon}</div>
-              <h3 className="mb-1 font-medium text-sm">{feature.title}</h3>
-              <p className="text-muted-foreground text-xs">{feature.description}</p>
+              <h3 className="mb-1 font-medium text-xs sm:text-sm">
+                {feature.title}
+              </h3>
+              <p className="text-[11px] text-muted-foreground sm:text-xs">
+                {feature.description}
+              </p>
             </Card>
           ))}
         </div>
@@ -56,10 +63,10 @@ export function ChatWelcome({ onCreateChat, isCreating }: ChatWelcomeProps) {
         {/* CTA Button */}
         <div className="text-center">
           <Button
-            size="lg"
-            onClick={onCreateChat}
-            disabled={isCreating}
             className="button-press"
+            disabled={isCreating}
+            onClick={onCreateChat}
+            size="lg"
           >
             {isCreating ? (
               <>
@@ -76,9 +83,9 @@ export function ChatWelcome({ onCreateChat, isCreating }: ChatWelcomeProps) {
         </div>
 
         {/* Quick Tips */}
-        <div className="rounded-lg bg-muted/50 p-4">
-          <h3 className="mb-2 font-medium text-sm">Quick Tips:</h3>
-          <ul className="space-y-1 text-muted-foreground text-xs">
+        <div className="rounded-lg bg-muted/50 p-3 sm:p-4">
+          <h3 className="mb-2 font-medium text-xs sm:text-sm">Quick Tips:</h3>
+          <ul className="space-y-1 text-[11px] text-muted-foreground sm:text-xs">
             <li>• Select different AI models from the dropdown above</li>
             <li>• Use Shift+Enter for multiline messages</li>
             <li>• Your chat history is saved automatically</li>

@@ -1,14 +1,11 @@
 'use client';
 
-import type {
+import {
   addEdge,
   Background,
   BackgroundVariant,
-  Connection,
   Controls,
-  Edge,
   MiniMap,
-  Node,
   Panel,
   ReactFlow,
   ReactFlowProvider,
@@ -16,6 +13,7 @@ import type {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
+import type { Connection, Edge, Node } from '@xyflow/react';
 import { useCallback, useRef, useState } from 'react';
 import '@xyflow/react/dist/style.css';
 import {
@@ -35,12 +33,12 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import CustomNode from './CustomNode';
 import WorkflowSidebar from './WorkflowSidebar';
-import {
+import type {
   NodeType,
   WorkflowEdge as WorkflowEdgeType,
-  type WorkflowNodeData,
   WorkflowNode as WorkflowNodeType,
-  type WorkflowTemplate,
+  WorkflowTemplate,
+  WorkflowNodeData,
 } from './workflow-types';
 
 interface CustomNodeTypes {

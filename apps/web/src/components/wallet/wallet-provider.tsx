@@ -13,7 +13,6 @@ import {
   SolflareWalletAdapter,
   TorusWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
-import { useStandardWalletAdapters } from '@solana/wallet-standard-wallet-adapter-react';
 import { clusterApiUrl } from '@solana/web3.js';
 import type { FC, ReactNode } from 'react';
 import React, { useMemo } from 'react';
@@ -49,49 +48,28 @@ export const WalletProvider: FC<WalletProviderProps> = ({
     [selectedNetwork]
   );
 
-  // 2025 Wallet Standard: Use standard wallet adapters for automatic detection
-  const standardAdapters = useStandardWalletAdapters([]);
-
-  // 2025 Wallet Standard: Combine standard adapters with explicit wallet support
-  const wallets = useMemo(() => {
-    // Include both standard adapters and explicit wallet adapters
-    // This ensures maximum compatibility
-    const explicitWallets = [
+  // Curated explicit Solana wallets only (avoid Wallet Standard auto-detection to prevent duplicates like MetaMask)
+  const wallets = useMemo(
+    () => [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter({ network: selectedNetwork }),
       new BackpackWalletAdapter(),
       new TorusWalletAdapter(),
       new LedgerWalletAdapter(),
-    ];
+    ],
+    [selectedNetwork]
+  );
 
-    // Combine standard and explicit adapters, avoiding duplicates
-    const walletMap = new Map();
-
-    // Add standard adapters first
-    standardAdapters.forEach((adapter) => {
-      walletMap.set(adapter.name, adapter);
-    });
-
-    // Add explicit adapters (will override if duplicate)
-    explicitWallets.forEach((adapter) => {
-      walletMap.set(adapter.name, adapter);
-    });
-
-    const walletList = Array.from(walletMap.values());
-
-    // Log available wallets for debugging
-    log.info('Solana wallets configured', {
-      wallets: walletList.map((w) => ({
-        name: w.name,
-        readyState: w.readyState,
-        publicKey: w.publicKey?.toString() || 'Not connected',
-      })),
-      network: selectedNetwork,
-      endpoint,
-    });
-
-    return walletList;
-  }, [standardAdapters, selectedNetwork]);
+  // Log available wallets for debugging
+  log.info('Solana wallets configured', {
+    wallets: wallets.map((w) => ({
+      name: w.name,
+      readyState: w.readyState,
+      publicKey: (w as any).publicKey?.toString() || 'Not connected',
+    })),
+    network: selectedNetwork,
+    endpoint,
+  });
 
   return (
     <ConnectionProvider endpoint={endpoint}>

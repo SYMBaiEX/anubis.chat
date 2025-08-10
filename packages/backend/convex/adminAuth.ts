@@ -1,12 +1,12 @@
-import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
-import { 
-  requireAdmin, 
-  requireAuth, 
-  getCurrentUser, 
+import { mutation, query } from './_generated/server';
+import {
+  getCurrentUser,
+  getUserStats,
   isCurrentUserAdmin,
+  requireAdmin,
+  requireAuth,
   requirePermission,
-  getUserStats
 } from './authHelpers';
 
 // =============================================================================
@@ -25,34 +25,35 @@ export const getAdminConfiguration = query({
 
     // Get admin wallets from environment variable
     const adminWalletsEnv = process.env.ADMIN_WALLETS;
-    
+
     if (!adminWalletsEnv) {
       return {
         adminWallets: [],
-        message: 'ADMIN_WALLETS environment variable not configured'
+        message: 'ADMIN_WALLETS environment variable not configured',
       };
     }
 
     // Parse comma-separated wallet addresses
-    const adminWallets = adminWalletsEnv.split(',').map(wallet => wallet.trim()).filter(Boolean);
-    
+    const adminWallets = adminWalletsEnv
+      .split(',')
+      .map((wallet) => wallet.trim())
+      .filter(Boolean);
+
     // Get current admin users from the users table
     const adminUsers = await ctx.db
       .query('users')
-      .filter((q) => 
-        q.neq(q.field('role'), 'user')
-      )
+      .filter((q) => q.neq(q.field('role'), 'user'))
       .collect();
 
     return {
       configuredWallets: adminWallets,
-      activeAdmins: adminUsers.map(user => ({
+      activeAdmins: adminUsers.map((user) => ({
         walletAddress: user.walletAddress,
         role: user.role,
         isActive: user.isActive,
         permissions: user.permissions,
-        lastActiveAt: user.lastActiveAt
-      }))
+        lastActiveAt: user.lastActiveAt,
+      })),
     };
   },
 });
@@ -93,27 +94,38 @@ export const promoteUserToAdmin = mutation({
     // Default permissions based on role
     const defaultPermissions = {
       moderator: ['content_moderation'] as const,
-      admin: ['user_management', 'subscription_management', 'content_moderation', 'usage_analytics'] as const,
+      admin: [
+        'user_management',
+        'subscription_management',
+        'content_moderation',
+        'usage_analytics',
+      ] as const,
       super_admin: [
         'user_management',
-        'subscription_management', 
+        'subscription_management',
         'content_moderation',
         'system_settings',
         'financial_data',
         'usage_analytics',
-        'admin_management'
+        'admin_management',
       ] as const,
     } as const;
 
     // Update user with admin role and permissions
     await ctx.db.patch(targetUser._id, {
       role: args.role,
-      permissions: (args.permissions as any) ?? ([...defaultPermissions[args.role]] as unknown as typeof targetUser.permissions),
+      permissions:
+        (args.permissions as any) ??
+        ([
+          ...defaultPermissions[args.role],
+        ] as unknown as typeof targetUser.permissions),
       updatedAt: Date.now(),
     });
 
     // Log the promotion for audit purposes
-    console.log(`Admin ${currentAdmin.walletAddress} promoted ${args.walletAddress} to ${args.role}${args.notes ? ': ' + args.notes : ''}`);
+    console.log(
+      `Admin ${currentAdmin.walletAddress} promoted ${args.walletAddress} to ${args.role}${args.notes ? ': ' + args.notes : ''}`
+    );
 
     return { success: true, userId: targetUser._id };
   },
@@ -125,12 +137,14 @@ export const promoteUserToAdmin = mutation({
 export const updateAdminUser = mutation({
   args: {
     walletAddress: v.string(),
-    role: v.optional(v.union(
-      v.literal('super_admin'),
-      v.literal('admin'),
-      v.literal('moderator'),
-      v.literal('user') // Allow demotion to regular user
-    )),
+    role: v.optional(
+      v.union(
+        v.literal('super_admin'),
+        v.literal('admin'),
+        v.literal('moderator'),
+        v.literal('user') // Allow demotion to regular user
+      )
+    ),
     permissions: v.optional(v.array(v.string())),
     isActive: v.optional(v.boolean()),
     notes: v.optional(v.string()),
@@ -150,31 +164,36 @@ export const updateAdminUser = mutation({
     }
 
     // Prevent self-demotion for super_admins
-    if (currentAdmin.walletAddress === args.walletAddress && 
-        args.role && args.role !== 'super_admin' && 
-        currentAdmin.role === 'super_admin') {
+    if (
+      currentAdmin.walletAddress === args.walletAddress &&
+      args.role &&
+      args.role !== 'super_admin' &&
+      currentAdmin.role === 'super_admin'
+    ) {
       throw new Error('Cannot demote yourself from super_admin');
     }
 
     // Prepare updates
     const updates: any = { updatedAt: Date.now() };
-    
+
     if (args.role !== undefined) {
       updates.role = args.role;
-      
+
       // Clear permissions when demoting to regular user
       if (args.role === 'user') {
         updates.permissions = undefined;
       }
     }
-    
+
     if (args.permissions !== undefined) updates.permissions = args.permissions;
     if (args.isActive !== undefined) updates.isActive = args.isActive;
 
     await ctx.db.patch(targetUser._id, updates);
 
     // Log the admin action
-    console.log(`Admin ${currentAdmin.walletAddress} updated user ${args.walletAddress}${args.notes ? ': ' + args.notes : ''}`);
+    console.log(
+      `Admin ${currentAdmin.walletAddress} updated user ${args.walletAddress}${args.notes ? ': ' + args.notes : ''}`
+    );
 
     return { success: true };
   },
@@ -220,7 +239,9 @@ export const demoteAdminToUser = mutation({
     });
 
     // Log the demotion
-    console.log(`Admin ${currentAdmin.walletAddress} demoted ${args.walletAddress} from admin${args.reason ? ': ' + args.reason : ''}`);
+    console.log(
+      `Admin ${currentAdmin.walletAddress} demoted ${args.walletAddress} from admin${args.reason ? ': ' + args.reason : ''}`
+    );
 
     return { success: true };
   },
@@ -237,15 +258,12 @@ export const getAllAdmins = query({
     // Get all users with admin roles
     const adminUsers = await ctx.db
       .query('users')
-      .filter((q) => 
-        q.and(
-          q.neq(q.field('role'), 'user'),
-          q.neq(q.field('role'), undefined)
-        )
+      .filter((q) =>
+        q.and(q.neq(q.field('role'), 'user'), q.neq(q.field('role'), undefined))
       )
       .collect();
 
-    return adminUsers.map(user => ({
+    return adminUsers.map((user) => ({
       _id: user._id,
       walletAddress: user.walletAddress,
       role: user.role,
@@ -265,12 +283,12 @@ export const checkCurrentUserAdminStatus = query({
   handler: async (ctx) => {
     try {
       const user = await getCurrentUser(ctx);
-      
+
       if (!user) {
         return {
           isAuthenticated: false,
           isAdmin: false,
-          adminInfo: null
+          adminInfo: null,
         };
       }
 
@@ -279,18 +297,20 @@ export const checkCurrentUserAdminStatus = query({
       return {
         isAuthenticated: true,
         isAdmin,
-        adminInfo: isAdmin ? {
-          role: user.role,
-          permissions: user.permissions,
-          walletAddress: user.walletAddress
-        } : null
+        adminInfo: isAdmin
+          ? {
+              role: user.role,
+              permissions: user.permissions,
+              walletAddress: user.walletAddress,
+            }
+          : null,
       };
     } catch (error) {
       console.error('Admin status check failed:', error);
       return {
         isAuthenticated: false,
         isAdmin: false,
-        adminInfo: null
+        adminInfo: null,
       };
     }
   },
@@ -301,20 +321,22 @@ export const checkCurrentUserAdminStatus = query({
  */
 export const checkAdminStatusByWallet = query({
   args: {
-    walletAddress: v.string()
+    walletAddress: v.string(),
   },
   handler: async (ctx, args) => {
     try {
       // Find user with this wallet address
       const user = await ctx.db
         .query('users')
-        .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
+        .withIndex('by_wallet', (q) =>
+          q.eq('walletAddress', args.walletAddress)
+        )
         .unique();
 
-      if (!user || !user.isActive || !user.role || user.role === 'user') {
+      if (!(user && user.isActive && user.role) || user.role === 'user') {
         return {
           isAdmin: false,
-          adminInfo: null
+          adminInfo: null,
         };
       }
 
@@ -323,17 +345,17 @@ export const checkAdminStatusByWallet = query({
         adminInfo: {
           role: user.role,
           permissions: user.permissions,
-          walletAddress: user.walletAddress
-        }
+          walletAddress: user.walletAddress,
+        },
       };
     } catch (error) {
       console.error('Admin status check failed:', error);
       return {
         isAdmin: false,
-        adminInfo: null
+        adminInfo: null,
       };
     }
-  }
+  },
 });
 
 // =============================================================================
@@ -347,11 +369,9 @@ export const getAllUsers = query({
   args: {
     limit: v.optional(v.number()),
     cursor: v.optional(v.string()),
-    filterTier: v.optional(v.union(
-      v.literal('free'),
-      v.literal('pro'),
-      v.literal('pro_plus')
-    )),
+    filterTier: v.optional(
+      v.union(v.literal('free'), v.literal('pro'), v.literal('pro_plus'))
+    ),
     search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -362,12 +382,14 @@ export const getAllUsers = query({
 
     // Apply tier filter
     if (args.filterTier) {
-      query = query.filter((q) => q.eq(q.field('subscription.tier'), args.filterTier));
+      query = query.filter((q) =>
+        q.eq(q.field('subscription.tier'), args.filterTier)
+      );
     }
 
     // Apply search filter
     if (args.search) {
-      query = query.filter((q) => 
+      query = query.filter((q) =>
         q.or(
           q.eq(q.field('walletAddress'), args.search),
           q.eq(q.field('displayName'), args.search)
@@ -375,11 +397,9 @@ export const getAllUsers = query({
       );
     }
 
-    const users = await query
-      .order('desc')
-      .take(args.limit || 50);
+    const users = await query.order('desc').take(args.limit || 50);
 
-    return users.map(user => ({
+    return users.map((user) => ({
       _id: user._id,
       walletAddress: user.walletAddress,
       displayName: user.displayName,
@@ -399,11 +419,7 @@ export const getAllUsers = query({
 export const updateUserSubscription = mutation({
   args: {
     walletAddress: v.string(),
-    tier: v.union(
-      v.literal('free'),
-      v.literal('pro'),
-      v.literal('pro_plus')
-    ),
+    tier: v.union(v.literal('free'), v.literal('pro'), v.literal('pro_plus')),
     messagesLimit: v.optional(v.number()),
     premiumMessagesLimit: v.optional(v.number()),
     currentPeriodEnd: v.optional(v.number()),
@@ -411,7 +427,10 @@ export const updateUserSubscription = mutation({
   },
   handler: async (ctx, args) => {
     // Require subscription management permissions
-    const { user: currentAdmin } = await requirePermission(ctx, 'subscription_management');
+    const { user: currentAdmin } = await requirePermission(
+      ctx,
+      'subscription_management'
+    );
 
     // Find user to update
     const targetUser = await ctx.db
@@ -448,7 +467,9 @@ export const updateUserSubscription = mutation({
     });
 
     // Log the admin action
-    console.log(`Admin ${currentAdmin.walletAddress} updated subscription for ${args.walletAddress}: ${args.reason || 'No reason provided'}`);
+    console.log(
+      `Admin ${currentAdmin.walletAddress} updated subscription for ${args.walletAddress}: ${args.reason || 'No reason provided'}`
+    );
 
     return { success: true };
   },
@@ -464,21 +485,23 @@ export const getSubscriptionAnalytics = query({
 
     // Use helper function from authHelpers.ts
     const userStats = await getUserStats(ctx);
-    
+
     // Additional subscription-specific analytics
     const users = await ctx.db.query('users').collect();
-    
+
     const analytics = {
       ...userStats,
       totalUsers: userStats.total,
       activeUsers: userStats.active,
       tierCounts: userStats.byTier, // Map byTier to tierCounts for frontend compatibility
       totalRevenue: 0, // Would calculate from payments table when implemented
-      newUsersThisMonth: users.filter(u => {
-        const monthAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+      newUsersThisMonth: users.filter((u) => {
+        const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
         return u.createdAt && u.createdAt > monthAgo;
       }).length,
-      avgMessagesPerUser: users.reduce((sum, u) => sum + (u.subscription?.messagesUsed || 0), 0) / users.length,
+      avgMessagesPerUser:
+        users.reduce((sum, u) => sum + (u.subscription?.messagesUsed || 0), 0) /
+        users.length,
     };
 
     return analytics;
@@ -502,17 +525,20 @@ export const syncAdminWallets = mutation({
     }
 
     // Parse comma-separated wallet addresses
-    const adminWallets = adminWalletsEnv.split(',').map(wallet => wallet.trim()).filter(Boolean);
-    
+    const adminWallets = adminWalletsEnv
+      .split(',')
+      .map((wallet) => wallet.trim())
+      .filter(Boolean);
+
     const promoted: string[] = [];
-    
+
     // Check each admin wallet
     for (const walletAddress of adminWallets) {
       const user = await ctx.db
         .query('users')
         .withIndex('by_wallet', (q) => q.eq('walletAddress', walletAddress))
         .unique();
-      
+
       if (user) {
         // If user exists but is not an admin, promote them
         if (!user.role || user.role === 'user') {
@@ -520,12 +546,12 @@ export const syncAdminWallets = mutation({
             role: 'super_admin',
             permissions: [
               'user_management',
-              'subscription_management', 
+              'subscription_management',
               'content_moderation',
               'system_settings',
               'financial_data',
               'usage_analytics',
-              'admin_management'
+              'admin_management',
             ],
             updatedAt: Date.now(),
           });
@@ -534,7 +560,7 @@ export const syncAdminWallets = mutation({
         }
       }
     }
-    
+
     return {
       success: true,
       message: `Synced ${adminWallets.length} admin wallets`,
@@ -564,20 +590,20 @@ export const getSystemUsage = query({
 
     // Calculate additional metrics
     const now = Date.now();
-    const dayAgo = now - (24 * 60 * 60 * 1000);
-    const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
-    
-    const recentlyActiveUsers = users.filter(u => 
-      u.lastActiveAt && u.lastActiveAt > dayAgo
+    const dayAgo = now - 24 * 60 * 60 * 1000;
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+
+    const recentlyActiveUsers = users.filter(
+      (u) => u.lastActiveAt && u.lastActiveAt > dayAgo
     ).length;
 
-    const recentMessages = messages.filter(m => 
-      m.createdAt && m.createdAt > weekAgo
+    const recentMessages = messages.filter(
+      (m) => m.createdAt && m.createdAt > weekAgo
     ).length;
 
     return {
       totalUsers: users.length,
-      activeUsers: users.filter(u => u.isActive).length,
+      activeUsers: users.filter((u) => u.isActive).length,
       recentlyActiveUsers,
       totalChats: chats.length,
       totalMessages: messages.length,
@@ -587,7 +613,7 @@ export const getSystemUsage = query({
       systemHealth: {
         dbConnected: true, // Would check actual DB connectivity
         lastUpdate: now,
-      }
+      },
     };
   },
 });

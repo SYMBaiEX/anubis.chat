@@ -5,7 +5,7 @@ import { mutation, query } from './_generated/server';
 // Get chats by owner
 export const getByOwner = query({
   args: {
-    ownerId: v.string(),
+    ownerId: v.string(), // This should be the user ID, not wallet address
     limit: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
   },
@@ -71,7 +71,7 @@ export const create = mutation({
   args: {
     title: v.string(),
     description: v.optional(v.string()),
-    ownerId: v.string(),
+    ownerId: v.string(), // This should be the user ID, not wallet address
     model: v.string(),
     systemPrompt: v.optional(v.string()),
     temperature: v.optional(v.number()),

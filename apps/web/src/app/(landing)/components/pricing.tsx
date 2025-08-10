@@ -1,11 +1,11 @@
 'use client';
 
-import React, { memo } from 'react';
 import { Check } from 'lucide-react';
 import Link from 'next/link';
+import React, { memo } from 'react';
+import AnimatedSection from '@/components/landing/animated-section';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import AnimatedSection from '@/components/landing/animated-section';
 
 const tiers = [
   {
@@ -16,7 +16,7 @@ const tiers = [
       '50 messages / month',
       'GPT-4o Mini & DeepSeek',
       'Basic chat features',
-      'Community support'
+      'Community support',
     ],
     cta: 'Get Started',
     href: '/auth',
@@ -34,7 +34,7 @@ const tiers = [
       'All standard models unlimited',
       'Document uploads',
       'Basic agents',
-      'Chat history'
+      'Chat history',
     ],
     cta: 'Start Pro Plan',
     href: '/auth',
@@ -54,7 +54,7 @@ const tiers = [
       'Large file uploads (100MB)',
       'Advanced agents',
       'API access',
-      'Priority support'
+      'Priority support',
     ],
     cta: 'Go Pro+',
     href: '/auth',
@@ -67,14 +67,14 @@ const tiers = [
 function Pricing() {
   return (
     <AnimatedSection
-      className="py-20 md:py-28 lg:py-32"
-      auroraVariant="gold"
-      includeRosetta={false}
-      includeHieroglyphs={false}
-      dustIntensity="low"
       allowOverlap
-      softEdges
+      auroraVariant="gold"
+      className="py-20 md:py-28 lg:py-32"
       data-bg-variant="gold"
+      dustIntensity="low"
+      includeHieroglyphs={false}
+      includeRosetta={false}
+      softEdges
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-3xl text-center">
@@ -88,30 +88,30 @@ function Pricing() {
         <div className="grid gap-6 lg:grid-cols-3">
           {tiers.map((t) => (
             <Card
-              className={`relative bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6 ${t.highlighted ? 'ring-1 ring-primary/40 shadow-xl' : ''}`}
+              className={`relative bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6 ${t.highlighted ? 'shadow-xl ring-1 ring-primary/40' : ''}`}
               key={t.name}
             >
               {t.popular ? (
-                <div className="absolute right-4 top-4 rounded bg-gradient-to-r from-primary to-accent px-2 py-1 text-xs font-semibold text-primary-foreground">
+                <div className="absolute top-4 right-4 rounded bg-gradient-to-r from-primary to-accent px-2 py-1 font-semibold text-primary-foreground text-xs">
                   POPULAR
                 </div>
               ) : null}
               {t.badge ? (
-                <div className="absolute left-4 top-4 rounded bg-gradient-to-r from-orange-500 to-orange-600 px-2 py-1 text-xs font-semibold text-white">
+                <div className="absolute top-4 left-4 rounded bg-gradient-to-r from-orange-500 to-orange-600 px-2 py-1 font-semibold text-white text-xs">
                   {t.badge}
                 </div>
               ) : null}
               <div className="mt-4">
                 <h3 className="mb-1 font-bold text-2xl">{t.name}</h3>
                 <div className="mb-2 flex items-baseline">
-                  <span className="text-3xl font-bold">{t.price}</span>
+                  <span className="font-bold text-3xl">{t.price}</span>
                   {t.originalPrice && (
                     <span className="ml-2 text-lg text-muted-foreground line-through">
                       {t.originalPrice}
                     </span>
                   )}
                 </div>
-                <p className="mb-4 text-sm text-muted-foreground">{t.period}</p>
+                <p className="mb-4 text-muted-foreground text-sm">{t.period}</p>
               </div>
               <ul className="mb-6 space-y-2 text-sm">
                 {t.features.map((f) => (
@@ -122,7 +122,11 @@ function Pricing() {
                 ))}
               </ul>
               <Link href={t.href}>
-                <Button className="button-press w-full" type="button" variant={t.highlighted ? 'default' : 'outline'}>
+                <Button
+                  className="button-press w-full"
+                  type="button"
+                  variant={t.highlighted ? 'default' : 'outline'}
+                >
                   {t.cta}
                 </Button>
               </Link>
@@ -135,5 +139,3 @@ function Pricing() {
 }
 
 export default memo(Pricing);
-
-

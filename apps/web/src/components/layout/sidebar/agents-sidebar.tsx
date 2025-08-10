@@ -1,8 +1,8 @@
 'use client';
 
-import { Bot, Plus, Settings, Star, Clock, Cpu } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Bot, Clock, Cpu, Plus, Settings, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 // Mock data - replace with actual data from your backend
@@ -49,11 +49,11 @@ export function AgentsSidebar() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-semibold text-lg">AI Agents</h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {mockAgents.length} agents available
             </p>
           </div>
-          <Button size="sm" variant="outline" className="h-8">
+          <Button className="h-8" size="sm" variant="outline">
             <Plus className="h-4 w-4" />
           </Button>
         </div>
@@ -62,13 +62,13 @@ export function AgentsSidebar() {
       {/* Filter Tabs */}
       <div className="border-b px-4 pb-2">
         <div className="flex gap-2">
-          <Button size="sm" variant="ghost" className="h-7 text-xs">
+          <Button className="h-7 text-xs" size="sm" variant="ghost">
             All
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 text-xs">
+          <Button className="h-7 text-xs" size="sm" variant="ghost">
             Active
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 text-xs">
+          <Button className="h-7 text-xs" size="sm" variant="ghost">
             Starred
           </Button>
         </div>
@@ -79,8 +79,8 @@ export function AgentsSidebar() {
         <div className="space-y-2">
           {mockAgents.map((agent) => (
             <div
+              className="group cursor-pointer rounded-lg border p-3 transition-colors hover:bg-muted"
               key={agent.id}
-              className="group rounded-lg border p-3 transition-colors hover:bg-muted cursor-pointer"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -93,21 +93,23 @@ export function AgentsSidebar() {
                   </div>
                   <div className="mt-1 flex items-center gap-2">
                     <Badge
-                      variant={agent.status === 'active' ? 'default' : 'secondary'}
                       className="h-5 text-xs"
+                      variant={
+                        agent.status === 'active' ? 'default' : 'secondary'
+                      }
                     >
                       {agent.status}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       <Clock className="mr-1 inline h-3 w-3" />
                       {agent.lastActive}
                     </span>
                   </div>
                 </div>
                 <Button
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100"
                   size="icon"
                   variant="ghost"
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100"
                 >
                   <Settings className="h-3 w-3" />
                 </Button>
@@ -119,7 +121,7 @@ export function AgentsSidebar() {
 
       {/* Footer Stats */}
       <div className="border-t p-4">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-muted-foreground text-xs">
           <div className="flex items-center gap-1">
             <Cpu className="h-3 w-3" />
             <span>3 active</span>

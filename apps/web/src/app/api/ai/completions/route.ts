@@ -13,10 +13,10 @@ import { createModuleLogger } from '@/lib/utils/logger';
 // Initialize logger
 const log = createModuleLogger('api/ai/completions');
 
-import { openaiConfig } from '@/lib/env';
 import { AI_MODELS, isPremiumModel } from '@/lib/constants/ai-models';
-import { trackMessageUsage } from '@/lib/middleware/subscription-auth';
+import { openaiConfig } from '@/lib/env';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
+import { trackMessageUsage } from '@/lib/middleware/subscription-auth';
 import {
   addSecurityHeaders,
   modelUnavailableResponse,
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     // Parse request to determine if premium model is being used
     const body = await req.json();
     const validation = completionSchema.safeParse(body);
-    
+
     if (!validation.success) {
       return validationErrorResponse(
         'Invalid completion request',
@@ -81,11 +81,13 @@ export async function POST(request: NextRequest) {
     }
 
     const { model } = validation.data;
-    
+
     // Check if model is premium
-    const aiModelConfig = AI_MODELS.find(m => m.id === model);
-    const isUsingPremiumModel = aiModelConfig ? isPremiumModel(aiModelConfig) : false;
-    
+    const aiModelConfig = AI_MODELS.find((m) => m.id === model);
+    const isUsingPremiumModel = aiModelConfig
+      ? isPremiumModel(aiModelConfig)
+      : false;
+
     return trackMessageUsage(req, isUsingPremiumModel, async (authReq) => {
       try {
         const { walletAddress } = authReq.user;

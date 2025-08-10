@@ -79,7 +79,11 @@ class AuthCache {
    * Set authentication data in cache
    */
   set(data: AuthCacheData, options: CacheOptions = {}): void {
-    const { ttl = this.DEFAULT_TTL, storage = 'all', encrypt = false } = options;
+    const {
+      ttl = this.DEFAULT_TTL,
+      storage = 'all',
+      encrypt = false,
+    } = options;
 
     // Add expiration
     const cacheData: AuthCacheData = {
@@ -200,7 +204,7 @@ class AuthCache {
     }
 
     // Validate required fields
-    if (!data.isAuthenticated || !data.user?.walletAddress) {
+    if (!(data.isAuthenticated && data.user?.walletAddress)) {
       return false;
     }
 
@@ -235,12 +239,15 @@ class AuthCache {
     try {
       const data = localStorage.getItem(this.CACHE_KEY);
       if (!data) return null;
-      
+
       const parsed = JSON.parse(data);
-      
+
       // Don't use local storage data if it's too old (security)
       const MAX_LOCAL_AGE = 1000 * 60 * 60 * 24 * 7; // 7 days
-      if (parsed.lastVerified && Date.now() - parsed.lastVerified > MAX_LOCAL_AGE) {
+      if (
+        parsed.lastVerified &&
+        Date.now() - parsed.lastVerified > MAX_LOCAL_AGE
+      ) {
         localStorage.removeItem(this.CACHE_KEY);
         return null;
       }
@@ -274,7 +281,9 @@ class AuthCache {
         refreshToken: null,
       };
 
-      const toStore = encrypt ? this.encrypt(safeData) : JSON.stringify(safeData);
+      const toStore = encrypt
+        ? this.encrypt(safeData)
+        : JSON.stringify(safeData);
       localStorage.setItem(this.CACHE_KEY, toStore);
     } catch (error) {
       log.error('Failed to set local cache', error);
@@ -335,7 +344,10 @@ export const cacheUtils = {
   /**
    * Auto-refresh cache before expiration
    */
-  setupAutoRefresh: (refreshFn: () => Promise<AuthCacheData>, interval = 60000) => {
+  setupAutoRefresh: (
+    refreshFn: () => Promise<AuthCacheData>,
+    interval = 60_000
+  ) => {
     const checkAndRefresh = async () => {
       const cached = authCache.get();
       if (cached && authCache.needsRefresh(cached)) {

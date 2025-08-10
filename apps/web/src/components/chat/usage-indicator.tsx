@@ -1,13 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
 import { BarChart3, Crown, Info, MessageCircle, Zap } from 'lucide-react';
+import React, { useState } from 'react';
+import { PaymentModal } from '@/components/auth/payment-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { PaymentModal } from '@/components/auth/payment-modal';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useSubscription } from '@/hooks/use-subscription';
 import { cn } from '@/lib/utils';
 
@@ -17,10 +22,10 @@ interface UsageIndicatorProps {
   className?: string;
 }
 
-export function UsageIndicator({ 
-  variant = 'compact', 
-  showUpgrade = true, 
-  className 
+export function UsageIndicator({
+  variant = 'compact',
+  showUpgrade = true,
+  className,
 }: UsageIndicatorProps) {
   const { subscription, limits, upgradePrompt } = useSubscription();
   const [showPayment, setShowPayment] = useState(false);
@@ -29,10 +34,17 @@ export function UsageIndicator({
     return null;
   }
 
-  const usagePercentage = Math.round((subscription.messagesUsed / subscription.messagesLimit) * 100);
-  const premiumUsagePercentage = subscription.premiumMessagesLimit > 0
-    ? Math.round((subscription.premiumMessagesUsed / subscription.premiumMessagesLimit) * 100)
-    : 0;
+  const usagePercentage = Math.round(
+    (subscription.messagesUsed / subscription.messagesLimit) * 100
+  );
+  const premiumUsagePercentage =
+    subscription.premiumMessagesLimit > 0
+      ? Math.round(
+          (subscription.premiumMessagesUsed /
+            subscription.premiumMessagesLimit) *
+            100
+        )
+      : 0;
 
   const getUsageColor = (percentage: number) => {
     if (percentage >= 95) return 'text-red-600 dark:text-red-400';
@@ -41,7 +53,9 @@ export function UsageIndicator({
     return 'text-green-600 dark:text-green-400';
   };
 
-  const getProgressVariant = (percentage: number): 'default' | 'destructive' | 'secondary' => {
+  const getProgressVariant = (
+    percentage: number
+  ): 'default' | 'destructive' | 'secondary' => {
     if (percentage >= 90) return 'destructive';
     return 'default';
   };
@@ -58,24 +72,27 @@ export function UsageIndicator({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className={cn(
-              'flex items-center gap-2 text-sm',
-              getUsageColor(usagePercentage),
-              className
-            )}>
+            <div
+              className={cn(
+                'flex items-center gap-2 text-sm',
+                getUsageColor(usagePercentage),
+                className
+              )}
+            >
               <MessageCircle className="h-4 w-4" />
               <span className="font-medium">
                 {formatNumber(limits.messagesRemaining)}
               </span>
-              {subscription.tier !== 'free' && limits.premiumMessagesRemaining > 0 && (
-                <>
-                  <span className="text-muted-foreground">•</span>
-                  <Crown className="h-4 w-4" />
-                  <span className="font-medium">
-                    {limits.premiumMessagesRemaining}
-                  </span>
-                </>
-              )}
+              {subscription.tier !== 'free' &&
+                limits.premiumMessagesRemaining > 0 && (
+                  <>
+                    <span className="text-muted-foreground">•</span>
+                    <Crown className="h-4 w-4" />
+                    <span className="font-medium">
+                      {limits.premiumMessagesRemaining}
+                    </span>
+                  </>
+                )}
             </div>
           </TooltipTrigger>
           <TooltipContent>
@@ -105,24 +122,24 @@ export function UsageIndicator({
                 <span className="font-medium">
                   {subscription.messagesUsed}/{subscription.messagesLimit}
                 </span>
-                <Badge variant="outline" className="text-xs">
+                <Badge className="text-xs" variant="outline">
                   {subscription.tier.replace('_', ' ').toUpperCase()}
                 </Badge>
               </div>
               <Progress
+                className="h-2 w-24"
                 value={usagePercentage}
                 variant={getProgressVariant(usagePercentage)}
-                className="h-2 w-24"
               />
             </div>
           </div>
 
           {upgradePrompt.shouldShow && showUpgrade && (
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPayment(true)}
               className="ml-2"
+              onClick={() => setShowPayment(true)}
+              size="sm"
+              variant="outline"
             >
               <Zap className="mr-1 h-3 w-3" />
               Upgrade
@@ -134,8 +151,9 @@ export function UsageIndicator({
           <PaymentModal
             isOpen={showPayment}
             onClose={() => setShowPayment(false)}
-            tier={upgradePrompt.suggestedTier}
             onSuccess={() => setShowPayment(false)}
+            tier={upgradePrompt.suggestedTier}
+            currentTier={subscription.tier}
           />
         )}
       </Card>
@@ -150,7 +168,7 @@ export function UsageIndicator({
           <BarChart3 className="h-4 w-4" />
           Usage This Month
         </h3>
-        <Badge variant="outline" className="text-xs">
+        <Badge className="text-xs" variant="outline">
           {subscription.tier.replace('_', ' ').toUpperCase()}
         </Badge>
       </div>
@@ -168,9 +186,9 @@ export function UsageIndicator({
             </span>
           </div>
           <Progress
+            className="h-2"
             value={usagePercentage}
             variant={getProgressVariant(usagePercentage)}
-            className="h-2"
           />
         </div>
 
@@ -187,32 +205,35 @@ export function UsageIndicator({
                       <Info className="h-3 w-3 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="text-xs">GPT-4o, Claude 3.5 Sonnet, and other premium models</p>
+                      <p className="text-xs">
+                        GPT-4o, Claude 3.5 Sonnet, and other premium models
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
               <span className={getUsageColor(premiumUsagePercentage)}>
-                {subscription.premiumMessagesUsed}/{subscription.premiumMessagesLimit}
+                {subscription.premiumMessagesUsed}/
+                {subscription.premiumMessagesLimit}
               </span>
             </div>
             <Progress
+              className="h-2"
               value={premiumUsagePercentage}
               variant={getProgressVariant(premiumUsagePercentage)}
-              className="h-2"
             />
           </div>
         )}
 
         {/* Reset Timer */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-muted-foreground text-xs">
           <span>Resets in {limits.daysUntilReset} days</span>
           {showUpgrade && upgradePrompt.shouldShow && (
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowPayment(true)}
               className="h-auto p-1 text-xs"
+              onClick={() => setShowPayment(true)}
+              size="sm"
+              variant="ghost"
             >
               <Zap className="mr-1 h-3 w-3" />
               Upgrade
@@ -222,12 +243,12 @@ export function UsageIndicator({
 
         {/* Usage Warnings */}
         {usagePercentage >= 90 && (
-          <div className="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-300">
+          <div className="rounded border border-red-200 bg-red-50 p-2 text-red-700 text-xs dark:border-red-800 dark:bg-red-950/20 dark:text-red-300">
             ⚠️ Critical usage level reached
           </div>
         )}
         {usagePercentage >= 75 && usagePercentage < 90 && (
-          <div className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
+          <div className="rounded border border-amber-200 bg-amber-50 p-2 text-amber-700 text-xs dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
             ⚠️ Approaching usage limit
           </div>
         )}
@@ -237,8 +258,9 @@ export function UsageIndicator({
         <PaymentModal
           isOpen={showPayment}
           onClose={() => setShowPayment(false)}
-          tier={upgradePrompt.suggestedTier}
           onSuccess={() => setShowPayment(false)}
+          tier={upgradePrompt.suggestedTier}
+          currentTier={subscription.tier}
         />
       )}
     </Card>

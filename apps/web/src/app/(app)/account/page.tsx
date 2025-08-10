@@ -1,23 +1,53 @@
 'use client';
 
+import { AlertTriangle, Loader, Zap } from 'lucide-react';
+import { UpgradeModal } from '@/components/auth/upgrade-modal';
 import { UserProfile } from '@/components/auth/user-profile';
 import { useAuthContext } from '@/components/providers/auth-provider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useSubscription } from '@/hooks/use-subscription';
-import { AlertTriangle, Loader } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useUpgradeModal } from '@/hooks/use-upgrade-modal';
 
 export default function AccountPage() {
   const { user, isLoading: authLoading } = useAuthContext();
-  const { subscription, limits, upgradePrompt, isLoading: subscriptionLoading, error } = useSubscription();
+  const {
+    subscription,
+    limits,
+    upgradePrompt,
+    isLoading: subscriptionLoading,
+    error,
+  } = useSubscription();
+  const { isOpen, openModal, closeModal, suggestedTier } = useUpgradeModal();
 
   const isLoading = authLoading || subscriptionLoading;
+  const showUpgradeButton =
+    subscription &&
+    subscription.tier !== 'pro_plus' &&
+    subscription.tier !== 'admin';
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="font-semibold text-2xl">Account</h1>
-        <p className="text-muted-foreground">View and update your profile</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-semibold text-2xl">Account</h1>
+          <p className="text-muted-foreground">View and update your profile</p>
+        </div>
+        {showUpgradeButton && (
+          <Button
+            className="gap-2"
+            onClick={() =>
+              openModal({
+                tier: subscription.tier === 'pro' ? 'pro_plus' : 'pro',
+                trigger: 'manual',
+              })
+            }
+          >
+            <Zap className="h-4 w-4" />
+            Upgrade Account
+          </Button>
+        )}
       </div>
 
       {/* Show upgrade prompt if needed */}
@@ -45,19 +75,29 @@ export default function AccountPage() {
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader className="mr-2 h-4 w-4 animate-spin" />
-            <span className="text-muted-foreground text-sm">Loading account data...</span>
+            <span className="text-muted-foreground text-sm">
+              Loading account data...
+            </span>
           </div>
         ) : user ? (
-          <UserProfile 
-            user={user} 
-            subscription={subscription}
+          <UserProfile
             limits={limits}
+            subscription={subscription}
             upgradePrompt={upgradePrompt}
+            user={user}
           />
         ) : (
           <div className="text-muted-foreground text-sm">No user loaded.</div>
         )}
       </Card>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={isOpen}
+        onClose={closeModal}
+        suggestedTier={suggestedTier}
+        trigger="manual"
+      />
     </div>
   );
 }

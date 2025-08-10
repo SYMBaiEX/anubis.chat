@@ -49,7 +49,7 @@ const allItems: NavItem[] = [
   },
   {
     label: 'Agents',
-    href: '/agents/new',
+    href: '/agents',
     icon: Bot,
     requiresAuth: true,
     inHeader: true,

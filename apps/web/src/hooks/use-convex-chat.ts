@@ -13,13 +13,13 @@ export function useConvexChat(chatId: string | undefined) {
     useState<StreamingMessage | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
 
-  // Convex queries and mutations
+  // Convex queries and mutations - using authenticated queries
   const messages = useQuery(
-    api.messages.getByChatId,
+    api.messagesAuth.getMyMessages,
     chatId ? { chatId: chatId as Id<'chats'> } : 'skip'
   );
 
-  const createMessage = useMutation(api.messages.create);
+  const createMessage = useMutation(api.messagesAuth.createMyMessage);
 
   // Send message with streaming response
   const sendMessage = useCallback(
@@ -58,7 +58,7 @@ export function useConvexChat(chatId: string | undefined) {
           // Try to get error details
           const errorText = await response.text();
           console.error('Streaming error:', response.status, errorText);
-          
+
           let errorMessage = `Failed to stream response: ${response.status}`;
           try {
             const errorData = JSON.parse(errorText);
@@ -71,7 +71,7 @@ export function useConvexChat(chatId: string | undefined) {
               errorMessage = errorText;
             }
           }
-          
+
           throw new Error(errorMessage);
         }
 
@@ -99,7 +99,7 @@ export function useConvexChat(chatId: string | undefined) {
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
-          
+
           // The response might be in plain text format
           // Just accumulate the chunks as they come
           accumulatedContent += chunk;

@@ -18,6 +18,7 @@
     "@convex-dev/auth": "^0.0.88",
     "@convex-dev/persistent-text-streaming": "^0.2.3",
     "@openrouter/ai-sdk-provider": "1.1.1",
+    "@solana/web3.js": "^1.98.4",
     "ai": "^5.0.8",
     "convex": "^1.25.4"
   }

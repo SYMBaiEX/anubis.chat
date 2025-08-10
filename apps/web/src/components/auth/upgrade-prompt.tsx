@@ -1,15 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
 import { ArrowRight, Crown, Shield, X, Zap } from 'lucide-react';
+import React, { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useUpgrade } from './upgrade-wrapper';
-import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { UpgradePrompt as UpgradePromptType } from '@/hooks/use-subscription';
+import { cn } from '@/lib/utils';
+import { useUpgrade } from './upgrade-wrapper';
 
 interface UpgradePromptProps {
   prompt: UpgradePromptType;
@@ -30,7 +35,7 @@ const TIER_DETAILS = {
       '1,500 messages / month',
       '100 premium messages',
       'Document uploads',
-      'Chat history'
+      'Chat history',
     ],
   },
   pro_plus: {
@@ -45,16 +50,16 @@ const TIER_DETAILS = {
       '300 premium messages',
       'Large file uploads',
       'API access',
-      'Priority support'
+      'Priority support',
     ],
   },
 };
 
-export function UpgradePrompt({ 
-  prompt, 
-  className, 
+export function UpgradePrompt({
+  prompt,
+  className,
   onDismiss,
-  variant = 'inline'
+  variant = 'inline',
 }: UpgradePromptProps) {
   const [showModal, setShowModal] = useState(false);
   const { openUpgradeModal } = useUpgrade();
@@ -99,7 +104,8 @@ export function UpgradePrompt({
       // Use the new upgrade modal system
       openUpgradeModal({
         tier: suggestedTier || 'pro',
-        trigger: prompt.urgency === 'high' ? 'limit_reached' : 'usage_milestone'
+        trigger:
+          prompt.urgency === 'high' ? 'limit_reached' : 'usage_milestone',
       });
     }
   };
@@ -107,18 +113,20 @@ export function UpgradePrompt({
   if (variant === 'inline') {
     return (
       <>
-        <Alert className={cn(
-          urgencyStyles.border,
-          urgencyStyles.bg,
-          'relative',
-          className
-        )}>
+        <Alert
+          className={cn(
+            urgencyStyles.border,
+            urgencyStyles.bg,
+            'relative',
+            className
+          )}
+        >
           {onDismiss && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-2 top-2 h-6 w-6 p-0"
+              className="absolute top-2 right-2 h-6 w-6 p-0"
               onClick={onDismiss}
+              size="sm"
+              variant="ghost"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -135,7 +143,7 @@ export function UpgradePrompt({
                   {prompt.title}
                 </h4>
                 {prompt.urgency === 'high' && (
-                  <Badge variant="destructive" className="text-xs">
+                  <Badge className="text-xs" variant="destructive">
                     Action Required
                   </Badge>
                 )}
@@ -145,10 +153,10 @@ export function UpgradePrompt({
               </AlertDescription>
               {suggestedTier && (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Button 
-                    size="sm" 
+                  <Button
                     className={urgencyStyles.button}
                     onClick={handleUpgrade}
+                    size="sm"
                   >
                     Upgrade to {TIER_DETAILS[suggestedTier].name}
                     <ArrowRight className="ml-1 h-3 w-3" />
@@ -169,14 +177,12 @@ export function UpgradePrompt({
 
   return (
     <>
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog onOpenChange={setShowModal} open={showModal}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {tierDetails && (
-                <div className={tierDetails.color}>
-                  {tierDetails.icon}
-                </div>
+                <div className={tierDetails.color}>{tierDetails.icon}</div>
               )}
               {prompt.title}
             </DialogTitle>
@@ -186,33 +192,48 @@ export function UpgradePrompt({
             <p className="text-muted-foreground">{prompt.message}</p>
 
             {tierDetails && (
-              <Card className={cn('p-4', tierDetails.bgColor, tierDetails.borderColor)}>
+              <Card
+                className={cn(
+                  'p-4',
+                  tierDetails.bgColor,
+                  tierDetails.borderColor
+                )}
+              >
                 <div className="mb-3 flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold text-lg">{tierDetails.name} Plan</h3>
+                    <h3 className="font-semibold text-lg">
+                      {tierDetails.name} Plan
+                    </h3>
                     <div className="flex items-baseline gap-2">
-                      <span className="font-bold text-2xl">{tierDetails.price}</span>
-                      <Badge variant="secondary" className="text-xs">50% Off Launch</Badge>
+                      <span className="font-bold text-2xl">
+                        {tierDetails.price}
+                      </span>
+                      <Badge className="text-xs" variant="secondary">
+                        50% Off Launch
+                      </Badge>
                     </div>
                   </div>
                 </div>
 
                 <ul className="space-y-1 text-sm">
                   {tierDetails.features.map((feature, index) => (
-                    <li key={index} className="flex items-center gap-2">
+                    <li className="flex items-center gap-2" key={index}>
                       <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
                       <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
 
-                <Button 
-                  className="mt-4 w-full" 
+                <Button
+                  className="mt-4 w-full"
                   onClick={() => {
                     setShowModal(false);
                     openUpgradeModal({
                       tier: suggestedTier || 'pro',
-                      trigger: prompt.urgency === 'high' ? 'limit_reached' : 'usage_milestone'
+                      trigger:
+                        prompt.urgency === 'high'
+                          ? 'limit_reached'
+                          : 'usage_milestone',
                     });
                   }}
                 >

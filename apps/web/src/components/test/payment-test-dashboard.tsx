@@ -1,35 +1,35 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useQuery } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { useSubscription } from '@/hooks/use-subscription';
-import { useAuthContext } from '@/components/providers/auth-provider';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { PaymentIntegrationTest } from './payment-integration-test';
-import { PaymentDevTools } from './payment-dev-tools';
-import { PaymentValidationSuite } from './payment-validation-suite';
-import { WalletIntegrationTest } from './wallet-integration-test';
-import { 
-  TestTube, 
-  Shield, 
-  Wrench, 
+import { useQuery } from 'convex/react';
+import {
   Activity,
-  CheckCircle, 
   AlertTriangle,
+  CheckCircle,
+  CreditCard,
+  Database,
   Info,
   RefreshCw,
-  Wallet,
-  CreditCard,
+  Shield,
+  TestTube,
   Users,
-  Database,
-  Zap
+  Wallet,
+  Wrench,
+  Zap,
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useAuthContext } from '@/components/providers/auth-provider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSubscription } from '@/hooks/use-subscription';
+import { PaymentDevTools } from './payment-dev-tools';
+import { PaymentIntegrationTest } from './payment-integration-test';
+import { PaymentValidationSuite } from './payment-validation-suite';
+import { WalletIntegrationTest } from './wallet-integration-test';
 
 interface SystemHealth {
   auth: 'healthy' | 'warning' | 'error';
@@ -41,15 +41,15 @@ interface SystemHealth {
 
 /**
  * Payment Test Dashboard
- * 
+ *
  * Comprehensive testing dashboard for the Convex Auth + Solana payment system.
  * Provides unified access to all testing tools and real-time system monitoring.
- * 
+ *
  * Features:
  * - System health monitoring
  * - Integration testing suite
  * - Development tools for debugging
- * - Security validation suite  
+ * - Security validation suite
  * - Wallet integration testing
  * - Real-time status monitoring
  * - Performance metrics
@@ -59,13 +59,13 @@ export function PaymentTestDashboard() {
   const auth = useAuthContext();
   const { subscription, limits, isLoading } = useSubscription();
   const currentUser = useQuery(api.users.getCurrentUserProfile);
-  
+
   const [systemHealth, setSystemHealth] = useState<SystemHealth>({
     auth: 'healthy',
-    payment: 'healthy', 
+    payment: 'healthy',
     subscription: 'healthy',
     wallet: 'healthy',
-    overall: 'healthy'
+    overall: 'healthy',
   });
   const [lastHealthCheck, setLastHealthCheck] = useState<number>(Date.now());
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -76,20 +76,20 @@ export function PaymentTestDashboard() {
       const health: SystemHealth = {
         auth: 'healthy',
         payment: 'healthy',
-        subscription: 'healthy', 
+        subscription: 'healthy',
         wallet: 'healthy',
-        overall: 'healthy'
+        overall: 'healthy',
       };
 
       // Check auth health
-      if (!auth.isAuthenticated || !currentUser) {
+      if (!(auth.isAuthenticated && currentUser)) {
         health.auth = 'error';
       } else if (auth.isLoading) {
         health.auth = 'warning';
       }
 
       // Check wallet health
-      if (!connected || !publicKey) {
+      if (!(connected && publicKey)) {
         health.wallet = 'error';
       }
 
@@ -98,7 +98,10 @@ export function PaymentTestDashboard() {
         health.subscription = 'error';
       } else if (subscription.messagesUsed >= subscription.messagesLimit) {
         health.subscription = 'warning';
-      } else if (subscription.tier === 'free' && subscription.messagesUsed > subscription.messagesLimit * 0.8) {
+      } else if (
+        subscription.tier === 'free' &&
+        subscription.messagesUsed > subscription.messagesLimit * 0.8
+      ) {
         health.subscription = 'warning';
       }
 
@@ -110,7 +113,7 @@ export function PaymentTestDashboard() {
       }
 
       // Determine overall health
-      const healthValues = Object.values(health).filter(h => h !== 'healthy');
+      const healthValues = Object.values(health).filter((h) => h !== 'healthy');
       if (healthValues.includes('error')) {
         health.overall = 'error';
       } else if (healthValues.includes('warning')) {
@@ -122,10 +125,10 @@ export function PaymentTestDashboard() {
     };
 
     checkSystemHealth();
-    
+
     let interval: NodeJS.Timeout;
     if (autoRefresh) {
-      interval = setInterval(checkSystemHealth, 10000); // Every 10 seconds
+      interval = setInterval(checkSystemHealth, 10_000); // Every 10 seconds
     }
 
     return () => {
@@ -159,12 +162,14 @@ export function PaymentTestDashboard() {
     if (!auth.isAuthenticated) {
       return 'Connect and authenticate your wallet to access testing tools';
     }
-    
+
     if (!subscription) {
       return 'Loading subscription data...';
     }
 
-    const usagePercent = Math.round((subscription.messagesUsed / subscription.messagesLimit) * 100);
+    const usagePercent = Math.round(
+      (subscription.messagesUsed / subscription.messagesLimit) * 100
+    );
     return `${subscription.tier.toUpperCase()} tier • ${usagePercent}% usage • ${limits.messagesRemaining} messages remaining`;
   };
 
@@ -183,22 +188,26 @@ export function PaymentTestDashboard() {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Comprehensive testing suite for the Convex Auth + Solana payment integration. 
+                Comprehensive testing suite for the Convex Auth + Solana payment
+                integration.
                 {getStatusSummary()}
               </AlertDescription>
             </Alert>
 
             <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                Last health check: {new Date(lastHealthCheck).toLocaleTimeString()}
+              <div className="text-muted-foreground text-sm">
+                Last health check:{' '}
+                {new Date(lastHealthCheck).toLocaleTimeString()}
               </div>
               <div className="flex items-center gap-2">
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => setAutoRefresh(!autoRefresh)}
+                  size="sm"
+                  variant="outline"
                 >
-                  <Activity className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-pulse' : ''}`} />
+                  <Activity
+                    className={`mr-2 h-4 w-4 ${autoRefresh ? 'animate-pulse' : ''}`}
+                  />
                   Auto Refresh {autoRefresh ? 'On' : 'Off'}
                 </Button>
               </div>
@@ -216,41 +225,41 @@ export function PaymentTestDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="p-4 border rounded text-center">
-              <div className="flex items-center justify-center mb-2">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+            <div className="rounded border p-4 text-center">
+              <div className="mb-2 flex items-center justify-center">
                 {getHealthIcon(systemHealth.overall)}
               </div>
               <div className="font-semibold">Overall</div>
               {getHealthBadge(systemHealth.overall)}
             </div>
-            
-            <div className="p-4 border rounded text-center">
-              <div className="flex items-center justify-center mb-2">
+
+            <div className="rounded border p-4 text-center">
+              <div className="mb-2 flex items-center justify-center">
                 <Users className="h-4 w-4" />
               </div>
               <div className="font-semibold">Auth</div>
               {getHealthBadge(systemHealth.auth)}
             </div>
-            
-            <div className="p-4 border rounded text-center">
-              <div className="flex items-center justify-center mb-2">
+
+            <div className="rounded border p-4 text-center">
+              <div className="mb-2 flex items-center justify-center">
                 <Wallet className="h-4 w-4" />
               </div>
               <div className="font-semibold">Wallet</div>
               {getHealthBadge(systemHealth.wallet)}
             </div>
-            
-            <div className="p-4 border rounded text-center">
-              <div className="flex items-center justify-center mb-2">
+
+            <div className="rounded border p-4 text-center">
+              <div className="mb-2 flex items-center justify-center">
                 <Database className="h-4 w-4" />
               </div>
               <div className="font-semibold">Subscription</div>
               {getHealthBadge(systemHealth.subscription)}
             </div>
-            
-            <div className="p-4 border rounded text-center">
-              <div className="flex items-center justify-center mb-2">
+
+            <div className="rounded border p-4 text-center">
+              <div className="mb-2 flex items-center justify-center">
                 <CreditCard className="h-4 w-4" />
               </div>
               <div className="font-semibold">Payment</div>
@@ -260,26 +269,31 @@ export function PaymentTestDashboard() {
 
           {/* Quick Stats */}
           {auth.isAuthenticated && subscription && (
-            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 bg-muted rounded">
-                <div className="text-sm text-muted-foreground">User ID</div>
+            <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="rounded bg-muted p-3">
+                <div className="text-muted-foreground text-sm">User ID</div>
                 <div className="font-mono text-xs">
-                  {currentUser?.walletAddress?.slice(0, 8)}...{currentUser?.walletAddress?.slice(-8)}
+                  {currentUser?.walletAddress?.slice(0, 8)}...
+                  {currentUser?.walletAddress?.slice(-8)}
                 </div>
               </div>
-              <div className="p-3 bg-muted rounded">
-                <div className="text-sm text-muted-foreground">Tier</div>
-                <div className="font-semibold capitalize">{subscription.tier}</div>
+              <div className="rounded bg-muted p-3">
+                <div className="text-muted-foreground text-sm">Tier</div>
+                <div className="font-semibold capitalize">
+                  {subscription.tier}
+                </div>
               </div>
-              <div className="p-3 bg-muted rounded">
-                <div className="text-sm text-muted-foreground">Usage</div>
+              <div className="rounded bg-muted p-3">
+                <div className="text-muted-foreground text-sm">Usage</div>
                 <div className="font-semibold">
                   {subscription.messagesUsed}/{subscription.messagesLimit}
                 </div>
               </div>
-              <div className="p-3 bg-muted rounded">
-                <div className="text-sm text-muted-foreground">Days Left</div>
-                <div className="font-semibold">{subscription.daysRemaining}</div>
+              <div className="rounded bg-muted p-3">
+                <div className="text-muted-foreground text-sm">Days Left</div>
+                <div className="font-semibold">
+                  {subscription.daysRemaining}
+                </div>
               </div>
             </div>
           )}
@@ -287,27 +301,27 @@ export function PaymentTestDashboard() {
       </Card>
 
       {/* Testing Tools Tabs */}
-      <Tabs defaultValue="integration" className="w-full">
+      <Tabs className="w-full" defaultValue="integration">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="integration" className="flex items-center gap-1">
+          <TabsTrigger className="flex items-center gap-1" value="integration">
             <TestTube className="h-4 w-4" />
             Integration Tests
           </TabsTrigger>
-          <TabsTrigger value="validation" className="flex items-center gap-1">
+          <TabsTrigger className="flex items-center gap-1" value="validation">
             <Shield className="h-4 w-4" />
             Validation Suite
           </TabsTrigger>
-          <TabsTrigger value="development" className="flex items-center gap-1">
+          <TabsTrigger className="flex items-center gap-1" value="development">
             <Wrench className="h-4 w-4" />
             Dev Tools
           </TabsTrigger>
-          <TabsTrigger value="wallet" className="flex items-center gap-1">
+          <TabsTrigger className="flex items-center gap-1" value="wallet">
             <Wallet className="h-4 w-4" />
             Wallet Tests
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="integration" className="space-y-6">
+        <TabsContent className="space-y-6" value="integration">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -316,16 +330,17 @@ export function PaymentTestDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Comprehensive tests for all aspects of the payment system integration including 
-                authentication, subscription management, model access, and usage tracking.
+              <p className="mb-4 text-muted-foreground text-sm">
+                Comprehensive tests for all aspects of the payment system
+                integration including authentication, subscription management,
+                model access, and usage tracking.
               </p>
             </CardContent>
           </Card>
           <PaymentIntegrationTest />
         </TabsContent>
 
-        <TabsContent value="validation" className="space-y-6">
+        <TabsContent className="space-y-6" value="validation">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -334,14 +349,15 @@ export function PaymentTestDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Advanced validation testing for security vulnerabilities, edge cases, 
-                error handling, and performance issues.
+              <p className="mb-4 text-muted-foreground text-sm">
+                Advanced validation testing for security vulnerabilities, edge
+                cases, error handling, and performance issues.
               </p>
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  Security tests may generate error logs - this is expected behavior for validation.
+                  Security tests may generate error logs - this is expected
+                  behavior for validation.
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -349,7 +365,7 @@ export function PaymentTestDashboard() {
           <PaymentValidationSuite />
         </TabsContent>
 
-        <TabsContent value="development" className="space-y-6">
+        <TabsContent className="space-y-6" value="development">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -358,14 +374,15 @@ export function PaymentTestDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Development utilities for testing payment flows, simulating usage scenarios,
-                and debugging subscription issues.
+              <p className="mb-4 text-muted-foreground text-sm">
+                Development utilities for testing payment flows, simulating
+                usage scenarios, and debugging subscription issues.
               </p>
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Warning:</strong> These tools modify real user data. Use carefully and only in development environments.
+                  <strong>Warning:</strong> These tools modify real user data.
+                  Use carefully and only in development environments.
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -373,7 +390,7 @@ export function PaymentTestDashboard() {
           <PaymentDevTools />
         </TabsContent>
 
-        <TabsContent value="wallet" className="space-y-6">
+        <TabsContent className="space-y-6" value="wallet">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -382,9 +399,9 @@ export function PaymentTestDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Tests for wallet connection, authentication flow, balance fetching, 
-                and Solana Agent Kit integration.
+              <p className="mb-4 text-muted-foreground text-sm">
+                Tests for wallet connection, authentication flow, balance
+                fetching, and Solana Agent Kit integration.
               </p>
             </CardContent>
           </Card>
@@ -401,19 +418,23 @@ export function PaymentTestDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
             <div>
               <div className="text-muted-foreground">RPC Endpoint</div>
               <div className="font-mono text-xs">
-                {process.env.NEXT_PUBLIC_SOLANA_RPC?.includes('mainnet') ? '🟢 Mainnet' : 
-                 process.env.NEXT_PUBLIC_SOLANA_RPC?.includes('devnet') ? '🟡 Devnet' : 
-                 '🔵 Local'}
+                {process.env.NEXT_PUBLIC_SOLANA_RPC?.includes('mainnet')
+                  ? '🟢 Mainnet'
+                  : process.env.NEXT_PUBLIC_SOLANA_RPC?.includes('devnet')
+                    ? '🟡 Devnet'
+                    : '🔵 Local'}
               </div>
             </div>
             <div>
               <div className="text-muted-foreground">Environment</div>
               <div className="font-semibold">
-                {process.env.NODE_ENV === 'production' ? '🔴 Production' : '🟡 Development'}
+                {process.env.NODE_ENV === 'production'
+                  ? '🔴 Production'
+                  : '🟡 Development'}
               </div>
             </div>
             <div>
@@ -425,13 +446,15 @@ export function PaymentTestDashboard() {
             <div>
               <div className="text-muted-foreground">Test Mode</div>
               <div className="font-semibold">
-                {process.env.NODE_ENV !== 'production' ? '✅ Enabled' : '❌ Disabled'}
+                {process.env.NODE_ENV !== 'production'
+                  ? '✅ Enabled'
+                  : '❌ Disabled'}
               </div>
             </div>
           </div>
 
-          <div className="mt-4 p-3 bg-muted rounded text-xs">
-            <div className="font-medium mb-2">Testing Guidelines:</div>
+          <div className="mt-4 rounded bg-muted p-3 text-xs">
+            <div className="mb-2 font-medium">Testing Guidelines:</div>
             <ul className="space-y-1 text-muted-foreground">
               <li>• Always test on devnet before mainnet deployment</li>
               <li>• Use small amounts for payment testing (0.001-0.01 SOL)</li>

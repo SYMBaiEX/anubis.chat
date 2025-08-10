@@ -1,7 +1,7 @@
 'use client';
 
-import { AdminGuard } from '@/components/auth/admin-guard';
 import { Shield } from 'lucide-react';
+import { AdminGuard } from '@/components/auth/admin-guard';
 
 export default function AdminLayout({
   children,
@@ -15,9 +15,10 @@ export default function AdminLayout({
           <div className="text-center">
             <Shield className="mx-auto h-16 w-16 text-red-500" />
             <h1 className="mt-4 font-bold text-2xl">Access Denied</h1>
-            <p className="mt-2 text-muted-foreground max-w-md">
-              This area is restricted to system administrators only.
-              If you believe you should have access, please contact your system administrator.
+            <p className="mt-2 max-w-md text-muted-foreground">
+              This area is restricted to system administrators only. If you
+              believe you should have access, please contact your system
+              administrator.
             </p>
           </div>
         </div>
@@ -27,7 +28,7 @@ export default function AdminLayout({
         {/* Admin-specific header or context could go here */}
         <div className="flex items-center gap-2 border-b bg-muted/30 px-6 py-3">
           <Shield className="h-4 w-4 text-orange-600" />
-          <span className="text-sm font-medium text-muted-foreground">
+          <span className="font-medium text-muted-foreground text-sm">
             Administrator Area
           </span>
         </div>

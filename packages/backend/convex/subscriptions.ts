@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { internalMutation, mutation, query } from './_generated/server';
 import { getCurrentUser, requireAuth } from './authHelpers';
 
 // Subscription tier configurations
@@ -22,7 +22,13 @@ const SUBSCRIPTION_TIERS = {
       'basic_agents',
       'chat_history',
     ],
-    availableModels: ['gpt-4o-mini', 'deepseek-chat', 'deepseek-r1', 'gpt-4o', 'claude-3.5-sonnet'],
+    availableModels: [
+      'gpt-4o-mini',
+      'deepseek-chat',
+      'deepseek-r1',
+      'gpt-4o',
+      'claude-3.5-sonnet',
+    ],
   },
   pro_plus: {
     messagesLimit: 3000,
@@ -37,17 +43,23 @@ const SUBSCRIPTION_TIERS = {
       'priority_support',
       'unlimited_chats',
     ],
-    availableModels: ['gpt-4o-mini', 'deepseek-chat', 'deepseek-r1', 'gpt-4o', 'claude-3.5-sonnet'],
+    availableModels: [
+      'gpt-4o-mini',
+      'deepseek-chat',
+      'deepseek-r1',
+      'gpt-4o',
+      'claude-3.5-sonnet',
+    ],
   },
 };
 
 // Model cost configurations (for internal tracking)
 const MODEL_COSTS = {
   'gpt-4o': { category: 'premium', costPerMessage: 0.0175 },
-  'gpt-4o-mini': { category: 'standard', costPerMessage: 0.000675 },
+  'gpt-4o-mini': { category: 'standard', costPerMessage: 0.000_675 },
   'claude-3.5-sonnet': { category: 'premium', costPerMessage: 0.0165 },
-  'deepseek-chat': { category: 'standard', costPerMessage: 0.001235 },
-  'deepseek-r1': { category: 'standard', costPerMessage: 0.002325 },
+  'deepseek-chat': { category: 'standard', costPerMessage: 0.001_235 },
+  'deepseek-r1': { category: 'standard', costPerMessage: 0.002_325 },
 };
 
 // Check if user can use a specific model
@@ -67,8 +79,8 @@ export const canUseModel = query({
       return {
         allowed: true,
         isAdmin: true,
-        remaining: Infinity,
-        premiumRemaining: Infinity,
+        remaining: Number.POSITIVE_INFINITY,
+        premiumRemaining: Number.POSITIVE_INFINITY,
       };
     }
 
@@ -80,20 +92,23 @@ export const canUseModel = query({
       return {
         allowed: false,
         reason: 'Model not available for your subscription tier',
-        suggestedUpgrade: user.subscription.tier === 'free' ? 'pro' : 'pro_plus',
+        suggestedUpgrade:
+          user.subscription.tier === 'free' ? 'pro' : 'pro_plus',
       };
     }
 
     // Check message limits
-    if (modelConfig?.category === 'premium') {
-      if (user.subscription.premiumMessagesUsed >= user.subscription.premiumMessagesLimit) {
-        return {
-          allowed: false,
-          reason: 'Premium message limit reached',
-          remaining: 0,
-          suggestedAction: 'upgrade',
-        };
-      }
+    if (
+      modelConfig?.category === 'premium' &&
+      user.subscription.premiumMessagesUsed >=
+        user.subscription.premiumMessagesLimit
+    ) {
+      return {
+        allowed: false,
+        reason: 'Premium message limit reached',
+        remaining: 0,
+        suggestedAction: 'upgrade',
+      };
     }
 
     // Check total message limit
@@ -108,10 +123,13 @@ export const canUseModel = query({
 
     return {
       allowed: true,
-      remaining: user.subscription.messagesLimit - user.subscription.messagesUsed,
-      premiumRemaining: modelConfig?.category === 'premium'
-        ? user.subscription.premiumMessagesLimit - user.subscription.premiumMessagesUsed
-        : undefined,
+      remaining:
+        user.subscription.messagesLimit - user.subscription.messagesUsed,
+      premiumRemaining:
+        modelConfig?.category === 'premium'
+          ? user.subscription.premiumMessagesLimit -
+            user.subscription.premiumMessagesUsed
+          : undefined,
     };
   },
 });
@@ -140,7 +158,7 @@ export const trackMessageUsageByWallet = mutation({
         messagesUsed: (user.subscription?.messagesUsed ?? 0) + 1,
         premiumMessagesUsed: args.isPremiumModel
           ? (user.subscription?.premiumMessagesUsed ?? 0) + 1
-          : user.subscription?.premiumMessagesUsed ?? 0,
+          : (user.subscription?.premiumMessagesUsed ?? 0),
       },
     } as const;
 
@@ -165,9 +183,9 @@ export const trackMessageUsage = mutation({
     if (user.role && user.role !== 'user') {
       return {
         messagesUsed: 0,
-        messagesRemaining: Infinity,
+        messagesRemaining: Number.POSITIVE_INFINITY,
         premiumMessagesUsed: 0,
-        premiumMessagesRemaining: Infinity,
+        premiumMessagesRemaining: Number.POSITIVE_INFINITY,
         isAdmin: true,
       };
     }
@@ -179,7 +197,7 @@ export const trackMessageUsage = mutation({
         messagesUsed: (user.subscription?.messagesUsed ?? 0) + 1,
         premiumMessagesUsed: args.isPremiumModel
           ? (user.subscription?.premiumMessagesUsed ?? 0) + 1
-          : user.subscription?.premiumMessagesUsed ?? 0,
+          : (user.subscription?.premiumMessagesUsed ?? 0),
       },
     } as const;
 
@@ -207,10 +225,12 @@ export const trackMessageUsage = mutation({
 
     return {
       messagesUsed: updates.subscription.messagesUsed,
-      messagesRemaining: user.subscription.messagesLimit - updates.subscription.messagesUsed,
+      messagesRemaining:
+        user.subscription.messagesLimit - updates.subscription.messagesUsed,
       premiumMessagesUsed: updates.subscription.premiumMessagesUsed,
       premiumMessagesRemaining: args.isPremiumModel
-        ? user.subscription.premiumMessagesLimit - updates.subscription.premiumMessagesUsed
+        ? user.subscription.premiumMessagesLimit -
+          updates.subscription.premiumMessagesUsed
         : undefined,
     };
   },
@@ -232,9 +252,9 @@ export const trackDetailedMessageUsage = mutation({
     if (user.role && user.role !== 'user') {
       return {
         messagesUsed: 0,
-        messagesRemaining: Infinity,
+        messagesRemaining: Number.POSITIVE_INFINITY,
         premiumMessagesUsed: 0,
-        premiumMessagesRemaining: Infinity,
+        premiumMessagesRemaining: Number.POSITIVE_INFINITY,
         isAdmin: true,
       };
     }
@@ -244,10 +264,11 @@ export const trackDetailedMessageUsage = mutation({
 
     // Ensure subscription values are initialized properly
     const currentMessagesUsed = user.subscription?.messagesUsed ?? 0;
-    const currentPremiumMessagesUsed = user.subscription?.premiumMessagesUsed ?? 0;
+    const currentPremiumMessagesUsed =
+      user.subscription?.premiumMessagesUsed ?? 0;
     const messagesLimit = user.subscription?.messagesLimit ?? 50;
     const premiumMessagesLimit = user.subscription?.premiumMessagesLimit ?? 0;
-    
+
     // Update user's message counts
     const updates = {
       subscription: {
@@ -284,15 +305,18 @@ export const trackDetailedMessageUsage = mutation({
     });
 
     // Check if we should show upgrade prompt
-    const usagePercent = ((user.subscription?.messagesUsed ?? 0) / (user.subscription?.messagesLimit ?? 1)) * 100;
-    
+    const usagePercent =
+      ((user.subscription?.messagesUsed ?? 0) /
+        (user.subscription?.messagesLimit ?? 1)) *
+      100;
+
     if (usagePercent >= 80 && usagePercent < 90) {
       await ctx.db.insert('upgradeSuggestions', {
         userId: user._id,
         triggerType: 'usage_milestone',
         currentTier: user.subscription.tier,
         suggestedTier: user.subscription.tier === 'free' ? 'pro' : 'pro_plus',
-        context: `80% of monthly messages used`,
+        context: '80% of monthly messages used',
         shown: false,
         converted: false,
         createdAt: Date.now(),
@@ -301,16 +325,18 @@ export const trackDetailedMessageUsage = mutation({
 
     return {
       messagesUsed: updates.subscription.messagesUsed,
-      messagesRemaining: user.subscription.messagesLimit - updates.subscription.messagesUsed,
+      messagesRemaining:
+        user.subscription.messagesLimit - updates.subscription.messagesUsed,
       premiumMessagesUsed: updates.subscription.premiumMessagesUsed,
       premiumMessagesRemaining: isPremium
-        ? user.subscription.premiumMessagesLimit - updates.subscription.premiumMessagesUsed
+        ? user.subscription.premiumMessagesLimit -
+          updates.subscription.premiumMessagesUsed
         : undefined,
     };
   },
 });
 
-// Process subscription payment
+// Process subscription payment (creates pending payment for verification)
 export const processPayment = mutation({
   args: {
     tier: v.union(v.literal('pro'), v.literal('pro_plus')),
@@ -325,26 +351,137 @@ export const processPayment = mutation({
     }
 
     const tierConfig = SUBSCRIPTION_TIERS[args.tier];
-    
+
     // Verify payment amount
     if (Math.abs(args.amountSol - tierConfig.priceSol) > 0.001) {
       throw new Error('Invalid payment amount');
     }
 
+    // Check if transaction signature already exists
+    const existingPayment = await ctx.db
+      .query('subscriptionPayments')
+      .withIndex('by_signature', (q) => q.eq('txSignature', args.txSignature))
+      .first();
+
+    if (existingPayment) {
+      if (existingPayment.status === 'confirmed') {
+        throw new Error('Transaction has already been processed');
+      }
+      if (existingPayment.status === 'pending') {
+        throw new Error('Transaction is already being verified');
+      }
+    }
+
     const now = Date.now();
     const periodEnd = now + 30 * 24 * 60 * 60 * 1000; // 30 days
 
-    // Create payment record
+    // Create pending payment record
     const paymentId = await ctx.db.insert('subscriptionPayments', {
-      userId: user.walletAddress!, // Keep wallet address for payment tracking
+      userId: user._id,
       tier: args.tier,
       amountSol: args.amountSol,
+      amountUsd: args.tier === 'pro' ? 7 : 15, // Set USD amount based on tier
       txSignature: args.txSignature,
       paymentDate: now,
       periodStart: now,
-      periodEnd: periodEnd,
-      status: 'pending',
+      periodEnd,
+      status: 'pending', // Pending verification
       createdAt: now,
+      updatedAt: now,
+    });
+
+    // Return success but don't update subscription yet
+    // Subscription will be updated after blockchain verification
+    return {
+      success: true,
+      paymentId,
+      tier: args.tier,
+      status: 'pending',
+      message: 'Payment submitted for verification',
+    };
+  },
+});
+
+// Internal mutation to process verified payment
+export const processVerifiedPayment = internalMutation({
+  args: {
+    tier: v.union(v.literal('pro'), v.literal('pro_plus')),
+    txSignature: v.string(),
+    amountSol: v.number(),
+    walletAddress: v.string(),
+    verificationDetails: v.object({
+      signature: v.string(),
+      recipient: v.string(),
+      sender: v.string(),
+      amount: v.number(),
+      timestamp: v.number(),
+      slot: v.number(),
+      confirmationStatus: v.string(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    // Find the user by wallet address
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
+      .first();
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Check if payment already exists
+    let payment = await ctx.db
+      .query('subscriptionPayments')
+      .withIndex('by_signature', (q) => q.eq('txSignature', args.txSignature))
+      .first();
+
+    // If payment doesn't exist, create it (direct wallet payment)
+    if (!payment) {
+      const now = Date.now();
+      const paymentId = await ctx.db.insert('subscriptionPayments', {
+        userId: user._id,
+        tier: args.tier,
+        amountSol: args.amountSol,
+        amountUsd: args.tier === 'pro' ? 7 : 15, // Set USD amount based on tier
+        txSignature: args.txSignature,
+        status: 'pending',
+        paymentDate: now,
+        periodStart: now,
+        periodEnd: now + 30 * 24 * 60 * 60 * 1000, // 30 days
+        createdAt: now,
+        updatedAt: now,
+      });
+      
+      payment = await ctx.db.get(paymentId);
+      if (!payment) {
+        throw new Error('Failed to create payment record');
+      }
+    }
+
+    if (payment.status === 'confirmed') {
+      // Payment already processed
+      return {
+        success: true,
+        paymentId: payment._id,
+        tier: args.tier,
+        status: 'already_processed',
+        message: 'Payment has already been processed',
+      };
+    }
+
+    if (payment.status !== 'pending') {
+      throw new Error(`Payment is in invalid status: ${payment.status}`);
+    }
+
+    const tierConfig = SUBSCRIPTION_TIERS[args.tier];
+    const now = Date.now();
+    const periodEnd = now + 30 * 24 * 60 * 60 * 1000; // 30 days
+
+    // Update payment status to confirmed
+    await ctx.db.patch(payment._id, {
+      status: 'confirmed',
+      verificationDetails: args.verificationDetails,
       updatedAt: now,
     });
 
@@ -364,12 +501,12 @@ export const processPayment = mutation({
         planPriceSol: tierConfig.priceSol,
         features: tierConfig.features,
       },
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
 
     return {
       success: true,
-      paymentId,
+      paymentId: payment._id,
       tier: args.tier,
       periodEnd,
     };
@@ -395,7 +532,7 @@ export const confirmPayment = mutation({
     }
 
     // Ensure the payment belongs to the authenticated user
-    if (payment.userId !== user.walletAddress) {
+    if (payment.userId !== user._id) {
       throw new Error('Payment access denied');
     }
 
@@ -467,23 +604,35 @@ export const getSubscriptionStatusByWallet = query({
 
     const tierConfig = SUBSCRIPTION_TIERS[user.subscription.tier];
     const now = Date.now();
-    
-    const messageUsagePercent = user.subscription.messagesLimit > 0 
-      ? (user.subscription.messagesUsed / user.subscription.messagesLimit) * 100 
-      : 0;
-    const premiumUsagePercent = user.subscription.premiumMessagesLimit > 0 
-      ? (user.subscription.premiumMessagesUsed / user.subscription.premiumMessagesLimit) * 100 
-      : 0;
+
+    const messageUsagePercent =
+      user.subscription.messagesLimit > 0
+        ? (user.subscription.messagesUsed / user.subscription.messagesLimit) *
+          100
+        : 0;
+    const premiumUsagePercent =
+      user.subscription.premiumMessagesLimit > 0
+        ? (user.subscription.premiumMessagesUsed /
+            user.subscription.premiumMessagesLimit) *
+          100
+        : 0;
     const isExpired = user.subscription.currentPeriodEnd < now;
 
     return {
       tier: user.subscription.tier,
       messagesUsed: user.subscription.messagesUsed,
       messagesLimit: user.subscription.messagesLimit,
-      messagesRemaining: Math.max(0, user.subscription.messagesLimit - user.subscription.messagesUsed),
+      messagesRemaining: Math.max(
+        0,
+        user.subscription.messagesLimit - user.subscription.messagesUsed
+      ),
       premiumMessagesUsed: user.subscription.premiumMessagesUsed,
       premiumMessagesLimit: user.subscription.premiumMessagesLimit,
-      premiumMessagesRemaining: Math.max(0, user.subscription.premiumMessagesLimit - user.subscription.premiumMessagesUsed),
+      premiumMessagesRemaining: Math.max(
+        0,
+        user.subscription.premiumMessagesLimit -
+          user.subscription.premiumMessagesUsed
+      ),
       messageUsagePercent,
       premiumUsagePercent,
       currentPeriodStart: user.subscription.currentPeriodStart,
@@ -493,7 +642,12 @@ export const getSubscriptionStatusByWallet = query({
       planPriceSol: user.subscription.planPriceSol,
       features: user.subscription.features,
       availableModels: tierConfig.availableModels,
-      daysRemaining: Math.max(0, Math.floor((user.subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000))),
+      daysRemaining: Math.max(
+        0,
+        Math.floor(
+          (user.subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000)
+        )
+      ),
     };
   },
 });
@@ -514,11 +668,11 @@ export const getSubscriptionStatus = query({
         tier: 'admin',
         isAdmin: true,
         messagesUsed: 0,
-        messagesLimit: Infinity,
-        messagesRemaining: Infinity,
+        messagesLimit: Number.POSITIVE_INFINITY,
+        messagesRemaining: Number.POSITIVE_INFINITY,
         premiumMessagesUsed: 0,
-        premiumMessagesLimit: Infinity,
-        premiumMessagesRemaining: Infinity,
+        premiumMessagesLimit: Number.POSITIVE_INFINITY,
+        premiumMessagesRemaining: Number.POSITIVE_INFINITY,
         messageUsagePercent: 0,
         premiumUsagePercent: 0,
         currentPeriodStart: Date.now(),
@@ -527,30 +681,49 @@ export const getSubscriptionStatus = query({
         autoRenew: false,
         planPriceSol: 0,
         features: ['unlimited_everything'],
-        availableModels: ['gpt-5-nano', 'gpt-4o', 'gpt-4o-mini', 'claude-3.5-sonnet', 'deepseek-chat', 'deepseek-r1'],
-        daysRemaining: Infinity,
+        availableModels: [
+          'gpt-5-nano',
+          'gpt-4o',
+          'gpt-4o-mini',
+          'claude-3.5-sonnet',
+          'deepseek-chat',
+          'deepseek-r1',
+        ],
+        daysRemaining: Number.POSITIVE_INFINITY,
       };
     }
 
     const tierConfig = SUBSCRIPTION_TIERS[user.subscription.tier];
     const now = Date.now();
-    
-    const messageUsagePercent = user.subscription.messagesLimit > 0 
-      ? (user.subscription.messagesUsed / user.subscription.messagesLimit) * 100 
-      : 0;
-    const premiumUsagePercent = user.subscription.premiumMessagesLimit > 0 
-      ? (user.subscription.premiumMessagesUsed / user.subscription.premiumMessagesLimit) * 100 
-      : 0;
+
+    const messageUsagePercent =
+      user.subscription.messagesLimit > 0
+        ? (user.subscription.messagesUsed / user.subscription.messagesLimit) *
+          100
+        : 0;
+    const premiumUsagePercent =
+      user.subscription.premiumMessagesLimit > 0
+        ? (user.subscription.premiumMessagesUsed /
+            user.subscription.premiumMessagesLimit) *
+          100
+        : 0;
     const isExpired = user.subscription.currentPeriodEnd < now;
 
     return {
       tier: user.subscription.tier,
       messagesUsed: user.subscription.messagesUsed,
       messagesLimit: user.subscription.messagesLimit,
-      messagesRemaining: Math.max(0, user.subscription.messagesLimit - user.subscription.messagesUsed),
+      messagesRemaining: Math.max(
+        0,
+        user.subscription.messagesLimit - user.subscription.messagesUsed
+      ),
       premiumMessagesUsed: user.subscription.premiumMessagesUsed,
       premiumMessagesLimit: user.subscription.premiumMessagesLimit,
-      premiumMessagesRemaining: Math.max(0, user.subscription.premiumMessagesLimit - user.subscription.premiumMessagesUsed),
+      premiumMessagesRemaining: Math.max(
+        0,
+        user.subscription.premiumMessagesLimit -
+          user.subscription.premiumMessagesUsed
+      ),
       messageUsagePercent,
       premiumUsagePercent,
       currentPeriodStart: user.subscription.currentPeriodStart,
@@ -560,7 +733,12 @@ export const getSubscriptionStatus = query({
       planPriceSol: user.subscription.planPriceSol,
       features: user.subscription.features,
       availableModels: tierConfig.availableModels,
-      daysRemaining: Math.max(0, Math.floor((user.subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000))),
+      daysRemaining: Math.max(
+        0,
+        Math.floor(
+          (user.subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000)
+        )
+      ),
     };
   },
 });
@@ -570,15 +748,18 @@ export const resetMonthlyUsage = mutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
-    
+
     // Get all users whose billing period has ended
     const users = await ctx.db.query('users').collect();
-    
+
     for (const user of users) {
-      if (user.subscription?.currentPeriodEnd && user.subscription.currentPeriodEnd <= now) {
+      if (
+        user.subscription?.currentPeriodEnd &&
+        user.subscription.currentPeriodEnd <= now
+      ) {
         // Reset usage for new period
         const periodEnd = now + 30 * 24 * 60 * 60 * 1000; // 30 days
-        
+
         try {
           await ctx.db.patch(user._id, {
             subscription: {
@@ -595,8 +776,40 @@ export const resetMonthlyUsage = mutation({
         }
       }
     }
-    
+
     return { success: true, usersReset: users.length };
+  },
+});
+
+// Check payment verification status
+export const checkPaymentStatus = query({
+  args: {
+    txSignature: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { user } = await requireAuth(ctx);
+
+    const payment = await ctx.db
+      .query('subscriptionPayments')
+      .withIndex('by_signature', (q) => q.eq('txSignature', args.txSignature))
+      .first();
+
+    if (!payment) {
+      return { status: 'not_found' };
+    }
+
+    // Ensure the payment belongs to the authenticated user
+    if (payment.userId !== user._id) {
+      throw new Error('Payment access denied');
+    }
+
+    return {
+      status: payment.status,
+      tier: payment.tier,
+      amountSol: payment.amountSol,
+      paymentDate: payment.paymentDate,
+      verificationDetails: payment.verificationDetails || null,
+    };
   },
 });
 
@@ -606,24 +819,136 @@ export const initializeModelQuotas = mutation({
   handler: async (ctx) => {
     const quotas = [
       // Free tier
-      { tier: 'free' as const, model: 'gpt-4o-mini', modelCategory: 'standard' as const, monthlyLimit: -1, isAvailable: true, priority: 1, costPerMessage: 0.000675 },
-      { tier: 'free' as const, model: 'deepseek-chat', modelCategory: 'standard' as const, monthlyLimit: -1, isAvailable: true, priority: 2, costPerMessage: 0.001235 },
-      { tier: 'free' as const, model: 'gpt-4o', modelCategory: 'premium' as const, monthlyLimit: 0, isAvailable: false, priority: 0, costPerMessage: 0.0175 },
-      { tier: 'free' as const, model: 'claude-3.5-sonnet', modelCategory: 'premium' as const, monthlyLimit: 0, isAvailable: false, priority: 0, costPerMessage: 0.0165 },
-      
+      {
+        tier: 'free' as const,
+        model: 'gpt-4o-mini',
+        modelCategory: 'standard' as const,
+        monthlyLimit: -1,
+        isAvailable: true,
+        priority: 1,
+        costPerMessage: 0.000_675,
+      },
+      {
+        tier: 'free' as const,
+        model: 'deepseek-chat',
+        modelCategory: 'standard' as const,
+        monthlyLimit: -1,
+        isAvailable: true,
+        priority: 2,
+        costPerMessage: 0.001_235,
+      },
+      {
+        tier: 'free' as const,
+        model: 'gpt-4o',
+        modelCategory: 'premium' as const,
+        monthlyLimit: 0,
+        isAvailable: false,
+        priority: 0,
+        costPerMessage: 0.0175,
+      },
+      {
+        tier: 'free' as const,
+        model: 'claude-3.5-sonnet',
+        modelCategory: 'premium' as const,
+        monthlyLimit: 0,
+        isAvailable: false,
+        priority: 0,
+        costPerMessage: 0.0165,
+      },
+
       // Pro tier
-      { tier: 'pro' as const, model: 'gpt-4o-mini', modelCategory: 'standard' as const, monthlyLimit: -1, isAvailable: true, priority: 1, costPerMessage: 0.000675 },
-      { tier: 'pro' as const, model: 'deepseek-chat', modelCategory: 'standard' as const, monthlyLimit: -1, isAvailable: true, priority: 2, costPerMessage: 0.001235 },
-      { tier: 'pro' as const, model: 'deepseek-r1', modelCategory: 'standard' as const, monthlyLimit: -1, isAvailable: true, priority: 3, costPerMessage: 0.002325 },
-      { tier: 'pro' as const, model: 'gpt-4o', modelCategory: 'premium' as const, monthlyLimit: 100, isAvailable: true, priority: 4, costPerMessage: 0.0175 },
-      { tier: 'pro' as const, model: 'claude-3.5-sonnet', modelCategory: 'premium' as const, monthlyLimit: 100, isAvailable: true, priority: 5, costPerMessage: 0.0165 },
-      
+      {
+        tier: 'pro' as const,
+        model: 'gpt-4o-mini',
+        modelCategory: 'standard' as const,
+        monthlyLimit: -1,
+        isAvailable: true,
+        priority: 1,
+        costPerMessage: 0.000_675,
+      },
+      {
+        tier: 'pro' as const,
+        model: 'deepseek-chat',
+        modelCategory: 'standard' as const,
+        monthlyLimit: -1,
+        isAvailable: true,
+        priority: 2,
+        costPerMessage: 0.001_235,
+      },
+      {
+        tier: 'pro' as const,
+        model: 'deepseek-r1',
+        modelCategory: 'standard' as const,
+        monthlyLimit: -1,
+        isAvailable: true,
+        priority: 3,
+        costPerMessage: 0.002_325,
+      },
+      {
+        tier: 'pro' as const,
+        model: 'gpt-4o',
+        modelCategory: 'premium' as const,
+        monthlyLimit: 100,
+        isAvailable: true,
+        priority: 4,
+        costPerMessage: 0.0175,
+      },
+      {
+        tier: 'pro' as const,
+        model: 'claude-3.5-sonnet',
+        modelCategory: 'premium' as const,
+        monthlyLimit: 100,
+        isAvailable: true,
+        priority: 5,
+        costPerMessage: 0.0165,
+      },
+
       // Pro+ tier
-      { tier: 'pro_plus' as const, model: 'gpt-4o-mini', modelCategory: 'standard' as const, monthlyLimit: -1, isAvailable: true, priority: 1, costPerMessage: 0.000675 },
-      { tier: 'pro_plus' as const, model: 'deepseek-chat', modelCategory: 'standard' as const, monthlyLimit: -1, isAvailable: true, priority: 2, costPerMessage: 0.001235 },
-      { tier: 'pro_plus' as const, model: 'deepseek-r1', modelCategory: 'standard' as const, monthlyLimit: -1, isAvailable: true, priority: 3, costPerMessage: 0.002325 },
-      { tier: 'pro_plus' as const, model: 'gpt-4o', modelCategory: 'premium' as const, monthlyLimit: 300, isAvailable: true, priority: 4, costPerMessage: 0.0175 },
-      { tier: 'pro_plus' as const, model: 'claude-3.5-sonnet', modelCategory: 'premium' as const, monthlyLimit: 300, isAvailable: true, priority: 5, costPerMessage: 0.0165 },
+      {
+        tier: 'pro_plus' as const,
+        model: 'gpt-4o-mini',
+        modelCategory: 'standard' as const,
+        monthlyLimit: -1,
+        isAvailable: true,
+        priority: 1,
+        costPerMessage: 0.000_675,
+      },
+      {
+        tier: 'pro_plus' as const,
+        model: 'deepseek-chat',
+        modelCategory: 'standard' as const,
+        monthlyLimit: -1,
+        isAvailable: true,
+        priority: 2,
+        costPerMessage: 0.001_235,
+      },
+      {
+        tier: 'pro_plus' as const,
+        model: 'deepseek-r1',
+        modelCategory: 'standard' as const,
+        monthlyLimit: -1,
+        isAvailable: true,
+        priority: 3,
+        costPerMessage: 0.002_325,
+      },
+      {
+        tier: 'pro_plus' as const,
+        model: 'gpt-4o',
+        modelCategory: 'premium' as const,
+        monthlyLimit: 300,
+        isAvailable: true,
+        priority: 4,
+        costPerMessage: 0.0175,
+      },
+      {
+        tier: 'pro_plus' as const,
+        model: 'claude-3.5-sonnet',
+        modelCategory: 'premium' as const,
+        monthlyLimit: 300,
+        isAvailable: true,
+        priority: 5,
+        costPerMessage: 0.0165,
+      },
     ];
 
     for (const quota of quotas) {

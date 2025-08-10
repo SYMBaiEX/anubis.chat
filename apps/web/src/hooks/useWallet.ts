@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@convex/_generated/api';
+import { useAuthActions } from '@convex-dev/auth/react';
 import {
   useConnection,
   useWallet as useSolanaWallet,
@@ -7,10 +9,8 @@ import {
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { Connection, type PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation } from 'convex/react';
-import { api } from '@convex/_generated/api';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WalletConnectionState } from '@/lib/solana';
 import {
   connection,
@@ -66,7 +66,7 @@ export const useWallet = (): UseWalletReturn => {
     signIn,
   } = useSolanaWallet();
   const { setVisible } = useWalletModal();
-  
+
   // Convex Auth integration
   const { signIn: convexSignIn } = useAuthActions();
   const createWalletChallenge = useMutation(api.auth.createWalletChallenge);
@@ -384,7 +384,7 @@ export const useWallet = (): UseWalletReturn => {
 
   // Authenticate with Convex using wallet signature
   const authenticateWithConvex = useCallback(async (): Promise<void> => {
-    if (!walletPublicKey || !connected) {
+    if (!(walletPublicKey && connected)) {
       throw new Error('Wallet must be connected to authenticate');
     }
 
@@ -396,8 +396,8 @@ export const useWallet = (): UseWalletReturn => {
       setIsAuthenticating(true);
       setState((prev) => ({ ...prev, error: null }));
 
-      log.info('Starting Convex Auth with wallet', { 
-        publicKey: walletPublicKey.toString() 
+      log.info('Starting Convex Auth with wallet', {
+        publicKey: walletPublicKey.toString(),
       });
 
       // Step 1: Get challenge from backend
@@ -425,25 +425,23 @@ export const useWallet = (): UseWalletReturn => {
         walletAddress: walletPublicKey.toString(), // Include for backward compatibility
       };
 
-      log.info('Signing in with credentials', { 
+      log.info('Signing in with credentials', {
         publicKey: credentialsData.publicKey,
         hasSignature: !!credentialsData.signature,
         hasMessage: !!credentialsData.message,
-        hasNonce: !!credentialsData.nonce
+        hasNonce: !!credentialsData.nonce,
       });
 
       // Pass credentials as a plain object for ConvexCredentials provider
       await convexSignIn('solana-wallet', credentialsData);
 
-      log.info('Convex Auth successful', { 
-        publicKey: walletPublicKey.toString() 
+      log.info('Convex Auth successful', {
+        publicKey: walletPublicKey.toString(),
       });
-
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Authentication failed';
-      
+      const errorMessage =
+        error instanceof Error ? error.message : 'Authentication failed';
+
       setState((prev) => ({ ...prev, error: errorMessage }));
       log.error('Convex Auth failed', { error: errorMessage });
       throw error;
@@ -451,8 +449,8 @@ export const useWallet = (): UseWalletReturn => {
       setIsAuthenticating(false);
     }
   }, [
-    walletPublicKey, 
-    connected, 
+    walletPublicKey,
+    connected,
     isAuthenticating,
     createWalletChallenge,
     signMessage,

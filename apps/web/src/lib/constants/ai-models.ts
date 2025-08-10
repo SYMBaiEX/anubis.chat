@@ -30,6 +30,7 @@ function createOpenRouterModel(params: {
   capabilities: string[];
   speed: AIModel['speed'];
   intelligence: AIModel['intelligence'];
+  default?: boolean;
 }): AIModel {
   return {
     id: params.id,
@@ -42,10 +43,23 @@ function createOpenRouterModel(params: {
     capabilities: params.capabilities,
     speed: params.speed,
     intelligence: params.intelligence,
+    default: params.default,
   };
 }
 
 export const AI_MODELS: AIModel[] = [
+  // GPT-OSS-20B - Default free model
+  createOpenRouterModel({
+    id: 'openrouter/openai/gpt-oss-20b:free',
+    name: 'GPT-OSS-20B (Free) – OpenRouter',
+    description: 'OpenAI GPT-OSS-20B open-weight, free tier via OpenRouter',
+    contextWindow: 128_000,
+    maxOutput: 4096,
+    capabilities: ['coding', 'reasoning', 'general'],
+    speed: 'fast',
+    intelligence: 'advanced',
+    default: true,
+  }),
   // GPT-5 Nano - Latest flagship nano model
   {
     id: 'gpt-5-nano',
@@ -53,31 +67,20 @@ export const AI_MODELS: AIModel[] = [
     provider: 'openai',
     description: 'Ultra-efficient nano model with GPT-5 intelligence',
     contextWindow: 128_000,
-    maxOutput: 4_096,
+    maxOutput: 4096,
     pricing: { input: 0.5, output: 1.5 },
     capabilities: ['general', 'coding', 'reasoning', 'analysis'],
     speed: 'fast',
     intelligence: 'advanced',
     released: 'January 2025',
-    default: true,
+    default: false,
   },
-  // OpenRouter (Primary) - curated free/popular models (as of Aug 9, 2025)
-  createOpenRouterModel({
-    id: 'openrouter/openai/gpt-oss-20b:free',
-    name: 'GPT-OSS-20B (Free) – OpenRouter',
-    description: 'OpenAI GPT-OSS-20B open-weight, free tier via OpenRouter',
-    contextWindow: 128_000,
-    maxOutput: 4_096,
-    capabilities: ['coding', 'reasoning', 'general'],
-    speed: 'fast',
-    intelligence: 'advanced',
-  }),
   createOpenRouterModel({
     id: 'openrouter/z-ai/glm-4.5-air:free',
     name: 'GLM-4.5-Air (Free) – OpenRouter',
     description: 'Zhipu AI GLM-4.5-Air free tier via OpenRouter',
     contextWindow: 128_000,
-    maxOutput: 8_192,
+    maxOutput: 8192,
     capabilities: ['reasoning', 'coding', 'tools'],
     speed: 'fast',
     intelligence: 'advanced',
@@ -87,7 +90,7 @@ export const AI_MODELS: AIModel[] = [
     name: 'Qwen3-Coder (Free) – OpenRouter',
     description: 'Qwen3-Coder free tier via OpenRouter, optimized for coding',
     contextWindow: 128_000,
-    maxOutput: 8_192,
+    maxOutput: 8192,
     capabilities: ['coding', 'analysis'],
     speed: 'fast',
     intelligence: 'advanced',
@@ -97,7 +100,7 @@ export const AI_MODELS: AIModel[] = [
     name: 'Kimi K2 (Free) – OpenRouter',
     description: 'Moonshot AI Kimi K2 free tier via OpenRouter',
     contextWindow: 128_000,
-    maxOutput: 8_192,
+    maxOutput: 8192,
     capabilities: ['agentic', 'coding', 'reasoning'],
     speed: 'medium',
     intelligence: 'advanced',
@@ -108,7 +111,7 @@ export const AI_MODELS: AIModel[] = [
     provider: 'openrouter',
     description: 'Anthropic Claude 3.7 Sonnet with Thinking on OpenRouter',
     contextWindow: 200_000,
-    maxOutput: 8_192,
+    maxOutput: 8192,
     pricing: { input: 0, output: 0 },
     capabilities: ['reasoning', 'coding', 'analysis'],
     speed: 'medium',
@@ -122,7 +125,7 @@ export const AI_MODELS: AIModel[] = [
     provider: 'openrouter',
     description: 'OpenAI GPT-4o Mini via OpenRouter, fast and low-cost',
     contextWindow: 128_000,
-    maxOutput: 4_096,
+    maxOutput: 4096,
     pricing: { input: 0, output: 0 },
     capabilities: ['general', 'coding', 'analysis'],
     speed: 'fast',
@@ -135,7 +138,7 @@ export const AI_MODELS: AIModel[] = [
     provider: 'openrouter',
     description: 'DeepSeek chat model via OpenRouter',
     contextWindow: 32_768,
-    maxOutput: 8_192,
+    maxOutput: 8192,
     pricing: { input: 0, output: 0 },
     capabilities: ['coding', 'math', 'reasoning'],
     speed: 'fast',
@@ -147,7 +150,7 @@ export const AI_MODELS: AIModel[] = [
     provider: 'openrouter',
     description: 'Qwen2.5 Coder 32B free-tier on OpenRouter',
     contextWindow: 128_000,
-    maxOutput: 8_192,
+    maxOutput: 8192,
     pricing: { input: 0, output: 0 },
     capabilities: ['coding', 'reasoning'],
     speed: 'fast',
@@ -160,7 +163,7 @@ export const AI_MODELS: AIModel[] = [
     provider: 'openrouter',
     description: 'Meta Llama 3.1 70B instruct via OpenRouter',
     contextWindow: 131_072,
-    maxOutput: 8_192,
+    maxOutput: 8192,
     pricing: { input: 0, output: 0 },
     capabilities: ['general', 'coding', 'analysis'],
     speed: 'medium',
@@ -391,7 +394,7 @@ export const formatTokenPrice = (
 export const isPremiumModel = (model: AIModel): boolean => {
   // Premium models are expensive models (>$5 input or intelligence >= expert)
   return (
-    model.pricing.input > 5 || 
+    model.pricing.input > 5 ||
     model.intelligence === 'frontier' ||
     model.intelligence === 'expert' ||
     // Specific high-value models
@@ -400,18 +403,21 @@ export const isPremiumModel = (model: AIModel): boolean => {
 };
 
 // Get models available for a specific subscription tier
-export const getModelsForTier = (tier: 'free' | 'pro' | 'pro_plus'): AIModel[] => {
+export const getModelsForTier = (
+  tier: 'free' | 'pro' | 'pro_plus'
+): AIModel[] => {
   if (tier === 'free') {
     // Free tier only gets basic, cheap models
-    return AI_MODELS.filter(model => 
-      !isPremiumModel(model) && 
-      (model.pricing.input <= 1 || model.intelligence === 'basic')
+    return AI_MODELS.filter(
+      (model) =>
+        !isPremiumModel(model) &&
+        (model.pricing.input <= 1 || model.intelligence === 'basic')
     );
-  } else if (tier === 'pro') {
+  }
+  if (tier === 'pro') {
     // Pro tier gets all models but with premium usage limits
     return AI_MODELS;
-  } else {
-    // Pro+ gets unlimited access to all models
-    return AI_MODELS;
   }
+  // Pro+ gets unlimited access to all models
+  return AI_MODELS;
 };

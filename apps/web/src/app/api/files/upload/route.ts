@@ -7,8 +7,8 @@ import { nanoid } from 'nanoid';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { api, convex } from '@/lib/database/convex';
-import { requireProPlusAccess } from '@/lib/middleware/subscription-auth';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
+import { requireProPlusAccess } from '@/lib/middleware/subscription-auth';
 import type { FileUploadResponse } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';
 
@@ -206,14 +206,17 @@ export async function POST(request: NextRequest) {
     const formData = await req.clone().formData();
     const file = formData.get('file') as File | null;
     const isLargeFile = file && file.size > LARGE_FILE_SIZE;
-    
+
     if (isLargeFile) {
-      return requireProPlusAccess(req, 'large_files', async (authReq) => handlePost(authReq));
-    } else {
-      // For smaller files, use basic subscription auth (all tiers can upload small files)
-      const { withSubscriptionAuth } = await import('@/lib/middleware/subscription-auth');
-      return withSubscriptionAuth(req, async (authReq) => handlePost(authReq));
+      return requireProPlusAccess(req, 'large_files', async (authReq) =>
+        handlePost(authReq)
+      );
     }
+    // For smaller files, use basic subscription auth (all tiers can upload small files)
+    const { withSubscriptionAuth } = await import(
+      '@/lib/middleware/subscription-auth'
+    );
+    return withSubscriptionAuth(req, async (authReq) => handlePost(authReq));
   });
 }
 

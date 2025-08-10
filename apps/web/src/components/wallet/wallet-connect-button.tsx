@@ -1,7 +1,9 @@
 'use client';
 
+import { useAuthActions } from '@convex-dev/auth/react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { Wallet, LogOut, ChevronDown } from 'lucide-react';
+import { ChevronDown, LogOut, Wallet } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,8 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useWallet } from '@/hooks/useWallet';
-import { useRouter } from 'next/navigation';
-import { useAuthActions } from '@convex-dev/auth/react';
 
 // UI Health Score Threshold
 const HEALTH_SCORE_THRESHOLD = 80;
@@ -21,7 +21,9 @@ interface WalletConnectButtonProps {
   collapsed?: boolean;
 }
 
-export function WalletConnectButton({ collapsed = false }: WalletConnectButtonProps) {
+export function WalletConnectButton({
+  collapsed = false,
+}: WalletConnectButtonProps) {
   const {
     isConnected,
     isConnecting,
@@ -76,19 +78,24 @@ export function WalletConnectButton({ collapsed = false }: WalletConnectButtonPr
             >
               <Wallet className="h-5 w-5" />
               {getHealthIndicator() && (
-                <span className="absolute -top-1 -right-1 text-[10px]">{getHealthIndicator()}</span>
+                <span className="-top-1 -right-1 absolute text-[10px]">
+                  {getHealthIndicator()}
+                </span>
               )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <div className="px-2 py-1.5">
-              <p className="text-sm font-medium">{formatAddress()}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-medium text-sm">{formatAddress()}</p>
+              <p className="text-muted-foreground text-xs">
                 Health: {connectionHealthScore}%
               </p>
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={handleSignOut}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
             </DropdownMenuItem>
@@ -96,7 +103,7 @@ export function WalletConnectButton({ collapsed = false }: WalletConnectButtonPr
         </DropdownMenu>
       );
     }
-    
+
     return (
       <Button
         className="h-10 w-10 border-2 p-0 transition-colors hover:border-primary"
@@ -116,7 +123,7 @@ export function WalletConnectButton({ collapsed = false }: WalletConnectButtonPr
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            className="w-full border-2 transition-colors hover:border-primary justify-between"
+            className="w-full justify-between border-2 transition-colors hover:border-primary"
             size="sm"
             title={`Health: ${connectionHealthScore}% ${isHealthy ? '(Good)' : '(Poor)'}`}
             variant={getButtonVariant()}
@@ -131,16 +138,17 @@ export function WalletConnectButton({ collapsed = false }: WalletConnectButtonPr
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-full">
           <div className="px-2 py-1.5">
-            <p className="text-sm font-medium">Connected Wallet</p>
-            <p className="text-xs text-muted-foreground">
-              {formatAddress(8)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="font-medium text-sm">Connected Wallet</p>
+            <p className="text-muted-foreground text-xs">{formatAddress(8)}</p>
+            <p className="mt-1 text-muted-foreground text-xs">
               Health: {connectionHealthScore}% {isHealthy ? '(Good)' : '(Poor)'}
             </p>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+          <DropdownMenuItem
+            className="text-destructive"
+            onClick={handleSignOut}
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Sign Out
           </DropdownMenuItem>
@@ -160,9 +168,7 @@ export function WalletConnectButton({ collapsed = false }: WalletConnectButtonPr
     >
       <Wallet className="mr-2 h-4 w-4" />
       {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-      {error && (
-        <span className="ml-2 text-destructive text-xs">!</span>
-      )}
+      {error && <span className="ml-2 text-destructive text-xs">!</span>}
     </Button>
   );
 }

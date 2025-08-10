@@ -7,8 +7,8 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { Id } from '@/../../packages/backend/convex/_generated/dataModel';
 import { api, convex } from '@/lib/database/convex';
-import { requireMessagesRemaining } from '@/lib/middleware/subscription-auth';
 import { aiRateLimit } from '@/lib/middleware/rate-limit';
+import { requireMessagesRemaining } from '@/lib/middleware/subscription-auth';
 import { MessageRole } from '@/lib/types/api';
 import {
   addSecurityHeaders,

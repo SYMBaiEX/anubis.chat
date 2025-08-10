@@ -3,33 +3,33 @@
  * Production-ready implementation with proper error handling
  */
 
-import { convexAuth } from "@convex-dev/auth/server";
-import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials";
-import { DataModel, Id } from "./_generated/dataModel";
+import { ConvexCredentials } from '@convex-dev/auth/providers/ConvexCredentials';
+import { convexAuth } from '@convex-dev/auth/server';
+import { type DataModel, Id } from './_generated/dataModel';
 
 /**
  * Custom Solana Wallet Credentials Provider
  * Handles Solana wallet signature verification and user creation
  */
 const SolanaWallet = ConvexCredentials<DataModel>({
-  id: "solana-wallet",
-  
+  id: 'solana-wallet',
+
   async authorize(credentials, ctx) {
-    if (process.env.NODE_ENV !== "production") {
-      console.log("🔍 Convex Auth authorize called", {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔍 Convex Auth authorize called', {
         credentialsType: typeof credentials,
         credentialsKeys: credentials ? Object.keys(credentials) : [],
-        isObject: credentials && typeof credentials === "object",
+        isObject: credentials && typeof credentials === 'object',
         hasPublicKey: Boolean(credentials && (credentials as any).publicKey),
         hasSignature: Boolean(credentials && (credentials as any).signature),
         hasMessage: Boolean(credentials && (credentials as any).message),
         hasNonce: Boolean(credentials && (credentials as any).nonce),
       });
     }
-    
+
     // Safely extract signature verification data from the credentials object
     let publicKey: string;
-    let signature: string; 
+    let signature: string;
     let message: string;
     let nonce: string;
 
@@ -43,21 +43,21 @@ const SolanaWallet = ConvexCredentials<DataModel>({
       return null; // Invalid credentials
     }
 
-    if (process.env.NODE_ENV !== "production") {
-      console.log("Extracted Solana wallet credentials:", {
-        publicKey: publicKey ? `${publicKey.substring(0, 8)}...` : "missing",
-        signature: signature ? `${signature.substring(0, 16)}...` : "missing",
-        message: message ? `${message.substring(0, 32)}...` : "missing",
-        nonce: nonce ? `${nonce.substring(0, 8)}...` : "missing"
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Extracted Solana wallet credentials:', {
+        publicKey: publicKey ? `${publicKey.substring(0, 8)}...` : 'missing',
+        signature: signature ? `${signature.substring(0, 16)}...` : 'missing',
+        message: message ? `${message.substring(0, 32)}...` : 'missing',
+        nonce: nonce ? `${nonce.substring(0, 8)}...` : 'missing',
       });
     }
 
-    if (!publicKey || !signature || !message || !nonce) {
-      console.error("Missing required Solana wallet credentials:", { 
+    if (!(publicKey && signature && message && nonce)) {
+      console.error('Missing required Solana wallet credentials:', {
         publicKey: !!publicKey,
         signature: !!signature,
         message: !!message,
-        nonce: !!nonce
+        nonce: !!nonce,
       });
       return null; // Missing credentials
     }
@@ -66,26 +66,26 @@ const SolanaWallet = ConvexCredentials<DataModel>({
       // Use internal mutations/queries to verify challenge and manage user
       const result = await ctx.runMutation(internal.auth.verifyAndSignIn, {
         publicKey,
-        signature, 
+        signature,
         message,
         nonce,
       });
 
-      if (!result || !result.userId) {
-        console.error("Authentication failed - no userId returned");
+      if (!(result && result.userId)) {
+        console.error('Authentication failed - no userId returned');
         return null;
       }
 
-      if (process.env.NODE_ENV !== "production") {
-        console.log("✅ Authentication successful, userId:", result.userId);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ Authentication successful, userId:', result.userId);
       }
-      
+
       // Return the userId for sign-in
       return {
         userId: result.userId,
       };
     } catch (error) {
-      console.error("Error in authorize:", error);
+      console.error('Error in authorize:', error);
       return null; // Auth failed
     }
   },
@@ -104,8 +104,8 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 // =============================================================================
 
 import { v } from 'convex/values';
-import { mutation, query, internalMutation } from './_generated/server';
 import { internal } from './_generated/api';
+import { internalMutation, mutation, query } from './_generated/server';
 
 /**
  * Internal mutation to verify challenge and sign in user
@@ -123,19 +123,19 @@ export const verifyAndSignIn = internalMutation({
 
     // Verify the challenge
     const storedChallenge = await ctx.db
-      .query("solanaWalletChallenges")
-      .withIndex("by_key", (q) => q.eq("publicKey", publicKey))
+      .query('solanaWalletChallenges')
+      .withIndex('by_key', (q) => q.eq('publicKey', publicKey))
       .filter((q) =>
         q.and(
-          q.eq(q.field("nonce"), nonce),
-          q.eq(q.field("used"), false),
-          q.gt(q.field("expiresAt"), Date.now())
+          q.eq(q.field('nonce'), nonce),
+          q.eq(q.field('used'), false),
+          q.gt(q.field('expiresAt'), Date.now())
         )
       )
       .unique();
 
     if (!storedChallenge || message !== storedChallenge.challenge) {
-      throw new Error("Invalid or expired authentication challenge");
+      throw new Error('Invalid or expired authentication challenge');
     }
 
     // Mark challenge as used
@@ -143,61 +143,70 @@ export const verifyAndSignIn = internalMutation({
 
     // Check if user already exists
     const existingUser = await ctx.db
-      .query("users")
-      .withIndex("by_wallet", (q) => q.eq("walletAddress", publicKey))
+      .query('users')
+      .withIndex('by_wallet', (q) => q.eq('walletAddress', publicKey))
       .unique();
 
     if (existingUser) {
       // User exists - update activity and check if they should be admin
-      const adminWallets = process.env.ADMIN_WALLETS?.split(',').map(w => w.trim()) || [];
+      const adminWallets =
+        process.env.ADMIN_WALLETS?.split(',').map((w) => w.trim()) || [];
       const shouldBeAdmin = adminWallets.includes(publicKey);
-      
+
       // Update user status and role if needed
       const updates: any = {
         lastActiveAt: Date.now(),
         updatedAt: Date.now(),
         isActive: true,
       };
-      
+
       // If user is in ADMIN_WALLETS but not currently an admin, promote them
-      if (shouldBeAdmin && (!existingUser.role || existingUser.role === 'user')) {
+      if (
+        shouldBeAdmin &&
+        (!existingUser.role || existingUser.role === 'user')
+      ) {
         updates.role = 'super_admin';
         updates.permissions = [
           'user_management',
-          'subscription_management', 
+          'subscription_management',
           'content_moderation',
           'system_settings',
           'financial_data',
           'usage_analytics',
-          'admin_management'
+          'admin_management',
         ];
-        console.log(`Promoting user ${publicKey} to super_admin based on ADMIN_WALLETS`);
+        console.log(
+          `Promoting user ${publicKey} to super_admin based on ADMIN_WALLETS`
+        );
       }
-      
+
       await ctx.db.patch(existingUser._id, updates);
-      
+
       return {
         userId: existingUser._id,
       };
     }
 
     // Create new user
-    const adminWallets = process.env.ADMIN_WALLETS?.split(',').map(w => w.trim()) || [];
+    const adminWallets =
+      process.env.ADMIN_WALLETS?.split(',').map((w) => w.trim()) || [];
     const isAdmin = adminWallets.includes(publicKey);
-    
-    const newUserId = await ctx.db.insert("users", {
+
+    const newUserId = await ctx.db.insert('users', {
       walletAddress: publicKey,
-      publicKey: publicKey,
+      publicKey,
       role: isAdmin ? 'super_admin' : 'user',
-      permissions: isAdmin ? [
-        'user_management',
-        'subscription_management', 
-        'content_moderation',
-        'system_settings',
-        'financial_data',
-        'usage_analytics',
-        'admin_management'
-      ] : undefined,
+      permissions: isAdmin
+        ? [
+            'user_management',
+            'subscription_management',
+            'content_moderation',
+            'system_settings',
+            'financial_data',
+            'usage_analytics',
+            'admin_management',
+          ]
+        : undefined,
       preferences: {
         theme: 'dark',
         aiModel: 'gpt-4o',
@@ -222,14 +231,14 @@ export const verifyAndSignIn = internalMutation({
         autoRenew: false,
         planPriceSol: 0,
         tokensUsed: 0,
-        tokensLimit: 10000,
+        tokensLimit: 10_000,
       },
       createdAt: Date.now(),
       lastActiveAt: Date.now(),
       updatedAt: Date.now(),
       isActive: true,
     });
-    
+
     return {
       userId: newUserId,
     };

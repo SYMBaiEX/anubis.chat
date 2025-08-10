@@ -1,19 +1,42 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Crown, Zap, Shield, Check, Wallet, AlertCircle, Loader, ExternalLink } from 'lucide-react';
+import { api } from '@convex/_generated/api';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { useMutation, useQuery } from 'convex/react';
+import {
+  AlertCircle,
+  Check,
+  Crown,
+  ExternalLink,
+  Loader,
+  Shield,
+  Wallet,
+  X,
+  Zap,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { cn } from '@/lib/utils';
-import { createModuleLogger } from '@/lib/utils/logger';
-import { paymentConfig, solanaConfig } from '@/lib/env';
-import { useMutation, useQuery } from 'convex/react';
-import { api } from '@convex/_generated/api';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 // useCurrentUser replacement - using useSubscription hook instead
 import { useSubscription } from '@/hooks/use-subscription';
+import { paymentConfig, solanaConfig } from '@/lib/env';
+import {
+  createPaymentTransaction,
+  processPaymentTransaction,
+} from '@/lib/solana';
+import { cn } from '@/lib/utils';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('upgrade-modal');
@@ -44,8 +67,8 @@ const TIER_CONFIG = {
       'Document upload & processing',
       'Basic agents & workflows',
       'Chat history & export',
-      'Priority customer support'
-    ]
+      'Priority customer support',
+    ],
   },
   pro_plus: {
     name: 'Pro+',
@@ -65,15 +88,24 @@ const TIER_CONFIG = {
       'Advanced agents & custom tools',
       'API access for development',
       'Unlimited chat history',
-      'Priority support & early access'
-    ]
-  }
+      'Priority support & early access',
+    ],
+  },
 };
 
-export function UpgradeModal({ isOpen, onClose, suggestedTier = 'pro', trigger = 'manual' }: UpgradeModalProps) {
-  const [selectedTier, setSelectedTier] = useState<'pro' | 'pro_plus'>(suggestedTier);
+export function UpgradeModal({
+  isOpen,
+  onClose,
+  suggestedTier = 'pro',
+  trigger = 'manual',
+}: UpgradeModalProps) {
+  const [selectedTier, setSelectedTier] = useState<'pro' | 'pro_plus'>(
+    suggestedTier
+  );
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentStep, setPaymentStep] = useState<'select' | 'payment' | 'processing' | 'success' | 'error'>('select');
+  const [paymentStep, setPaymentStep] = useState<
+    'select' | 'payment' | 'processing' | 'success' | 'error'
+  >('select');
   const [error, setError] = useState<string | null>(null);
   const [paymentDetails, setPaymentDetails] = useState<{
     walletAddress?: string;
@@ -84,15 +116,80 @@ export function UpgradeModal({ isOpen, onClose, suggestedTier = 'pro', trigger =
   // User data comes from useSubscription hook
   const { subscription, upgradePrompt } = useSubscription();
   const processPayment = useMutation(api.subscriptions.processPayment);
-  
+  const checkPaymentStatus = useQuery(
+    api.subscriptions.checkPaymentStatus,
+    paymentDetails.txSignature
+      ? { txSignature: paymentDetails.txSignature }
+      : 'skip'
+  );
+
   // Get user data from Convex query
   const user = useQuery(api.users.getCurrentUserProfile);
 
+  // Solana wallet integration
+  const { publicKey, signTransaction, connected } = useWallet();
+  const { setVisible } = useWalletModal();
+
   const selectedConfig = TIER_CONFIG[selectedTier];
+
+  // Initialize Solana connection
+  const connection = new Connection(
+    solanaConfig.rpcUrl || 'https://api.devnet.solana.com',
+    'confirmed'
+  );
+
+  // Poll payment status when in processing state
+  useEffect(() => {
+    if (
+      paymentStep === 'processing' &&
+      paymentDetails.txSignature &&
+      checkPaymentStatus
+    ) {
+      const pollStatus = () => {
+        if (checkPaymentStatus.status === 'confirmed') {
+          setPaymentStep('success');
+          log.info('Payment confirmed via polling', {
+            txSignature: paymentDetails.txSignature,
+          });
+        } else if (checkPaymentStatus.status === 'failed') {
+          setPaymentStep('error');
+          setError('Payment verification failed');
+          log.error('Payment failed via polling', {
+            txSignature: paymentDetails.txSignature,
+          });
+        }
+        // Keep polling if still pending
+      };
+
+      const interval = setInterval(pollStatus, 3000); // Poll every 3 seconds
+      const timeout = setTimeout(() => {
+        clearInterval(interval);
+        if (paymentStep === 'processing') {
+          setPaymentStep('error');
+          setError('Payment verification timeout - please contact support');
+        }
+      }, 300_000); // 5 minute timeout
+
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeout);
+      };
+    }
+  }, [paymentStep, paymentDetails.txSignature, checkPaymentStatus]);
 
   const handleUpgrade = async () => {
     if (!user) {
       setError('Please sign in first');
+      return;
+    }
+
+    if (!(connected && publicKey)) {
+      setError('Please connect your wallet first');
+      return;
+    }
+
+    if (!solanaConfig.paymentAddress) {
+      setError('Payment system not configured - please contact support');
       return;
     }
 
@@ -102,58 +199,251 @@ export function UpgradeModal({ isOpen, onClose, suggestedTier = 'pro', trigger =
 
       // Create payment instructions
       setPaymentDetails({
-        walletAddress: user.walletAddress,
+        walletAddress: publicKey.toString(),
         amount: selectedConfig.priceSOL,
       });
 
       log.info('Upgrade initiated', {
         tier: selectedTier,
-        user: user._id,
-        walletAddress: user.walletAddress,
+        user: user?._id,
+        walletAddress: publicKey.toString(),
         trigger,
       });
-
     } catch (err) {
       log.error('Upgrade failed', { error: err });
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      setError(
+        err instanceof Error ? err.message : 'An unexpected error occurred'
+      );
       setPaymentStep('error');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handlePaymentComplete = async (txSignature: string) => {
+  const handlePaymentComplete = async (retryAttempt = 0) => {
+    const MAX_RETRIES = 3;
+
+    if (!(connected && publicKey && signTransaction)) {
+      setError('Please connect your wallet first');
+      return;
+    }
+
+    if (!solanaConfig.paymentAddress) {
+      setError('Payment address not configured - please contact support');
+      return;
+    }
+
     try {
       setIsProcessing(true);
       setPaymentStep('processing');
+      setError(null);
 
-      const result = await processPayment({
-        userId: user._id,
+      // Check wallet balance first
+      const balance = await connection.getBalance(publicKey);
+      const balanceSol = balance / 1_000_000_000; // Convert lamports to SOL
+      if (balanceSol < selectedConfig.priceSOL) {
+        throw new Error(
+          `Insufficient balance. Required: ${selectedConfig.priceSOL} SOL, Available: ${balanceSol.toFixed(4)} SOL`
+        );
+      }
+
+      // IMPORTANT: Create a NEW transaction for each attempt with FRESH blockhash
+      // This prevents duplicate transaction errors
+      const recipientPublicKey = new PublicKey(solanaConfig.paymentAddress);
+      const transaction = await createPaymentTransaction(
+        publicKey,
+        recipientPublicKey,
+        selectedConfig.priceSOL
+      );
+
+      log.info('Payment transaction created', {
         tier: selectedTier,
-        txSignature,
-        amountSol: selectedConfig.priceSOL,
+        amount: selectedConfig.priceSOL,
+        recipient: solanaConfig.paymentAddress,
+        sender: publicKey.toString(),
+        attempt: retryAttempt + 1,
+        blockhash: transaction.recentBlockhash,
       });
 
-      if (result.success) {
+      // Process the payment with proper retry configuration
+      // Set maxRetries to 0 here since we handle retries at a higher level
+      const txSignature = await processPaymentTransaction(
+        transaction,
+        signTransaction,
+        {
+          maxRetries: 0,
+          skipPreflight: false,
+        }
+      );
+
+      log.info('Payment transaction sent', {
+        tier: selectedTier,
+        txSignature,
+        attempt: retryAttempt + 1,
+      });
+
+      // Submit to backend for verification with retry logic
+      let verificationResult;
+      let lastError;
+
+      for (let i = 0; i < 3; i++) {
+        try {
+          const verificationResponse = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              txSignature,
+              expectedAmount: selectedConfig.priceSOL,
+              tier: selectedTier,
+              walletAddress: publicKey.toString(),
+            }),
+          });
+
+          if (!verificationResponse.ok) {
+            const errorText = await verificationResponse.text();
+            throw new Error(
+              `HTTP ${verificationResponse.status}: ${errorText}`
+            );
+          }
+
+          verificationResult = await verificationResponse.json();
+          break; // Success, exit retry loop
+        } catch (fetchError) {
+          lastError = fetchError;
+          if (i < 2) {
+            // Don't wait after last attempt
+            await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** i)); // Exponential backoff
+          }
+        }
+      }
+
+      if (!verificationResult) {
+        throw new Error(
+          `Verification failed after 3 attempts: ${lastError instanceof Error ? lastError.message : 'Unknown error'}`
+        );
+      }
+
+      if (verificationResult.success) {
         setPaymentStep('success');
-        setPaymentDetails(prev => ({ ...prev, txSignature }));
-        
-        log.info('Payment processed successfully', {
+        setPaymentDetails((prev) => ({ ...prev, txSignature }));
+
+        log.info('Payment verified successfully', {
           tier: selectedTier,
           txSignature,
-          paymentId: result.paymentId,
+          paymentId: verificationResult.paymentId,
+          attempt: retryAttempt + 1,
         });
 
-        // Close modal after 3 seconds
+        // Refresh the page to update subscription status
         setTimeout(() => {
-          onClose();
-          setPaymentStep('select');
-          setError(null);
+          window.location.reload();
         }, 3000);
+      } else {
+        throw new Error(
+          verificationResult.error || 'Payment verification failed'
+        );
       }
     } catch (err) {
-      log.error('Payment processing failed', { error: err });
-      setError(err instanceof Error ? err.message : 'Payment processing failed');
+      log.error('Payment processing failed', {
+        error: err,
+        attempt: retryAttempt + 1,
+        maxRetries: MAX_RETRIES,
+      });
+
+      // Enhanced error handling with specific messages
+      let errorMessage = 'Payment processing failed';
+      let isRetryable = false;
+
+      if (err instanceof Error) {
+        // Handle specific error types
+        if (err.message.includes('DUPLICATE_TRANSACTION')) {
+          // This transaction was already processed - NOT retryable
+          errorMessage =
+            'This payment has already been processed. Please refresh the page to check your subscription status.';
+          isRetryable = false;
+        } else if (err.message.includes('SIGNATURE_VERIFICATION_FAILED')) {
+          // Signature verification failed - retryable with new transaction
+          errorMessage =
+            'Transaction signature verification failed. Retrying with fresh transaction...';
+          isRetryable = true;
+        } else if (
+          err.message.includes('BLOCKHASH_NOT_FOUND') ||
+          err.message.includes('blockhash')
+        ) {
+          // Blockhash expired - retryable with new transaction
+          errorMessage =
+            'Transaction expired. Retrying with fresh blockhash...';
+          isRetryable = true;
+        } else if (err.message.includes('SIMULATION_FAILED')) {
+          // Simulation failed - check the specific reason
+          errorMessage = err.message.replace(
+            'SIMULATION_FAILED:',
+            'Transaction simulation failed:'
+          );
+          // Only retry if it's a transient error
+          isRetryable =
+            err.message.includes('node') || err.message.includes('network');
+        } else if (err.message.includes('User rejected')) {
+          // User cancelled - NOT retryable
+          errorMessage = 'Transaction was cancelled by user';
+          isRetryable = false;
+        } else if (
+          err.message.includes('Insufficient balance') ||
+          err.message.includes('insufficient funds')
+        ) {
+          // Insufficient funds - NOT retryable
+          errorMessage = err.message;
+          isRetryable = false;
+        } else if (
+          err.message.includes('Network error') ||
+          err.message.includes('fetch')
+        ) {
+          // Network error - retryable
+          errorMessage = 'Network error - please check your connection';
+          isRetryable = true;
+        } else if (
+          err.message.includes('timeout') ||
+          err.message.includes('confirmation timeout')
+        ) {
+          // Timeout - retryable
+          errorMessage = 'Transaction timeout - the network may be congested';
+          isRetryable = true;
+        } else if (err.message.includes('Payment address not configured')) {
+          // Configuration error - NOT retryable
+          errorMessage =
+            'Payment system not configured - please contact support';
+          isRetryable = false;
+        } else if (err.message.includes('HTTP 5')) {
+          // Server error - retryable
+          errorMessage = 'Server error - retrying...';
+          isRetryable = true;
+        } else if (err.message.includes('Verification failed after')) {
+          // Verification failed - retryable
+          errorMessage = 'Payment verification failed - retrying...';
+          isRetryable = true;
+        } else {
+          // Unknown error - don't retry by default
+          errorMessage = err.message;
+          isRetryable = false;
+        }
+      }
+
+      if (isRetryable && retryAttempt < MAX_RETRIES) {
+        // Wait before retry with exponential backoff
+        const delay = 2000 * 2 ** retryAttempt;
+        setTimeout(() => {
+          handlePaymentComplete(retryAttempt + 1);
+        }, delay);
+
+        setError(
+          `${errorMessage} - Retrying in ${delay / 1000} seconds... (Attempt ${retryAttempt + 1}/${MAX_RETRIES})`
+        );
+        return;
+      }
+
+      setError(errorMessage);
       setPaymentStep('error');
     } finally {
       setIsProcessing(false);
@@ -179,57 +469,63 @@ export function UpgradeModal({ isOpen, onClose, suggestedTier = 'pro', trigger =
 
     return (
       <Card
-        key={tier}
         className={cn(
-          'relative p-6 cursor-pointer transition-all duration-200 border-2',
-          isSelected 
-            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 shadow-lg' 
+          'relative cursor-pointer border-2 p-6 transition-all duration-200',
+          isSelected
+            ? 'border-blue-500 bg-blue-50/50 shadow-lg dark:bg-blue-900/20'
             : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600',
-          isCurrentTier && 'opacity-50 cursor-not-allowed',
-          isDowngrade && 'opacity-50 cursor-not-allowed'
+          isCurrentTier && 'cursor-not-allowed opacity-50',
+          isDowngrade && 'cursor-not-allowed opacity-50'
         )}
+        key={tier}
         onClick={() => {
-          if (!isCurrentTier && !isDowngrade) {
+          if (!(isCurrentTier || isDowngrade)) {
             setSelectedTier(tier);
           }
         }}
       >
         {config.popular && (
-          <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-orange-600">
+          <Badge className="-top-2 -translate-x-1/2 absolute left-1/2 bg-gradient-to-r from-orange-500 to-orange-600">
             Most Popular
           </Badge>
         )}
-        
-        <div className="flex items-center justify-between mb-4">
+
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className={cn('p-2 rounded-lg bg-gradient-to-r', config.color)}>
+            <div
+              className={cn('rounded-lg bg-gradient-to-r p-2', config.color)}
+            >
               <Icon className="h-5 w-5 text-white" />
             </div>
             <div>
               <h3 className="font-semibold text-lg">{config.name}</h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 {config.messages.toLocaleString()} messages/month
               </p>
             </div>
           </div>
           <div className="text-right">
             <div className="font-bold text-xl">{config.priceSOL} SOL</div>
-            <div className="text-sm text-muted-foreground">≈ ${config.priceUSD}/month</div>
+            <div className="text-muted-foreground text-sm">
+              ≈ ${config.priceUSD}/month
+            </div>
           </div>
         </div>
 
         <div className="space-y-3">
           {config.features.map((feature, index) => (
-            <div key={index} className="flex items-start space-x-2">
-              <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">{feature}</span>
+            <div className="flex items-start space-x-2" key={index}>
+              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+              <span className="text-gray-600 text-sm dark:text-gray-300">
+                {feature}
+              </span>
             </div>
           ))}
         </div>
 
         {isCurrentTier && (
-          <div className="mt-4 p-2 bg-gray-100 dark:bg-gray-800 rounded text-center">
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <div className="mt-4 rounded bg-gray-100 p-2 text-center dark:bg-gray-800">
+            <span className="font-medium text-gray-600 text-sm dark:text-gray-400">
               Current Plan
             </span>
           </div>
@@ -241,30 +537,68 @@ export function UpgradeModal({ isOpen, onClose, suggestedTier = 'pro', trigger =
   const renderPaymentInstructions = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <div className={cn('inline-flex p-4 rounded-full bg-gradient-to-r', selectedConfig.color, 'mb-4')}>
+        <div
+          className={cn(
+            'inline-flex rounded-full bg-gradient-to-r p-4',
+            selectedConfig.color,
+            'mb-4'
+          )}
+        >
           <Wallet className="h-8 w-8 text-white" />
         </div>
-        <h3 className="font-semibold text-xl mb-2">Send Payment</h3>
+        <h3 className="mb-2 font-semibold text-xl">Send Payment</h3>
         <p className="text-muted-foreground">
-          Send exactly {selectedConfig.priceSOL} SOL to complete your {selectedConfig.name} upgrade
+          {connected
+            ? 'Click "Send Payment" to create and sign the transaction with your connected wallet'
+            : 'Connect your wallet to proceed with the payment'}
         </p>
       </div>
 
-      <Card className="p-6 bg-gray-50 dark:bg-gray-800/50">
+      <Card className="bg-gray-50 p-6 dark:bg-gray-800/50">
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
+              Your Wallet
+            </label>
+            <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
+              <div className="flex items-center justify-between">
+                {connected && publicKey ? (
+                  <span className="break-all font-mono text-sm">
+                    {publicKey.toString()}
+                  </span>
+                ) : (
+                  <span className="text-gray-500 text-sm">
+                    Wallet not connected
+                  </span>
+                )}
+                {connected && (
+                  <Badge className="ml-2" variant="secondary">
+                    Connected
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
               Payment Address
             </label>
-            <div className="mt-1 p-3 bg-white dark:bg-gray-900 border rounded-lg font-mono text-sm">
-              {/* Replace with your actual payment wallet address */}
+            <div className="mt-1 rounded-lg border bg-white p-3 font-mono text-sm dark:bg-gray-900">
               <div className="flex items-center justify-between">
-                <span className="break-all">{solanaConfig.paymentAddress || 'Payment address not configured'}</span>
+                <span className="break-all">
+                  {solanaConfig.paymentAddress ||
+                    'Payment address not configured'}
+                </span>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigator.clipboard.writeText(solanaConfig.paymentAddress || '')}
                   disabled={!solanaConfig.paymentAddress}
+                  onClick={() =>
+                    navigator.clipboard.writeText(
+                      solanaConfig.paymentAddress || ''
+                    )
+                  }
+                  size="sm"
+                  variant="ghost"
                 >
                   Copy
                 </Button>
@@ -273,13 +607,15 @@ export function UpgradeModal({ isOpen, onClose, suggestedTier = 'pro', trigger =
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
               Amount
             </label>
-            <div className="mt-1 p-3 bg-white dark:bg-gray-900 border rounded-lg">
+            <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
               <div className="flex items-center justify-between">
-                <span className="font-semibold">{selectedConfig.priceSOL} SOL</span>
-                <span className="text-sm text-muted-foreground">
+                <span className="font-semibold">
+                  {selectedConfig.priceSOL} SOL
+                </span>
+                <span className="text-muted-foreground text-sm">
                   ≈ ${selectedConfig.priceUSD} USD
                 </span>
               </div>
@@ -292,68 +628,146 @@ export function UpgradeModal({ isOpen, onClose, suggestedTier = 'pro', trigger =
         <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
         <AlertDescription className="text-blue-800 dark:text-blue-200">
           <div className="space-y-2">
-            <p><strong>Important:</strong> Send exactly {selectedConfig.priceSOL} SOL to avoid processing delays.</p>
-            <p>Your subscription will activate automatically once the payment is confirmed on the blockchain.</p>
+            <p>
+              <strong>Important:</strong> Send exactly {selectedConfig.priceSOL}{' '}
+              SOL to avoid processing delays.
+            </p>
+            <p>
+              Your subscription will activate automatically once the payment is
+              confirmed on the blockchain.
+            </p>
           </div>
         </AlertDescription>
       </Alert>
 
       <div className="flex flex-col space-y-3">
-        <Button
-          onClick={() => window.open('https://phantom.app/', '_blank')}
-          variant="outline"
-          className="w-full"
-        >
-          <ExternalLink className="mr-2 h-4 w-4" />
-          Open Phantom Wallet
-        </Button>
-        <Button
-          onClick={() => setPaymentStep('processing')}
-          className="w-full"
-          disabled={isProcessing}
-        >
-          I've Sent the Payment
-        </Button>
+        {!connected && (
+          <Button
+            className="w-full"
+            onClick={() => setVisible(true)}
+            variant="outline"
+          >
+            <Wallet className="mr-2 h-4 w-4" />
+            Connect Wallet
+          </Button>
+        )}
+        {connected && (
+          <Button
+            className="w-full"
+            disabled={isProcessing || !publicKey}
+            onClick={handlePaymentComplete}
+          >
+            {isProcessing ? 'Processing Payment...' : 'Send Payment'}
+          </Button>
+        )}
       </div>
     </div>
   );
 
-  const renderProcessingState = () => (
-    <div className="text-center space-y-4 py-8">
-      <div className="relative">
-        <Loader className="h-12 w-12 animate-spin text-blue-500 mx-auto" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Wallet className="h-6 w-6 text-blue-600" />
+  const renderProcessingState = () => {
+    const processingSteps = [
+      { label: 'Creating transaction...', icon: Wallet },
+      { label: 'Signing with wallet...', icon: Shield },
+      { label: 'Broadcasting to network...', icon: ExternalLink },
+      { label: 'Confirming on blockchain...', icon: Check },
+    ];
+
+    return (
+      <div className="space-y-6 py-8 text-center">
+        <div className="relative">
+          <Loader className="mx-auto h-12 w-12 animate-spin text-blue-500" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Wallet className="h-6 w-6 text-blue-600" />
+          </div>
+        </div>
+
+        <div>
+          <h3 className="mb-2 font-semibold text-xl">Processing Payment</h3>
+          <p className="text-muted-foreground">
+            We're verifying your transaction on the Solana blockchain...
+          </p>
+          <p className="mt-2 text-muted-foreground text-sm">
+            This usually takes 30-60 seconds
+          </p>
+        </div>
+
+        {/* Processing steps indicator */}
+        <div className="space-y-2">
+          {processingSteps.map((step, index) => {
+            const StepIcon = step.icon;
+            return (
+              <div
+                className="flex items-center justify-center space-x-2 text-sm"
+                key={index}
+              >
+                <StepIcon className="h-4 w-4 text-blue-500" />
+                <span className="text-muted-foreground">{step.label}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Transaction link when available */}
+        {paymentDetails.txSignature && (
+          <div className="space-y-3">
+            <div className="rounded-lg border bg-gray-50 p-3 dark:bg-gray-800/50">
+              <p className="font-medium text-sm">Transaction ID:</p>
+              <p className="break-all font-mono text-muted-foreground text-xs">
+                {paymentDetails.txSignature}
+              </p>
+            </div>
+            <Button
+              onClick={() =>
+                window.open(
+                  `https://explorer.solana.com/tx/${paymentDetails.txSignature}${solanaConfig.network !== 'mainnet-beta' ? `?cluster=${solanaConfig.network}` : ''}`,
+                  '_blank'
+                )
+              }
+              size="sm"
+              variant="outline"
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              View on Solana Explorer
+            </Button>
+          </div>
+        )}
+
+        {/* Network status indicator */}
+        <div className="text-muted-foreground text-xs">
+          Network: {solanaConfig.network} • Status:{' '}
+          {checkPaymentStatus?.status || 'checking...'}
         </div>
       </div>
-      <div>
-        <h3 className="font-semibold text-xl mb-2">Processing Payment</h3>
-        <p className="text-muted-foreground">
-          We're verifying your transaction on the Solana blockchain...
-        </p>
-        <p className="text-sm text-muted-foreground mt-2">
-          This usually takes 30-60 seconds
-        </p>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderSuccessState = () => (
-    <div className="text-center space-y-4 py-8">
-      <div className={cn('inline-flex p-4 rounded-full bg-gradient-to-r', selectedConfig.color)}>
+    <div className="space-y-4 py-8 text-center">
+      <div
+        className={cn(
+          'inline-flex rounded-full bg-gradient-to-r p-4',
+          selectedConfig.color
+        )}
+      >
         <Check className="h-8 w-8 text-white" />
       </div>
       <div>
-        <h3 className="font-semibold text-xl mb-2">Payment Successful!</h3>
+        <h3 className="mb-2 font-semibold text-xl">Payment Successful!</h3>
         <p className="text-muted-foreground">
-          Welcome to ISIS Chat {selectedConfig.name}! Your account has been upgraded.
+          Welcome to ISIS Chat {selectedConfig.name}! Your account has been
+          upgraded.
         </p>
         {paymentDetails.txSignature && (
           <div className="mt-4">
             <Button
-              variant="outline"
+              onClick={() =>
+                window.open(
+                  `https://explorer.solana.com/tx/${paymentDetails.txSignature}`,
+                  '_blank'
+                )
+              }
               size="sm"
-              onClick={() => window.open(`https://explorer.solana.com/tx/${paymentDetails.txSignature}`, '_blank')}
+              variant="outline"
             >
               <ExternalLink className="mr-2 h-4 w-4" />
               View Transaction
@@ -364,47 +778,145 @@ export function UpgradeModal({ isOpen, onClose, suggestedTier = 'pro', trigger =
     </div>
   );
 
-  const renderErrorState = () => (
-    <div className="text-center space-y-4 py-8">
-      <div className="inline-flex p-4 rounded-full bg-red-100 dark:bg-red-900/20">
-        <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
-      </div>
-      <div>
-        <h3 className="font-semibold text-xl mb-2">Payment Failed</h3>
-        <p className="text-muted-foreground mb-4">
-          {error || 'There was an issue processing your payment. Please try again.'}
-        </p>
-        <div className="flex flex-col space-y-2">
-          <Button onClick={() => setPaymentStep('select')} className="w-full">
-            Try Again
-          </Button>
+  const renderErrorState = () => {
+    // Categorize error for better recovery guidance
+    const isNetworkError =
+      error?.includes('Network') ||
+      error?.includes('connectivity') ||
+      error?.includes('timeout');
+    const isBalanceError = error?.includes('Insufficient balance');
+    const isUserCancellation =
+      error?.includes('cancelled') || error?.includes('rejected');
+    const isConfigError =
+      error?.includes('not configured') || error?.includes('contact support');
+    const isRetryable = isNetworkError && !isConfigError && !isUserCancellation;
+
+    return (
+      <div className="space-y-6 py-8 text-center">
+        <div className="inline-flex rounded-full bg-red-100 p-4 dark:bg-red-900/20">
+          <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+        </div>
+
+        <div>
+          <h3 className="mb-2 font-semibold text-xl">Payment Failed</h3>
+          <p className="mb-4 text-muted-foreground">
+            {error ||
+              'There was an issue processing your payment. Please try again.'}
+          </p>
+
+          {/* Error-specific guidance */}
+          {isBalanceError && (
+            <Alert className="border-orange-200 bg-orange-50 text-left dark:border-orange-800 dark:bg-orange-900/20">
+              <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              <AlertDescription className="text-orange-800 dark:text-orange-200">
+                <strong>Insufficient SOL:</strong> Please add more SOL to your
+                wallet and try again. You can purchase SOL on exchanges like
+                Coinbase, Binance, or directly through your wallet.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {isNetworkError && (
+            <Alert className="border-blue-200 bg-blue-50 text-left dark:border-blue-800 dark:bg-blue-900/20">
+              <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-blue-800 dark:text-blue-200">
+                <strong>Network Issue:</strong> This is usually temporary. Check
+                your internet connection and the Solana network status, then try
+                again.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {isUserCancellation && (
+            <Alert className="border-gray-200 bg-gray-50 text-left dark:border-gray-700 dark:bg-gray-800/50">
+              <AlertCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              <AlertDescription className="text-gray-800 dark:text-gray-200">
+                <strong>Transaction Cancelled:</strong> You cancelled the
+                transaction in your wallet. Click "Try Again" when you're ready
+                to proceed.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        <div className="flex flex-col space-y-3">
+          {!isConfigError && (
+            <Button
+              className="w-full"
+              onClick={() => {
+                setPaymentStep('select');
+                setError(null);
+              }}
+            >
+              {isRetryable ? 'Retry Payment' : 'Try Again'}
+            </Button>
+          )}
+
+          {isBalanceError && (
+            <Button
+              onClick={() =>
+                window.open(
+                  `https://explorer.solana.com/address/${publicKey?.toString()}${solanaConfig.network !== 'mainnet-beta' ? `?cluster=${solanaConfig.network}` : ''}`,
+                  '_blank'
+                )
+              }
+              variant="outline"
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Check Wallet Balance
+            </Button>
+          )}
+
+          {isNetworkError && (
+            <Button
+              onClick={() =>
+                window.open('https://status.solana.com/', '_blank')
+              }
+              variant="outline"
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Check Solana Network Status
+            </Button>
+          )}
+
           <Button
-            variant="outline"
             onClick={() => window.open('mailto:support@isischat.ai', '_blank')}
+            variant="outline"
           >
             Contact Support
           </Button>
         </div>
+
+        {/* Transaction details if available for debugging */}
+        {paymentDetails.txSignature && (
+          <div className="rounded-lg border bg-gray-50 p-3 text-left dark:bg-gray-800/50">
+            <p className="font-medium text-sm">Transaction ID for Support:</p>
+            <p className="break-all font-mono text-muted-foreground text-xs">
+              {paymentDetails.txSignature}
+            </p>
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog onOpenChange={handleClose} open={isOpen}>
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="text-2xl">Upgrade Your Plan</DialogTitle>
               <DialogDescription>
-                {upgradePrompt?.message || 'Unlock more messages and premium AI models'}
+                {upgradePrompt?.message ||
+                  'Unlock more messages and premium AI models'}
               </DialogDescription>
             </div>
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClose}
               disabled={paymentStep === 'processing'}
+              onClick={handleClose}
+              size="sm"
+              variant="ghost"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -414,21 +926,23 @@ export function UpgradeModal({ isOpen, onClose, suggestedTier = 'pro', trigger =
         <div className="mt-6">
           {paymentStep === 'select' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {renderTierCard('pro')}
                 {renderTierCard('pro_plus')}
               </div>
-              
+
               <div className="flex justify-end space-x-3">
-                <Button variant="outline" onClick={handleClose}>
+                <Button onClick={handleClose} variant="outline">
                   Maybe Later
                 </Button>
-                <Button 
-                  onClick={handleUpgrade}
-                  disabled={isProcessing}
+                <Button
                   className={cn('bg-gradient-to-r', selectedConfig.color)}
+                  disabled={isProcessing}
+                  onClick={handleUpgrade}
                 >
-                  {isProcessing && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                  {isProcessing && (
+                    <Loader className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Upgrade to {selectedConfig.name}
                 </Button>
               </div>

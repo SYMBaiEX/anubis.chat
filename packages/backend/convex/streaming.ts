@@ -36,20 +36,43 @@ export const streamChat = httpAction(async (ctx, request) => {
   const { chatId, walletAddress, content, model, temperature, maxTokens } =
     body;
 
-  // Verify chat exists and user has access
+  // Get the user by wallet address first
+  const user = await ctx.runQuery(api.users.getUserByWallet, {
+    walletAddress,
+  });
+  
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: 'User not found. Please sign in.' }),
+      {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers':
+            'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      }
+    );
+  }
+
+  // Verify chat exists and user has access (using user ID)
   const chat = await ctx.runQuery(api.chats.getById, {
     id: chatId as Id<'chats'>,
   });
-  if (!chat || chat.ownerId !== walletAddress) {
+  if (!chat || chat.ownerId !== user._id) {
     return new Response(
       JSON.stringify({ error: 'Chat not found or access denied' }),
       {
         status: 404,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Headers':
+            'Content-Type, Authorization, X-Requested-With, Accept',
           'Access-Control-Allow-Credentials': 'true',
         },
       }
@@ -57,20 +80,24 @@ export const streamChat = httpAction(async (ctx, request) => {
   }
 
   // Check subscription status
-  const subscription = await ctx.runQuery(api.subscriptions.getSubscriptionStatusByWallet, {
-    walletAddress,
-  });
-  
+  const subscription = await ctx.runQuery(
+    api.subscriptions.getSubscriptionStatusByWallet,
+    {
+      walletAddress,
+    }
+  );
+
   if (!subscription) {
     return new Response(
       JSON.stringify({ error: 'Subscription not found. Please sign up.' }),
       {
         status: 403,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Headers':
+            'Content-Type, Authorization, X-Requested-With, Accept',
           'Access-Control-Allow-Credentials': 'true',
         },
       }
@@ -78,50 +105,61 @@ export const streamChat = httpAction(async (ctx, request) => {
   }
 
   // Check if user is an admin - admins have unlimited access
-  const adminStatus = await ctx.runQuery(api.adminAuth.checkAdminStatusByWallet, {
-    walletAddress,
-  });
+  const adminStatus = await ctx.runQuery(
+    api.adminAuth.checkAdminStatusByWallet,
+    {
+      walletAddress,
+    }
+  );
 
   // Check message limits (skip for admins)
-  if (!adminStatus.isAdmin && (subscription.messagesUsed ?? 0) >= (subscription.messagesLimit ?? 0)) {
+  if (
+    !adminStatus.isAdmin &&
+    (subscription.messagesUsed ?? 0) >= (subscription.messagesLimit ?? 0)
+  ) {
     return new Response(
-      JSON.stringify({ 
-        error: 'Monthly message limit reached. Please upgrade your subscription.',
+      JSON.stringify({
+        error:
+          'Monthly message limit reached. Please upgrade your subscription.',
         code: 'QUOTA_EXCEEDED',
         details: {
           messagesUsed: subscription.messagesUsed,
           messagesLimit: subscription.messagesLimit,
           tier: subscription.tier,
           nextReset: subscription.currentPeriodEnd,
-        }
+        },
       }),
       {
         status: 429,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Headers':
+            'Content-Type, Authorization, X-Requested-With, Accept',
           'Access-Control-Allow-Credentials': 'true',
         },
       }
     );
   }
 
-  // Select AI model based on chat configuration (move this up to fix reference error)
-  const modelName = model || chat.model || 'gpt-5-nano';
-  
-  // Create user message
+  // Select AI model based on chat configuration
+  const modelName = model || chat.model || 'openrouter/openai/gpt-oss-20b:free';
+
+  // Create user message using the user ID
   const userMessage = await ctx.runMutation(api.messages.create, {
     chatId: chatId as Id<'chats'>,
-    walletAddress,
+    walletAddress, // Still need wallet address for legacy compatibility
     role: 'user',
     content,
   });
-  
-  console.log('User message created, preparing AI response with model:', modelName);
 
-  // Get recent messages for context
+  console.log(
+    'User message created, preparing AI response with model:',
+    modelName
+  );
+
+  // Get recent messages for context (this query doesn't need auth since we already verified ownership)
   const messages = await ctx.runQuery(api.messages.getByChatId, {
     chatId: chatId as Id<'chats'>,
     limit: 20,
@@ -135,26 +173,33 @@ export const streamChat = httpAction(async (ctx, request) => {
 
   // Prepare AI model
   let aiModel;
-  
+
   // Check premium model access (gpt-5-nano is not premium, it's an efficient nano model)
-  const isPremiumModel = ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4', 'gpt-5', 'gpt-5-pro', 'o3'].includes(modelName);
-  
+  const isPremiumModel = [
+    'gpt-4o',
+    'claude-3.5-sonnet',
+    'claude-sonnet-4',
+    'gpt-5',
+    'gpt-5-pro',
+    'o3',
+  ].includes(modelName);
+
   // Skip premium checks for admins - they have unlimited access
   if (isPremiumModel && !adminStatus.isAdmin) {
     if (subscription.tier === 'free') {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Premium models require Pro or Pro+ subscription.',
           code: 'FEATURE_RESTRICTED',
           details: {
             currentTier: subscription.tier,
             requiredTier: 'pro',
             model: modelName,
-          }
+          },
         }),
         {
           status: 403,
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -163,22 +208,26 @@ export const streamChat = httpAction(async (ctx, request) => {
         }
       );
     }
-    
-    if ((subscription.premiumMessagesUsed ?? 0) >= (subscription.premiumMessagesLimit ?? 0)) {
+
+    if (
+      (subscription.premiumMessagesUsed ?? 0) >=
+      (subscription.premiumMessagesLimit ?? 0)
+    ) {
       return new Response(
-        JSON.stringify({ 
-          error: 'Premium message quota exhausted. Please upgrade or wait for next billing cycle.',
+        JSON.stringify({
+          error:
+            'Premium message quota exhausted. Please upgrade or wait for next billing cycle.',
           code: 'QUOTA_EXCEEDED',
           details: {
             premiumMessagesUsed: subscription.premiumMessagesUsed,
             premiumMessagesLimit: subscription.premiumMessagesLimit,
             tier: subscription.tier,
             nextReset: subscription.currentPeriodEnd,
-          }
+          },
         }),
         {
           status: 429,
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -311,7 +360,7 @@ export const streamChat = httpAction(async (ctx, request) => {
 
   // Create streaming response
   console.log('Creating streaming response with AI model...');
-  
+
   let result;
   try {
     result = await streamText({
@@ -322,49 +371,50 @@ export const streamChat = httpAction(async (ctx, request) => {
       messages: conversationHistory,
       temperature: temperature ?? chat.temperature ?? 0.7,
       maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
-    onFinish: async ({ text, finishReason, usage }) => {
-      // Save assistant message to database
-      await ctx.runMutation(api.messages.create, {
-        chatId: chatId as Id<'chats'>,
-        walletAddress,
-        role: 'assistant',
-        content: text,
-        metadata: {
-          model: modelName,
-          finishReason: finishReason || 'stop',
-          usage: usage
-            ? {
-                inputTokens: usage.inputTokens || 0,
-                outputTokens: usage.outputTokens || 0,
-                totalTokens: usage.totalTokens || 0,
-              }
-            : undefined,
-        },
-      });
-      
-      // Track message usage for subscription (skip for admins)
-      if (!adminStatus.isAdmin) {
-        await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
+      onFinish: async ({ text, finishReason, usage }) => {
+        // Save assistant message to database
+        await ctx.runMutation(api.messages.create, {
+          chatId: chatId as Id<'chats'>,
           walletAddress,
-          isPremiumModel,
+          role: 'assistant',
+          content: text,
+          metadata: {
+            model: modelName,
+            finishReason: finishReason || 'stop',
+            usage: usage
+              ? {
+                  inputTokens: usage.inputTokens || 0,
+                  outputTokens: usage.outputTokens || 0,
+                  totalTokens: usage.totalTokens || 0,
+                }
+              : undefined,
+          },
         });
-      }
-    },
-  });
+
+        // Track message usage for subscription (skip for admins)
+        if (!adminStatus.isAdmin) {
+          await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
+            walletAddress,
+            isPremiumModel,
+          });
+        }
+      },
+    });
   } catch (error) {
     console.error('Error creating streaming response:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Failed to generate AI response',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
       }),
       {
         status: 500,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Headers':
+            'Content-Type, Authorization, X-Requested-With, Accept',
           'Access-Control-Allow-Credentials': 'true',
         },
       }
@@ -374,14 +424,20 @@ export const streamChat = httpAction(async (ctx, request) => {
   // Convert to a proper text stream response with CORS headers
   // The AI SDK provides toTextStreamResponse() which returns a properly formatted Response
   const response = result.toTextStreamResponse();
-  
+
   // Add CORS headers to the response
   const headers = new Headers(response.headers);
   headers.set('Access-Control-Allow-Origin', '*');
-  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  headers.set(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, OPTIONS'
+  );
+  headers.set(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-Requested-With, Accept'
+  );
   headers.set('Access-Control-Allow-Credentials', 'true');
-  
+
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
