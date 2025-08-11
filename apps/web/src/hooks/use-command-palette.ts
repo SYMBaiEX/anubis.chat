@@ -219,7 +219,9 @@ export function useCommandPalette({
       if (handler) {
         handler();
       } else {
-        console.warn(`Unknown command: ${commandId}`);
+        if (process.env.NODE_ENV !== 'production') {
+          toast.error(`Unknown command: ${commandId}`);
+        }
       }
     },
     [
