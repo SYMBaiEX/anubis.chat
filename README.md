@@ -231,13 +231,7 @@ vercel deploy
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes with proper tests
-4. Run quality checks: `bun check && bun check-types`
-5. Commit with clear messages: `git commit -m 'Add amazing feature'`
-6. Push to your branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTING.md) to get started. This document contains details on our code of conduct, and the process for submitting pull requests to us.
 
 ## 📄 License
 
