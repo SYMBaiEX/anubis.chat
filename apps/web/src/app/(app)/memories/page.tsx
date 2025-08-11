@@ -175,188 +175,41 @@ export default function MemoriesPage() {
             </TabsList>
 
             <TabsContent className="space-y-4" value="memories">
-              {/* Search and Filter Controls */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                    {/* Search */}
-                    <div className="relative flex-1">
-                      <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        className="pl-9"
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search memories..."
-                        value={searchTerm}
-                      />
-                    </div>
+              <FilterBar
+                memoryTypeConfigs={memoryTypeConfigs}
+                onClear={() => {
+                  setSearchTerm('');
+                  setSelectedType('all');
+                }}
+                onSearch={setSearchTerm}
+                onSelectType={(v) => setSelectedType(v)}
+                onSortChange={(sb, so) => {
+                  setSortBy(sb);
+                  setSortOrder(so);
+                }}
+                searchTerm={searchTerm}
+                selectedType={selectedType}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+              />
 
-                    {/* Type Filter */}
-                    <Select
-                      onValueChange={(value) =>
-                        setSelectedType(value as MemoryType | 'all')
-                      }
-                      value={selectedType}
-                    >
-                      <SelectTrigger className="w-32">
-                        <Filter className="mr-2 h-4 w-4" />
-                        <SelectValue placeholder="Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        {Object.entries(memoryTypeConfigs).map(
-                          ([key, config]) => (
-                            <SelectItem key={key} value={key}>
-                              <div className="flex items-center gap-2">
-                                <span>{config.icon}</span>
-                                <span>{config.label}</span>
-                              </div>
-                            </SelectItem>
-                          )
-                        )}
-                      </SelectContent>
-                    </Select>
+              <ResultsSummary
+                averageImportance={
+                  stats ? Math.round(stats.averageImportance * 100) : undefined
+                }
+                shown={filteredMemories.length}
+                total={memories.length}
+                totalAccesses={stats?.totalAccesses}
+              />
 
-                    {/* Sort */}
-                    <Select
-                      onValueChange={(value) => {
-                        const parts = value.split('-');
-                        const sortByValue = parts[0];
-                        const sortOrderValue = parts[1];
-
-                        const isValidSortBy = (
-                          v: string
-                        ): v is NonNullable<MemoryFilters['sortBy']> =>
-                          v === 'importance' ||
-                          v === 'createdAt' ||
-                          v === 'lastAccessed' ||
-                          v === 'accessCount';
-
-                        const isValidSortOrder = (
-                          v: string
-                        ): v is NonNullable<MemoryFilters['sortOrder']> =>
-                          v === 'asc' || v === 'desc';
-
-                        if (isValidSortBy(sortByValue)) {
-                          setSortBy(sortByValue);
-                        }
-                        if (isValidSortOrder(sortOrderValue)) {
-                          setSortOrder(sortOrderValue);
-                        }
-                      }}
-                      value={`${sortBy}-${sortOrder}`}
-                    >
-                      <SelectTrigger className="w-40">
-                        {sortOrder === 'desc' ? (
-                          <SortDesc className="mr-2 h-4 w-4" />
-                        ) : (
-                          <SortAsc className="mr-2 h-4 w-4" />
-                        )}
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="importance-desc">
-                          Importance ↓
-                        </SelectItem>
-                        <SelectItem value="importance-asc">
-                          Importance ↑
-                        </SelectItem>
-                        <SelectItem value="createdAt-desc">
-                          Newest First
-                        </SelectItem>
-                        <SelectItem value="createdAt-asc">
-                          Oldest First
-                        </SelectItem>
-                        <SelectItem value="lastAccessed-desc">
-                          Recently Accessed
-                        </SelectItem>
-                        <SelectItem value="accessCount-desc">
-                          Most Viewed
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Active Filters */}
-                  {(selectedType !== 'all' || searchTerm) && (
-                    <div className="mt-3 flex items-center gap-2">
-                      <span className="text-muted-foreground text-sm">
-                        Filters:
-                      </span>
-                      {selectedType !== 'all' && (
-                        <Badge className="gap-1" variant="secondary">
-                          {memoryTypeConfigs[selectedType].icon}
-                          {memoryTypeConfigs[selectedType].label}
-                        </Badge>
-                      )}
-                      {searchTerm && (
-                        <Badge variant="secondary">
-                          Search: "{searchTerm}"
-                        </Badge>
-                      )}
-                      <Button
-                        onClick={() => {
-                          setSearchTerm('');
-                          setSelectedType('all');
-                        }}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        Clear Filters
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Results Summary */}
-              <div className="flex items-center justify-between text-muted-foreground text-sm">
-                <span>
-                  Showing {filteredMemories.length} of {memories.length}{' '}
-                  memories
-                </span>
-                {stats && (
-                  <span>
-                    Total accesses: {stats.totalAccesses} | Avg. importance:{' '}
-                    {Math.round(stats.averageImportance * 100)}%
-                  </span>
-                )}
-              </div>
-
-              {/* Memories Grid */}
-              {filteredMemories.length === 0 ? (
-                <Card className="p-8 sm:p-10">
-                  {memories.length === 0 ? (
-                    <EmptyState
-                      description="Your memories will appear here as you chat with ANUBIS"
-                      icon={
-                        <Brain className="h-12 w-12 text-muted-foreground" />
-                      }
-                      title="No memories stored yet"
-                    />
-                  ) : (
-                    <EmptyState
-                      action={{
-                        label: 'Clear Filters',
-                        onClick: () => {
-                          setSearchTerm('');
-                          setSelectedType('all');
-                        },
-                      }}
-                      description="Try adjusting your search terms or filters"
-                      icon={
-                        <Search className="h-12 w-12 text-muted-foreground" />
-                      }
-                      title="No memories match your criteria"
-                    />
-                  )}
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                  {filteredMemories.map((memory) => (
-                    <MemoryCard key={memory._id} memory={memory} />
-                  ))}
-                </div>
-              )}
+              <MemoriesGrid
+                memories={filteredMemories}
+                onClearFilters={() => {
+                  setSearchTerm('');
+                  setSelectedType('all');
+                }}
+                showEmpty={memories.length === 0}
+              />
             </TabsContent>
 
             <TabsContent className="space-y-6" value="overview">
@@ -518,5 +371,189 @@ export default function MemoriesPage() {
         </div>
       </div>
     </AdminGuard>
+  );
+}
+
+type FilterBarProps = {
+  searchTerm: string;
+  selectedType: MemoryType | 'all';
+  sortBy: NonNullable<MemoryFilters['sortBy']>;
+  sortOrder: NonNullable<MemoryFilters['sortOrder']>;
+  onSearch: (term: string) => void;
+  onSelectType: (type: MemoryType | 'all') => void;
+  onSortChange: (
+    sortBy: NonNullable<MemoryFilters['sortBy']>,
+    sortOrder: NonNullable<MemoryFilters['sortOrder']>
+  ) => void;
+  onClear: () => void;
+  memoryTypeConfigs: typeof memoryTypeConfigs;
+};
+
+function FilterBar({
+  searchTerm,
+  selectedType,
+  sortBy,
+  sortOrder,
+  onSearch,
+  onSelectType,
+  onSortChange,
+  onClear,
+  memoryTypeConfigs,
+}: FilterBarProps) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              onChange={(e) => onSearch(e.target.value)}
+              placeholder="Search memories..."
+              value={searchTerm}
+            />
+          </div>
+
+          <Select
+            onValueChange={(value) => onSelectType(value as MemoryType | 'all')}
+            value={selectedType}
+          >
+            <SelectTrigger className="w-32">
+              <Filter className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {Object.entries(memoryTypeConfigs).map(([key, config]) => (
+                <SelectItem key={key} value={key}>
+                  <div className="flex items-center gap-2">
+                    <span>{config.icon}</span>
+                    <span>{config.label}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            onValueChange={(value) => {
+              const [sb, so] = value.split('-');
+              const sortByValue = sb as NonNullable<MemoryFilters['sortBy']>;
+              const sortOrderValue = so as NonNullable<
+                MemoryFilters['sortOrder']
+              >;
+              onSortChange(sortByValue, sortOrderValue);
+            }}
+            value={`${sortBy}-${sortOrder}`}
+          >
+            <SelectTrigger className="w-40">
+              {sortOrder === 'desc' ? (
+                <SortDesc className="mr-2 h-4 w-4" />
+              ) : (
+                <SortAsc className="mr-2 h-4 w-4" />
+              )}
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="importance-desc">Importance ↓</SelectItem>
+              <SelectItem value="importance-asc">Importance ↑</SelectItem>
+              <SelectItem value="createdAt-desc">Newest First</SelectItem>
+              <SelectItem value="createdAt-asc">Oldest First</SelectItem>
+              <SelectItem value="lastAccessed-desc">
+                Recently Accessed
+              </SelectItem>
+              <SelectItem value="accessCount-desc">Most Viewed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {(selectedType !== 'all' || searchTerm) && (
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-muted-foreground text-sm">Filters:</span>
+            {selectedType !== 'all' && (
+              <Badge className="gap-1" variant="secondary">
+                {memoryTypeConfigs[selectedType].icon}
+                {memoryTypeConfigs[selectedType].label}
+              </Badge>
+            )}
+            {searchTerm && (
+              <Badge variant="secondary">Search: "{searchTerm}"</Badge>
+            )}
+            <Button onClick={onClear} size="sm" variant="ghost">
+              Clear Filters
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+type ResultsSummaryProps = {
+  shown: number;
+  total: number;
+  totalAccesses?: number;
+  averageImportance?: number;
+};
+
+function ResultsSummary({
+  shown,
+  total,
+  totalAccesses,
+  averageImportance,
+}: ResultsSummaryProps) {
+  return (
+    <div className="flex items-center justify-between text-muted-foreground text-sm">
+      <span>
+        Showing {shown} of {total} memories
+      </span>
+      {typeof totalAccesses === 'number' &&
+        typeof averageImportance === 'number' && (
+          <span>
+            Total accesses: {totalAccesses} | Avg. importance:{' '}
+            {averageImportance}%
+          </span>
+        )}
+    </div>
+  );
+}
+
+type MemoriesGridProps = {
+  memories: Memory[];
+  showEmpty: boolean;
+  onClearFilters: () => void;
+};
+
+function MemoriesGrid({
+  memories,
+  showEmpty,
+  onClearFilters,
+}: MemoriesGridProps) {
+  if (memories.length === 0) {
+    return (
+      <Card className="p-8 sm:p-10">
+        {showEmpty ? (
+          <EmptyState
+            description="Your memories will appear here as you chat with ANUBIS"
+            icon={<Brain className="h-12 w-12 text-muted-foreground" />}
+            title="No memories stored yet"
+          />
+        ) : (
+          <EmptyState
+            action={{ label: 'Clear Filters', onClick: onClearFilters }}
+            description="Try adjusting your search terms or filters"
+            icon={<Search className="h-12 w-12 text-muted-foreground" />}
+            title="No memories match your criteria"
+          />
+        )}
+      </Card>
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      {memories.map((memory) => (
+        <MemoryCard key={memory._id} memory={memory} />
+      ))}
+    </div>
   );
 }

@@ -62,6 +62,7 @@ const MEMORY_EXTRACTION_MODEL = 'gpt-4o-mini'; // Cost-effective for analysis
 const MIN_IMPORTANCE_THRESHOLD = 0.3; // Minimum importance score to save memory
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
+const WHITESPACE_REGEX = /\s+/g;
 
 // Memory type definitions based on schema
 const MEMORY_TYPES = [
@@ -217,12 +218,11 @@ Extract memorable information about the user from this content. Focus on lasting
     } catch (error) {
       lastError = error as Error;
 
-      if (error instanceof Error && error.message.includes('429')) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, RETRY_DELAY * 2 ** attempt)
-        );
-      } else if (attempt < MAX_RETRIES - 1) {
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+      const shouldBackoff =
+        error instanceof Error && error.message.includes('429');
+      if (shouldBackoff || attempt < MAX_RETRIES - 1) {
+        const delay = shouldBackoff ? RETRY_DELAY * 2 ** attempt : RETRY_DELAY;
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
@@ -258,11 +258,11 @@ export const checkSimilarMemory = query({
 
     // Simple content similarity check (could be enhanced with embeddings)
     const contentLower = args.content.toLowerCase();
-    const words = contentLower.split(/\s+/);
+    const words = contentLower.split(WHITESPACE_REGEX);
 
     for (const memory of existingMemories) {
       const existingLower = memory.content.toLowerCase();
-      const existingWords = existingLower.split(/\s+/);
+      const existingWords = existingLower.split(WHITESPACE_REGEX);
 
       // Calculate word overlap ratio
       const commonWords = words.filter((word) => existingWords.includes(word));

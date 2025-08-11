@@ -7,8 +7,9 @@ export const ensureCompleteSubscriptions = mutation({
     const users = await ctx.db.query('users').collect();
     let updatedCount = 0;
 
-    for (const user of users) {
-      if (user.subscription) {
+    await Promise.all(
+      users.map(async (user) => {
+        if (user.subscription) {
         // Check if subscription is missing any required fields
         const sub = user.subscription;
         let needsUpdate = false;
@@ -86,35 +87,36 @@ export const ensureCompleteSubscriptions = mutation({
           needsUpdate = true;
         }
 
-        if (needsUpdate) {
+          if (needsUpdate) {
+            await ctx.db.patch(user._id, {
+              subscription: updates,
+            });
+            updatedCount++;
+          }
+        } else {
+          // User has no subscription at all - create one
+          const now = Date.now();
           await ctx.db.patch(user._id, {
-            subscription: updates,
+            subscription: {
+              tier: 'free',
+              messagesUsed: 0,
+              messagesLimit: 50,
+              premiumMessagesUsed: 0,
+              premiumMessagesLimit: 0,
+              features: ['basic_chat', 'limited_models'],
+              currentPeriodStart: now,
+              currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+              subscriptionTxSignature: '',
+              autoRenew: false,
+              planPriceSol: 0,
+              tokensUsed: 0,
+              tokensLimit: 10_000,
+            },
           });
           updatedCount++;
         }
-      } else {
-        // User has no subscription at all - create one
-        const now = Date.now();
-        await ctx.db.patch(user._id, {
-          subscription: {
-            tier: 'free',
-            messagesUsed: 0,
-            messagesLimit: 50,
-            premiumMessagesUsed: 0,
-            premiumMessagesLimit: 0,
-            features: ['basic_chat', 'limited_models'],
-            currentPeriodStart: now,
-            currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
-            subscriptionTxSignature: '',
-            autoRenew: false,
-            planPriceSol: 0,
-            tokensUsed: 0,
-            tokensLimit: 10_000,
-          },
-        });
-        updatedCount++;
-      }
-    }
+      })
+    );
 
     return {
       success: true,

@@ -1,20 +1,14 @@
 'use client';
 
-import {
-  Bot,
-  Calendar,
-  Crown,
-  MessageSquare,
-  TrendingUp,
-  Zap,
-} from 'lucide-react';
+import { Bot, Calendar, MessageSquare, TrendingUp, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+// UsageIndicator is only used inside cards below
 import { UsageIndicator } from '@/components/chat/usage-indicator';
+import { SubscriptionCard } from '@/components/dashboard/subscription-card';
 import {
   useAuthContext,
-  useSubscriptionLimits,
   useSubscriptionStatus,
 } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
@@ -28,38 +22,13 @@ import { cn } from '@/lib/utils';
 export default function DashboardPage() {
   const { user } = useAuthContext();
   const subscription = useSubscriptionStatus();
-  const _limits = useSubscriptionLimits();
   const [isEditingName, setIsEditingName] = useState(false);
   const [pendingName, setPendingName] = useState('');
   const [savingName, setSavingName] = useState(false);
   const [localDisplayName, setLocalDisplayName] = useState<string | null>(null);
   const { mutate: updateProfile } = useUpdateUserProfile();
 
-  const getTierBg = (tier: string): string => {
-    switch (tier) {
-      case 'free':
-        return 'bg-slate-100 dark:bg-slate-800';
-      case 'pro':
-        return 'bg-blue-100 dark:bg-blue-900';
-      case 'pro_plus':
-        return 'bg-purple-100 dark:bg-purple-900';
-      default:
-        return 'bg-slate-100 dark:bg-slate-800';
-    }
-  };
-
-  const getTierColor = (tier: string): string => {
-    switch (tier) {
-      case 'free':
-        return 'text-slate-600 dark:text-slate-400';
-      case 'pro':
-        return 'text-blue-600 dark:text-blue-400';
-      case 'pro_plus':
-        return 'text-purple-600 dark:text-purple-400';
-      default:
-        return 'text-slate-600 dark:text-slate-400';
-    }
-  };
+  // Tier helpers moved into SubscriptionCard
 
   useEffect(() => {
     setPendingName(user?.displayName ?? '');
@@ -204,65 +173,8 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-        {/* Subscription Status Card - Responsive */}
-        {subscription && (
-          <Card className="p-3 transition-colors hover:ring-1 hover:ring-primary/20 sm:p-4 md:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div
-                  className={cn(
-                    'rounded-md p-1.5 sm:p-2',
-                    getTierBg(subscription.tier)
-                  )}
-                >
-                  <Crown
-                    className={cn(
-                      'h-4 w-4 sm:h-5 sm:w-5',
-                      getTierColor(subscription.tier)
-                    )}
-                  />
-                </div>
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    <h2 className="font-semibold text-sm sm:text-base md:text-lg">
-                      {formatTierLabel(subscription.tier)} Plan
-                    </h2>
-                    {subscription.tier !== 'free' && (
-                      <Badge
-                        className="text-[10px] sm:text-xs"
-                        variant="outline"
-                      >
-                        {subscription.planPriceSol} SOL/mo
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground sm:text-xs md:text-sm">
-                    {subscription.tier === 'free' &&
-                      'Basic features with limited access'}
-                    {subscription.tier === 'pro' &&
-                      'Enhanced features with premium model access'}
-                    {subscription.tier === 'pro_plus' &&
-                      'Full access to all features and models'}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-medium text-xs sm:text-sm">
-                  {subscription.messagesUsed} / {subscription.messagesLimit}
-                </div>
-                <div className="text-[10px] text-muted-foreground sm:text-xs">
-                  messages used
-                </div>
-              </div>
-            </div>
-            <div className="mt-3">
-              <UsageIndicator
-                showUpgrade={subscription.tier !== 'pro_plus'}
-                variant="detailed"
-              />
-            </div>
-          </Card>
-        )}
+        {/* Subscription Status Card */}
+        <SubscriptionCard />
 
         {/* Quick Stats - Responsive Grid */}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 md:grid-cols-4 md:gap-4">

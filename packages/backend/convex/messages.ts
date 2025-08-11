@@ -128,8 +128,19 @@ export const create = mutation({
 });
 
 // Helper: validate if a user can send a message, including premium model checks
+type QueryDb = {
+  query: <T extends string>(
+    table: T
+  ) => {
+    withIndex: (
+      name: string,
+      fn: (q: { eq: (field: string, value: unknown) => unknown }) => unknown
+    ) => { unique: () => Promise<unknown> };
+  };
+};
+
 async function ensureUserCanSendMessage(
-  ctx: { db: { query: Function } },
+  ctx: { db: QueryDb },
   walletAddress: string,
   model?: string
 ): Promise<void> {
@@ -172,8 +183,13 @@ async function ensureUserCanSendMessage(
 }
 
 // Helper: increment chat counters atomically and safely
+type PatchDb = {
+  get: <T>(id: Id<string>) => Promise<T | null>;
+  patch: (id: Id<string>, updates: Record<string, unknown>) => Promise<void>;
+};
+
 async function incrementChatCounters(
-  ctx: { db: { get: Function; patch: Function } },
+  ctx: { db: PatchDb },
   chatId: Id<'chats'>,
   now: number,
   tokenIncrement: number

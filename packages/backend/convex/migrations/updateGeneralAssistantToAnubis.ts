@@ -137,7 +137,8 @@ export const updateAllGeneralAssistants = internalMutation({
 
     let updatedCount = 0;
 
-    for (const agent of generalAssistants) {
+  await Promise.all(
+    generalAssistants.map(async (agent) => {
       // Only update if it's the default general assistant (check by description or system prompt)
       if (
         agent.description?.includes(
@@ -192,7 +193,8 @@ Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide throug
 
         updatedCount++;
       }
-    }
+    })
+  );
     return { success: true, updatedCount };
   },
 });

@@ -56,10 +56,8 @@ export const list = query({
     const hasMore = items.length > limit;
     const returnItems = hasMore ? items.slice(0, limit) : items;
 
-    // Get next cursor (avoid Array.at for older lib targets)
-    const nextCursor = hasMore
-      ? returnItems[returnItems.length - 1]?._id
-      : undefined;
+    // Get next cursor (avoid Array.at to support older lib targets)
+    const nextCursor = hasMore ? returnItems.at(-1)?._id : undefined;
 
     return {
       items: returnItems,

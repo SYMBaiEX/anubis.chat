@@ -123,7 +123,7 @@ export const createMyMessage = mutation({
 
       // Check premium model limits if using a premium model
       const model = args.metadata?.model || chat.model;
-      const premiumModels = ['gpt-4o', 'claude-3-5-sonnet', 'gemini-1.5-pro'];
+      const premiumModels = ['gpt-4o', 'claude-3.5-sonnet', 'gemini-1.5-pro'];
 
       if (
         premiumModels.includes(model) &&
@@ -297,8 +297,7 @@ export const getMyChatMessageStats = query({
       totalTokens,
       modelUsage: Object.fromEntries(modelUsage),
       firstMessage: messages.length > 0 ? messages[0].createdAt : null,
-      lastMessage:
-        messages.length > 0 ? messages[messages.length - 1]?.createdAt : null,
+      lastMessage: messages.length > 0 ? messages.at(-1)?.createdAt : null,
     };
   },
 });

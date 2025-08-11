@@ -296,112 +296,6 @@ function AdminDashboardContent() {
 
   // Note: OverviewCards component is defined at top-level and used below
 
-  const UsersTableSection = () => {
-    if (!allUsers) return null;
-    return (
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Subscription</TableHead>
-              <TableHead>Usage</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {allUsers.map((listedUser) => (
-              <TableRow key={listedUser._id}>
-                <TableCell>
-                  <div>
-                    <div className="font-medium">
-                      {listedUser.displayName || 'Anonymous'}
-                    </div>
-                    {listedUser.walletAddress && (
-                      <div className="text-muted-foreground text-sm">
-                        {listedUser.walletAddress.slice(0, 8)}...
-                        {listedUser.walletAddress.slice(-4)}
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {listedUser.subscription && (
-                    <Badge
-                      variant={
-                        listedUser.subscription.tier === 'free'
-                          ? 'secondary'
-                          : 'default'
-                      }
-                    >
-                      {(() => {
-                        const tier = listedUser.subscription?.tier;
-                        if (tier === 'pro_plus') {
-                          return 'Pro+';
-                        }
-                        if (tier === 'pro') {
-                          return 'Pro';
-                        }
-                        return 'Free';
-                      })()}
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {listedUser.subscription && (
-                    <div className="text-sm">
-                      <div>
-                        {listedUser.subscription.messagesUsed || 0}/
-                        {listedUser.subscription.messagesLimit || 0} messages
-                      </div>
-                      <div className="text-muted-foreground">
-                        {listedUser.subscription.premiumMessagesUsed || 0}/
-                        {listedUser.subscription.premiumMessagesLimit || 0}{' '}
-                        premium
-                      </div>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={listedUser.isActive ? 'default' : 'secondary'}
-                  >
-                    {listedUser.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {listedUser.walletAddress && listedUser.subscription && (
-                    <div className="flex gap-2">
-                      <Select
-                        onValueChange={(v) =>
-                          handleUpdateSubscription(
-                            listedUser.walletAddress as string,
-                            v as 'free' | 'pro' | 'pro_plus'
-                          )
-                        }
-                        value={listedUser.subscription.tier}
-                      >
-                        <SelectTrigger className="w-24">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="free">Free</SelectItem>
-                          <SelectItem value="pro">Pro</SelectItem>
-                          <SelectItem value="pro_plus">Pro+</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
-    );
-  };
-
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -467,7 +361,10 @@ function AdminDashboardContent() {
             </Select>
           </div>
 
-          <UsersTableSection />
+          <UsersTable
+            onUpdate={handleUpdateSubscription}
+            users={allUsers as unknown as ListedUser[] | null}
+          />
         </TabsContent>
 
         {/* Agents Tab */}

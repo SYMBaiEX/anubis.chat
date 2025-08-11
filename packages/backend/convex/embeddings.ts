@@ -80,12 +80,13 @@ export const generateEmbedding = action({
         lastError = error as Error;
 
         // Rate limiting - wait longer
-        if (error instanceof Error && error.message.includes('429')) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, RETRY_DELAY * 2 ** attempt)
-          );
-        } else if (attempt < MAX_RETRIES - 1) {
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+        const shouldBackoff =
+          error instanceof Error && error.message.includes('429');
+        if (shouldBackoff || attempt < MAX_RETRIES - 1) {
+          const delay = shouldBackoff
+            ? RETRY_DELAY * 2 ** attempt
+            : RETRY_DELAY;
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
@@ -124,67 +125,67 @@ export const generateBatchEmbeddings = action({
       dimensions: number;
     }> = [];
 
+    // Process texts in batches concurrently within each batch to avoid await-in-loop
+    const batchPromises: Promise<void>[] = [];
     for (let i = 0; i < args.texts.length; i += MAX_BATCH_SIZE) {
-      const batch = args.texts.slice(i, i + MAX_BATCH_SIZE);
-      const cleanedBatch = batch.map((text) => text.trim().slice(0, 8192));
-
-      let lastError: Error | null = null;
-
-      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        try {
-          const response = await fetch('https://api.openai.com/v1/embeddings', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-              model: EMBEDDING_MODEL,
-              input: cleanedBatch,
-              dimensions: EMBEDDING_DIMENSIONS,
-            }),
-          });
-
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(
-              `OpenAI API error: ${error.error?.message || response.statusText}`
+      const start = i;
+      const batch = args.texts.slice(start, start + MAX_BATCH_SIZE);
+      const task = (async () => {
+        const cleanedBatch = batch.map((text) => text.trim().slice(0, 8192));
+        let lastError: Error | null = null;
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+          try {
+            const response = await fetch(
+              'https://api.openai.com/v1/embeddings',
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                  model: EMBEDDING_MODEL,
+                  input: cleanedBatch,
+                  dimensions: EMBEDDING_DIMENSIONS,
+                }),
+              }
             );
-          }
-
-          const data = await response.json();
-
-          for (const item of data.data) {
-            results.push({
-              embedding: item.embedding as number[],
-              model: EMBEDDING_MODEL,
-              dimensions: EMBEDDING_DIMENSIONS,
-            });
-          }
-
-          break; // Success, exit retry loop
-        } catch (error) {
-          lastError = error as Error;
-
-          if (error instanceof Error && error.message.includes('429')) {
-            await new Promise((resolve) =>
-              setTimeout(resolve, RETRY_DELAY * 2 ** attempt)
-            );
-          } else if (attempt < MAX_RETRIES - 1) {
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(
+                `OpenAI API error: ${error.error?.message || response.statusText}`
+              );
+            }
+            const data = await response.json();
+            for (let j = 0; j < data.data.length; j++) {
+              const item = data.data[j];
+              // Maintain original order by pushing in-place
+              results[start + j] = {
+                embedding: item.embedding as number[],
+                model: EMBEDDING_MODEL,
+                dimensions: EMBEDDING_DIMENSIONS,
+              };
+            }
+            return; // success
+          } catch (error) {
+            lastError = error as Error;
+            const shouldBackoff =
+              error instanceof Error && error.message.includes('429');
+            if (attempt < MAX_RETRIES - 1) {
+              const delay = shouldBackoff
+                ? RETRY_DELAY * 2 ** attempt
+                : RETRY_DELAY;
+              await new Promise((resolve) => setTimeout(resolve, delay));
+            }
           }
         }
-      }
-
-      if (lastError && results.length < i + batch.length) {
-        throw lastError;
-      }
-
-      // Small delay between batches to avoid rate limiting
-      if (i + MAX_BATCH_SIZE < args.texts.length) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
+        if (lastError) {
+          throw lastError;
+        }
+      })();
+      batchPromises.push(task);
     }
+    await Promise.all(batchPromises);
 
     return results;
   },
@@ -329,24 +330,24 @@ export const generateDocumentChunkEmbeddings = action({
       dimensions: number;
     }> = await ctx.runAction(api.embeddings.generateBatchEmbeddings, { texts });
 
-    // Store chunks with embeddings
-    for (let i = 0; i < args.chunks.length; i++) {
-      const chunk = args.chunks[i];
-      const embedding = embeddings[i].embedding;
-
-      await ctx.runMutation(api.embeddings.insertDocumentChunk, {
-        documentId: args.documentId,
-        chunkIndex: chunk.chunkIndex,
-        content: chunk.content,
-        embedding,
-        metadata: {
-          startOffset: 0, // Would be calculated based on actual document
-          endOffset: chunk.content.length,
-          wordCount: chunk.content.split(/\s+/).length,
-        },
-        createdAt: Date.now(),
-      });
-    }
+    // Store chunks with embeddings without awaiting in a loop
+    const whitespaceRegex = /\s+/g;
+    await Promise.all(
+      args.chunks.map((chunk, i) =>
+        ctx.runMutation(api.embeddings.insertDocumentChunk, {
+          documentId: args.documentId,
+          chunkIndex: chunk.chunkIndex,
+          content: chunk.content,
+          embedding: embeddings[i].embedding,
+          metadata: {
+            startOffset: 0, // Would be calculated based on actual document
+            endOffset: chunk.content.length,
+            wordCount: (chunk.content.match(whitespaceRegex)?.length ?? 0) + 1,
+          },
+          createdAt: Date.now(),
+        })
+      )
+    );
 
     return {
       success: true,

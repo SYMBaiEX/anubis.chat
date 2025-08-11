@@ -156,77 +156,15 @@ export default function NewAgentPage() {
       })),
     } as CreateAgentFormData,
     onSubmit: async ({ value }) => {
-      // Validate form data
-      const validation = createAgentFormSchema.safeParse(value);
-
-      if (!validation.success) {
-        const errors = validation.error.flatten().fieldErrors;
-        for (const [field, messages] of Object.entries(errors)) {
-          if (messages) {
-            toast.error(`${field}: ${messages[0]}`);
-          }
-        }
-        return;
-      }
-
-      // Check if user wallet is available
+      const validation = validateForm(value);
+      if (!validation.ok) return;
       if (!user?.walletAddress) {
         toast.error('Please connect your wallet first');
         return;
       }
-
       try {
-        // Prepare agent data
-        const agentData = {
-          name: validation.data.name,
-          type: (():
-            | 'general'
-            | 'custom'
-            | 'trading'
-            | 'defi'
-            | 'nft'
-            | 'dao'
-            | 'portfolio' => {
-            const t = validation.data.template;
-            if (t === 'custom') {
-              return 'custom';
-            }
-            if (t === 'blockchain') {
-              return 'trading';
-            }
-            if (t === 'analysis') {
-              return 'portfolio';
-            }
-            if (t === 'research') {
-              return 'general';
-            }
-            return 'general';
-          })() as
-            | 'general'
-            | 'custom'
-            | 'trading'
-            | 'defi'
-            | 'nft'
-            | 'dao'
-            | 'portfolio',
-          description: validation.data.description || '',
-          systemPrompt:
-            validation.data.systemPrompt || 'You are a helpful AI assistant.',
-          capabilities: AGENT_CONFIG.defaults.tools,
-          temperature: validation.data.temperature,
-          maxTokens: validation.data.maxTokens,
-          maxSteps: validation.data.maxSteps,
-          createdBy: user.walletAddress,
-          tools: AGENT_CONFIG.defaults.tools,
-          mcpServers: validation.data.mcpServers?.filter((s) => s.enabled),
-        };
-
-        // creating agent with data
-
-        // Submit to Convex
-        const _result = await createAgentMutation(agentData);
-
-        // agent created successfully
+        const agentData = buildAgentData(validation.value, user.walletAddress);
+        await createAgentMutation(agentData);
         toast.success('Agent created successfully!');
         router.push('/agents');
       } catch (error) {
@@ -653,4 +591,52 @@ export default function NewAgentPage() {
       </div>
     </div>
   );
+}
+
+// Helpers extracted to reduce onSubmit complexity
+function validateForm(value: CreateAgentFormData) {
+  const validation = createAgentFormSchema.safeParse(value);
+  if (!validation.success) {
+    const errors = validation.error.flatten().fieldErrors;
+    for (const [field, messages] of Object.entries(errors)) {
+      if (messages) {
+        toast.error(`${field}: ${messages[0]}`);
+      }
+    }
+    return { ok: false as const };
+  }
+  return { ok: true as const, value: validation.data };
+}
+
+function buildAgentData(data: CreateAgentFormData, createdBy: string) {
+  const mapTemplateToType = (
+    t: CreateAgentFormData['template']
+  ):
+    | 'general'
+    | 'custom'
+    | 'trading'
+    | 'defi'
+    | 'nft'
+    | 'dao'
+    | 'portfolio' => {
+    if (t === 'custom') return 'custom';
+    if (t === 'blockchain') return 'trading';
+    if (t === 'analysis') return 'portfolio';
+    if (t === 'research') return 'general';
+    return 'general';
+  };
+
+  return {
+    name: data.name,
+    type: mapTemplateToType(data.template),
+    description: data.description || '',
+    systemPrompt: data.systemPrompt || 'You are a helpful AI assistant.',
+    capabilities: AGENT_CONFIG.defaults.tools,
+    temperature: data.temperature,
+    maxTokens: data.maxTokens,
+    maxSteps: data.maxSteps,
+    createdBy,
+    tools: AGENT_CONFIG.defaults.tools,
+    mcpServers: data.mcpServers?.filter((s) => s.enabled),
+  };
 }

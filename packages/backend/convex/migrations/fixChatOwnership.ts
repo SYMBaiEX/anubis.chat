@@ -20,37 +20,38 @@ export const migrateChatsToUserIds = internalMutation({
     // Get all chats that need migration
     const chats = await ctx.db.query('chats').take(batchSize);
 
-    for (const chat of chats) {
-      processed++;
+    await Promise.all(
+      chats.map(async (chat) => {
+        processed++;
+        try {
+          // Check if ownerId is already a user ID (starts with specific pattern)
+          // Convex IDs typically have a specific format
+          if (chat.ownerId.includes('|') || chat.ownerId.length > 50) {
+            // This looks like it might already be a user ID, skip
+            return;
+          }
 
-      try {
-        // Check if ownerId is already a user ID (starts with specific pattern)
-        // Convex IDs typically have a specific format
-        if (chat.ownerId.includes('|') || chat.ownerId.length > 50) {
-          // This looks like it might already be a user ID, skip
-          continue;
-        }
+          // Find the user by wallet address
+          const user = await ctx.db
+            .query('users')
+            .withIndex('by_wallet', (q) => q.eq('walletAddress', chat.ownerId))
+            .first();
 
-        // Find the user by wallet address
-        const user = await ctx.db
-          .query('users')
-          .withIndex('by_wallet', (q) => q.eq('walletAddress', chat.ownerId))
-          .first();
-
-        if (user) {
-          // Update the chat to use the actual user ID
-          await ctx.db.patch(chat._id, {
-            ownerId: user._id,
-            updatedAt: Date.now(),
-          });
-          updated++;
-        } else {
+          if (user) {
+            // Update the chat to use the actual user ID
+            await ctx.db.patch(chat._id, {
+              ownerId: user._id,
+              updatedAt: Date.now(),
+            });
+            updated++;
+          } else {
+            errors++;
+          }
+        } catch (_error) {
           errors++;
         }
-      } catch (_error) {
-        errors++;
-      }
-    }
+      })
+    );
 
     return {
       processed,

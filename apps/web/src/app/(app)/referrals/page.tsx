@@ -866,7 +866,21 @@ function CompactTierDisplay({ currentTier }: { currentTier?: number }) {
 }
 
 // Component for displaying user's referred users
-function MyReferralsDisplay({ referredUsers }: { referredUsers: any[] }) {
+type ReferredUser = {
+  userId: string;
+  displayName: string;
+  avatar?: string;
+  referredAt: number;
+  totalCommissionsEarned: number;
+  isActive: boolean;
+  subscriptionTier?: 'free' | 'pro' | 'pro_plus' | 'admin';
+};
+
+function MyReferralsDisplay({
+  referredUsers,
+}: {
+  referredUsers: ReferredUser[];
+}) {
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', {

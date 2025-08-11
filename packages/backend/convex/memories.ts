@@ -28,15 +28,15 @@ export const getUserMemories = query({
     ),
   },
   handler: async (ctx, args) => {
-    let query = ctx.db
+    let memoriesQuery = ctx.db
       .query('memories')
       .withIndex('by_user', (q) => q.eq('userId', args.userId));
 
     if (args.type) {
-      query = query.filter((q) => q.eq(q.field('type'), args.type));
+      memoriesQuery = memoriesQuery.filter((q) => q.eq(q.field('type'), args.type));
     }
 
-    return await query.order('desc').collect();
+    return await memoriesQuery.order('desc').collect();
   },
 });
 
@@ -243,21 +243,20 @@ export const bulkCreate = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    const results: Id<'memories'>[] = [];
+    const results = await Promise.all(
+      args.memories.map((memory) =>
+        ctx.db.insert('memories', {
+          ...memory,
+          importance: memory.importance || 0.5,
+          embedding: memory.embedding || [],
+          accessCount: 0,
+          createdAt: now,
+          updatedAt: now,
+        })
+      )
+    );
 
-    for (const memory of args.memories) {
-      const id = await ctx.db.insert('memories', {
-        ...memory,
-        importance: memory.importance || 0.5,
-        embedding: memory.embedding || [],
-        accessCount: 0,
-        createdAt: now,
-        updatedAt: now,
-      });
-      results.push(id);
-    }
-
-    return results;
+    return results as Id<'memories'>[];
   },
 });
 

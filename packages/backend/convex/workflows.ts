@@ -606,10 +606,10 @@ export const getWorkflowStats = query({
         completedExecutions.length > 0
           ? completedExecutions
               .filter((exec) => exec.completedAt && exec.startedAt)
-              .reduce(
-                (sum, exec) => sum + (exec.completedAt! - exec.startedAt),
-                0
-              ) / completedExecutions.length
+              .reduce((sum, exec) => {
+                const completedAt = exec.completedAt ?? exec.startedAt;
+                return sum + (completedAt - exec.startedAt);
+              }, 0) / completedExecutions.length
           : 0,
     };
   },
