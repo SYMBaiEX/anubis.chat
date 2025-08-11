@@ -58,7 +58,7 @@ export function useCommandPalette({
   chats = [],
 }: UseCommandPaletteProps = {}) {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -161,9 +161,10 @@ export function useCommandPalette({
       onOpenSettings?.();
     },
     'toggle-theme': () => {
-      setTheme(theme === 'dark' ? 'light' : 'dark');
+      const nextTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
+      setTheme(nextTheme);
       toast.success(
-        theme === 'dark'
+        nextTheme === 'light'
           ? "Ra's light illuminates your path"
           : "Osiris' shadow embraces you"
       );
@@ -226,7 +227,7 @@ export function useCommandPalette({
     },
     [
       router,
-      theme,
+      resolvedTheme,
       setTheme,
       isCommandPaletteOpen,
       onNewChat,
