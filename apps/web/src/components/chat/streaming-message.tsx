@@ -21,7 +21,7 @@ export function StreamingMessage({
     if (messageRef.current) {
       messageRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, []);
+  }, [_content]);
 
   return (
     <div className={cn('group flex gap-3 py-4', className)} ref={messageRef}>

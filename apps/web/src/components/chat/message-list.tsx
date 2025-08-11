@@ -49,8 +49,12 @@ export function MessageList({
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages && messages.length > lastMessageCount) {
-      scrollToBottom();
+      // Force auto to ensure jump when a new message lands, then smooth for subsequent deltas
+      scrollToBottom(false);
       setLastMessageCount(messages.length);
+      // Smooth follow-up for minor content reflow
+      const id = window.setTimeout(() => scrollToBottom(true), 50);
+      return () => window.clearTimeout(id);
     }
   }, [messages, lastMessageCount, scrollToBottom]);
 
