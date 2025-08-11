@@ -528,24 +528,24 @@ Title:`;
 });
 
 // Internal mutation to update chat title
-export const updateTitle = internalMutation({
-  args: {
-    chatId: v.id('chats'),
-    title: v.string(),
-    ownerId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const chat = await ctx.db.get(args.chatId);
+ export const updateTitle = mutation({
+   args: {
+     chatId: v.id('chats'),
+     title: v.string(),
+     ownerId: v.string(),
+   },
+   handler: async (ctx, args) => {
+     const chat = await ctx.db.get(args.chatId);
 
-    if (!chat || chat.ownerId !== args.ownerId) {
-      throw new Error('Chat not found or access denied');
-    }
+     if (!chat || chat.ownerId !== args.ownerId) {
+       throw new Error('Chat not found or access denied');
+     }
 
-    await ctx.db.patch(args.chatId, {
-      title: args.title,
-      updatedAt: Date.now(),
-    });
+     await ctx.db.patch(args.chatId, {
+       title: args.title,
+       updatedAt: Date.now(),
+     });
 
-    return await ctx.db.get(args.chatId);
-  },
-});
+     return await ctx.db.get(args.chatId);
+   },
+ });
