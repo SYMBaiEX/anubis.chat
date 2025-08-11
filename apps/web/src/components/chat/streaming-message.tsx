@@ -4,14 +4,16 @@ import { Bot } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { MarkdownRenderer } from './markdown-renderer';
 
 interface StreamingMessageProps {
   content: string;
   className?: string;
 }
 
-export function StreamingMessage({ content, className }: StreamingMessageProps) {
+export function StreamingMessage({
+  content: _content,
+  className,
+}: StreamingMessageProps) {
   const messageRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom as content streams in
@@ -19,7 +21,7 @@ export function StreamingMessage({ content, className }: StreamingMessageProps) 
     if (messageRef.current) {
       messageRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, [content]);
+  }, []);
 
   return (
     <div className={cn('group flex gap-3 py-4', className)} ref={messageRef}>
@@ -37,17 +39,19 @@ export function StreamingMessage({ content, className }: StreamingMessageProps) 
         {/* Message Header */}
         <div className="flex items-center gap-2 text-muted-foreground text-xs">
           <span className="font-medium">Assistant</span>
-          {content && content.trim().length > 0 ? null : (
-            <span aria-live="polite">• Connecting...</span>
-          )}
+          <span>• Responding...</span>
         </div>
 
         {/* Message Bubble */}
-        <div className="relative w-full max-w-full sm:max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
+        <div className="relative max-w-2xl">
           <div className="rounded-2xl border bg-muted px-4 py-3 shadow-sm">
-            {content && content.trim().length > 0 ? (
-              <MarkdownRenderer content={content} />
-            ) : null}
+            {/* Loading skeleton instead of streaming partial markdown to avoid reflow/flicker */}
+            <div className="flex w-full max-w-xl flex-col gap-2">
+              <div className="h-4 w-4/5 animate-pulse rounded bg-muted-foreground/30" />
+              <div className="h-4 w-full animate-pulse rounded bg-muted-foreground/30" />
+              <div className="h-4 w-3/5 animate-pulse rounded bg-muted-foreground/30" />
+              <div className="mt-1 h-3 w-16 animate-pulse rounded bg-primary/60" />
+            </div>
           </div>
         </div>
       </div>

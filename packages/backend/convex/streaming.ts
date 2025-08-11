@@ -511,7 +511,8 @@ Step 3: [Continue as needed...]
       const stream = new ReadableStream({
         async start(controller) {
           try {
-            // Initial reasoning: do not stream anything until final answer is ready
+            // Step 1: Initial reasoning
+            controller.enqueue('**🧠 Thinking through your request...**\n\n');
 
             const reasoningResult = await streamText({
               model: aiModel,
@@ -536,15 +537,27 @@ Step 3: [Continue as needed...]
               .trim();
 
             if (thinking) {
-              // Persist steps for metadata only; do not stream steps to client
+              // Stream the thinking process
+              controller.enqueue('### Reasoning Steps:\n\n');
               const steps = thinking.split(/Step \d+:/);
+              // Persist steps for metadata (not shown inline to users unless toggled)
               capturedReasoningSteps = steps
                 .map((s) => s.trim())
                 .filter(Boolean)
                 .slice(0, Math.min(steps.length, maxSteps + 1));
+              for (let i = 1; i < Math.min(steps.length, maxSteps + 1); i++) {
+                if (steps[i]?.trim()) {
+                  controller.enqueue(`**Step ${i}:** ${steps[i].trim()}\n\n`);
+                  // Small delay to simulate thinking time
+                  await new Promise((resolve) => setTimeout(resolve, 500));
+                }
+              }
+
+              controller.enqueue('---\n\n');
             }
 
-            // Stream the final response (only)
+            // Stream the final response
+            controller.enqueue('### Final Response:\n\n');
             finalText = finalResponse || reasoningContent;
 
             // Stream final response character by character for better UX
@@ -650,7 +663,7 @@ Use your judgment - only use the thinking section if the query truly benefits fr
       onFinish: async ({ text, finishReason, usage }) => {
         // Strip out any <thinking>/<think> content and capture reasoning
         const thinkingMatch = (text || '').match(/<(thinking|think)>([\s\S]*?)<\/(thinking|think)>/);
-        let sanitizedText = (text || '')
+        const sanitizedText = (text || '')
           .replace(/<(thinking|think)>[\s\S]*?<\/(thinking|think)>/g, '')
           .trim();
 
@@ -668,11 +681,6 @@ Use your judgment - only use the thinking section if the query truly benefits fr
         const reasoningJoined = reasoningSteps && reasoningSteps.length > 0
           ? reasoningSteps.map((s, i) => `Step ${i + 1}: ${s}`).join('\n')
           : undefined;
-
-        // Fallback: if sanitization removed everything, persist raw text
-        if (!sanitizedText && (text || '').trim()) {
-          sanitizedText = (text || '').trim();
-        }
 
         // Save assistant message to database
         const _assistantMessage = await ctx.runMutation(api.messages.create, {
@@ -741,38 +749,27 @@ Use your judgment - only use the thinking section if the query truly benefits fr
 
   // Handle regular streaming response (non-reasoning mode)
   if (result) {
-    // Build a sanitized stream that removes any <thinking>/<think> blocks before sending to client
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          let rawBuffer = '';
-          let emittedLen = 0;
-          const pattern = /<(thinking|think)>[\s\S]*?<\/(thinking|think)>/g;
-          for await (const chunk of result.textStream) {
-            rawBuffer += chunk;
-            const sanitized = rawBuffer.replace(pattern, '');
-            const delta = sanitized.slice(emittedLen);
-            if (delta.length > 0) {
-              controller.enqueue(delta);
-              emittedLen = sanitized.length;
-            }
-          }
-          controller.close();
-        } catch (err) {
-          controller.error(err);
-        }
-      },
-    });
+    // Convert to a proper text stream response with CORS headers
+    // The AI SDK provides toTextStreamResponse() which returns a properly formatted Response
+    const response = result.toTextStreamResponse();
 
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/plain',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers':
-          'Content-Type, Authorization, X-Requested-With, Accept',
-        'Access-Control-Allow-Credentials': 'true',
-      },
+    // Add CORS headers to the response
+    const headers = new Headers(response.headers);
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, DELETE, OPTIONS'
+    );
+    headers.set(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, X-Requested-With, Accept'
+    );
+    headers.set('Access-Control-Allow-Credentials', 'true');
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
     });
   }
 

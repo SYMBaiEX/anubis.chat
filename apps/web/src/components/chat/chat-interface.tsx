@@ -670,7 +670,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               ) : (
                 <MessageList
                   fontSize={chatSettings.fontSize}
-                  isTyping={isAnyoneTyping || isStreaming}
+                  isTyping={isAnyoneTyping && !isStreaming}
                   messages={(messages || []).map((m) => {
                     if ((m as StreamingMessage).isStreaming) {
                       return m as StreamingMessage;
@@ -687,7 +687,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       content: doc.content,
                       role: doc.role,
                       createdAt:
-                        (doc.createdAt ?? doc._creationTime ?? Date.now()),
+                        doc.createdAt ?? doc._creationTime ?? Date.now(),
                     };
                     return normalized;
                   })}
