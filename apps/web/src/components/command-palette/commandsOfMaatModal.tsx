@@ -1,21 +1,12 @@
 'use client';
 
-import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  BookOpen,
-  FileText,
-  Keyboard,
-  Navigation,
-  Settings,
-  Zap,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { BookOpen, FileText, Navigation, Settings, Zap } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -42,6 +33,13 @@ const categoryIcons = {
   temple: Settings,
   knowledge: BookOpen,
 };
+
+// ShortcutKey component moved outside to avoid recreation on every render
+const ShortcutKey = ({ children }: { children: React.ReactNode }) => (
+  <kbd className="inline-flex h-5 min-w-[20px] items-center justify-center rounded border bg-background px-1.5 font-mono text-[10px] text-muted-foreground">
+    {children}
+  </kbd>
+);
 
 export function CommandsOfMaatModal({
   isOpen,
@@ -71,18 +69,14 @@ export function CommandsOfMaatModal({
     return matchesCategory && matchesSearch;
   });
 
-  const ShortcutKey = ({ children }: { children: React.ReactNode }) => (
-    <kbd className="inline-flex h-6 min-w-[24px] items-center justify-center rounded border bg-muted px-1.5 font-medium font-mono text-[10px] text-muted-foreground shadow-sm">
-      {children}
-    </kbd>
-  );
-
   const renderShortcut = (shortcut: string[]) => {
     return (
       <div className="flex items-center gap-1">
         {shortcut.map((key, index) => (
-          <React.Fragment key={index}>
-            {index > 0 && <span className="text-muted-foreground mx-0.5">+</span>}
+          <React.Fragment key={key}>
+            {index > 0 && (
+              <span className="mx-0.5 text-muted-foreground">+</span>
+            )}
             <ShortcutKey>{formatShortcut([key])}</ShortcutKey>
           </React.Fragment>
         ))}
@@ -93,30 +87,30 @@ export function CommandsOfMaatModal({
   return (
     <Dialog onOpenChange={onClose} open={isOpen}>
       <DialogContent
-        className={cn('max-h-[85vh] max-w-4xl overflow-hidden', className)}
+        className={cn('max-h-[85vh] max-w-4xl overflow-hidden p-0', className)}
       >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 text-xl">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg">
+        <DialogHeader className="border-b px-6 pt-6 pb-4">
+          <DialogTitle className="flex items-center gap-3 text-lg">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md">
               ⚖️
             </div>
             <div>
-              <div>Commands of Ma'at</div>
-              <div className="font-normal text-muted-foreground text-sm">
+              <div className="font-semibold">Commands of Ma'at</div>
+              <div className="mt-0.5 font-normal text-muted-foreground text-sm">
                 Sacred keyboard shortcuts for divine efficiency
               </div>
             </div>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="mt-6 space-y-4">
+        <div className="space-y-4 px-6 py-4">
           {/* Search Bar */}
           <div className="relative">
-            <div className="-translate-y-1/2 absolute top-1/2 left-3 text-muted-foreground">
+            <div className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 text-muted-foreground">
               🔍
             </div>
             <input
-              className="w-full rounded-lg border bg-background py-2 pr-3 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+              className="h-10 w-full rounded-lg border bg-background pr-3 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search the sacred scrolls..."
               type="text"
@@ -127,8 +121,7 @@ export function CommandsOfMaatModal({
           {/* Category Tabs */}
           <Tabs
             onValueChange={(v) =>
--              setActiveCategory(v as any)
-+              setActiveCategory(v as keyof typeof MAAT_CATEGORIES | 'all')
+              setActiveCategory(v as keyof typeof MAAT_CATEGORIES | 'all')
             }
             value={activeCategory}
           >
@@ -137,7 +130,7 @@ export function CommandsOfMaatModal({
                 className="data-[state=active]:bg-amber-500/10"
                 value="all"
               >
-                <span className="mr-1.5">🌟</span>
+                <span className="mr-1">🌟</span>
                 All
               </TabsTrigger>
               {Object.entries(MAAT_CATEGORIES).map(([key, category]) => {
@@ -158,7 +151,7 @@ export function CommandsOfMaatModal({
             </TabsList>
 
             <TabsContent className="mt-4" value={activeCategory}>
-              <div className="max-h-[400px] overflow-y-auto pr-2">
+              <div className="max-h-[380px] overflow-y-auto px-2">
                 <AnimatePresence mode="wait">
                   {activeCategory === 'all' ? (
                     // Show all categories
@@ -166,14 +159,16 @@ export function CommandsOfMaatModal({
                       {Object.entries(MAAT_CATEGORIES).map(
                         ([categoryKey, category]) => {
                           const commands = getCommandsByCategory(
-                            categoryKey as any
+                            categoryKey as keyof typeof MAAT_CATEGORIES
                           );
                           const Icon =
                             categoryIcons[
                               categoryKey as keyof typeof categoryIcons
                             ];
 
-                          if (commands.length === 0) return null;
+                          if (commands.length === 0) {
+                            return null;
+                          }
 
                           return (
                             <motion.div
@@ -273,31 +268,30 @@ export function CommandsOfMaatModal({
               </div>
             </TabsContent>
           </Tabs>
+        </div>
 
-          {/* Footer Tips */}
-          <div className="border-t pt-4">
-            <div className="flex items-center justify-between text-muted-foreground text-xs">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-amber-500/10" variant="outline">
-                    <span className="mr-1">💡</span>
-                    Pro Tip
-                  </Badge>
-                  <span>
-                    Press{' '}
-                    <ShortcutKey>
-                      {platformKey === 'Cmd' ? '⌘' : 'Ctrl'}
-                    </ShortcutKey>
-                    <ShortcutKey>K</ShortcutKey> to open the Book of the Dead
-                  </span>
-                </div>
-              </div>
+        {/* Footer Tips */}
+        <div className="border-t bg-muted/30 px-6 py-3">
+          <div className="flex items-center justify-between text-muted-foreground text-xs">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span>Platform:</span>
-                <Badge className="bg-amber-500/10">
-                  {platformKey === 'Cmd' ? '🍎 macOS' : '🪟 Windows/Linux'}
+                <Badge className="bg-primary/10 text-primary" variant="outline">
+                  💡 Pro Tip
                 </Badge>
+                <span>
+                  Press{' '}
+                  <ShortcutKey>
+                    {platformKey === 'Cmd' ? '⌘' : 'Ctrl'}
+                  </ShortcutKey>
+                  <ShortcutKey>K</ShortcutKey> to open the Book of the Dead
+                </span>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>Platform:</span>
+              <Badge className="bg-muted" variant="secondary">
+                {platformKey === 'Cmd' ? '🍎 macOS' : '🪟 Windows/Linux'}
+              </Badge>
             </div>
           </div>
         </div>

@@ -35,7 +35,7 @@ export type UseCommandPaletteProps = {
   onOpenPreferences?: () => void;
   currentChatId?: string;
   chats?: { id: string; title: string }[];
-}
+};
 
 export function useCommandPalette({
   onNewChat,
@@ -100,7 +100,7 @@ export function useCommandPalette({
 
     // Navigation
     'open-book-of-dead': () => {
-      setIsCommandPaletteOpen((prev) => !prev);
+      setIsCommandPaletteOpen(true);
     },
     'focus-input': () => {
       onFocusInput?.();
@@ -129,7 +129,7 @@ export function useCommandPalette({
           toast.success('Previous chamber opened');
         } else if (currentIndex === 0) {
           // Wrap to last chamber
-          onSelectChat?.(chats[chats.length - 1].id);
+          onSelectChat?.(chats.at(-1).id);
           toast.success('Wrapped to last chamber');
         }
       }
@@ -191,7 +191,7 @@ export function useCommandPalette({
         toast.success('Sacred texts exported');
       }
     },
-    'preferences': () => {
+    preferences: () => {
       onOpenPreferences?.();
     },
 
@@ -227,45 +227,18 @@ export function useCommandPalette({
   const executeCommand = useCallback(
     (commandId: string) => {
       const command = getCommandById(commandId);
-      if (!command) return;
+      if (!command) {
+        return;
+      }
 
       const handler = commandHandlers[commandId];
       if (handler) {
         handler();
-      } else {
-        if (process.env.NODE_ENV !== 'production') {
-          toast.error(`Unknown command: ${commandId}`);
-        }
+      } else if (process.env.NODE_ENV !== 'production') {
+        toast.error(`Unknown command: ${commandId}`);
       }
     },
-    [
-      router,
-      resolvedTheme,
-      setTheme,
-      isCommandPaletteOpen,
-      onNewChat,
-      onSelectChat,
-      onSelectAgent,
-      onSelectModel,
-      onOpenSettings,
-      onToggleSidebar,
-      onSearchConversations,
-      onClearChat,
-      onDeleteChat,
-      onRenameChat,
-      onDuplicateChat,
-      onExportChat,
-      onFocusInput,
-      onScrollToBottom,
-      onScrollToTop,
-      onToggleReasoning,
-      onQuickSelectClaude,
-      onQuickSelectGPT,
-      onUploadFile,
-      onOpenPreferences,
-      currentChatId,
-      chats,
-    ]
+    [commandHandlers]
   );
 
   // Build keyboard shortcuts object - memoized and only for enabled commands with valid shortcuts
@@ -277,12 +250,12 @@ export function useCommandPalette({
         if (!command.shortcut || command.shortcut.length === 0) {
           return acc;
         }
-        
+
         // Skip if any shortcut part is empty
-        if (command.shortcut.some(key => !key || key.trim() === '')) {
+        if (command.shortcut.some((key) => !key || key.trim() === '')) {
           return acc;
         }
-        
+
         const shortcutKey = command.shortcut.join('+');
         acc[shortcutKey] = (e: KeyboardEvent) => {
           e.preventDefault();

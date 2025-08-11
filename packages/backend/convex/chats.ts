@@ -544,3 +544,94 @@ Title:`;
      return await ctx.db.get(args.chatId);
    },
  });
+
+// Clear all messages in a chat
+export const clearMessages = mutation({
+  args: {
+    chatId: v.id('chats'),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Authentication required');
+    }
+
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.ownerId !== identity.subject) {
+      throw new Error('Chat not found or access denied');
+    }
+
+    // Delete all messages in this chat
+    const messages = await ctx.db
+      .query('messages')
+      .withIndex('by_chatId', (q) => q.eq('chatId', args.chatId))
+      .collect();
+
+    for (const message of messages) {
+      await ctx.db.delete(message._id);
+    }
+
+    // Update chat's last message time
+    await ctx.db.patch(args.chatId, {
+      lastMessageTime: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, deletedCount: messages.length };
+  },
+});
+
+// Duplicate a chat with all its messages
+export const duplicateChat = mutation({
+  args: {
+    chatId: v.id('chats'),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Authentication required');
+    }
+
+    const originalChat = await ctx.db.get(args.chatId);
+    if (!originalChat || originalChat.ownerId !== identity.subject) {
+      throw new Error('Chat not found or access denied');
+    }
+
+    // Create new chat with copied data
+    const newChatId = await ctx.db.insert('chats', {
+      title: `${originalChat.title} (Copy)`,
+      ownerId: identity.subject,
+      model: originalChat.model,
+      systemPrompt: originalChat.systemPrompt,
+      temperature: originalChat.temperature,
+      maxTokens: originalChat.maxTokens,
+      isPinned: false,
+      isArchived: false,
+      tags: originalChat.tags || [],
+      metadata: originalChat.metadata || {},
+      lastMessageTime: Date.now(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    // Copy all messages
+    const messages = await ctx.db
+      .query('messages')
+      .withIndex('by_chatId', (q) => q.eq('chatId', args.chatId))
+      .collect();
+
+    for (const message of messages) {
+      await ctx.db.insert('messages', {
+        chatId: newChatId,
+        role: message.role,
+        content: message.content,
+        model: message.model,
+        metadata: message.metadata || {},
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    }
+
+    return await ctx.db.get(newChatId);
+  },
+});

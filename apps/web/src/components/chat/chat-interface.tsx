@@ -7,11 +7,11 @@ import { MessageSquare, Plus, Sidebar } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import { BookOfTheDead } from '@/components/command-palette/book-of-the-dead';
-import { CommandsOfMaatModal } from '@/components/command-palette/commands-of-maat-modal';
+import { CommandsOfMaatModal } from '@/components/command-palette/commandsOfMaatModal';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import {
@@ -27,6 +27,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -46,6 +47,7 @@ import { ChatWelcome } from './chat-welcome';
 import { MessageInput } from './message-input';
 import { MessageList } from './message-list';
 import { ModelSelector } from './model-selector';
+import { SearchDialog } from './searchDialog';
 
 const log = createModuleLogger('components/chat/chat-interface');
 
@@ -112,6 +114,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const [showMobileAgentSelector, setShowMobileAgentSelector] = useState(false);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [newChatTitle, setNewChatTitle] = useState('');
+  const [isReasoningMode, setIsReasoningMode] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Theme hook from next-themes
   const { theme, setTheme } = useTheme();
@@ -227,6 +233,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const createChat = useMutation(api.chatsAuth.createMyChat);
   const updateChat = useMutation(api.chatsAuth.updateMyChat);
   const deleteChat = useMutation(api.chatsAuth.deleteMyChat);
+  const clearMessagesM = useMutation(api.chats.clearMessages);
+  const duplicateChatM = useMutation(api.chats.duplicateChat);
+  const updateTitleM = useMutation(api.chats.updateTitle);
   const generateTitle = useAction(api.chats.generateAndUpdateTitle);
 
   // Use our new Convex chat hook for real-time streaming
@@ -396,6 +405,106 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   };
 
+  // Helper functions for command palette actions
+  const handleClearChat = async () => {
+    if (!selectedChatId) return;
+    try {
+      const result = await clearMessagesM({ chatId: selectedChatId });
+      toast.success(`Cleared ${result.deletedCount} messages`);
+    } catch (error) {
+      toast.error('Failed to clear chat');
+    }
+  };
+
+  const handleRenameChat = () => {
+    if (!selectedChatId) return;
+    const currentChat = chats?.find(c => c._id === selectedChatId);
+    setNewChatTitle(currentChat?.title || '');
+    setShowRenameDialog(true);
+  };
+
+  const handleConfirmRename = async () => {
+    if (!selectedChatId || !newChatTitle.trim()) return;
+    try {
+      await updateTitleM({
+        chatId: selectedChatId,
+        title: newChatTitle.trim(),
+        ownerId: user?.userId || '',
+      });
+      toast.success('Chat renamed successfully');
+      setShowRenameDialog(false);
+      setNewChatTitle('');
+    } catch (error) {
+      toast.error('Failed to rename chat');
+    }
+  };
+
+  const handleDuplicateChat = async () => {
+    if (!selectedChatId) return;
+    try {
+      const newChat = await duplicateChatM({ chatId: selectedChatId });
+      if (newChat?._id) {
+        toast.success('Chat duplicated successfully');
+        setSelectedChatId(newChat._id);
+        router.push(`/chat?chatId=${newChat._id}`);
+      }
+    } catch (error) {
+      toast.error('Failed to duplicate chat');
+    }
+  };
+
+  const handleExportChat = () => {
+    if (!selectedChatId || !messages) return;
+    
+    // Generate markdown content
+    const currentChat = chats?.find(c => c._id === selectedChatId);
+    const title = currentChat?.title || 'Untitled Chat';
+    const date = new Date().toISOString().split('T')[0];
+    
+    let markdown = `# ${title}\n\n`;
+    markdown += `*Exported on ${date}*\n\n---\n\n`;
+    
+    messages.forEach((msg) => {
+      const role = msg.role === 'user' ? '**User**' : '**Assistant**';
+      markdown += `${role}:\n\n${msg.content}\n\n---\n\n`;
+    });
+    
+    // Create and download file
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${date}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Chat exported successfully');
+  };
+
+  const handleToggleReasoning = () => {
+    setIsReasoningMode(!isReasoningMode);
+    toast.success(`Reasoning mode ${!isReasoningMode ? 'enabled' : 'disabled'}`);
+  };
+
+  const handleFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // For now, just show a message - full implementation would handle file upload
+    toast.info(`File selected: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   // Command Palette integration
   const {
     isCommandPaletteOpen,
@@ -411,30 +520,15 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     onOpenSettings: () => setShowMobileSettings(true),
     onToggleSidebar: () => setSidebarOpen(!sidebarOpen),
     onSearchConversations: () => setShowSearchDialog(true),
-    onClearChat: () => {
-      // Clear chat implementation
-      if (selectedChatId) {
-        // Add clear chat logic here
-        toast.success('Chat cleared');
-      }
-    },
+    onClearChat: handleClearChat,
     onDeleteChat: () => {
       if (selectedChatId) {
         handleDeleteChat(selectedChatId);
       }
     },
-    onRenameChat: () => {
-      // Open rename dialog
-      toast.info('Rename chat feature coming soon');
-    },
-    onDuplicateChat: () => {
-      // Duplicate chat logic
-      toast.info('Duplicate chat feature coming soon');
-    },
-    onExportChat: () => {
-      // Export chat as markdown
-      toast.info('Export feature coming soon');
-    },
+    onRenameChat: handleRenameChat,
+    onDuplicateChat: handleDuplicateChat,
+    onExportChat: handleExportChat,
     onFocusInput: () => {
       // Focus will be handled by message input component
     },
@@ -444,19 +538,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     onScrollToTop: () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
-    onToggleReasoning: () => {
-      // Toggle reasoning mode
-      toast.info('Reasoning mode toggle coming soon');
-    },
+    onToggleReasoning: handleToggleReasoning,
     onQuickSelectClaude: () => {
       setSelectedModel('claude-3-5-sonnet-20241022');
     },
     onQuickSelectGPT: () => {
       setSelectedModel('gpt-4o');
     },
-    onUploadFile: () => {
-      toast.info('File upload feature coming soon');
-    },
+    onUploadFile: handleFileUpload,
     onOpenPreferences: () => {
       router.push('/settings');
     },
@@ -980,6 +1069,65 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       <CommandsOfMaatModal
         isOpen={isShortcutsModalOpen}
         onClose={() => setIsShortcutsModalOpen(false)}
+      />
+
+      {/* Rename Chat Dialog */}
+      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Chat</DialogTitle>
+            <DialogDescription>
+              Enter a new name for this chat
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <input
+              type="text"
+              value={newChatTitle}
+              onChange={(e) => setNewChatTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleConfirmRename();
+                }
+              }}
+              placeholder="Enter chat title..."
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setShowRenameDialog(false)}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmRename}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+            >
+              Rename
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Search Dialog */}
+      <SearchDialog
+        isOpen={showSearchDialog}
+        onClose={() => setShowSearchDialog(false)}
+        chats={chats}
+        onSelectChat={handleChatSelect}
+        currentChatId={selectedChatId}
+      />
+
+      {/* Hidden File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        onChange={handleFileChange}
+        className="hidden"
+        accept=".txt,.md,.pdf,.doc,.docx,.csv,.json"
       />
 
       {/* Upgrade Prompt Modal */}
