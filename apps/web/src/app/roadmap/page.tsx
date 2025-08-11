@@ -60,9 +60,6 @@ export default function RoadmapPage() {
                     <div>
                       <div className="font-medium">MCP Servers (Alpha)</div>
                       <p className="text-muted-foreground">UI to initialize servers like Context7 and Solana MCP. Server catalog and status surfaced.</p>
-                      <div className="mt-2 flex gap-2">
-                        <Link className="text-primary underline underline-offset-4" href="/mcp">Manage MCP</Link>
-                      </div>
                     </div>
                   </li>
                   <li className="flex items-start gap-2">
