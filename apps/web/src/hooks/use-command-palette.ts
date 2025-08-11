@@ -5,8 +5,12 @@ import { toast } from 'sonner';
 import {
   getCommandById,
   getEnabledCommands,
+  type MaatCommand,
 } from '@/lib/constants/commands-of-maat';
 import { useKeyboardShortcuts } from './use-keyboard-shortcuts';
+
+// Type-safe command IDs
+type CommandId = MaatCommand['id'];
 
 export type UseCommandPaletteProps = {
   onNewChat?: () => void;
@@ -63,8 +67,8 @@ export function useCommandPalette({
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Command handlers map
-  const commandHandlers: Record<string, () => void> = {
+  // Command handlers map with type-safe keys
+  const commandHandlers: Partial<Record<CommandId, () => void>> = {
     // Papyrus Commands
     'new-papyrus': () => {
       onNewChat?.();
@@ -100,9 +104,10 @@ export function useCommandPalette({
     },
     'focus-input': () => {
       onFocusInput?.();
-      if (messageInputRef.current) {
-        messageInputRef.current.focus();
-      }
+      // Ensure focus happens after any UI updates
+      requestAnimationFrame(() => {
+        messageInputRef.current?.focus();
+      });
     },
     'search-scrolls': () => {
       onSearchConversations?.();
@@ -122,6 +127,10 @@ export function useCommandPalette({
         if (currentIndex > 0) {
           onSelectChat?.(chats[currentIndex - 1].id);
           toast.success('Previous chamber opened');
+        } else if (currentIndex === 0) {
+          // Wrap to last chamber
+          onSelectChat?.(chats[chats.length - 1].id);
+          toast.success('Wrapped to last chamber');
         }
       }
     },
@@ -131,6 +140,10 @@ export function useCommandPalette({
         if (currentIndex < chats.length - 1) {
           onSelectChat?.(chats[currentIndex + 1].id);
           toast.success('Next chamber opened');
+        } else if (currentIndex === chats.length - 1) {
+          // Wrap to first chamber
+          onSelectChat?.(chats[0].id);
+          toast.success('Wrapped to first chamber');
         }
       }
     },

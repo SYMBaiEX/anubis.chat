@@ -361,13 +361,8 @@ function extractTitleFromMessage(content: string): string {
     .trim();
 
   // Remove common question prefixes
-  const prefixes = [
-    /^(can you |could you |please |i want to |i need to |help me |how to |how do i |what is |what are |where is |where are |when is |when are |why is |why are |who is |who are )/i,
-  ];
-
-  for (const prefix of prefixes) {
-    cleaned = cleaned.replace(prefix, '');
-  }
+  const prefixPattern = /^(can you |could you |please |i want to |i need to |help me |how to |how do i |what is |what are |where is |where are |when is |when are |why is |why are |who is |who are )/i;
+  cleaned = cleaned.replace(prefixPattern, '');
 
   // Get the first sentence or question
   const firstSentence = cleaned.match(/^[^.!?\n]{1,100}[.!?]?/);
