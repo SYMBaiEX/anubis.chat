@@ -298,13 +298,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   }, [selectedAgent]);
 
-  // Quick suggestion prompts inspired by AI Elements examples
-  const quickSuggestions = [
-    'Summarize recent messages',
-    'Generate action items from this chat',
-    'Explain this like I’m new to Solana',
-    'Turn this into a tweet thread',
-  ] as const;
+  // Quick suggestions removed per product request
 
   // Regenerate an assistant message by resending the preceding user message
   const handleRegenerateMessage = (messageId: string) => {
@@ -696,24 +690,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               )}
             </div>
 
-            {/* Quick Suggestions (optional) */}
-            <div className="border-border/50 border-t bg-card/20 px-2 py-1 sm:px-3 md:px-4">
-              <div className="mx-auto w-full max-w-full px-0 sm:max-w-6xl md:max-w-7xl lg:px-4 xl:px-8">
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  {quickSuggestions.map((s) => (
-                    <Button
-                      key={s}
-                      className="h-7 rounded-full px-2 text-xs sm:h-8 sm:px-3 sm:text-sm"
-                      onClick={() => handleSendMessage(s)}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      {s}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            {/* Quick Suggestions removed */}
 
             {/* Upgrade Prompt */}
             {upgradePrompt.shouldShow && upgradePrompt.urgency === 'high' && (
