@@ -89,7 +89,7 @@ export interface ChatHeaderProps extends BaseComponentProps {
   onRename?: (newTitle: string) => void;
   onClearHistory?: () => void;
   onDelete?: () => void;
-  onGenerateTitle?: () => void;
+  onGenerateTitle?: () => void | Promise<void>;
   onSettingsClick?: () => void;
   onModelSelectorClick?: () => void;
   onAgentSelectorClick?: () => void;
