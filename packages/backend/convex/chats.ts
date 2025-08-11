@@ -1,6 +1,12 @@
 import { v } from 'convex/values';
-import type { Doc } from './_generated/dataModel';
-import { mutation, query } from './_generated/server';
+import { api } from './_generated/api';
+import type { Doc, Id } from './_generated/dataModel';
+import { action, internalMutation, mutation, query } from './_generated/server';
+
+// Type definitions
+type TitleGenerationResult =
+  | { success: true; title: string; skipped?: boolean }
+  | { success: false; error: string };
 
 // Get chats by owner
 export const getByOwner = query({
@@ -340,5 +346,206 @@ export const getStats = query({
       newestChat:
         chats.length > 0 ? Math.max(...chats.map((c) => c.createdAt)) : null,
     };
+  },
+});
+
+// Helper function to extract a title from a message
+function extractTitleFromMessage(content: string): string {
+  // Remove any markdown formatting
+  let cleaned = content
+    .replace(/^#{1,6}\s+/gm, '') // Remove headers
+    .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold
+    .replace(/\*([^*]+)\*/g, '$1') // Remove italic
+    .replace(/`([^`]+)`/g, '$1') // Remove code
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
+    .trim();
+
+  // Remove common question prefixes
+  const prefixes = [
+    /^(can you |could you |please |i want to |i need to |help me |how to |how do i |what is |what are |where is |where are |when is |when are |why is |why are |who is |who are )/i,
+  ];
+
+  for (const prefix of prefixes) {
+    cleaned = cleaned.replace(prefix, '');
+  }
+
+  // Get the first sentence or question
+  const firstSentence = cleaned.match(/^[^.!?\n]{1,100}[.!?]?/);
+  if (firstSentence) {
+    cleaned = firstSentence[0].replace(/[.!?]+$/, '');
+  }
+
+  // Capitalize first letter
+  if (cleaned.length > 0) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+
+  // Limit to reasonable length
+  if (cleaned.length > 50) {
+    const words = cleaned.split(' ');
+    cleaned = words.slice(0, 6).join(' ');
+    if (cleaned.length > 50) {
+      cleaned = cleaned.substring(0, 47) + '...';
+    }
+  }
+
+  return cleaned || 'New Chat';
+}
+
+// Helper function to truncate a title to a maximum length
+function truncateTitle(title: string, maxLength: number): string {
+  if (title.length <= maxLength) {
+    return title;
+  }
+
+  // Try to truncate at a word boundary
+  const truncated = title.substring(0, maxLength - 3);
+  const lastSpace = truncated.lastIndexOf(' ');
+
+  if (lastSpace > maxLength * 0.7) {
+    // If we have a reasonable word boundary, use it
+    return truncated.substring(0, lastSpace) + '...';
+  }
+
+  // Otherwise just truncate
+  return truncated + '...';
+}
+
+// Generate a title for a chat based on its messages
+export const generateAndUpdateTitle = action({
+  args: {
+    chatId: v.id('chats'),
+    ownerId: v.string(),
+  },
+  handler: async (ctx, args): Promise<TitleGenerationResult> => {
+    // Get the chat to verify ownership and get model info
+    const chat = await ctx.runQuery(api.chats.getById, {
+      id: args.chatId,
+    });
+
+    if (!chat || chat.ownerId !== args.ownerId) {
+      throw new Error('Chat not found or access denied');
+    }
+
+    // Check if title is already meaningful (not a default title)
+    const defaultTitlePatterns = [
+      /^New Chat/i,
+      /^Untitled/i,
+      /^Chat \d+$/i,
+      /^Conversation$/i,
+    ];
+
+    const hasDefaultTitle = defaultTitlePatterns.some((pattern) =>
+      pattern.test(chat.title || '')
+    );
+
+    if (!hasDefaultTitle && chat.title && chat.title.length > 5) {
+      return { success: true, title: chat.title, skipped: true };
+    }
+
+    // Get the first few messages from the chat
+    const messages = await ctx.runQuery(api.messages.getByChatId, {
+      chatId: args.chatId,
+      limit: 5,
+    });
+
+    if (!messages || messages.length === 0) {
+      return { success: false, error: 'No messages to generate title from' };
+    }
+
+    // Filter to get only user and assistant messages (skip system messages)
+    const conversationMessages = messages.filter(
+      (msg) => msg.role === 'user' || msg.role === 'assistant'
+    );
+
+    if (conversationMessages.length === 0) {
+      return { success: false, error: 'No conversation messages found' };
+    }
+
+    // Prepare the conversation context for title generation
+    const conversationText = conversationMessages
+      .slice(0, 3) // Use first 3 messages max
+      .map((msg) => `${msg.role}: ${msg.content.slice(0, 200)}`)
+      .join('\n');
+
+    try {
+      // Generate title using AI - we'll use a simple prompt
+      const prompt = `Generate a concise, descriptive title (3-6 words) for this conversation. The title should capture the main topic or purpose. Return only the title text, nothing else.
+
+Conversation:
+${conversationText}
+
+Title:`;
+
+      // For now, we'll use a fallback approach since we need to integrate with the streaming API
+      // Extract key topics from the first user message as a fallback
+      const firstUserMessage = conversationMessages.find(
+        (msg) => msg.role === 'user'
+      );
+      if (!firstUserMessage) {
+        return { success: false, error: 'No user message found' };
+      }
+
+      // Simple title extraction from first message
+      let generatedTitle = extractTitleFromMessage(firstUserMessage.content);
+
+      // Validate the generated title
+      if (!generatedTitle || generatedTitle.length < 2) {
+        // Fallback to a simple title based on message length
+        const words = firstUserMessage.content.trim().split(' ').slice(0, 4);
+        generatedTitle = words.join(' ');
+
+        if (!generatedTitle) {
+          return {
+            success: false,
+            error: 'Could not generate a meaningful title',
+          };
+        }
+      }
+
+      // Ensure title is not too long
+      if (generatedTitle.length > 100) {
+        generatedTitle = truncateTitle(generatedTitle, 100);
+      }
+
+      // Update the chat title
+      await ctx.runMutation(api.chats.updateTitle as any, {
+        chatId: args.chatId,
+        title: generatedTitle,
+        ownerId: args.ownerId,
+      });
+
+      return { success: true, title: generatedTitle };
+    } catch (error) {
+      console.error('Error generating title:', error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Failed to generate title',
+      };
+    }
+  },
+});
+
+// Internal mutation to update chat title
+export const updateTitle = internalMutation({
+  args: {
+    chatId: v.id('chats'),
+    title: v.string(),
+    ownerId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const chat = await ctx.db.get(args.chatId);
+
+    if (!chat || chat.ownerId !== args.ownerId) {
+      throw new Error('Chat not found or access denied');
+    }
+
+    await ctx.db.patch(args.chatId, {
+      title: args.title,
+      updatedAt: Date.now(),
+    });
+
+    return await ctx.db.get(args.chatId);
   },
 });

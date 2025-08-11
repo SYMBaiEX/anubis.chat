@@ -1,237 +1,875 @@
+'use client';
+
 import {
+  Calendar,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Clock,
   Compass,
+  Filter,
+  Grid3x3,
+  List,
   Rocket,
+  Search,
   Settings2,
   Sparkles,
+  Trophy,
   Upload,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
+import type { ReactElement } from 'react';
+import { useState } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 import LandingFooter from '@/components/landing/landing-footer';
 import LandingHeader from '@/components/landing/landing-header';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
-export const metadata = {
-  title: 'Roadmap • anubis.chat',
-  description:
-    'Quarterly roadmap for anubis.chat including MCP Server connections, Workflow connections, and Memories Management.',
+type FeatureStatus = 'completed' | 'in-progress' | 'upcoming';
+type ViewMode = 'timeline' | 'kanban' | 'list';
+
+interface RoadmapLink {
+  label: string;
+  href: string;
+}
+
+interface RoadmapFeature {
+  id: string;
+  title: string;
+  description: string;
+  status: FeatureStatus;
+  progress: number;
+  category: 'MCP' | 'Memories' | 'Workflows' | 'Auth' | 'UI' | 'Referral';
+  quarter: 'Q3 2025' | 'Q4 2025' | '2026';
+  estimatedDate?: string;
+  details?: string[];
+  links?: RoadmapLink[];
+  icon: React.ElementType;
+}
+
+const roadmapData: RoadmapFeature[] = [
+  // Q3 2025 - NOW
+  {
+    id: 'wallet-auth',
+    title: 'Wallet Auth & Subscriptions',
+    description:
+      'Stable Solana wallet sign-in and SOL-based plans. UX polish ongoing.',
+    status: 'completed',
+    progress: 100,
+    category: 'Auth',
+    quarter: 'Q3 2025',
+    estimatedDate: 'Completed',
+    details: [
+      'Phantom wallet integration',
+      'Solflare wallet support',
+      'SOL payment processing',
+      'Subscription management dashboard',
+    ],
+    icon: Trophy,
+  },
+  {
+    id: 'mcp-alpha',
+    title: 'MCP Servers (Alpha)',
+    description:
+      'UI to initialize servers like Context7 and Solana MCP. Server catalog and status surfaced.',
+    status: 'completed',
+    progress: 100,
+    category: 'MCP',
+    quarter: 'Q3 2025',
+    estimatedDate: 'Completed',
+    details: [
+      'Server initialization UI',
+      'Context7 integration',
+      'Solana MCP support',
+      'Server health monitoring',
+    ],
+    icon: Settings2,
+  },
+  {
+    id: 'referral',
+    title: 'Referral Program',
+    description:
+      'Pro+ gated referrals with tiered commissions and instant wallet payouts.',
+    status: 'completed',
+    progress: 100,
+    category: 'Referral',
+    quarter: 'Q3 2025',
+    estimatedDate: 'Completed',
+    details: [
+      'Tiered commission structure',
+      'Instant SOL payouts',
+      'Referral tracking dashboard',
+      'Pro+ exclusive access',
+    ],
+    links: [{ label: 'Referral details', href: '/referral-info' }],
+    icon: Users,
+  },
+  {
+    id: 'landing-polish',
+    title: 'Landing & A11y Polish',
+    description:
+      'Unified typography, gradients, and improved accessibility across public pages.',
+    status: 'completed',
+    progress: 100,
+    category: 'UI',
+    quarter: 'Q3 2025',
+    estimatedDate: 'Completed',
+    details: [
+      'Consistent design system',
+      'WCAG 2.1 AA compliance',
+      'Performance optimizations',
+      'Mobile responsiveness',
+    ],
+    icon: Sparkles,
+  },
+  // Q4 2025 - NEXT
+  {
+    id: 'mcp-beta',
+    title: 'MCP Beta',
+    description:
+      'Permission prompts, connection health checks, and curated server gallery.',
+    status: 'in-progress',
+    progress: 35,
+    category: 'MCP',
+    quarter: 'Q4 2025',
+    estimatedDate: 'October 2025',
+    details: [
+      'Granular permission system',
+      'Real-time health monitoring',
+      'Server marketplace',
+      'Auto-reconnection logic',
+    ],
+    icon: Settings2,
+  },
+  {
+    id: 'memories-alpha',
+    title: 'Memories (Alpha)',
+    description:
+      'Document uploads, embedding, and retrieval for context-aware chats.',
+    status: 'in-progress',
+    progress: 20,
+    category: 'Memories',
+    quarter: 'Q4 2025',
+    estimatedDate: 'November 2025',
+    details: [
+      'File upload interface',
+      'Vector embeddings',
+      'Semantic search',
+      'Context injection',
+    ],
+    icon: Upload,
+  },
+  {
+    id: 'workflows-alpha',
+    title: 'Workflows (Alpha)',
+    description: 'Trigger/action nodes, schedules, run logs, and retry policy.',
+    status: 'upcoming',
+    progress: 0,
+    category: 'Workflows',
+    quarter: 'Q4 2025',
+    estimatedDate: 'December 2025',
+    details: [
+      'Visual workflow builder',
+      'Cron scheduling',
+      'Execution logs',
+      'Error handling & retries',
+    ],
+    icon: Compass,
+  },
+  // 2026 - LATER
+  {
+    id: 'workflows-stable',
+    title: 'Workflows (Beta → Stable)',
+    description:
+      'Branching, approvals, variables/secrets, templates, hosted runners.',
+    status: 'upcoming',
+    progress: 0,
+    category: 'Workflows',
+    quarter: '2026',
+    estimatedDate: 'Q1 2026',
+    details: [
+      'Conditional branching',
+      'Manual approval steps',
+      'Secret management',
+      'Template library',
+      'Dedicated runners',
+    ],
+    icon: Compass,
+  },
+  {
+    id: 'memories-stable',
+    title: 'Memories (Beta → Stable)',
+    description:
+      'Analytics, redaction tools, organization policies, cross-agent sharing with guardrails.',
+    status: 'upcoming',
+    progress: 0,
+    category: 'Memories',
+    quarter: '2026',
+    estimatedDate: 'Q2 2026',
+    details: [
+      'Usage analytics',
+      'PII redaction',
+      'Team policies',
+      'Agent memory sharing',
+      'Compliance tools',
+    ],
+    icon: Upload,
+  },
+  {
+    id: 'mcp-marketplace',
+    title: 'MCP Marketplace',
+    description:
+      'Quality bar, community submissions, usage insights and versioning.',
+    status: 'upcoming',
+    progress: 0,
+    category: 'MCP',
+    quarter: '2026',
+    estimatedDate: 'Q3 2026',
+    details: [
+      'Community contributions',
+      'Quality standards',
+      'Usage metrics',
+      'Version management',
+      'Revenue sharing',
+    ],
+    icon: Sparkles,
+  },
+];
+
+const categoryColors: Record<string, string> = {
+  MCP: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+  Memories:
+    'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+  Workflows:
+    'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
+  Auth: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+  UI: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20',
+  Referral:
+    'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20',
 };
 
-export default function RoadmapPage() {
+const statusConfig = {
+  completed: {
+    icon: CheckCircle2,
+    color: 'text-green-600 dark:text-green-400',
+    bgColor: 'bg-green-500/10',
+    label: 'Completed',
+  },
+  'in-progress': {
+    icon: Clock,
+    color: 'text-yellow-600 dark:text-yellow-400',
+    bgColor: 'bg-yellow-500/10',
+    label: 'In Progress',
+  },
+  upcoming: {
+    icon: Calendar,
+    color: 'text-gray-500 dark:text-gray-400',
+    bgColor: 'bg-gray-500/10',
+    label: 'Upcoming',
+  },
+};
+
+function FeatureCard({
+  feature,
+  expanded,
+  onToggle,
+}: {
+  feature: RoadmapFeature;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const StatusIcon = statusConfig[feature.status].icon;
+  const FeatureIcon = feature.icon;
+
+  return (
+    <Card
+      aria-expanded={expanded}
+      aria-label={`${feature.title} - ${feature.status} - Click to ${expanded ? 'collapse' : 'expand'} details`}
+      className={cn(
+        'transform-gpu cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg',
+        expanded && 'shadow-xl ring-2 ring-primary'
+      )}
+      onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+      tabIndex={0}
+    >
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            <div
+              className={cn(
+                'rounded-lg p-2',
+                statusConfig[feature.status].bgColor
+              )}
+            >
+              <FeatureIcon className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                {feature.title}
+                <StatusIcon
+                  className={cn('h-4 w-4', statusConfig[feature.status].color)}
+                />
+              </CardTitle>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Badge
+                  className={cn('border', categoryColors[feature.category])}
+                >
+                  {feature.category}
+                </Badge>
+                <Badge variant="outline">{feature.quarter}</Badge>
+                {feature.estimatedDate && (
+                  <Badge variant="secondary">{feature.estimatedDate}</Badge>
+                )}
+              </div>
+            </div>
+            <Button
+              aria-label={expanded ? 'Collapse details' : 'Expand details'}
+              className="h-6 w-6 p-0 hover:bg-muted"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle();
+              }}
+              size="sm"
+              variant="ghost"
+            >
+              {expanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground text-sm">{feature.description}</p>
+
+        {feature.status !== 'upcoming' && (
+          <div className="mt-4">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-muted-foreground text-xs">Progress</span>
+              <span className="font-medium text-xs">{feature.progress}%</span>
+            </div>
+            <Progress
+              className="h-2"
+              value={feature.progress}
+              variant={feature.progress === 100 ? 'success' : 'default'}
+            />
+          </div>
+        )}
+
+        {expanded && (
+          <div className="fade-in-0 slide-in-from-top-2 mt-4 animate-in space-y-4 duration-300">
+            {feature.details && (
+              <div>
+                <h4 className="mb-2 font-medium text-sm">Key Features:</h4>
+                <ul className="space-y-1">
+                  {feature.details.map((detail) => (
+                    <li
+                      className="flex items-start gap-2 text-muted-foreground text-sm"
+                      key={detail}
+                    >
+                      <CheckCircle2 className="mt-0.5 h-3 w-3 flex-shrink-0 text-primary" />
+                      <span>{detail}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {feature.links && (
+              <div className="flex gap-2">
+                {feature.links.map((link) => (
+                  <Link
+                    className="text-primary text-sm underline underline-offset-4 transition-colors hover:text-primary/80"
+                    href={link.href}
+                    key={link.href}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Helper function to avoid nested ternary
+function getQuarterStatus(index: number): string {
+  switch (index) {
+    case 0:
+      return 'Shipped';
+    case 1:
+      return 'In Development';
+    default:
+      return 'Planning';
+  }
+}
+
+function TimelineView({
+  features,
+  expandedCards,
+  onToggleCard,
+}: {
+  features: RoadmapFeature[];
+  expandedCards: Set<string>;
+  onToggleCard: (id: string) => void;
+}) {
+  const quarters = ['Q3 2025', 'Q4 2025', '2026'] as const;
+
+  // Calculate statistics for the progress card
+  const stats = {
+    completed: roadmapData.filter((f) => f.status === 'completed').length,
+    inProgress: roadmapData.filter((f) => f.status === 'in-progress').length,
+    upcoming: roadmapData.filter((f) => f.status === 'upcoming').length,
+    totalProgress: Math.round(
+      (roadmapData.filter((f) => f.status === 'completed').length /
+        roadmapData.length) *
+        100
+    ),
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Overall Progress */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Rocket className="h-5 w-5" />
+            Overall Roadmap Progress
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Progress
+              className="h-3"
+              value={stats.totalProgress}
+              variant="success"
+            />
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="text-center">
+                <div className="font-bold text-2xl text-green-600 dark:text-green-400">
+                  {stats.completed}
+                </div>
+                <div className="text-muted-foreground">Completed</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-2xl text-yellow-600 dark:text-yellow-400">
+                  {stats.inProgress}
+                </div>
+                <div className="text-muted-foreground">In Progress</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-2xl text-gray-600 dark:text-gray-400">
+                  {stats.upcoming}
+                </div>
+                <div className="text-muted-foreground">Upcoming</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Timeline */}
+      <div className="relative">
+        {/* Timeline Line */}
+        <div
+          aria-hidden="true"
+          className="absolute top-0 bottom-0 left-8 w-0.5 bg-gradient-to-b from-green-500 via-yellow-500 to-gray-400"
+        />
+
+        {quarters.map((quarter, qIdx) => {
+          const quarterFeatures = features.filter((f) => f.quarter === quarter);
+
+          return (
+            <div className="relative mb-12" key={quarter}>
+              {/* Quarter Marker */}
+              <div className="mb-6 flex items-center gap-4">
+                <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-4 border-primary bg-background shadow-lg">
+                  <Calendar className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-xl">{quarter}</h3>
+                  <p className="text-muted-foreground text-sm">
+                    {getQuarterStatus(qIdx)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Features */}
+              <div className="ml-20 space-y-4">
+                {quarterFeatures.map((feature) => (
+                  <FeatureCard
+                    expanded={expandedCards.has(feature.id)}
+                    feature={feature}
+                    key={feature.id}
+                    onToggle={() => onToggleCard(feature.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function KanbanView({
+  features,
+  expandedCards,
+  onToggleCard,
+}: {
+  features: RoadmapFeature[];
+  expandedCards: Set<string>;
+  onToggleCard: (id: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {(['completed', 'in-progress', 'upcoming'] as FeatureStatus[]).map(
+        (status) => {
+          const statusFeatures = features.filter((f) => f.status === status);
+          const config = statusConfig[status];
+          const Icon = config.icon;
+
+          return (
+            <div className="space-y-4" key={status}>
+              <div className={cn('rounded-lg border p-4', config.bgColor)}>
+                <h3 className="flex items-center gap-2 font-semibold">
+                  <Icon className={cn('h-5 w-5', config.color)} />
+                  {config.label}
+                  <Badge className="ml-auto" variant="secondary">
+                    {statusFeatures.length}
+                  </Badge>
+                </h3>
+              </div>
+              <div className="space-y-4">
+                {statusFeatures.map((feature) => (
+                  <FeatureCard
+                    expanded={expandedCards.has(feature.id)}
+                    feature={feature}
+                    key={feature.id}
+                    onToggle={() => onToggleCard(feature.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        }
+      )}
+    </div>
+  );
+}
+
+function ListView({
+  features,
+  expandedCards,
+  onToggleCard,
+}: {
+  features: RoadmapFeature[];
+  expandedCards: Set<string>;
+  onToggleCard: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {features.map((feature) => (
+        <FeatureCard
+          expanded={expandedCards.has(feature.id)}
+          feature={feature}
+          key={feature.id}
+          onToggle={() => onToggleCard(feature.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+export default function RoadmapPage(): ReactElement {
+  const [viewMode, setViewMode] = useState<ViewMode>('timeline');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<FeatureStatus | 'all'>(
+    'all'
+  );
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+
+  const toggleCard = (id: string): void => {
+    setExpandedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const filteredFeatures = roadmapData.filter((feature) => {
+    const matchesSearch =
+      searchQuery === '' ||
+      feature.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      feature.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      feature.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      feature.details?.some((detail) =>
+        detail.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+    const matchesFilter =
+      selectedFilter === 'all' || feature.status === selectedFilter;
+
+    return matchesSearch && matchesFilter;
+  });
+
   return (
     <div className="flex min-h-screen flex-col">
       <LandingHeader />
-      <LandingFooter />
 
       <main className="w-full flex-1 pt-16 pb-10">
         {/* Hero */}
         <AnimatedSection auroraVariant="gold" className="px-6 py-12">
           <div className="mx-auto max-w-4xl text-center">
             <h1 className="mb-4 font-bold text-3xl sm:text-4xl md:text-5xl">
-              <span className="text-gradient">Product Roadmap</span>
+              <span className="text-gradient">Interactive Product Roadmap</span>
             </h1>
             <p className="mx-auto max-w-2xl text-muted-foreground">
-              A clear view of what’s shipping now, what’s coming next, and what
-              we’re exploring. Timelines are directional and may change.
+              Track our progress, explore upcoming features, and see what we're
+              building next. Click on any card to see more details.
             </p>
-            <div className="mt-6 text-muted-foreground text-xs">
-              Last updated: 2025-08-11
+            <div className="mt-6 flex flex-col items-center justify-center gap-2 text-muted-foreground text-xs sm:flex-row sm:gap-4">
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Last updated: 2025-08-11
+              </span>
+              <Badge className="gap-1" variant="outline">
+                <Sparkles className="h-3 w-3" />
+                Pro+ users can vote on features
+              </Badge>
             </div>
           </div>
         </AnimatedSection>
 
-        {/* Roadmap Sections */}
-        <section className="px-6 py-10">
-          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* NOW */}
-            <Card className="card-hover lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Rocket className="h-5 w-5 text-primary" /> Now
-                  </span>
-                  <Badge variant="secondary">Q3 · 2025</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
-                    <div>
-                      <div className="font-medium">
-                        Wallet Auth & Subscriptions
-                      </div>
-                      <p className="text-muted-foreground">
-                        Stable Solana wallet sign-in and SOL-based plans. UX
-                        polish ongoing.
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
-                    <div>
-                      <div className="font-medium">MCP Servers (Alpha)</div>
-                      <p className="text-muted-foreground">
-                        UI to initialize servers like Context7 and Solana MCP.
-                        Server catalog and status surfaced.
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
-                    <div>
-                      <div className="font-medium">Referral Program</div>
-                      <p className="text-muted-foreground">
-                        Pro+ gated referrals with tiered commissions and instant
-                        wallet payouts.
-                      </p>
-                      <div className="mt-2 flex gap-2">
-                        <Link
-                          className="text-primary underline underline-offset-4"
-                          href="/referral-info"
-                        >
-                          Referral details
-                        </Link>
-                      </div>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
-                    <div>
-                      <div className="font-medium">Landing & A11y Polish</div>
-                      <p className="text-muted-foreground">
-                        Unified typography, gradients, and improved
-                        accessibility across public pages.
-                      </p>
-                    </div>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+        {/* Controls */}
+        <section className="px-6 py-6">
+          <div className="mx-auto max-w-6xl space-y-4">
+            {/* Show results count when searching */}
+            {searchQuery && (
+              <div className="mb-4 text-muted-foreground text-sm">
+                Found {filteredFeatures.length}{' '}
+                {filteredFeatures.length === 1 ? 'feature' : 'features'}{' '}
+                matching "{searchQuery}"
+              </div>
+            )}
 
-            {/* NEXT */}
-            <Card className="card-hover lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-accent" /> Next
-                  </span>
-                  <Badge>Q4 · 2025</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-2">
-                    <Settings2 className="mt-0.5 h-4 w-4 text-accent" />
-                    <div>
-                      <div className="font-medium">MCP Beta</div>
-                      <p className="text-muted-foreground">
-                        Permission prompts, connection health checks, and
-                        curated server gallery.
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Upload className="mt-0.5 h-4 w-4 text-accent" />
-                    <div>
-                      <div className="font-medium">Memories (Alpha)</div>
-                      <p className="text-muted-foreground">
-                        Document uploads, embedding, and retrieval for
-                        context-aware chats.
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Compass className="mt-0.5 h-4 w-4 text-accent" />
-                    <div>
-                      <div className="font-medium">Workflows (Alpha)</div>
-                      <p className="text-muted-foreground">
-                        Trigger/action nodes, schedules, run logs, and retry
-                        policy.
-                      </p>
-                    </div>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+            {/* Search and Filters */}
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  aria-label="Search roadmap features"
+                  className="pr-4 pl-9"
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search features by name, category, or description..."
+                  type="search"
+                  value={searchQuery}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="transition-all"
+                  onClick={() => setSelectedFilter('all')}
+                  size="sm"
+                  variant={selectedFilter === 'all' ? 'default' : 'outline'}
+                >
+                  <Filter className="mr-1 h-4 w-4" />
+                  All
+                  {searchQuery && ` (${filteredFeatures.length})`}
+                </Button>
+                <Button
+                  className="transition-all"
+                  onClick={() => setSelectedFilter('completed')}
+                  size="sm"
+                  variant={
+                    selectedFilter === 'completed' ? 'default' : 'outline'
+                  }
+                >
+                  <CheckCircle2 className="mr-1 h-4 w-4" />
+                  Completed
+                </Button>
+                <Button
+                  className="transition-all"
+                  onClick={() => setSelectedFilter('in-progress')}
+                  size="sm"
+                  variant={
+                    selectedFilter === 'in-progress' ? 'default' : 'outline'
+                  }
+                >
+                  <Clock className="mr-1 h-4 w-4" />
+                  In Progress
+                </Button>
+                <Button
+                  className="transition-all"
+                  onClick={() => setSelectedFilter('upcoming')}
+                  size="sm"
+                  variant={
+                    selectedFilter === 'upcoming' ? 'default' : 'outline'
+                  }
+                >
+                  <Calendar className="mr-1 h-4 w-4" />
+                  Upcoming
+                </Button>
+              </div>
+            </div>
 
-            {/* LATER */}
-            <Card className="card-hover lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Compass className="h-5 w-5 text-muted-foreground" /> Later
-                  </span>
-                  <Badge variant="outline">2026</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-2">
-                    <Settings2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="font-medium">
-                        Workflows (Beta → Stable)
-                      </div>
-                      <p className="text-muted-foreground">
-                        Branching, approvals, variables/secrets, templates,
-                        hosted runners.
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Upload className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="font-medium">
-                        Memories (Beta → Stable)
-                      </div>
-                      <p className="text-muted-foreground">
-                        Analytics, redaction tools, organization policies,
-                        cross-agent sharing with guardrails.
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Sparkles className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="font-medium">MCP Marketplace</div>
-                      <p className="text-muted-foreground">
-                        Quality bar, community submissions, usage insights and
-                        versioning.
-                      </p>
-                    </div>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+            {/* View Tabs */}
+            <Tabs
+              onValueChange={(v) => setViewMode(v as ViewMode)}
+              value={viewMode}
+            >
+              <TabsList className="mb-2 grid w-full max-w-md grid-cols-3">
+                <TabsTrigger className="gap-2" value="timeline">
+                  <Calendar className="h-4 w-4" />
+                  Timeline
+                </TabsTrigger>
+                <TabsTrigger className="gap-2" value="kanban">
+                  <Grid3x3 className="h-4 w-4" />
+                  Kanban
+                </TabsTrigger>
+                <TabsTrigger className="gap-2" value="list">
+                  <List className="h-4 w-4" />
+                  List
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent className="mt-6" value="timeline">
+                {filteredFeatures.length > 0 ? (
+                  <TimelineView
+                    expandedCards={expandedCards}
+                    features={filteredFeatures}
+                    onToggleCard={toggleCard}
+                  />
+                ) : (
+                  <div className="py-12 text-center">
+                    <Search className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                    <p className="text-muted-foreground">
+                      No features match your search criteria
+                    </p>
+                    <Button
+                      className="mt-4"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedFilter('all');
+                      }}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Clear filters
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent className="mt-6" value="kanban">
+                {filteredFeatures.length > 0 ? (
+                  <KanbanView
+                    expandedCards={expandedCards}
+                    features={filteredFeatures}
+                    onToggleCard={toggleCard}
+                  />
+                ) : (
+                  <div className="py-12 text-center">
+                    <Grid3x3 className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                    <p className="text-muted-foreground">
+                      No features match your search criteria
+                    </p>
+                    <Button
+                      className="mt-4"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedFilter('all');
+                      }}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Clear filters
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent className="mt-6" value="list">
+                {filteredFeatures.length > 0 ? (
+                  <ListView
+                    expandedCards={expandedCards}
+                    features={filteredFeatures}
+                    onToggleCard={toggleCard}
+                  />
+                ) : (
+                  <div className="py-12 text-center">
+                    <List className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                    <p className="text-muted-foreground">
+                      No features match your search criteria
+                    </p>
+                    <Button
+                      className="mt-4"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedFilter('all');
+                      }}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Clear filters
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         </section>
 
         {/* Footer CTA */}
         <AnimatedSection auroraVariant="primary" className="px-6 py-8">
           <div className="mx-auto max-w-4xl text-center">
-            <p className="text-muted-foreground">
-              Have feedback or suggestions?{' '}
-              <Link
-                className="text-primary underline underline-offset-4"
-                href="/referral-info"
-              >
-                Learn about referrals
-              </Link>{' '}
-              or head back to{' '}
-              <Link
-                className="text-primary underline underline-offset-4"
-                href="/"
-              >
-                Home
-              </Link>
-              .
+            <h3 className="mb-4 font-bold text-2xl">
+              Have feedback or feature requests?
+            </h3>
+            <p className="mb-6 text-muted-foreground">
+              We'd love to hear from you! Pro+ users can vote on upcoming
+              features and influence our roadmap.
             </p>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <Button className="group" size="lg" variant="default">
+                <Sparkles className="mr-2 h-4 w-4 transition-transform group-hover:rotate-12" />
+                Vote on Features (Pro+)
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/referral-info">Learn about referrals</Link>
+              </Button>
+              <Button asChild size="lg" variant="ghost">
+                <Link href="/">Back to Home</Link>
+              </Button>
+            </div>
           </div>
         </AnimatedSection>
       </main>
+
+      <LandingFooter />
     </div>
   );
 }

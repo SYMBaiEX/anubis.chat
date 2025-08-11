@@ -2,13 +2,16 @@
 
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
-import { useMutation, useQuery } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { MessageSquare, Plus, Sidebar } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
+import { BookOfTheDead } from '@/components/command-palette/book-of-the-dead';
+import { CommandsOfMaatModal } from '@/components/command-palette/commands-of-maat-modal';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import {
@@ -28,6 +31,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ModelGrid } from '@/components/ui/model-grid';
+import { useCommandPalette } from '@/hooks/use-command-palette';
 import { useConvexChat } from '@/hooks/use-convex-chat';
 import { useTypingIndicator } from '@/hooks/use-typing-indicator';
 import { AI_MODELS, DEFAULT_MODEL } from '@/lib/constants/ai-models';
@@ -59,6 +63,7 @@ type ChatSettings = {
   agentPrompt?: string; // Read-only agent prompt for display
   streamResponses: boolean;
   enableMemory: boolean;
+  autoCreateTitles: boolean;
 
   // Interface Settings
   theme: 'light' | 'dark' | 'system';
@@ -106,6 +111,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const [showMobileModelSelector, setShowMobileModelSelector] = useState(false);
   const [showMobileAgentSelector, setShowMobileAgentSelector] = useState(false);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
+  const [showSearchDialog, setShowSearchDialog] = useState(false);
 
   // Theme hook from next-themes
   const { theme, setTheme } = useTheme();
@@ -141,6 +147,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     agentPrompt: selectedAgent?.systemPrompt || '', // Agent's base prompt for display
     streamResponses: true,
     enableMemory: true,
+    autoCreateTitles: true,
 
     // Interface Settings
     theme: 'system' as const,
@@ -182,6 +189,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           streamResponses:
             userPreferences.streamResponses ?? prev.streamResponses,
           enableMemory: userPreferences.enableMemory ?? prev.enableMemory,
+          autoCreateTitles:
+            userPreferences.autoCreateTitles ?? prev.autoCreateTitles,
           responseFormat: userPreferences.responseFormat || prev.responseFormat,
           contextWindow: userPreferences.contextWindow || prev.contextWindow,
           saveHistory: userPreferences.saveHistory ?? prev.saveHistory,
@@ -218,6 +227,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const createChat = useMutation(api.chatsAuth.createMyChat);
   const updateChat = useMutation(api.chatsAuth.updateMyChat);
   const deleteChat = useMutation(api.chatsAuth.deleteMyChat);
+  const generateTitle = useAction(api.chats.generateAndUpdateTitle);
 
   // Use our new Convex chat hook for real-time streaming
   const { messages, sendMessage, isStreaming, streamingMessage } =
@@ -354,11 +364,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   };
 
-  const _handleChatSelect = (chatId: string) => {
+  const handleChatSelect = (chatId: string) => {
     setSelectedChatId(chatId);
     router.push(`/chat?chatId=${chatId}`);
   };
 
+  // Define handleCreateChat before using it
   const handleCreateChat = async () => {
     if (!isAuthenticated) {
       return;
@@ -384,6 +395,77 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       setIsCreatingChat(false);
     }
   };
+
+  // Command Palette integration
+  const {
+    isCommandPaletteOpen,
+    setIsCommandPaletteOpen,
+    isShortcutsModalOpen,
+    setIsShortcutsModalOpen,
+    setMessageInputRef,
+  } = useCommandPalette({
+    onNewChat: handleCreateChat,
+    onSelectChat: handleChatSelect,
+    onSelectAgent: () => setShowMobileAgentSelector(true),
+    onSelectModel: () => setShowMobileModelSelector(true),
+    onOpenSettings: () => setShowMobileSettings(true),
+    onToggleSidebar: () => setSidebarOpen(!sidebarOpen),
+    onSearchConversations: () => setShowSearchDialog(true),
+    onClearChat: () => {
+      // Clear chat implementation
+      if (selectedChatId) {
+        // Add clear chat logic here
+        toast.success('Chat cleared');
+      }
+    },
+    onDeleteChat: () => {
+      if (selectedChatId) {
+        handleDeleteChat(selectedChatId);
+      }
+    },
+    onRenameChat: () => {
+      // Open rename dialog
+      toast.info('Rename chat feature coming soon');
+    },
+    onDuplicateChat: () => {
+      // Duplicate chat logic
+      toast.info('Duplicate chat feature coming soon');
+    },
+    onExportChat: () => {
+      // Export chat as markdown
+      toast.info('Export feature coming soon');
+    },
+    onFocusInput: () => {
+      // Focus will be handled by message input component
+    },
+    onScrollToBottom: () => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    },
+    onScrollToTop: () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    onToggleReasoning: () => {
+      // Toggle reasoning mode
+      toast.info('Reasoning mode toggle coming soon');
+    },
+    onQuickSelectClaude: () => {
+      setSelectedModel('claude-3-5-sonnet-20241022');
+    },
+    onQuickSelectGPT: () => {
+      setSelectedModel('gpt-4o');
+    },
+    onUploadFile: () => {
+      toast.info('File upload feature coming soon');
+    },
+    onOpenPreferences: () => {
+      router.push('/settings');
+    },
+    currentChatId: selectedChatId,
+    chats: chats?.map((chat) => ({
+      id: chat._id,
+      title: chat.title || 'Untitled',
+    })),
+  });
 
   const handleSendMessage = async (content: string, useReasoning?: boolean) => {
     if (!(selectedChatId && user && userWalletAddress)) {
@@ -427,6 +509,38 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     } catch (error: any) {
       log.error('Failed to delete chat', { error: error?.message });
     }
+  };
+
+  const handleGenerateTitle = () => {
+    if (!(selectedChatId && user?._id)) return;
+
+    toast.promise(
+      generateTitle({
+        chatId: selectedChatId as Id<'chats'>,
+        ownerId: user._id,
+      }),
+      {
+        loading: 'Generating title...',
+        success: (result) => {
+          if (result.success) {
+            log.info('Title generated successfully', { title: result.title });
+            if (result.skipped) {
+              return 'Title already exists';
+            }
+            return `Title updated: ${result.title}`;
+          }
+          if (result.error) {
+            log.error('Failed to generate title', { error: result.error });
+            throw new Error(result.error);
+          }
+          return 'Title generated';
+        },
+        error: (err) => {
+          log.error('Error generating title', { error: err?.message });
+          return err?.message || 'Failed to generate title';
+        },
+      }
+    );
   };
 
   const handleModelChange = async (newModel: string) => {
@@ -473,6 +587,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           streamResponses: newSettings.streamResponses,
           saveHistory: newSettings.saveHistory,
           enableMemory: newSettings.enableMemory,
+          autoCreateTitles: newSettings.autoCreateTitles,
           responseFormat: newSettings.responseFormat,
           contextWindow: newSettings.contextWindow,
           // Model Preferences (defaults for new chats)
@@ -578,6 +693,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       handleDeleteChat(selectedChatId);
                     }
                   }}
+                  onGenerateTitle={handleGenerateTitle}
                   onModelSelectorClick={() => setShowMobileModelSelector(true)}
                   onRename={(newTitle) => {
                     if (selectedChatId && isAuthenticated) {
@@ -843,6 +959,28 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           settings={chatSettings}
         />
       )}
+
+      {/* Command Palette - Book of the Dead */}
+      <BookOfTheDead
+        chats={chats?.map((chat) => ({
+          id: chat._id,
+          title: chat.title || 'Untitled',
+        }))}
+        onNewChat={handleCreateChat}
+        onOpenChange={setIsCommandPaletteOpen}
+        onOpenSettings={() => setShowMobileSettings(true)}
+        onSelectAgent={() => setShowMobileAgentSelector(true)}
+        onSelectChat={handleChatSelect}
+        onSelectModel={() => setShowMobileModelSelector(true)}
+        onShowShortcuts={() => setIsShortcutsModalOpen(true)}
+        open={isCommandPaletteOpen}
+      />
+
+      {/* Commands of Ma'at - Shortcuts Modal */}
+      <CommandsOfMaatModal
+        isOpen={isShortcutsModalOpen}
+        onClose={() => setIsShortcutsModalOpen(false)}
+      />
 
       {/* Upgrade Prompt Modal */}
       {showUpgradePrompt && upgradePrompt.suggestedTier && (

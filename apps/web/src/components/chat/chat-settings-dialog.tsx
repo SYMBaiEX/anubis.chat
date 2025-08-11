@@ -38,6 +38,7 @@ interface ChatSettings {
   streamResponses: boolean;
   saveHistory: boolean;
   enableMemory: boolean;
+  autoCreateTitles: boolean;
   contextWindow: number;
   responseFormat: 'text' | 'markdown' | 'json';
   language: string;
@@ -258,6 +259,16 @@ export function ChatSettingsDialog({
       value: localSettings.enableMemory,
       onChange: (value) => handleChange('enableMemory', value),
       icon: <Brain className="h-4 w-4" />,
+      category: 'behavior',
+    },
+    {
+      id: 'autoCreateTitles',
+      title: 'Auto-Generate Titles',
+      description: 'Automatically create descriptive titles for new chats',
+      type: 'switch',
+      value: localSettings.autoCreateTitles,
+      onChange: (value) => handleChange('autoCreateTitles', value),
+      icon: <Zap className="h-4 w-4" />,
       category: 'behavior',
     },
     {

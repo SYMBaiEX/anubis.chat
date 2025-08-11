@@ -4,6 +4,44 @@
 /* Import animation library after Tailwind */
 @import "tw-animate-css";
 
+/* Custom Animations */
+@keyframes gradient-x {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 3s ease infinite;
+}
+
+.bg-grid-white\/5 {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
 /* Define dark mode variant for Tailwind v4 */
 @variant dark (&:is(.dark, .dark *));
 @variant light (&:is(.light, .light *));
