@@ -96,7 +96,7 @@ export function useCommandPalette({
 
     // Navigation
     'open-book-of-dead': () => {
-      setIsCommandPaletteOpen(!isCommandPaletteOpen);
+      setIsCommandPaletteOpen((prev) => !prev);
     },
     'focus-input': () => {
       onFocusInput?.();
