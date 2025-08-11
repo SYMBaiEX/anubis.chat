@@ -504,7 +504,7 @@ Title:`;
       }
 
       // Update the chat title
-      await ctx.runMutation(internal.chats.updateTitle, {
+      await ctx.runMutation(api.chats.updateTitle, {
         chatId: args.chatId,
         title: generatedTitle,
         ownerId: args.ownerId,
