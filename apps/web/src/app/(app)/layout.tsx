@@ -9,9 +9,9 @@ export default function AppLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <AuthGuard>
-      <div className="flex h-[calc(100vh-2.5rem)]">
+      <div className="flex h-[calc(100vh-2.5rem)] overflow-hidden overscroll-contain">
         <Sidebar />
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">{children}</main>
       </div>
       {/* Persistent authenticated activity footer */}
       <ActivityFooter />

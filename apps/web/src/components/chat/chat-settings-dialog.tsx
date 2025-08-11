@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { type GridSetting, SettingsGrid } from '@/components/ui/settings-grid';
+import { SettingsGrid, type GridSetting } from '@/components/ui/settings-grid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AI_MODELS } from '@/lib/constants/ai-models';
 import { cn } from '@/lib/utils';
@@ -50,6 +50,8 @@ interface ChatSettings {
 interface ChatSettingsDialogProps {
   settings: ChatSettings;
   onSettingsChange: (settings: ChatSettings) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   className?: string;
 }
 
@@ -94,9 +96,15 @@ const fontSizeOptions = [
 export function ChatSettingsDialog({
   settings,
   onSettingsChange,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange,
   className,
 }: ChatSettingsDialogProps) {
-  const [open, setOpen] = useState(false);
+  // Use external control if provided, otherwise manage internally
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = externalOnOpenChange || setInternalOpen;
+  
   const [localSettings, setLocalSettings] = useState<ChatSettings>(settings);
 
   // Sync local settings when settings prop changes
@@ -121,8 +129,8 @@ export function ChatSettingsDialog({
     setOpen(false);
   };
 
-  // Model Settings
-  const modelSettings: GridSetting[] = [
+  // All Settings combined into single array
+  const allSettings: GridSetting[] = [
     {
       id: 'model',
       title: 'AI Model',
@@ -132,6 +140,7 @@ export function ChatSettingsDialog({
       onChange: (value) => handleChange('model', value),
       options: models,
       icon: <Brain className="h-4 w-4" />,
+      category: 'model',
     },
     {
       id: 'temperature',
@@ -145,6 +154,7 @@ export function ChatSettingsDialog({
       max: 2,
       step: 0.1,
       icon: <Zap className="h-4 w-4" />,
+      category: 'model',
     },
     {
       id: 'maxTokens',
@@ -157,6 +167,7 @@ export function ChatSettingsDialog({
       max: 4000,
       step: 100,
       icon: <Brain className="h-4 w-4" />,
+      category: 'model',
     },
     {
       id: 'topP',
@@ -169,6 +180,7 @@ export function ChatSettingsDialog({
       max: 1,
       step: 0.1,
       icon: <Settings className="h-4 w-4" />,
+      category: 'advanced',
     },
     {
       id: 'frequencyPenalty',
@@ -181,6 +193,7 @@ export function ChatSettingsDialog({
       max: 2,
       step: 0.1,
       icon: <Settings className="h-4 w-4" />,
+      category: 'advanced',
     },
     {
       id: 'presencePenalty',
@@ -193,11 +206,10 @@ export function ChatSettingsDialog({
       max: 2,
       step: 0.1,
       icon: <Settings className="h-4 w-4" />,
+      category: 'advanced',
     },
-  ];
-
-  // Behavior Settings
-  const behaviorSettings: GridSetting[] = [
+    
+    // Behavior Settings
     ...(localSettings.agentPrompt
       ? [
           {
@@ -205,13 +217,13 @@ export function ChatSettingsDialog({
             title: 'Agent Base Prompt',
             description:
               "The selected agent's base personality and instructions (read-only)",
-            type: 'textarea',
+            type: 'textarea' as const,
             value: localSettings.agentPrompt,
             onChange: () => {}, // Read-only
             placeholder: 'No agent selected',
             rows: 4,
             icon: <Brain className="h-4 w-4" />,
-            readonly: true,
+            category: 'behavior' as const,
           },
         ]
       : []),
@@ -226,6 +238,7 @@ export function ChatSettingsDialog({
       placeholder: 'Add your custom instructions here (optional)...',
       rows: 4,
       icon: <Settings className="h-4 w-4" />,
+      category: 'behavior',
     },
     {
       id: 'streamResponses',
@@ -235,6 +248,7 @@ export function ChatSettingsDialog({
       value: localSettings.streamResponses,
       onChange: (value) => handleChange('streamResponses', value),
       icon: <Zap className="h-4 w-4" />,
+      category: 'behavior',
     },
     {
       id: 'enableMemory',
@@ -244,6 +258,7 @@ export function ChatSettingsDialog({
       value: localSettings.enableMemory,
       onChange: (value) => handleChange('enableMemory', value),
       icon: <Brain className="h-4 w-4" />,
+      category: 'behavior',
     },
     {
       id: 'contextWindow',
@@ -256,6 +271,7 @@ export function ChatSettingsDialog({
       max: 50,
       step: 1,
       icon: <Brain className="h-4 w-4" />,
+      category: 'behavior',
     },
     {
       id: 'responseFormat',
@@ -266,11 +282,10 @@ export function ChatSettingsDialog({
       onChange: (value) => handleChange('responseFormat', value),
       options: responseFormats,
       icon: <Settings className="h-4 w-4" />,
+      category: 'behavior',
     },
-  ];
 
-  // Interface Settings
-  const interfaceSettings: GridSetting[] = [
+    // Interface Settings
     {
       id: 'theme',
       title: 'Theme',
@@ -280,6 +295,7 @@ export function ChatSettingsDialog({
       onChange: (value) => handleChange('theme', value),
       options: themeOptions,
       icon: <Palette className="h-4 w-4" />,
+      category: 'interface',
     },
     {
       id: 'fontSize',
@@ -290,6 +306,7 @@ export function ChatSettingsDialog({
       onChange: (value) => handleChange('fontSize', value),
       options: fontSizeOptions,
       icon: <Palette className="h-4 w-4" />,
+      category: 'interface',
     },
     {
       id: 'language',
@@ -300,6 +317,7 @@ export function ChatSettingsDialog({
       onChange: (value) => handleChange('language', value),
       options: languages,
       icon: <Globe className="h-4 w-4" />,
+      category: 'interface',
     },
     {
       id: 'soundEnabled',
@@ -309,6 +327,7 @@ export function ChatSettingsDialog({
       value: localSettings.soundEnabled,
       onChange: (value) => handleChange('soundEnabled', value),
       icon: <Volume2 className="h-4 w-4" />,
+      category: 'interface',
     },
     {
       id: 'autoScroll',
@@ -318,6 +337,7 @@ export function ChatSettingsDialog({
       value: localSettings.autoScroll,
       onChange: (value) => handleChange('autoScroll', value),
       icon: <Monitor className="h-4 w-4" />,
+      category: 'interface',
     },
     {
       id: 'saveHistory',
@@ -327,8 +347,14 @@ export function ChatSettingsDialog({
       value: localSettings.saveHistory,
       onChange: (value) => handleChange('saveHistory', value),
       icon: <Settings className="h-4 w-4" />,
+      category: 'interface',
     },
   ];
+
+  // Create filtered arrays for tabs
+  const modelSettings = allSettings.filter(setting => setting.category === 'model' || setting.category === 'advanced');
+  const behaviorSettings = allSettings.filter(setting => setting.category === 'behavior');
+  const filteredInterfaceSettings = allSettings.filter(setting => setting.category === 'interface');
 
   return (
     <div className={cn('flex items-center space-x-2', className)}>
@@ -340,7 +366,7 @@ export function ChatSettingsDialog({
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="max-h-[85vh] max-w-6xl overflow-hidden">
+        <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] max-w-6xl overflow-hidden sm:w-[90vw]">
           <DialogHeader>
             <DialogTitle>Chat Settings</DialogTitle>
             <DialogDescription>
@@ -352,33 +378,39 @@ export function ChatSettingsDialog({
           <div className="max-h-[65vh] overflow-hidden">
             <Tabs className="h-full" defaultValue="model">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="model">Model</TabsTrigger>
-                <TabsTrigger value="behavior">Behavior</TabsTrigger>
-                <TabsTrigger value="interface">Interface</TabsTrigger>
+                <TabsTrigger className="text-xs sm:text-sm" value="model">Model</TabsTrigger>
+                <TabsTrigger className="text-xs sm:text-sm" value="behavior">Behavior</TabsTrigger>
+                <TabsTrigger className="text-xs sm:text-sm" value="interface">Interface</TabsTrigger>
               </TabsList>
 
               <div className="mt-4 max-h-[55vh] overflow-y-auto">
                 <TabsContent className="mt-0" value="model">
                   <SettingsGrid
-                    columns={2}
-                    compact={false}
+                    columns={4}
+                    compact={true}
                     settings={modelSettings}
+                    gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                    showFilter={false}
                   />
                 </TabsContent>
 
                 <TabsContent className="mt-0" value="behavior">
                   <SettingsGrid
-                    columns={2}
-                    compact={false}
+                    columns={4}
+                    compact={true}
                     settings={behaviorSettings}
+                    gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                    showFilter={false}
                   />
                 </TabsContent>
 
                 <TabsContent className="mt-0" value="interface">
                   <SettingsGrid
-                    columns={2}
-                    compact={false}
-                    settings={interfaceSettings}
+                    columns={4}
+                    compact={true}
+                    settings={filteredInterfaceSettings}
+                    gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                    showFilter={false}
                   />
                 </TabsContent>
               </div>

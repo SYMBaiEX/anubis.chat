@@ -72,7 +72,6 @@ Always aim to be helpful, accurate, and engaging in your responses.`,
         name: 'Solana Knowledge Expert',
         description:
           'Expert Solana blockchain assistant with comprehensive documentation access and development guidance',
-        model: 'openrouter/qwen/qwen3-coder:free', // Use qwen coder model
         systemPrompt: `You are the Solana Knowledge Expert, a specialized assistant with deep expertise in Solana blockchain development and ecosystem knowledge.
 
 Your primary capabilities:

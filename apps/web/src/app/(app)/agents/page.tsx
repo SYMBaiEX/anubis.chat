@@ -111,13 +111,6 @@ const getAgentTypeInfo = (type: string) => {
   }
 };
 
-// Model badge styling
-const getModelBadge = (model: string) => {
-  if (model.includes('gpt-4') || model.includes('claude')) {
-    return 'default';
-  }
-  return 'secondary';
-};
 
 export default function AgentsPage() {
   const router = useRouter();
@@ -166,7 +159,6 @@ export default function AgentsPage() {
       name: `${agent.name} (Copy)`,
       description: agent.description || '',
       systemPrompt: agent.systemPrompt || '',
-      model: agent.model,
       temperature: agent.temperature?.toString() || '0.7',
       maxTokens: agent.maxTokens?.toString() || '4096',
     });
@@ -198,29 +190,31 @@ export default function AgentsPage() {
     <div className="w-full bg-gradient-to-b from-primary/5 dark:from-primary/10">
       {/* Full-width header */}
       <div className="w-full p-4 md:p-6">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
-          <div>
-            <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl">
-              AI Agents
-            </h1>
-            <p className="mt-1 text-muted-foreground text-sm">
-              Manage your custom AI agents and assistants
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setShowPublicAgents(!showPublicAgents)}
-              size="sm"
-              variant="outline"
-            >
-              {showPublicAgents ? 'Hide' : 'Show'} Public Agents
-            </Button>
-            <Button asChild>
-              <Link href="/agents/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Create New Agent
-              </Link>
-            </Button>
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl whitespace-nowrap">
+                AI Agents
+              </h1>
+              <p className="mt-1 text-muted-foreground text-sm">
+                Manage your custom AI agents and assistants
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 md:flex-row md:justify-end">
+              <Button asChild>
+                <Link href="/agents/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create New Agent
+                </Link>
+              </Button>
+              <Button
+                onClick={() => setShowPublicAgents(!showPublicAgents)}
+                size="sm"
+                variant="outline"
+              >
+                {showPublicAgents ? 'Hide' : 'Show'} Public Agents
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -280,12 +274,6 @@ export default function AgentsPage() {
                               variant="outline"
                             >
                               {agent.type}
-                            </Badge>
-                            <Badge
-                              className="text-[10px] sm:text-xs"
-                              variant={getModelBadge(agent.model)}
-                            >
-                              {agent.model}
                             </Badge>
                           </div>
                         </div>

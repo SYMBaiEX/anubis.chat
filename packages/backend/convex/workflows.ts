@@ -632,7 +632,7 @@ export const saveVisualWorkflow = mutation({
       // Delete existing steps and edges
       const existingSteps = await ctx.db
         .query('workflowSteps')
-        .withIndex('by_workflow', (q) => q.eq('workflowId', workflowId))
+        .withIndex('by_workflow', (q) => q.eq('workflowId', workflowId as Id<'workflows'>))
         .collect();
 
       for (const step of existingSteps) {
@@ -641,7 +641,7 @@ export const saveVisualWorkflow = mutation({
 
       const existingEdges = await ctx.db
         .query('workflowEdges')
-        .withIndex('by_workflow', (q) => q.eq('workflowId', workflowId))
+        .withIndex('by_workflow', (q) => q.eq('workflowId', workflowId as Id<'workflows'>))
         .collect();
 
       for (const edge of existingEdges) {

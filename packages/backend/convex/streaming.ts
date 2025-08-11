@@ -31,9 +31,10 @@ export const streamChat = httpAction(async (ctx, request) => {
     model?: string;
     temperature?: number;
     maxTokens?: number;
+    useReasoning?: boolean;
   };
 
-  const { chatId, walletAddress, content, model, temperature, maxTokens } =
+  const { chatId, walletAddress, content, model, temperature, maxTokens, useReasoning } =
     body;
 
   // Get the user by wallet address first
@@ -403,42 +404,199 @@ export const streamChat = httpAction(async (ctx, request) => {
   console.log('Combined prompt length:', combinedSystemPrompt.length);
 
   let result;
-  try {
-    result = await streamText({
-      model: aiModel,
-      system: combinedSystemPrompt,
-      messages: conversationHistory,
-      temperature: temperature ?? chat.temperature ?? 0.7,
-      maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
-      onFinish: async ({ text, finishReason, usage }) => {
-        // Save assistant message to database
-        await ctx.runMutation(api.messages.create, {
-          chatId: chatId as Id<'chats'>,
-          walletAddress,
-          role: 'assistant',
-          content: text,
-          metadata: {
-            model: modelName,
-            finishReason: finishReason || 'stop',
-            usage: usage
-              ? {
-                  inputTokens: usage.inputTokens || 0,
-                  outputTokens: usage.outputTokens || 0,
-                  totalTokens: usage.totalTokens || 0,
-                }
-              : undefined,
-          },
-        });
+  let finalText = '';
+  let totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
-        // Track message usage for subscription (skip for admins)
-        if (!adminStatus.isAdmin) {
+  // Determine maxSteps based on reasoning mode
+  const maxSteps = useReasoning ? 10 : Math.floor(Math.random() * 3) + 1; // Reasoning: 10, Regular: 1-3
+  const messagesConsumed = useReasoning ? 2 : 1; // Reasoning costs 2 messages, regular costs 1
+
+  try {
+    if (useReasoning) {
+      // Multi-step reasoning mode (up to 10 steps, costs 2 messages)
+      console.log(`Starting multi-step reasoning with up to ${maxSteps} steps`);
+      
+      const reasoningSystemPrompt = `${combinedSystemPrompt}
+
+When responding to the user's message, use a structured reasoning process with up to ${maxSteps} steps:
+
+1. First, think through the problem step by step in a <thinking> section
+2. Break down your reasoning into clear, numbered steps (Step 1, Step 2, etc.)
+3. Use as many steps as needed (up to ${maxSteps}) to thoroughly analyze the problem
+4. Consider multiple perspectives or approaches if relevant
+5. Then provide your final response
+
+Format your response like this:
+<thinking>
+Step 1: [Your first reasoning step]
+Step 2: [Your second reasoning step] 
+Step 3: [Continue as needed...]
+[Use up to ${maxSteps} steps to reach a thorough conclusion]
+</thinking>
+
+[Your final response to the user]`;
+
+      // Create a readable stream for multi-step reasoning
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            // Step 1: Initial reasoning
+            controller.enqueue('**🧠 Thinking through your request...**\n\n');
+            
+            const reasoningResult = await streamText({
+              model: aiModel,
+              system: reasoningSystemPrompt,
+              messages: conversationHistory,
+              temperature: temperature ?? chat.temperature ?? 0.7,
+              maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
+            });
+
+            let reasoningContent = '';
+            for await (const chunk of reasoningResult.textStream) {
+              reasoningContent += chunk;
+            }
+
+            // Extract thinking section and final response
+            const thinkingMatch = reasoningContent.match(/<thinking>([\s\S]*?)<\/thinking>/);
+            const thinking = thinkingMatch ? thinkingMatch[1].trim() : '';
+            const finalResponse = reasoningContent.replace(/<thinking>[\s\S]*?<\/thinking>/, '').trim();
+
+            if (thinking) {
+              // Stream the thinking process
+              controller.enqueue('### Reasoning Steps:\n\n');
+              const steps = thinking.split(/Step \d+:/);
+              for (let i = 1; i < Math.min(steps.length, maxSteps + 1); i++) {
+                if (steps[i]?.trim()) {
+                  controller.enqueue(`**Step ${i}:** ${steps[i].trim()}\n\n`);
+                  // Small delay to simulate thinking time
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                }
+              }
+              
+              controller.enqueue('---\n\n');
+            }
+
+            // Stream the final response
+            controller.enqueue('### Final Response:\n\n');
+            finalText = finalResponse || reasoningContent;
+            
+            // Stream final response character by character for better UX
+            for (const char of finalText) {
+              controller.enqueue(char);
+              // Very small delay for streaming effect
+              await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            // Update usage tracking
+            const usage = await reasoningResult.usage;
+            if (usage) {
+              totalUsage.inputTokens += usage.inputTokens || 0;
+              totalUsage.outputTokens += usage.outputTokens || 0;
+              totalUsage.totalTokens = totalUsage.inputTokens + totalUsage.outputTokens;
+            }
+
+            controller.close();
+          } catch (error) {
+            controller.error(error);
+          }
+        }
+      });
+
+      // Save the complete message to database
+      const completeContent = finalText || 'Multi-step reasoning completed';
+      await ctx.runMutation(api.messages.create, {
+        chatId: chatId as Id<'chats'>,
+        walletAddress,
+        role: 'assistant',
+        content: completeContent,
+        metadata: {
+          model: modelName,
+          finishReason: 'stop',
+          usage: totalUsage,
+          reasoning: 'multi-step',
+        },
+      });
+
+      // Track message usage for subscription (skip for admins) - consume appropriate number of messages
+      if (!adminStatus.isAdmin) {
+        // For reasoning mode, we need to consume 2 messages
+        for (let i = 0; i < messagesConsumed; i++) {
           await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
             walletAddress,
             isPremiumModel,
           });
         }
-      },
-    });
+      }
+
+      // Return the custom stream
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/plain',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      });
+
+    } else {
+      // Regular chat mode with dynamic steps (1-3 steps, agent decides, costs 1 message)
+      console.log(`Starting regular chat with ${maxSteps} steps`);
+      
+      const regularSystemPrompt = `${combinedSystemPrompt}
+
+When responding to the user's message, you may use up to ${maxSteps} reasoning steps if the problem is complex enough to benefit from step-by-step thinking. For simple queries, respond directly. For more complex ones, use this format:
+
+<thinking>
+Step 1: [First reasoning step if needed]
+Step 2: [Second reasoning step if needed]
+Step 3: [Third reasoning step if needed - only if really necessary]
+</thinking>
+
+[Your response to the user]
+
+Use your judgment - only use the thinking section if the query truly benefits from multi-step reasoning.`;
+
+      result = await streamText({
+        model: aiModel,
+        system: regularSystemPrompt,
+        messages: conversationHistory,
+        temperature: temperature ?? chat.temperature ?? 0.7,
+        maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
+        onFinish: async ({ text, finishReason, usage }) => {
+          // Save assistant message to database
+          await ctx.runMutation(api.messages.create, {
+            chatId: chatId as Id<'chats'>,
+            walletAddress,
+            role: 'assistant',
+            content: text,
+            metadata: {
+              model: modelName,
+              finishReason: finishReason || 'stop',
+              usage: usage
+                ? {
+                    inputTokens: usage.inputTokens || 0,
+                    outputTokens: usage.outputTokens || 0,
+                    totalTokens: usage.totalTokens || 0,
+                  }
+                : undefined,
+              reasoning: maxSteps > 1 ? 'regular' : undefined,
+            },
+          });
+
+          // Track message usage for subscription (skip for admins) - consume appropriate number of messages
+          if (!adminStatus.isAdmin) {
+            // For reasoning mode, we need to consume 2 messages
+            for (let i = 0; i < messagesConsumed; i++) {
+              await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
+                walletAddress,
+                isPremiumModel,
+              });
+            }
+          }
+        },
+      });
+    }
   } catch (error) {
     console.error('Error creating streaming response:', error);
     return new Response(
@@ -460,26 +618,46 @@ export const streamChat = httpAction(async (ctx, request) => {
     );
   }
 
-  // Convert to a proper text stream response with CORS headers
-  // The AI SDK provides toTextStreamResponse() which returns a properly formatted Response
-  const response = result.toTextStreamResponse();
+  // Handle regular streaming response (non-reasoning mode)
+  if (result) {
+    // Convert to a proper text stream response with CORS headers
+    // The AI SDK provides toTextStreamResponse() which returns a properly formatted Response
+    const response = result.toTextStreamResponse();
 
-  // Add CORS headers to the response
-  const headers = new Headers(response.headers);
-  headers.set('Access-Control-Allow-Origin', '*');
-  headers.set(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PUT, DELETE, OPTIONS'
-  );
-  headers.set(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Requested-With, Accept'
-  );
-  headers.set('Access-Control-Allow-Credentials', 'true');
+    // Add CORS headers to the response
+    const headers = new Headers(response.headers);
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, DELETE, OPTIONS'
+    );
+    headers.set(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, X-Requested-With, Accept'
+    );
+    headers.set('Access-Control-Allow-Credentials', 'true');
 
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  }
+
+  // Fallback error response
+  return new Response(
+    JSON.stringify({
+      error: 'No response generated',
+    }),
+    {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+        'Access-Control-Allow-Credentials': 'true',
+      },
+    }
+  );
 });

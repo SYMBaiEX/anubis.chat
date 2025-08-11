@@ -203,7 +203,7 @@ export class AgenticEngine {
       try {
         // Generate AI response with tools
         const result = await generateText({
-          model: openai(agent.model),
+          model: openai(request.model || this.config.defaultModel),
           messages,
           tools: allTools, // Use combined tools including MCP
           temperature: agent.temperature || this.config.defaultTemperature,
@@ -593,9 +593,6 @@ export function validateAgentConfig(agent: Partial<Agent>): string[] {
     errors.push('Agent name is required');
   }
 
-  if (!agent.model || agent.model.trim().length === 0) {
-    errors.push('AI model is required');
-  }
 
   if (!agent.systemPrompt || agent.systemPrompt.trim().length === 0) {
     errors.push('System prompt is required');
@@ -617,9 +614,9 @@ export function validateAgentConfig(agent: Partial<Agent>): string[] {
 
   if (
     agent.maxSteps !== undefined &&
-    (agent.maxSteps < 1 || agent.maxSteps > 50)
+    (agent.maxSteps < 1 || agent.maxSteps > 10)
   ) {
-    errors.push('Max steps must be between 1 and 50');
+    errors.push('Max steps must be between 1 and 10');
   }
 
   if (agent.tools) {

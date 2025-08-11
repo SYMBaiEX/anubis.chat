@@ -619,7 +619,6 @@ export default defineSchema({
     description: v.string(),
     systemPrompt: v.string(),
     capabilities: v.array(v.string()), // List of available tools/actions
-    model: v.string(),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
     config: v.optional(

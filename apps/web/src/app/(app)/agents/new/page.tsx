@@ -3,11 +3,10 @@
 import { api } from '@convex/_generated/api';
 import { useForm } from '@tanstack/react-form';
 import { useMutation } from 'convex/react';
-import { AlertTriangle, Crown, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Crown, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import {
   useAuthContext,
   useSubscriptionStatus,
@@ -16,7 +15,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -27,29 +25,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  getModelById,
-  getModelsForTier,
-  isPremiumModel,
-} from '@/lib/constants/ai-models';
-import { failure, type Result, safeAsync, success } from '@/lib/utils/result';
+import { Separator } from '@/components/ui/separator';
 
 // =============================================================================
 // Configuration
 // =============================================================================
 
-// Dynamic model configuration based on subscription tier
-const getAvailableModels = (tier: 'free' | 'pro' | 'pro_plus' | undefined) => {
-  if (!tier) return [];
-
-  const availableModels = getModelsForTier(tier);
-  return availableModels.map((model) => ({
-    value: model.id,
-    label: model.name,
-    isPremium: isPremiumModel(model),
-    tier: model.intelligence,
-  }));
-};
 
 const AGENT_CONFIG = {
   templates: [
@@ -61,7 +42,6 @@ const AGENT_CONFIG = {
   ] as const,
   defaults: {
     template: 'custom' as const,
-    model: 'gpt-5-nano' as const,
     temperature: 0.7,
     maxTokens: 4096,
     maxSteps: 10,
@@ -111,15 +91,6 @@ const createAgentFormSchema = z.object({
   template: z
     .enum(['general', 'research', 'analysis', 'blockchain', 'custom'])
     .default(AGENT_CONFIG.defaults.template),
-  model: z
-    .enum([
-      'gpt-5-nano',
-      'gpt-4o',
-      'gpt-4o-mini',
-      'claude-3-5-sonnet',
-      'gemini-2.0-flash',
-    ])
-    .default(AGENT_CONFIG.defaults.model),
   temperature: z
     .number()
     .min(0, 'Temperature must be between 0 and 2')
@@ -184,7 +155,6 @@ export default function NewAgentPage() {
       description: '',
       systemPrompt: '',
       template: AGENT_CONFIG.defaults.template,
-      model: AGENT_CONFIG.defaults.model,
       temperature: AGENT_CONFIG.defaults.temperature,
       maxTokens: AGENT_CONFIG.defaults.maxTokens,
       maxSteps: AGENT_CONFIG.defaults.maxSteps,
@@ -239,7 +209,6 @@ export default function NewAgentPage() {
           systemPrompt:
             validation.data.systemPrompt || 'You are a helpful AI assistant.',
           capabilities: AGENT_CONFIG.defaults.tools,
-          model: validation.data.model,
           temperature: validation.data.temperature,
           maxTokens: validation.data.maxTokens,
           maxSteps: validation.data.maxSteps,
@@ -264,10 +233,6 @@ export default function NewAgentPage() {
     },
   });
 
-  // Get available models based on subscription tier
-  const availableModels = getAvailableModels(
-    subscription?.tier === 'admin' ? 'pro_plus' : subscription?.tier
-  );
 
   if (!subscription) {
     return (
@@ -283,40 +248,57 @@ export default function NewAgentPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="mb-2 font-semibold text-2xl">Create Agent</h1>
-        <div className="flex items-center gap-3">
-          <Badge
-            className="gap-1"
-            variant={subscription.tier === 'free' ? 'secondary' : 'default'}
-          >
-            <Crown className="h-3 w-3" />
-            {subscription.tier} Plan
-          </Badge>
-          <p className="text-muted-foreground text-sm">
-            {subscription.tier === 'free' &&
-              'Access to basic models and features'}
-            {subscription.tier === 'pro' &&
-              'Access to premium models with limits'}
-            {subscription.tier === 'pro_plus' &&
-              'Full access to all models and features'}
-          </p>
+    <div className="w-full bg-gradient-to-b from-primary/5 dark:from-primary/10">
+      {/* Full-width header */}
+      <div className="w-full p-4 md:p-6">
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="mb-2 flex items-center gap-2">
+            <Button onClick={() => router.push('/agents')} size="sm" variant="ghost">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Agents
+            </Button>
+          </div>
+          <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl">
+            Create AI Agent
+          </h1>
+          <p className="mt-1 text-muted-foreground text-sm">Configure your custom AI agent</p>
+          <div className="mt-2 flex items-center gap-3">
+            <Badge
+              className="gap-1"
+              variant={subscription.tier === 'free' ? 'secondary' : 'default'}
+            >
+              <Crown className="h-3 w-3" />
+              {subscription.tier} Plan
+            </Badge>
+            <p className="text-muted-foreground text-sm">
+              {subscription.tier === 'free' && 'Access to basic models and features'}
+              {subscription.tier === 'pro' && 'Access to premium models with limits'}
+              {subscription.tier === 'pro_plus' && 'Full access to all models and features'}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Tier-specific alerts */}
-      {subscription.tier === 'free' && (
-        <Alert className="mb-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Free tier agents are limited to basic models. Upgrade to Pro or Pro+
-            to access premium AI models and advanced features.
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Constrained content */}
+      <div className="mx-auto w-full max-w-6xl space-y-3 p-3 sm:space-y-4 sm:p-4 md:p-6">
+        {/* Tier-specific alerts */}
+        {subscription.tier === 'free' && (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Free tier agents are limited to basic models. Upgrade to Pro or Pro+
+              to access premium AI models.
+            </AlertDescription>
+          </Alert>
+        )}
 
-      <Card className="max-w-2xl p-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card className="lg:col-span-2 p-6">
+            <div className="space-y-2">
+              <h2 className="font-semibold text-lg">Agent Details</h2>
+              <p className="text-muted-foreground text-sm">Basic information and behavior</p>
+            </div>
+            <Separator className="my-4" />
         <form
           className="space-y-4"
           onSubmit={(e) => {
@@ -459,66 +441,11 @@ export default function NewAgentPage() {
             )}
           </form.Field>
 
-          {/* AI Model Selection */}
-          <form.Field name="model">
-            {(field) => {
-              const selectedModel = availableModels.find(
-                (m) => m.value === field.state.value
-              );
-              return (
-                <div className="space-y-2">
-                  <Label htmlFor={field.name}>
-                    AI Model <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    onValueChange={(value) =>
-                      field.handleChange(value as CreateAgentFormData['model'])
-                    }
-                    value={field.state.value}
-                  >
-                    <SelectTrigger id={field.name}>
-                      <SelectValue placeholder="Select an AI model" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableModels.map((model) => (
-                        <SelectItem key={model.value} value={model.value}>
-                          {model.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedModel && (
-                    <div className="flex items-center gap-2">
-                      {selectedModel.isPremium && (
-                        <Badge className="gap-1 text-xs" variant="outline">
-                          <Zap className="h-3 w-3" />
-                          Premium
-                        </Badge>
-                      )}
-                      <Badge className="text-xs capitalize" variant="secondary">
-                        {selectedModel.tier}
-                      </Badge>
-                    </div>
-                  )}
-                  <p className="text-muted-foreground text-sm">
-                    {field.state.value === 'gpt-5-nano' &&
-                      'Ultra-efficient nano model with GPT-5 intelligence'}
-                    {field.state.value === 'gpt-4o' &&
-                      'Optimized GPT-4 with enhanced capabilities'}
-                    {field.state.value === 'gpt-4o-mini' &&
-                      'Fast and cost-effective for simple tasks'}
-                    {field.state.value === 'claude-3-5-sonnet' &&
-                      'Fast, intelligent, and cost-effective'}
-                    {field.state.value === 'gemini-2.0-flash' &&
-                      'Superior speed with native tool use'}
-                    {subscription.tier === 'free' &&
-                      !field.state.value &&
-                      'Free tier has access to basic models. Upgrade for premium models.'}
-                  </p>
-                </div>
-              );
-            }}
-          </form.Field>
+          <Separator className="my-2" />
+          <div className="space-y-2">
+            <h2 className="font-semibold text-lg">Agent Settings</h2>
+            <p className="text-muted-foreground text-sm">Configure generation parameters</p>
+          </div>
 
           {/* Temperature Slider */}
           <form.Field name="temperature">
@@ -681,7 +608,29 @@ export default function NewAgentPage() {
             </Button>
           </div>
         </form>
-      </Card>
+          </Card>
+
+          {/* Sidebar */}
+          <div className="space-y-4">
+
+            <Card className="p-5">
+              <div className="space-y-1">
+                <h3 className="font-medium text-sm">Tips for better agents</h3>
+                <p className="text-muted-foreground text-xs">Quick guidelines</p>
+              </div>
+              <Separator className="my-3" />
+              <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+                <li>Keep names short and descriptive</li>
+                <li>Start with a clear system prompt</li>
+                <li>Use lower temperature for reliability</li>
+              </ul>
+            </Card>
+          </div>
+        </div>
+      
+      
+      
+      </div>
     </div>
   );
 }

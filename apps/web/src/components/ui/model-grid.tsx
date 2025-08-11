@@ -18,7 +18,7 @@ interface ModelGridProps {
   models?: AIModel[];
   selectedModelId?: string;
   onModelSelect: (model: AIModel) => void;
-  columns?: 2 | 3 | 4;
+  columns?: 2 | 3 | 4 | 5;
   showFilter?: boolean;
   compact?: boolean;
   className?: string;
@@ -30,7 +30,7 @@ export function ModelGrid({
   models,
   selectedModelId,
   onModelSelect,
-  columns = 4,
+  columns = 5,
   showFilter = true,
   compact = false,
   className = '',
@@ -41,34 +41,50 @@ export function ModelGrid({
     useState<ProviderFilterType>('all');
   const subscription = useSubscriptionStatus();
 
-  // Filter models based on subscription and provider
-  const isAdmin = subscription?.tier === 'admin';
+  // Filter models based on provider only (show all models but some disabled)
   const sourceModels = models ?? AI_MODELS;
-  const availableModels = sourceModels.filter((model) => {
+  const filteredModels = sourceModels.filter((model) => {
     // Provider filter
     if (providerFilter !== 'all' && model.provider !== providerFilter) {
       return false;
     }
+    // Show all models regardless of subscription
+    return true;
+  });
 
-    // Subscription filter
-    if (isAdmin) {
-      return true;
+  // Sort models by tier: Free -> Standard -> Premium
+  const availableModels = filteredModels.sort((a, b) => {
+    // Determine tier for each model
+    const getTierPriority = (model: AIModel) => {
+      const isFree = model.pricing.input === 0 && model.pricing.output === 0;
+      const isPremium = isPremiumModel(model);
+      
+      if (isFree) return 0; // Free first
+      if (!isPremium) return 1; // Standard second
+      return 2; // Premium last
+    };
+    
+    const aPriority = getTierPriority(a);
+    const bPriority = getTierPriority(b);
+    
+    // Sort by tier priority, then by name
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority;
     }
-    if (subscription?.tier === 'free') {
-      return !isPremiumModel(model);
-    }
-    return true; // Pro and Pro+ users can see all models
+    return a.name.localeCompare(b.name);
   });
 
   const getGridCols = () => {
     switch (columns) {
       case 2:
-        return 'grid-cols-1 sm:grid-cols-2';
+        return 'grid-cols-2';
       case 3:
-        return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+        return 'grid-cols-2 lg:grid-cols-3';
       case 4:
+        return 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+      case 5:
       default:
-        return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+        return 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5';
     }
   };
 
@@ -83,7 +99,7 @@ export function ModelGrid({
         />
       )}
 
-      <div className={`grid ${getGridCols()} gap-2 sm:gap-3 ${gridClassName}`}>
+      <div className={`grid ${getGridCols()} gap-1.5 sm:gap-2 ${gridClassName}`}>
         {availableModels.map((model) => (
           <ModelCard
             compact={compact}

@@ -120,10 +120,6 @@ export function AgentManagement() {
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Model:</span>
-                <span className="font-medium">{agent.model}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Type:</span>
                 <span className="font-medium capitalize">{agent.type}</span>
               </div>

@@ -13,7 +13,7 @@ interface AgentGridProps {
   agents: Agent[];
   selectedAgentId?: string;
   onAgentSelect: (agent: Agent) => void;
-  columns?: 2 | 3 | 4;
+  columns?: 2 | 3 | 4 | 5;
   showFilter?: boolean;
   compact?: boolean;
   className?: string;
@@ -25,7 +25,7 @@ export function AgentGrid({
   agents,
   selectedAgentId,
   onAgentSelect,
-  columns = 4,
+  columns = 5,
   showFilter = true,
   compact = false,
   className = '',
@@ -43,12 +43,14 @@ export function AgentGrid({
   const getGridCols = () => {
     switch (columns) {
       case 2:
-        return 'grid-cols-1 sm:grid-cols-2';
+        return 'grid-cols-2';
       case 3:
-        return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+        return 'grid-cols-2 lg:grid-cols-3';
       case 4:
+        return 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+      case 5:
       default:
-        return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+        return 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5';
     }
   };
 
@@ -63,7 +65,7 @@ export function AgentGrid({
         />
       )}
 
-      <div className={`grid ${getGridCols()} gap-3 ${gridClassName}`}>
+      <div className={`grid ${getGridCols()} gap-1.5 sm:gap-2 ${gridClassName}`}>
         {filteredAgents.map((agent) => (
           <AgentCard
             agent={agent}

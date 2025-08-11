@@ -289,9 +289,12 @@ export const getStats = query({
       };
     }
 
+    // Narrow the optional value to a definite string for index filtering
+    const ownerId = args.ownerId as string;
+
     const chats = await ctx.db
       .query('chats')
-      .withIndex('by_owner', (q) => q.eq('ownerId', args.ownerId))
+      .withIndex('by_owner', (q) => q.eq('ownerId', ownerId))
       .collect();
 
     const activeChats = chats.filter((chat) => chat.isActive);

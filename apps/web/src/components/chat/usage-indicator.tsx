@@ -111,7 +111,7 @@ export function UsageIndicator({
 
   if (variant === 'compact') {
     return (
-      <Card className={cn('p-3', className)}>
+      <Card className={cn('p-3 overflow-hidden', className)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={getUsageColor(usagePercentage)}>
@@ -162,7 +162,7 @@ export function UsageIndicator({
 
   // Detailed variant
   return (
-    <Card className={cn('p-4', className)}>
+    <Card className={cn('p-4 overflow-hidden', className)}>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="flex items-center gap-2 font-semibold text-sm">
           <BarChart3 className="h-4 w-4" />

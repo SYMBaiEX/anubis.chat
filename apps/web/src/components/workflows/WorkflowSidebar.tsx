@@ -201,7 +201,6 @@ export default function WorkflowSidebar({
                       type: 'agent',
                       config: {
                         agentId: agent.id,
-                        model: agent.model,
                       },
                     })
                   }
@@ -212,9 +211,6 @@ export default function WorkflowSidebar({
                     </div>
                     <div>
                       <div className="font-medium text-sm">{agent.name}</div>
-                      <div className="text-muted-foreground text-xs">
-                        Model: {agent.model}
-                      </div>
                     </div>
                   </div>
                 </div>

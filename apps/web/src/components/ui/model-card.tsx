@@ -48,12 +48,20 @@ const getIntelligenceBadge = (intelligence: AIModel['intelligence']) => {
     frontier: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white',
   };
 
+  // Shortened labels
+  const shortLabels: Record<AIModel['intelligence'], string> = {
+    basic: 'Basic',
+    advanced: 'Adv',
+    expert: 'Expert',
+    frontier: 'Top',
+  };
+
   return (
     <Badge
-      className={cn('border-0 px-1.5 py-0 text-xs', variants[intelligence])}
+      className={cn('border-0 px-1 py-0 text-[10px]', variants[intelligence])}
       variant="outline"
     >
-      {intelligence}
+      {shortLabels[intelligence]}
     </Badge>
   );
 };
@@ -61,11 +69,11 @@ const getIntelligenceBadge = (intelligence: AIModel['intelligence']) => {
 const getSpeedIcon = (speed: AIModel['speed']) => {
   switch (speed) {
     case 'fast':
-      return <Zap className="h-3 w-3 text-green-500" />;
+      return <Zap className="h-2.5 w-2.5 text-green-500" />;
     case 'medium':
-      return <Zap className="h-3 w-3 text-yellow-500" />;
+      return <Zap className="h-2.5 w-2.5 text-yellow-500" />;
     case 'slow':
-      return <Zap className="h-3 w-3 text-orange-500" />;
+      return <Zap className="h-2.5 w-2.5 text-orange-500" />;
   }
 };
 
@@ -108,7 +116,7 @@ export function ModelCard({
       tier = 'Premium';
       badgeClass =
         'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      icon = <Sparkles className="h-3 w-3" />;
+      icon = <Sparkles className="h-2.5 w-2.5" />;
     } else {
       tier = 'Standard';
       badgeClass =
@@ -117,7 +125,7 @@ export function ModelCard({
 
     // Show lock icon if not accessible
     if (!isModelAccessible(model)) {
-      icon = <Lock className="h-3 w-3" />;
+      icon = <Lock className="h-2.5 w-2.5" />;
     }
 
     return (
@@ -126,7 +134,7 @@ export function ModelCard({
           <TooltipTrigger>
             <Badge
               className={cn(
-                'gap-1 px-1.5 py-0.5 font-medium text-xs',
+                'gap-0.5 px-1 py-0 font-medium text-[10px]',
                 badgeClass
               )}
             >
@@ -153,10 +161,10 @@ export function ModelCard({
   return (
     <Card
       className={cn(
-        'group cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg',
-        isSelected && 'border-primary shadow-md ring-2 ring-primary',
+        'group cursor-pointer transition-all duration-200 hover:scale-[1.01] hover:shadow-md',
+        isSelected && 'border-primary shadow-md ring-1 ring-primary',
         !accessible && 'cursor-not-allowed opacity-60',
-        'min-h-[100px] border border-border/50',
+        'min-h-[80px] border border-border/50',
         className
       )}
       onClick={() => {
@@ -165,16 +173,16 @@ export function ModelCard({
         }
       }}
     >
-      <CardContent className="p-3">
+      <CardContent className="p-2">
         {/* Header with model name and selection indicator */}
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="mb-1.5 flex items-start justify-between gap-1">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
             <div className="flex-shrink-0">
               {getProviderIcon(model.provider)}
             </div>
             <div className="min-w-0 flex-1">
               <h3
-                className="truncate font-semibold text-sm leading-tight"
+                className="truncate font-semibold text-xs leading-tight"
                 title={model.name}
               >
                 {model.name
@@ -185,34 +193,34 @@ export function ModelCard({
             </div>
           </div>
           {isSelected && (
-            <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+            <Check className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
           )}
         </div>
 
         {/* Badges row */}
-        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        <div className="mb-1.5 flex flex-wrap items-center gap-1">
           {getTierBadge(model)}
           {getIntelligenceBadge(model.intelligence)}
           <div className="flex items-center">{getSpeedIcon(model.speed)}</div>
           {model.default && (
-            <Badge className="px-1.5 py-0.5 text-xs" variant="secondary">
+            <Badge className="px-1 py-0 text-[10px]" variant="secondary">
               Default
             </Badge>
           )}
         </div>
 
         {/* Description - condensed */}
-        <p className="mb-2 line-clamp-2 text-muted-foreground text-xs leading-relaxed">
+        <p className="mb-1.5 line-clamp-2 text-muted-foreground text-[10px] leading-snug">
           {model.description}
         </p>
 
         {/* Bottom info */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {/* Main capabilities - limit to 2 most important */}
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-0.5">
             {model.capabilities.slice(0, 2).map((cap) => (
               <Badge
-                className="h-4 px-1.5 py-0 text-xs"
+                className="h-3.5 px-1 py-0 text-[9px]"
                 key={cap}
                 variant="outline"
               >
@@ -221,20 +229,13 @@ export function ModelCard({
             ))}
             {model.capabilities.length > 2 && (
               <Badge
-                className="h-4 px-1.5 py-0 text-muted-foreground text-xs"
+                className="h-3.5 px-1 py-0 text-muted-foreground text-[9px]"
                 variant="outline"
               >
                 +{model.capabilities.length - 2}
               </Badge>
             )}
           </div>
-
-          {/* Release date - only if available and accurate */}
-          {model.released && (
-            <div className="text-muted-foreground text-xs">
-              Released: {model.released}
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>

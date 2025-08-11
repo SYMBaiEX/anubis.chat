@@ -16,6 +16,7 @@ import type * as authHelpers from "../authHelpers.js";
 import type * as blockchainTransactions from "../blockchainTransactions.js";
 import type * as chats from "../chats.js";
 import type * as chatsAuth from "../chatsAuth.js";
+import type * as cleanupAgents from "../cleanupAgents.js";
 import type * as documents from "../documents.js";
 import type * as env from "../env.js";
 import type * as files from "../files.js";
@@ -64,6 +65,7 @@ declare const fullApi: ApiFromModules<{
   blockchainTransactions: typeof blockchainTransactions;
   chats: typeof chats;
   chatsAuth: typeof chatsAuth;
+  cleanupAgents: typeof cleanupAgents;
   documents: typeof documents;
   env: typeof env;
   files: typeof files;

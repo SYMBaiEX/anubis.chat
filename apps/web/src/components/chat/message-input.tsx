@@ -2,6 +2,7 @@
 
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import {
+  Brain,
   FileText,
   Image,
   Mic,
@@ -13,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from 'react';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { getVoiceCommands } from '@/lib/utils/speech-formatter';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -47,14 +50,51 @@ export function MessageInput({
   className,
   children,
   fontSize = 'medium',
+  reasoningEnabled = true,
 }: MessageInputProps & { onTyping?: () => void; fontSize?: FontSize }) {
   const [message, setMessage] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
+  const [isActive, setIsActive] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [useReasoning, setUseReasoning] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { theme } = useTheme();
+  
+  // Speech recognition setup
+  const {
+    isListening,
+    transcript,
+    interimTranscript,
+    isSupported: isSpeechSupported,
+    startListening,
+    stopListening,
+    resetTranscript,
+  } = useSpeechRecognition({
+    continuous: true,
+    interimResults: true,
+    enableFormatting: true, // Enable smart punctuation and formatting
+    onResult: (text, isFinal) => {
+      if (isFinal) {
+        // Append final formatted transcript to message
+        setMessage(prev => {
+          // Add a space between previous text and new text if needed
+          if (prev && !prev.endsWith(' ') && !text.startsWith(' ')) {
+            return `${prev} ${text}`;
+          }
+          return prev + text;
+        });
+        // Trigger typing indicator
+        if (onTyping) {
+          onTyping();
+        }
+      }
+    },
+    onError: (error) => {
+      log.error('Speech recognition error', { error });
+      // You could show a toast notification here
+    },
+  });
 
   // Get dynamic font size classes
   const fontSizes = getFontSizeClasses(fontSize);
@@ -72,9 +112,10 @@ export function MessageInput({
     const trimmedMessage = message.trim();
     if (!trimmedMessage || disabled) return;
 
-    onSend(trimmedMessage);
+    onSend(trimmedMessage, useReasoning);
     setMessage('');
     setShowEmojiPicker(false);
+    setUseReasoning(false); // Reset reasoning toggle after sending
   };
 
   const handleEmojiClick = (emojiData: any) => {
@@ -90,21 +131,26 @@ export function MessageInput({
   };
 
   const handleVoiceToggle = () => {
-    if (isRecording) {
-      // Stop recording
-      setIsRecording(false);
-      // TODO: Implement actual voice recording logic
-      log.debug('Voice recording stopped', {
-        operation: 'voice_recording_stop',
-        wasRecording: true,
+    if (isListening) {
+      // Stop listening - keep everything in the input
+      stopListening();
+      log.debug('Voice transcription stopped', {
+        operation: 'voice_transcription_stop',
+        wasListening: true,
+        currentMessage: message,
       });
     } else {
-      // Start recording
-      setIsRecording(true);
-      // TODO: Implement actual voice recording logic
-      log.debug('Voice recording started', {
-        operation: 'voice_recording_start',
-        wasRecording: false,
+      // Start listening - DON'T reset anything, just continue adding
+      if (!isSpeechSupported) {
+        // Fallback message if browser doesn't support speech recognition
+        alert('Speech recognition is not supported in your browser. Please try Chrome or Edge.');
+        return;
+      }
+      startListening();
+      log.debug('Voice transcription started', {
+        operation: 'voice_transcription_start',
+        wasListening: false,
+        currentMessage: message,
       });
     }
   };
@@ -141,7 +187,7 @@ export function MessageInput({
 
   return (
     <TooltipProvider>
-      <div className={cn('flex flex-col space-y-1 sm:space-y-2', className)}>
+      <div className={cn('flex w-full flex-col space-y-1 sm:space-y-2', className)}>
         {/* Character Count */}
         {message.length > maxLength * 0.8 && (
           <div
@@ -157,45 +203,51 @@ export function MessageInput({
         )}
 
         {/* Input Container */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          {/* Attachment Buttons - Stacked vertically */}
-          <div className="hidden flex-col gap-0 sm:flex">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  className="h-[22px] w-5 p-0"
-                  disabled={disabled}
-                  onClick={() => fileInputRef.current?.click()}
-                  size="icon"
-                  variant="ghost"
-                >
-                  <Paperclip className="h-3 w-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="left">Attach file</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  className="h-[22px] w-5 p-0"
-                  disabled={disabled}
-                  onClick={() => imageInputRef.current?.click()}
-                  size="icon"
-                  variant="ghost"
-                >
-                  <Image className="h-3 w-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="left">Attach image</TooltipContent>
-            </Tooltip>
-          </div>
-
+        <div className="flex w-full items-center gap-1 sm:gap-2">
           {/* Main Input Area */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 overflow-hidden">
+            {/* Attachment Buttons - Inside left side of input */}
+            <div className="-translate-y-1/2 absolute top-1/2 left-1 sm:left-2 flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className="h-8 w-4 p-0 sm:h-9 sm:w-5"
+                    disabled={disabled}
+                    onClick={() => fileInputRef.current?.click()}
+                    size="icon"
+                    variant="ghost"
+                  >
+                    <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">Attach file</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className="h-8 w-4 p-0 sm:h-9 sm:w-5"
+                    disabled={disabled}
+                    onClick={() => imageInputRef.current?.click()}
+                    size="icon"
+                    variant="ghost"
+                  >
+                    <Image className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">Attach image</TooltipContent>
+              </Tooltip>
+            </div>
+
             <Textarea
+              aria-label={placeholder}
               className={cn(
-                'max-h-[200px] min-h-[36px] resize-none pr-10 sm:min-h-[44px] sm:pr-12',
+                'relative z-10 max-h-[200px] min-h-[44px] w-full resize-none bg-transparent pl-20 pr-20 sm:min-h-[52px] sm:pl-24 sm:pr-24',
+                // Center caret vertically when inactive and empty
+                (!isActive && message.trim().length === 0)
+                  ? 'py-0 leading-[44px] sm:leading-[52px]'
+                  : 'py-2 leading-normal',
+                message.trim() || isActive ? 'text-left' : 'text-center',
                 fontSizes.inputText
               )}
               disabled={disabled}
@@ -208,28 +260,46 @@ export function MessageInput({
                 }
               }}
               onKeyDown={handleKeyDown}
-              placeholder={placeholder}
+              onFocus={() => setIsActive(true)}
+              onBlur={() => setIsActive(message.trim().length > 0)}
+              // Use overlay for visual placeholder to center vertically
+              placeholder=""
               ref={textareaRef}
               value={message}
             />
 
-            {/* Emoji Button - Vertically centered in the right side of input */}
-            <div className="-translate-y-1/2 absolute top-1/2 right-1 sm:right-2">
+            {/* Centered overlay placeholder to match project styling */}
+            {(!isActive && message.trim().length === 0) && (
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+                <span className="text-muted-foreground/80 font-medium tracking-wide">
+                  {placeholder || 'Ask Anubis anything'}
+                </span>
+              </div>
+            )}
+
+            {/* Input Controls - Inside message input area on the right */}
+            <div className="-translate-y-1/2 absolute top-1/2 right-1 sm:right-2 flex items-center gap-1">
+              {/* Emoji Button (1x2 size, leftmost) */}
               <Popover onOpenChange={setShowEmojiPicker} open={showEmojiPicker}>
                 <PopoverTrigger asChild>
-                  <Button
-                    className="h-5 w-5 p-0 sm:h-6 sm:w-6"
-                    disabled={disabled}
-                    size="icon"
-                    variant="ghost"
-                  >
-                    <Smile
-                      className={cn(
-                        'h-3 w-3 transition-colors sm:h-3.5 sm:w-3.5',
-                        showEmojiPicker && 'text-primary'
-                      )}
-                    />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        className="h-8 w-4 p-0 sm:h-9 sm:w-5"
+                        disabled={disabled}
+                        size="icon"
+                        variant="ghost"
+                      >
+                        <Smile
+                          className={cn(
+                            'h-3 w-3 transition-colors sm:h-3.5 sm:w-3.5',
+                            showEmojiPicker && 'text-primary'
+                          )}
+                        />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Add emoji</TooltipContent>
+                  </Tooltip>
                 </PopoverTrigger>
                 <PopoverContent
                   align="end"
@@ -250,56 +320,128 @@ export function MessageInput({
                   />
                 </PopoverContent>
               </Popover>
+
+              {/* Voice Button (1x2 size) */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className={cn(
+                      'h-8 w-4 p-0 sm:h-9 sm:w-5',
+                      isListening && 'bg-red-500 text-white hover:bg-red-600 animate-pulse'
+                    )}
+                    disabled={disabled || !isSpeechSupported}
+                    onClick={handleVoiceToggle}
+                    size="icon"
+                    variant={isListening ? 'default' : 'ghost'}
+                  >
+                    {isListening ? (
+                      <MicOff className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    ) : (
+                      <Mic className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  {!isSpeechSupported ? (
+                    'Speech recognition not supported'
+                  ) : isListening ? (
+                    'Stop speaking'
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="font-semibold">Speak to type</div>
+                      <div className="text-xs opacity-90">
+                        Say "period", "comma", "question mark" for punctuation
+                      </div>
+                      <div className="text-xs opacity-80">
+                        Say "new line" or "capital" for formatting
+                      </div>
+                    </div>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Reasoning Button (1x2 size) */}
+              {reasoningEnabled && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          className={cn(
+                            'h-8 w-4 p-0 sm:h-9 sm:w-5',
+                            useReasoning && 'bg-blue-500 text-white hover:bg-blue-600'
+                          )}
+                          disabled={disabled}
+                          size="icon"
+                          variant={useReasoning ? 'default' : 'ghost'}
+                        >
+                          <Brain className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Multi-step reasoning</TooltipContent>
+                    </Tooltip>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    className="w-80 p-4"
+                    side="top"
+                    sideOffset={8}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold">Multi-step Reasoning</h4>
+                        <Button
+                          className={cn(
+                            'h-6 w-11 p-0 rounded-full',
+                            useReasoning ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'
+                          )}
+                          onClick={() => setUseReasoning(!useReasoning)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          <div
+                            className={cn(
+                              'h-4 w-4 rounded-full bg-white transition-transform',
+                              useReasoning ? 'translate-x-5' : 'translate-x-0'
+                            )}
+                          />
+                        </Button>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <p>Enable deep analysis with up to 10 reasoning steps for complex questions.</p>
+                        <div className="rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20">
+                          <p className="text-amber-800 dark:text-amber-200 font-medium">
+                            ⚠️ This will consume 2 messages instead of 1
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+
+              {/* Send Button (2x2 size, rightmost) */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className="h-8 w-8 p-0 sm:h-9 sm:w-9"
+                    disabled={disabled || !isMessageValid}
+                    onClick={handleSend}
+                    size="icon"
+                    variant="default"
+                  >
+                    <Send className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Send message (Enter)</TooltipContent>
+              </Tooltip>
             </div>
           </div>
 
-          {/* Voice/Send Buttons - Stacked vertically */}
-          <div className="flex flex-col gap-0">
-            {/* Voice Recording */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  className={cn(
-                    'h-[18px] w-6 p-0 sm:h-[22px] sm:w-7',
-                    isRecording && 'bg-red-500 text-white hover:bg-red-600'
-                  )}
-                  disabled={disabled}
-                  onClick={handleVoiceToggle}
-                  size="icon"
-                  variant={isRecording ? 'default' : 'ghost'}
-                >
-                  {isRecording ? (
-                    <Square className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                  ) : (
-                    <Mic className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {isRecording ? 'Stop recording' : 'Voice message'}
-              </TooltipContent>
-            </Tooltip>
-
-            {/* Send Button */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  className="h-[18px] w-6 p-0 sm:h-[22px] sm:w-7"
-                  disabled={disabled || !isMessageValid}
-                  onClick={handleSend}
-                  size="icon"
-                  variant="default"
-                >
-                  <Send className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Send message (Enter)</TooltipContent>
-            </Tooltip>
-          </div>
         </div>
 
-        {/* Voice Recording Status */}
-        {isRecording && (
+        {/* Voice Transcription Status */}
+        {isListening && (
           <div className="flex items-center justify-center space-x-2 rounded-lg bg-red-50 p-2 text-red-600 dark:bg-red-900/20 dark:text-red-400">
             <div className="flex space-x-1">
               <div className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
@@ -312,7 +454,9 @@ export function MessageInput({
                 style={{ animationDelay: '1s' }}
               />
             </div>
-            <span className="font-medium text-xs sm:text-sm">Recording...</span>
+            <span className="font-medium text-xs sm:text-sm">
+              {interimTranscript ? `Listening: "${interimTranscript}"` : 'Speak now...'}
+            </span>
             <Button onClick={handleVoiceToggle} size="sm" variant="ghost">
               <MicOff className="h-4 w-4" />
             </Button>

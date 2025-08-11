@@ -27,19 +27,19 @@ interface AgentCardProps {
 const getAgentIcon = (type: Agent['type']) => {
   switch (type) {
     case 'trading':
-      return <TrendingUp className="h-4 w-4" />;
+      return <TrendingUp className="h-3 w-3" />;
     case 'defi':
-      return <Coins className="h-4 w-4" />;
+      return <Coins className="h-3 w-3" />;
     case 'nft':
-      return <Image className="h-4 w-4" />;
+      return <Image className="h-3 w-3" />;
     case 'dao':
-      return <Vote className="h-4 w-4" />;
+      return <Vote className="h-3 w-3" />;
     case 'portfolio':
-      return <BarChart3 className="h-4 w-4" />;
+      return <BarChart3 className="h-3 w-3" />;
     case 'custom':
-      return <Settings className="h-4 w-4" />;
+      return <Settings className="h-3 w-3" />;
     default:
-      return <Bot className="h-4 w-4" />;
+      return <Bot className="h-3 w-3" />;
   }
 };
 
@@ -96,20 +96,20 @@ export function AgentCard({
   return (
     <Card
       className={cn(
-        'cursor-pointer transition-all duration-200 hover:shadow-md',
-        isSelected && 'border-primary ring-2 ring-primary',
-        compact ? 'min-h-[120px]' : 'min-h-[140px]',
+        'cursor-pointer transition-all duration-200 hover:scale-[1.01] hover:shadow-md',
+        isSelected && 'border-primary ring-1 ring-primary',
+        compact ? 'min-h-[80px]' : 'min-h-[100px]',
         className
       )}
       onClick={() => onClick(agent)}
     >
-      <CardHeader className={cn('p-3', compact ? 'pb-1' : 'pb-2')}>
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+      <CardHeader className={cn('p-2', compact ? 'pb-1' : 'pb-1.5')}>
+        <div className="flex items-start justify-between gap-1">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
             <div
               className={cn(
                 'flex flex-shrink-0 items-center justify-center rounded-lg',
-                compact ? 'h-6 w-6 text-xs' : 'h-8 w-8 text-sm',
+                compact ? 'h-5 w-5 text-xs' : 'h-6 w-6 text-xs',
                 getAgentColor(agent.type)
               )}
             >
@@ -117,8 +117,8 @@ export function AgentCard({
             </div>
             <h3
               className={cn(
-                'truncate font-medium',
-                compact ? 'text-xs' : 'text-sm'
+                'truncate font-semibold',
+                compact ? 'text-[10px]' : 'text-xs'
               )}
               title={agent.name}
             >
@@ -126,15 +126,15 @@ export function AgentCard({
             </h3>
           </div>
           {isSelected && (
-            <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+            <Check className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1">
           <Badge
             className={cn(
-              'border-0 text-xs',
-              compact ? 'h-4 px-1.5 py-0' : 'h-5 px-1.5 py-0',
+              'border-0 text-[10px]',
+              compact ? 'h-3.5 px-1 py-0' : 'h-4 px-1 py-0',
               getAgentColor(agent.type)
             )}
             variant="outline"
@@ -144,7 +144,7 @@ export function AgentCard({
 
           {!agent.isPublic && (
             <Badge
-              className={cn('px-1.5 py-0 text-xs', compact ? 'h-4' : 'h-5')}
+              className={cn('px-1 py-0 text-[10px]', compact ? 'h-3.5' : 'h-4')}
               variant="secondary"
             >
               Custom
@@ -154,8 +154,8 @@ export function AgentCard({
           {isSelected && (
             <Badge
               className={cn(
-                'bg-green-100 px-1.5 py-0 text-green-800 text-xs dark:bg-green-900 dark:text-green-200',
-                compact ? 'h-4' : 'h-5'
+                'bg-green-100 px-1 py-0 text-green-800 text-[10px] dark:bg-green-900 dark:text-green-200',
+                compact ? 'h-3.5' : 'h-4'
               )}
             >
               Active
@@ -164,41 +164,41 @@ export function AgentCard({
         </div>
       </CardHeader>
 
-      <CardContent className={cn('p-3', compact ? 'pt-0' : 'pt-1')}>
+      <CardContent className={cn('p-2', compact ? 'pt-0' : 'pt-0.5')}>
         {!compact && (
-          <p className="mb-2 line-clamp-2 text-muted-foreground text-xs">
+          <p className="mb-1.5 line-clamp-2 text-muted-foreground text-[10px] leading-snug">
             {getAgentDescription(agent)}
           </p>
         )}
 
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <div className="flex items-center gap-1">
-              <Zap className="h-3 w-3" />
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-muted-foreground text-[9px]">
+            <div className="flex items-center gap-0.5">
+              <Zap className="h-2.5 w-2.5" />
               <span>{agent.capabilities.length} capabilities</span>
             </div>
             {agent.version && <span>v{agent.version}</span>}
           </div>
 
-          <div className="flex flex-wrap gap-1">
-            {agent.capabilities.slice(0, compact ? 2 : 3).map((capability) => (
+          <div className="flex flex-wrap gap-0.5">
+            {agent.capabilities.slice(0, 2).map((capability) => (
               <Badge
-                className={cn('px-1.5 py-0 text-xs', compact ? 'h-4' : 'h-5')}
+                className={cn('px-1 py-0 text-[9px]', compact ? 'h-3' : 'h-3.5')}
                 key={capability}
                 variant="outline"
               >
                 {capability}
               </Badge>
             ))}
-            {agent.capabilities.length > (compact ? 2 : 3) && (
+            {agent.capabilities.length > 2 && (
               <Badge
                 className={cn(
-                  'px-1.5 py-0 text-muted-foreground text-xs',
-                  compact ? 'h-4' : 'h-5'
+                  'px-1 py-0 text-muted-foreground text-[9px]',
+                  compact ? 'h-3' : 'h-3.5'
                 )}
                 variant="outline"
               >
-                +{agent.capabilities.length - (compact ? 2 : 3)}
+                +{agent.capabilities.length - 2}
               </Badge>
             )}
           </div>

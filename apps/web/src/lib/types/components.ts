@@ -119,10 +119,11 @@ export interface MessageProps extends BaseComponentProps {
 }
 
 export interface MessageInputProps extends BaseComponentProps {
-  onSend: (content: string) => void;
+  onSend: (content: string, useReasoning?: boolean) => void;
   disabled?: boolean;
   placeholder?: string;
   maxLength?: number;
+  reasoningEnabled?: boolean;
 }
 
 export interface TypingIndicatorProps extends BaseComponentProps {

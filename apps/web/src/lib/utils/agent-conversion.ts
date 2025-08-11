@@ -89,25 +89,18 @@ export function convexAgentToApiFormat(convexAgent: Doc<'agents'>): Agent {
     throw new Error('Agent name is required and cannot be empty');
   }
 
-  if (!validateOptionalString(convexAgent.model)) {
-    throw new Error('Agent model is required and cannot be empty');
-  }
 
-  if (!validateOptionalString(convexAgent.walletAddress)) {
-    throw new Error('Agent wallet address is required and cannot be empty');
-  }
 
   return {
     id: convexAgent._id,
     name: validateOptionalString(convexAgent.name),
     description: validateOptionalString(convexAgent.description),
-    model: validateOptionalString(convexAgent.model),
     systemPrompt: validateOptionalString(convexAgent.systemPrompt),
     temperature: validateOptionalNumber(convexAgent.temperature, 0.7, 0, 2),
     maxTokens: validateOptionalNumber(convexAgent.maxTokens, 4096, 1, 32_768),
-    tools: validateOptionalArray(convexAgent.tools),
-    maxSteps: validateOptionalNumber(convexAgent.maxSteps, 10, 1, 50),
-    walletAddress: validateOptionalString(convexAgent.walletAddress),
+    tools: validateOptionalArray(convexAgent.capabilities), // Map capabilities to tools
+    maxSteps: 10, // Default value since not in schema
+    walletAddress: validateOptionalString(convexAgent.createdBy) || '', // Map createdBy to walletAddress
     createdAt: convexAgent.createdAt || Date.now(),
     updatedAt: convexAgent.updatedAt || Date.now(),
   };

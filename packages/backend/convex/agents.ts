@@ -7,6 +7,7 @@
 import { v } from 'convex/values';
 import type { Doc } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
+import { requireAuth } from './authHelpers';
 
 // =============================================================================
 // Agent Management
@@ -106,7 +107,6 @@ export const create = mutation({
     description: v.string(),
     systemPrompt: v.string(),
     capabilities: v.array(v.string()),
-    model: v.string(),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
     config: v.optional(
@@ -140,7 +140,6 @@ export const create = mutation({
       description: args.description,
       systemPrompt: args.systemPrompt,
       capabilities: args.capabilities,
-      model: args.model,
       temperature: args.temperature ?? 0.7,
       maxTokens: args.maxTokens,
       config: args.config,
@@ -312,13 +311,46 @@ export const updatePublic = mutation({
       throw new Error('Can only update public agents');
     }
 
-    // TODO: Add admin authentication check here when admin system is fully implemented
-    // For now, we'll allow the update
+    // Admin authentication check
+    const { user } = await requireAuth(ctx);
+    if (!user.role || user.role === 'user') {
+      throw new Error('Admin access required');
+    }
 
     const { id, ...updates } = args;
 
+    // Narrow type to the allowed agent type union
+    type AllowedAgentType =
+      | 'general'
+      | 'trading'
+      | 'defi'
+      | 'nft'
+      | 'dao'
+      | 'portfolio'
+      | 'custom';
+
+    const allowedTypes: ReadonlyArray<AllowedAgentType> = [
+      'general',
+      'trading',
+      'defi',
+      'nft',
+      'dao',
+      'portfolio',
+      'custom',
+    ] as const;
+
+    const maybeType = (updates as { type?: string }).type;
+    const normalizedType: AllowedAgentType | undefined = allowedTypes.includes(
+      maybeType as AllowedAgentType
+    )
+      ? (maybeType as AllowedAgentType)
+      : undefined;
+
+    const { type: _omitType, ...rest } = updates as Record<string, unknown>;
+
     await ctx.db.patch(id, {
-      ...updates,
+      ...(rest as Partial<Doc<'agents'>>),
+      ...(normalizedType ? { type: normalizedType } : {}),
       updatedAt: Date.now(),
     });
 
@@ -342,7 +374,7 @@ export const initializeDefaults = mutation({
       return 'Default agents already exist';
     }
 
-    // Create default public agents with varied models
+    // Create only Anubis as the default public agent
     const defaultAgents = [
       {
         name: 'Anubis',
@@ -385,177 +417,11 @@ Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide throug
           'guidance',
           'wisdom',
         ],
-        model: 'gpt-5-nano',
         temperature: 0.7,
         maxTokens: 4000,
       },
-      {
-        name: 'Solana Knowledge Expert',
-        type: 'trading' as const,
-        description:
-          'Expert Solana blockchain assistant with comprehensive documentation access and development guidance',
-        systemPrompt: `You are the Solana Knowledge Expert, a specialized assistant with deep expertise in Solana blockchain development and ecosystem knowledge.
-
-Your primary capabilities:
-- Access to real-time Solana documentation through the Solana MCP server
-- Expert knowledge of the Anchor framework for all versions
-- Comprehensive understanding of Solana programs, accounts, and transactions
-- Deep knowledge of SPL tokens, NFTs, and DeFi protocols on Solana
-- Trading and market analysis on Solana
-
-When answering questions:
-1. Use the Solana MCP tools to fetch the most current and accurate information:
-   - Solana_Expert__Ask_For_Help for general Solana questions
-   - Solana_Documentation_Search for searching specific documentation
-   - Ask_Solana_Anchor_Framework_Expert for Anchor-specific queries
-
-2. Always provide:
-   - Version-specific information when relevant
-   - Code examples with proper syntax and best practices
-   - Clear explanations of concepts
-   - Links to relevant documentation when available
-
-3. For development questions:
-   - Include working code examples
-   - Explain security considerations
-   - Mention common pitfalls and how to avoid them
-   - Suggest best practices for the specific use case
-
-4. For trading and DeFi:
-   - Provide market insights
-   - Explain token mechanics
-   - Discuss risk management
-   - Share DeFi protocol knowledge
-
-Remember: Always verify information with the Solana MCP tools to ensure accuracy and currency of the information provided.`,
-        capabilities: [
-          'solana-expert',
-          'anchor-framework',
-          'documentation-search',
-          'development-guidance',
-          'trading-analysis',
-          'defi-protocols',
-        ],
-        model: 'openrouter/qwen/qwen3-coder:free',
-        temperature: 0.3,
-        maxTokens: 3000,
-        mcpServers: [
-          {
-            name: 'solana',
-            enabled: true,
-            config: {},
-          },
-        ],
-      },
-      {
-        name: 'Coding Knowledge Agent',
-        type: 'defi' as const,
-        description:
-          'Expert coding assistant with access to 50,000+ library docs and best practices through Context7',
-        systemPrompt: `You are the Coding Knowledge Agent, an expert programming assistant with access to comprehensive, up-to-date documentation for over 50,000 libraries through Context7.
-
-Your primary capabilities:
-- Real-time access to library documentation via Context7 MCP
-- Version-specific code examples and API references
-- Best practices and design patterns for various tech stacks
-- Expert problem-solving for coding issues
-
-When helping with code:
-1. ALWAYS use Context7 to verify current best practices and documentation:
-   - Use resolve_library_id to find the correct library
-   - Use get_library_docs to fetch specific documentation
-   - Check for version-specific information
-
-2. Provide accurate, working code by:
-   - Fetching real-time documentation from Context7
-   - Using the exact syntax from official docs
-   - Including proper imports and dependencies
-   - Following framework-specific conventions
-
-3. For debugging and problem-solving:
-   - Look up error messages in documentation
-   - Check for known issues and solutions
-   - Verify API compatibility
-   - Suggest alternative approaches when needed
-
-4. Always include:
-   - Version compatibility information
-   - Security considerations
-   - Performance implications
-   - Links to relevant documentation
-
-Key instruction: Frequently use Context7 to ensure all code examples and advice are based on the latest official documentation. Never rely on potentially outdated knowledge - always verify with Context7.`,
-        capabilities: [
-          'code-assistance',
-          'library-documentation',
-          'best-practices',
-          'debugging',
-        ],
-        model: 'openrouter/deepseek/deepseek-chat',
-        temperature: 0.5,
-        maxTokens: 3500,
-        mcpServers: [
-          {
-            name: 'context7',
-            enabled: true,
-            config: {},
-          },
-        ],
-      },
-      {
-        name: 'NFT Creator',
-        type: 'nft' as const,
-        description:
-          'Handles NFT creation, trading, and marketplace operations',
-        systemPrompt:
-          'You are an NFT specialist for Solana. You can help with creating NFT collections, minting NFTs, trading on marketplaces, and managing NFT portfolios. Always consider authenticity and market dynamics.',
-        capabilities: [
-          'deployCollection',
-          'mintNFT',
-          'getNFTsByOwner',
-          'listNFT',
-          'buyNFT',
-        ],
-        model: 'gemini-2.0-flash',
-        temperature: 0.6,
-        maxTokens: 3000,
-      },
-      {
-        name: 'DAO Governance Agent',
-        type: 'dao' as const,
-        description: 'Manages DAO governance, voting, and proposal creation',
-        systemPrompt:
-          'You are a DAO governance specialist. You help users participate in decentralized governance, create proposals, vote on initiatives, and understand governance mechanisms. Always promote democratic participation.',
-        capabilities: [
-          'createProposal',
-          'vote',
-          'getDaoInfo',
-          'getProposals',
-          'delegateVote',
-        ],
-        model: 'openrouter/openai/gpt-4o-mini',
-        temperature: 0.4,
-        maxTokens: 3000,
-      },
-      {
-        name: 'Portfolio Tracker',
-        type: 'portfolio' as const,
-        description: 'Tracks portfolio performance and provides analytics',
-        systemPrompt:
-          'You are a portfolio management specialist. You help users track their Solana assets, analyze performance, understand market exposure, and make portfolio optimization decisions. Focus on data-driven insights.',
-        capabilities: [
-          'getBalance',
-          'getTokenBalances',
-          'getPortfolioValue',
-          'analyzePerformance',
-          'getAssetAllocation',
-        ],
-        model: 'openrouter/qwen/qwen3-coder:free',
-        temperature: 0.3,
-        maxTokens: 3500,
-      },
     ];
-
+       
     const agentIds = [];
     for (const agent of defaultAgents) {
       const agentId = await ctx.db.insert('agents', {
@@ -730,7 +596,6 @@ export const getUserExecutions = query({
         return {
           ...execution,
           agentName: agent?.name || 'Unknown Agent',
-          agentModel: agent?.model || 'unknown',
         };
       })
     );
@@ -869,10 +734,6 @@ export const getAgentStats = query({
       (exec) => exec.status === 'failed'
     );
 
-    const modelUsage = new Map<string, number>();
-    agents.forEach((agent) => {
-      modelUsage.set(agent.model, (modelUsage.get(agent.model) || 0) + 1);
-    });
 
     return {
       totalAgents: agents.length,
@@ -884,7 +745,6 @@ export const getAgentStats = query({
         executions.length > 0
           ? completedExecutions.length / executions.length
           : 0,
-      modelUsage: Object.fromEntries(modelUsage),
       averageExecutionTime:
         completedExecutions.length > 0
           ? completedExecutions

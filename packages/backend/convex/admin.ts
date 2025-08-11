@@ -152,10 +152,10 @@ export const getSystemStats = query({
       ctx.db.query('usage').collect(),
     ]);
 
-    // User activity
-    const usersLast24h = users.filter((u) => u.lastActiveAt > dayAgo).length;
-    const usersLast7d = users.filter((u) => u.lastActiveAt > weekAgo).length;
-    const usersLast30d = users.filter((u) => u.lastActiveAt > monthAgo).length;
+    // User activity (guard undefined timestamps)
+    const usersLast24h = users.filter((u) => (u.lastActiveAt ?? 0) > dayAgo).length;
+    const usersLast7d = users.filter((u) => (u.lastActiveAt ?? 0) > weekAgo).length;
+    const usersLast30d = users.filter((u) => (u.lastActiveAt ?? 0) > monthAgo).length;
 
     // Content creation
     const docsLast24h = documents.filter((d) => d.createdAt > dayAgo).length;

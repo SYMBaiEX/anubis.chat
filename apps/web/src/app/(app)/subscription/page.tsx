@@ -44,7 +44,7 @@ export default function SubscriptionPage() {
 
   if (!subscription) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex items-center justify-center py-16">
         <div className="text-center">
           <h2 className="font-semibold text-xl">Loading subscription...</h2>
           <p className="text-muted-foreground">
@@ -133,21 +133,25 @@ export default function SubscriptionPage() {
   };
 
   return (
-    <div className="w-full bg-gradient-to-b from-primary/5 dark:from-primary/10">
+    <div className="w-full overflow-x-hidden bg-gradient-to-b from-primary/5 dark:from-primary/10">
       {/* Full-width header */}
       <div className="w-full p-4 md:p-6">
         <div className="mx-auto w-full max-w-6xl">
-          <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl">
-            Subscription Management
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your anubis.chat subscription and billing
-          </p>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl whitespace-nowrap">
+                Subscription Management
+              </h1>
+              <p className="text-muted-foreground">
+                Manage your anubis.chat subscription and billing
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Constrained content */}
-      <div className="mx-auto w-full max-w-6xl space-y-4 p-3 sm:p-4 md:p-6">
+      <div className="mx-auto w-full max-w-6xl space-y-4 px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
         {/* Alerts */}
         <div className="grid gap-3 md:grid-cols-2">
           {isExpiringSoon && (

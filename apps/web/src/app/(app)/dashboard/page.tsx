@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  Bot,
-  Calendar,
-  Crown,
-  MessageSquare,
-  Settings,
-  TrendingUp,
-  User,
-  Zap,
-} from 'lucide-react';
+import { Bot, Calendar, Crown, MessageSquare, TrendingUp, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -247,7 +238,7 @@ export default function DashboardPage() {
         {/* Quick Stats - Responsive Grid */}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 md:grid-cols-4 md:gap-4">
           {/* Messages Card */}
-          <Card className="border-primary/20 bg-primary/5 p-2.5 transition-colors hover:ring-1 hover:ring-primary/20 sm:p-3 md:p-4">
+          <Card className="border-primary/30 bg-primary/10 p-2.5 transition-colors hover:ring-1 hover:ring-primary/30 sm:p-3 md:p-4 dark:bg-primary/15">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-[11px] text-muted-foreground sm:text-xs md:text-sm">
@@ -257,7 +248,7 @@ export default function DashboardPage() {
                   {subscription?.messagesUsed || 0}
                 </p>
               </div>
-              <span className="rounded-md bg-gradient-to-br from-primary/20 to-transparent p-1">
+              <span className="rounded-md bg-gradient-to-br from-primary/30 to-transparent p-1">
                 <MessageSquare className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
               </span>
             </div>
@@ -275,7 +266,7 @@ export default function DashboardPage() {
           </Card>
 
           {/* Premium Card */}
-          <Card className="border-amber-200 bg-amber-50 p-2.5 transition-colors hover:ring-1 hover:ring-amber-300 sm:p-3 md:p-4 dark:border-amber-800 dark:bg-amber-900/20 dark:hover:ring-amber-700">
+          <Card className="border-accent/30 bg-accent/10 p-2.5 transition-colors hover:ring-1 hover:ring-accent/30 sm:p-3 md:p-4 dark:bg-accent/15">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-[11px] text-muted-foreground sm:text-xs md:text-sm">
@@ -285,8 +276,8 @@ export default function DashboardPage() {
                   {subscription?.premiumMessagesUsed || 0}
                 </p>
               </div>
-              <span className="rounded-md bg-gradient-to-br from-amber-300/30 to-transparent p-1 dark:from-amber-600/30">
-                <Zap className="h-3.5 w-3.5 text-amber-500 sm:h-4 sm:w-4" />
+              <span className="rounded-md bg-gradient-to-br from-accent/30 to-transparent p-1">
+                <Zap className="h-3.5 w-3.5 text-accent sm:h-4 sm:w-4" />
               </span>
             </div>
             <div className="mt-1.5 sm:mt-2">
@@ -304,7 +295,7 @@ export default function DashboardPage() {
           </Card>
 
           {/* Days Left Card */}
-          <Card className="border-blue-200 bg-blue-50 p-2.5 transition-colors hover:ring-1 hover:ring-blue-300 sm:p-3 md:p-4 dark:border-blue-800 dark:bg-blue-900/20 dark:hover:ring-blue-700">
+          <Card className="border-secondary/30 bg-secondary/10 p-2.5 transition-colors hover:ring-1 hover:ring-secondary/30 sm:p-3 md:p-4 dark:bg-secondary/15">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-[11px] text-muted-foreground sm:text-xs md:text-sm">
@@ -314,14 +305,14 @@ export default function DashboardPage() {
                   {subscription?.daysRemaining || 0}
                 </p>
               </div>
-              <span className="rounded-md bg-gradient-to-br from-blue-300/30 to-transparent p-1 dark:from-blue-600/30">
-                <Calendar className="h-3.5 w-3.5 text-blue-600 sm:h-4 sm:w-4" />
+              <span className="rounded-md bg-gradient-to-br from-secondary/30 to-transparent p-1">
+                <Calendar className="h-3.5 w-3.5 text-secondary-foreground sm:h-4 sm:w-4" />
               </span>
             </div>
           </Card>
 
           {/* Usage Card */}
-          <Card className="border-emerald-200 bg-emerald-50 p-2.5 transition-colors hover:ring-1 hover:ring-emerald-300 sm:p-3 md:p-4 dark:border-emerald-800 dark:bg-emerald-900/20 dark:hover:ring-emerald-700">
+          <Card className="border-primary/30 bg-primary/10 p-2.5 transition-colors hover:ring-1 hover:ring-primary/30 sm:p-3 md:p-4 dark:bg-primary/15">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-[11px] text-muted-foreground sm:text-xs md:text-sm">
@@ -338,103 +329,13 @@ export default function DashboardPage() {
                   %
                 </p>
               </div>
-              <span className="rounded-md bg-gradient-to-br from-emerald-300/30 to-transparent p-1 dark:from-emerald-600/30">
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-600 sm:h-4 sm:w-4" />
+              <span className="rounded-md bg-gradient-to-br from-primary/30 to-transparent p-1">
+                <TrendingUp className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
               </span>
             </div>
           </Card>
         </div>
 
-        {/* Quick Actions - Responsive Grid */}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 md:gap-4 lg:grid-cols-3">
-          {/* Profile Card */}
-          <Card className="p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-medium text-sm sm:text-base">Profile</h2>
-                <p className="text-[11px] text-muted-foreground sm:text-xs md:text-sm">
-                  Manage your account
-                </p>
-              </div>
-              <User className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
-            </div>
-            <div className="mt-3">
-              <Button
-                asChild
-                className="w-full sm:w-auto"
-                size="sm"
-                variant="ghost"
-              >
-                <Link href="/account">View profile</Link>
-              </Button>
-            </div>
-          </Card>
-
-          {/* Settings Card */}
-          <Card className="p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-medium text-sm sm:text-base">Settings</h2>
-                <p className="text-[11px] text-muted-foreground sm:text-xs md:text-sm">
-                  Preferences and options
-                </p>
-              </div>
-              <Settings className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              <Badge className="text-[10px] sm:text-xs" variant="secondary">
-                MCP
-              </Badge>
-              <Badge className="text-[10px] sm:text-xs" variant="secondary">
-                Agents
-              </Badge>
-              {subscription?.tier !== 'free' && (
-                <Badge
-                  className="gap-0.5 text-[10px] sm:text-xs"
-                  variant="outline"
-                >
-                  <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                  Premium
-                </Badge>
-              )}
-            </div>
-            <div className="mt-3">
-              <Button
-                asChild
-                className="w-full sm:w-auto"
-                size="sm"
-                variant="ghost"
-              >
-                <Link href="/settings">Open settings</Link>
-              </Button>
-            </div>
-          </Card>
-
-          {/* Subscription Card */}
-          <Card className="p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-medium text-sm sm:text-base">
-                  Subscription
-                </h2>
-                <p className="text-[11px] text-muted-foreground sm:text-xs md:text-sm">
-                  Billing and plans
-                </p>
-              </div>
-              <Crown className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
-            </div>
-            <div className="mt-3">
-              <Button
-                asChild
-                className="w-full sm:w-auto"
-                size="sm"
-                variant="ghost"
-              >
-                <Link href="/subscription">Manage plan</Link>
-              </Button>
-            </div>
-          </Card>
-        </div>
       </div>
     </div>
   );

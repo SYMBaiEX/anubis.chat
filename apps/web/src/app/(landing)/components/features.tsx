@@ -3,7 +3,6 @@
 import { Brain, Database, Globe, Network, Shield, Zap } from 'lucide-react';
 import React, { memo } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
-import { Card } from '@/components/ui/card';
 
 const featureList = [
   {
@@ -77,7 +76,7 @@ function Features() {
           {featureList.map((f, i) => {
             const Icon = f.icon;
             return (
-              <div className="group hover:-translate-y-0.5 relative rounded-xl p-6 ring-1 ring-border/40 transition-transform">
+              <div key={f.title} className="group hover:-translate-y-0.5 relative rounded-xl p-6 ring-1 ring-border/40 transition-transform">
                 <div
                   aria-hidden
                   className={`-z-10 absolute inset-0 rounded-xl bg-gradient-to-br opacity-0 blur-2xl transition-opacity group-hover:opacity-20 ${f.gradient}`}

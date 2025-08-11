@@ -12,6 +12,11 @@ import { ClientOnlyWrapper } from './providers/client-only-wrapper';
 import { SolanaAgentProvider } from './providers/solana-agent-provider';
 import { ThemeProvider } from './theme-provider';
 import { Toaster } from './ui/sonner';
+import { api } from '@convex/_generated/api';
+import { useQuery } from 'convex/react';
+import { useTheme } from 'next-themes';
+import { useEffect } from 'react';
+import { useAuthContext } from './providers/auth-provider';
 import { WalletProvider } from './wallet/wallet-provider';
 
 const log = createModuleLogger('providers');
@@ -25,6 +30,22 @@ const convex = new ConvexReactClient(convexConfig.publicUrl, {
 });
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  // Inline ThemeSync: apply userPreferences.theme globally
+  function ThemeSyncInline() {
+    const { isAuthenticated } = useAuthContext();
+    const { theme, setTheme } = useTheme();
+    const userPreferences = useQuery(
+      api.userPreferences.getUserPreferencesWithDefaults,
+      isAuthenticated ? {} : 'skip'
+    );
+    useEffect(() => {
+      if (userPreferences?.theme && userPreferences.theme !== theme) {
+        setTheme(userPreferences.theme);
+      }
+    }, [userPreferences?.theme, theme, setTheme]);
+    return null;
+  }
+
   return (
     <ConvexErrorBoundary
       onError={(error, errorInfo) => {
@@ -38,19 +59,17 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       }}
       showDetails={isDevelopment}
     >
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        disableTransitionOnChange
-        enableSystem
-      >
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <SidebarProvider>
           <ConvexAuthProvider client={convex}>
             <ClientOnlyWrapper>
               <WalletProvider>
                 <AuthProvider>
+                  <ThemeSyncInline />
                   <UpgradeProvider>
-                    <SolanaAgentProvider>{children}</SolanaAgentProvider>
+                    <SolanaAgentProvider>
+                      {children}
+                    </SolanaAgentProvider>
                   </UpgradeProvider>
                 </AuthProvider>
               </WalletProvider>

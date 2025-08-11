@@ -141,13 +141,13 @@ export function MessageList({
   const messageGroups = groupMessagesByDate(messages);
 
   return (
-    <div className={cn('relative flex h-full flex-col', className)}>
+    <div className={cn('relative flex h-full flex-col overflow-hidden', className)}>
       <ScrollArea
-        className="flex-1"
+        className="flex-1 overflow-x-hidden"
         onScrollCapture={handleScroll}
         ref={scrollRef}
       >
-        <div className="mx-auto w-full max-w-full space-y-2 p-2 sm:max-w-6xl sm:space-y-4 sm:p-4 md:max-w-7xl lg:p-6 xl:max-w-none xl:px-8">
+        <div className="mx-auto w-full max-w-full space-y-2 overflow-x-hidden p-2 sm:max-w-6xl sm:space-y-4 sm:p-3 md:max-w-7xl md:p-4 lg:p-6 xl:px-8">
           {messageGroups.map((group, groupIndex) => (
             <div key={group.date}>
               {/* Date Separator */}

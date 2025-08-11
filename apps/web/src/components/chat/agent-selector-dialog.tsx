@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Vote,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import { LoadingStates } from '@/components/data/loading-states';
 import {
@@ -78,13 +79,11 @@ const getAgentColor = (type: Agent['type']) => {
  */
 export function AgentSelectorDialog({ className }: AgentSelectorDialogProps) {
   const [open, setOpen] = useState(false);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const {
     agents,
     selectedAgent,
     selectAgent,
-    createCustomAgent,
     isInitialized,
   } = useSolanaAgent();
 
@@ -132,7 +131,7 @@ export function AgentSelectorDialog({ className }: AgentSelectorDialogProps) {
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="max-h-[80vh] max-w-6xl overflow-hidden">
+          <DialogContent className="max-h-[80vh] w-[95vw] max-w-[680px] overflow-hidden sm:w-auto sm:max-w-6xl">
           <DialogHeader>
             <DialogTitle>Select AI Agent</DialogTitle>
             <DialogDescription>
@@ -151,17 +150,16 @@ export function AgentSelectorDialog({ className }: AgentSelectorDialogProps) {
 
           {/* Create Custom Agent Button */}
           <div className="border-t pt-4">
-            <Button
-              className="w-full"
-              onClick={() => {
-                setOpen(false);
-                setShowCreateDialog(true);
-              }}
-              variant="outline"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Custom Agent
-            </Button>
+            <Link href="/agents" className="block">
+              <Button
+                className="w-full"
+                onClick={() => setOpen(false)}
+                variant="outline"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create a New Agent
+              </Button>
+            </Link>
           </div>
         </DialogContent>
       </Dialog>
@@ -176,39 +174,6 @@ export function AgentSelectorDialog({ className }: AgentSelectorDialogProps) {
             selectedAgent.type.slice(1)}
         </Badge>
       )}
-
-      {/* Create Agent Dialog */}
-      <Dialog onOpenChange={setShowCreateDialog} open={showCreateDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create Custom Agent</DialogTitle>
-            <DialogDescription>
-              Create a specialized agent tailored to your specific needs.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <p className="text-muted-foreground text-sm">
-              Custom agent creation will be available soon. You can currently
-              use our pre-configured agents:
-            </p>
-
-            <div className="space-y-2">
-              {agents
-                .filter((agent) => agent.isPublic)
-                .map((agent) => (
-                  <div
-                    className="flex items-center space-x-2 text-sm"
-                    key={agent._id}
-                  >
-                    {getAgentIcon(agent.type)}
-                    <span className="font-medium">{agent.name}</span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

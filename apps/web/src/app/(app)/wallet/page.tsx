@@ -17,7 +17,6 @@ export default function WalletPage() {
     publicKey,
     balance,
     connect,
-    disconnect,
     authenticateWithConvex,
     refreshBalance,
     isHealthy,
@@ -31,32 +30,36 @@ export default function WalletPage() {
     <div className="w-full bg-gradient-to-b from-primary/5 dark:from-primary/10">
       {/* Full-width header */}
       <div className="w-full p-4 md:p-6">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" />
-            <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-transparent text-xl sm:text-2xl">
-              Wallet
-            </h1>
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto] md:items-center">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-transparent text-xl sm:text-2xl whitespace-nowrap">
+                Wallet
+              </h1>
+            </div>
+            <div className="flex md:justify-end">
+              <Badge variant={isConnected ? 'default' : 'secondary'}>
+                {isConnected ? 'Connected' : 'Disconnected'}
+              </Badge>
+            </div>
           </div>
-          <Badge variant={isConnected ? 'default' : 'secondary'}>
-            {isConnected ? 'Connected' : 'Disconnected'}
-          </Badge>
         </div>
       </div>
 
       {/* Constrained content */}
-      <div className="mx-auto mt-3 w-full max-w-6xl">
-        <Card className="p-3 sm:p-4">
+      <div className="mx-auto mt-3 w-full max-w-6xl px-3 sm:px-4 md:px-6">
+        <Card className="p-3 sm:p-4 md:p-6">
           {isConnected ? (
             <div className="space-y-3">
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-muted-foreground text-xs">Address</p>
                   <p className="truncate font-mono text-sm" title={address}>
                     {formatSolanaAddress(address, 8)}
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-3">
                   <div className="rounded-md border p-2">
                     <p className="text-[10px] text-muted-foreground uppercase">
                       Balance
@@ -100,14 +103,6 @@ export default function WalletPage() {
                     Authenticate
                   </Button>
                 )}
-                <Button
-                  onClick={disconnect}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  Disconnect
-                </Button>
               </div>
             </div>
           ) : (

@@ -62,6 +62,42 @@ const MODEL_COSTS = {
   'deepseek-r1': { category: 'standard', costPerMessage: 0.002_325 },
 };
 
+// Safely normalize a user's subscription so fields are always defined
+type Tier = keyof typeof SUBSCRIPTION_TIERS;
+type SubscriptionShape = {
+  tier: Tier;
+  messagesUsed: number;
+  messagesLimit: number;
+  premiumMessagesUsed: number;
+  premiumMessagesLimit: number;
+  currentPeriodStart: number;
+  currentPeriodEnd: number;
+  autoRenew: boolean;
+  planPriceSol: number;
+  features: string[];
+};
+
+function getSafeSubscription(user: { subscription?: Partial<SubscriptionShape> | any }): SubscriptionShape {
+  // If user already has a subscription with a valid tier, normalize numeric fields
+  const candidate = user.subscription as Partial<SubscriptionShape> | undefined;
+  const validTier = (candidate?.tier ?? 'free') as Tier;
+  const tierDefaults = SUBSCRIPTION_TIERS[validTier];
+  const now = Date.now();
+  return {
+    tier: validTier,
+    messagesUsed: candidate?.messagesUsed ?? 0,
+    messagesLimit: candidate?.messagesLimit ?? tierDefaults.messagesLimit,
+    premiumMessagesUsed: candidate?.premiumMessagesUsed ?? 0,
+    premiumMessagesLimit:
+      candidate?.premiumMessagesLimit ?? tierDefaults.premiumMessagesLimit,
+    currentPeriodStart: candidate?.currentPeriodStart ?? now,
+    currentPeriodEnd: candidate?.currentPeriodEnd ?? now + 30 * 24 * 60 * 60 * 1000,
+    autoRenew: Boolean(candidate?.autoRenew),
+    planPriceSol: candidate?.planPriceSol ?? tierDefaults.priceSol,
+    features: candidate?.features ?? tierDefaults.features,
+  };
+}
+
 // Check if user can use a specific model
 export const canUseModel = query({
   args: {
@@ -84,7 +120,8 @@ export const canUseModel = query({
       };
     }
 
-    const tierConfig = SUBSCRIPTION_TIERS[user.subscription.tier];
+    const sub = getSafeSubscription(user);
+    const tierConfig = SUBSCRIPTION_TIERS[sub.tier];
     const modelConfig = MODEL_COSTS[args.model as keyof typeof MODEL_COSTS];
 
     // Check if model is available for tier
@@ -92,16 +129,14 @@ export const canUseModel = query({
       return {
         allowed: false,
         reason: 'Model not available for your subscription tier',
-        suggestedUpgrade:
-          user.subscription.tier === 'free' ? 'pro' : 'pro_plus',
+        suggestedUpgrade: sub.tier === 'free' ? 'pro' : 'pro_plus',
       };
     }
 
     // Check message limits
     if (
       modelConfig?.category === 'premium' &&
-      user.subscription.premiumMessagesUsed >=
-        user.subscription.premiumMessagesLimit
+      sub.premiumMessagesUsed >= sub.premiumMessagesLimit
     ) {
       return {
         allowed: false,
@@ -112,7 +147,7 @@ export const canUseModel = query({
     }
 
     // Check total message limit
-    if (user.subscription.messagesUsed >= user.subscription.messagesLimit) {
+    if (sub.messagesUsed >= sub.messagesLimit) {
       return {
         allowed: false,
         reason: 'Monthly message limit reached',
@@ -123,12 +158,10 @@ export const canUseModel = query({
 
     return {
       allowed: true,
-      remaining:
-        user.subscription.messagesLimit - user.subscription.messagesUsed,
+      remaining: sub.messagesLimit - sub.messagesUsed,
       premiumRemaining:
         modelConfig?.category === 'premium'
-          ? user.subscription.premiumMessagesLimit -
-            user.subscription.premiumMessagesUsed
+          ? sub.premiumMessagesLimit - sub.premiumMessagesUsed
           : undefined,
     };
   },
@@ -152,13 +185,14 @@ export const trackMessageUsageByWallet = mutation({
     }
 
     // Update user's message counts
+    const sub = getSafeSubscription(user);
     const updates = {
       subscription: {
-        ...user.subscription,
-        messagesUsed: (user.subscription?.messagesUsed ?? 0) + 1,
+        ...sub,
+        messagesUsed: sub.messagesUsed + 1,
         premiumMessagesUsed: args.isPremiumModel
-          ? (user.subscription?.premiumMessagesUsed ?? 0) + 1
-          : (user.subscription?.premiumMessagesUsed ?? 0),
+          ? sub.premiumMessagesUsed + 1
+          : sub.premiumMessagesUsed,
       },
     } as const;
 
@@ -191,13 +225,14 @@ export const trackMessageUsage = mutation({
     }
 
     // Update user's message counts
+    const sub = getSafeSubscription(user);
     const updates = {
       subscription: {
-        ...user.subscription,
-        messagesUsed: (user.subscription?.messagesUsed ?? 0) + 1,
+        ...sub,
+        messagesUsed: sub.messagesUsed + 1,
         premiumMessagesUsed: args.isPremiumModel
-          ? (user.subscription?.premiumMessagesUsed ?? 0) + 1
-          : (user.subscription?.premiumMessagesUsed ?? 0),
+          ? sub.premiumMessagesUsed + 1
+          : sub.premiumMessagesUsed,
       },
     } as const;
 
@@ -214,7 +249,9 @@ export const trackMessageUsage = mutation({
     await ctx.db.insert('messageUsage', {
       userId: user._id,
       model: args.isPremiumModel ? 'premium' : 'standard',
-      modelCategory: args.isPremiumModel ? 'premium' : 'standard',
+      modelCategory: (args.isPremiumModel ? 'premium' : 'standard') as
+        | 'premium'
+        | 'standard',
       messageCount: 1,
       inputTokens: 0, // Not tracked in this version
       outputTokens: 0, // Not tracked in this version
@@ -225,12 +262,10 @@ export const trackMessageUsage = mutation({
 
     return {
       messagesUsed: updates.subscription.messagesUsed,
-      messagesRemaining:
-        user.subscription.messagesLimit - updates.subscription.messagesUsed,
+      messagesRemaining: sub.messagesLimit - updates.subscription.messagesUsed,
       premiumMessagesUsed: updates.subscription.premiumMessagesUsed,
       premiumMessagesRemaining: args.isPremiumModel
-        ? user.subscription.premiumMessagesLimit -
-          updates.subscription.premiumMessagesUsed
+        ? sub.premiumMessagesLimit - updates.subscription.premiumMessagesUsed
         : undefined,
     };
   },
@@ -262,17 +297,16 @@ export const trackDetailedMessageUsage = mutation({
     const modelConfig = MODEL_COSTS[args.model as keyof typeof MODEL_COSTS];
     const isPremium = modelConfig?.category === 'premium';
 
-    // Ensure subscription values are initialized properly
-    const currentMessagesUsed = user.subscription?.messagesUsed ?? 0;
-    const currentPremiumMessagesUsed =
-      user.subscription?.premiumMessagesUsed ?? 0;
-    const messagesLimit = user.subscription?.messagesLimit ?? 50;
-    const premiumMessagesLimit = user.subscription?.premiumMessagesLimit ?? 0;
+    const sub = getSafeSubscription(user);
+    const currentMessagesUsed = sub.messagesUsed;
+    const currentPremiumMessagesUsed = sub.premiumMessagesUsed;
+    const messagesLimit = sub.messagesLimit;
+    const premiumMessagesLimit = sub.premiumMessagesLimit;
 
     // Update user's message counts
     const updates = {
       subscription: {
-        ...user.subscription,
+        ...sub,
         messagesUsed: currentMessagesUsed + 1,
         messagesLimit,
         premiumMessagesLimit,
@@ -295,7 +329,7 @@ export const trackDetailedMessageUsage = mutation({
     await ctx.db.insert('messageUsage', {
       userId: user._id,
       model: args.model,
-      modelCategory: modelConfig?.category || 'standard',
+      modelCategory: (modelConfig?.category ?? 'standard') as 'premium' | 'standard',
       messageCount: 1,
       inputTokens: args.inputTokens,
       outputTokens: args.outputTokens,
@@ -305,17 +339,14 @@ export const trackDetailedMessageUsage = mutation({
     });
 
     // Check if we should show upgrade prompt
-    const usagePercent =
-      ((user.subscription?.messagesUsed ?? 0) /
-        (user.subscription?.messagesLimit ?? 1)) *
-      100;
+    const usagePercent = (sub.messagesUsed / Math.max(1, sub.messagesLimit)) * 100;
 
     if (usagePercent >= 80 && usagePercent < 90) {
       await ctx.db.insert('upgradeSuggestions', {
         userId: user._id,
         triggerType: 'usage_milestone',
-        currentTier: user.subscription.tier,
-        suggestedTier: user.subscription.tier === 'free' ? 'pro' : 'pro_plus',
+        currentTier: sub.tier,
+        suggestedTier: sub.tier === 'free' ? 'pro' : 'pro_plus',
         context: '80% of monthly messages used',
         shown: false,
         converted: false,
@@ -325,12 +356,10 @@ export const trackDetailedMessageUsage = mutation({
 
     return {
       messagesUsed: updates.subscription.messagesUsed,
-      messagesRemaining:
-        user.subscription.messagesLimit - updates.subscription.messagesUsed,
+      messagesRemaining: sub.messagesLimit - updates.subscription.messagesUsed,
       premiumMessagesUsed: updates.subscription.premiumMessagesUsed,
       premiumMessagesRemaining: isPremium
-        ? user.subscription.premiumMessagesLimit -
-          updates.subscription.premiumMessagesUsed
+        ? sub.premiumMessagesLimit - updates.subscription.premiumMessagesUsed
         : undefined,
     };
   },
@@ -348,7 +377,8 @@ export const calculateProratedUpgrade = query({
       return null;
     }
 
-    const currentTier = user.subscription.tier;
+    const sub = getSafeSubscription(user);
+    const currentTier = sub.tier;
     const targetTier = args.targetTier;
 
     // Only support Pro to Pro+ proration for now
@@ -363,7 +393,7 @@ export const calculateProratedUpgrade = query({
     }
 
     const now = Date.now();
-    const currentPeriodEnd = user.subscription.currentPeriodEnd;
+    const currentPeriodEnd = sub.currentPeriodEnd;
     const daysRemaining = Math.max(
       0,
       Math.ceil((currentPeriodEnd - now) / (1000 * 60 * 60 * 24))
@@ -409,11 +439,8 @@ export const processPayment = mutation({
     let expectedAmount = tierConfig.priceSol;
 
     // Handle prorated upgrade from Pro to Pro+
-    if (
-      args.isProrated &&
-      user.subscription.tier === 'pro' &&
-      args.tier === 'pro_plus'
-    ) {
+    const sub = getSafeSubscription(user);
+    if (args.isProrated && sub.tier === 'pro' && args.tier === 'pro_plus') {
       expectedAmount =
         SUBSCRIPTION_TIERS.pro_plus.priceSol - SUBSCRIPTION_TIERS.pro.priceSol;
     }
@@ -552,14 +579,11 @@ export const processVerifiedPayment = internalMutation({
     let resetUsage = true;
 
     // Handle prorated upgrade from Pro to Pro+
-    if (
-      args.isProrated &&
-      user.subscription.tier === 'pro' &&
-      args.tier === 'pro_plus'
-    ) {
+    const sub = getSafeSubscription(user);
+    if (args.isProrated && sub.tier === 'pro' && args.tier === 'pro_plus') {
       // Keep the existing billing period for prorated upgrades
-      periodStart = user.subscription.currentPeriodStart;
-      periodEnd = user.subscription.currentPeriodEnd;
+      periodStart = sub.currentPeriodStart;
+      periodEnd = sub.currentPeriodEnd;
       resetUsage = false; // Don't reset usage counters for mid-cycle upgrades
     }
 
@@ -573,13 +597,11 @@ export const processVerifiedPayment = internalMutation({
     // Update user subscription
     await ctx.db.patch(user._id, {
       subscription: {
-        ...user.subscription,
+        ...sub,
         tier: args.tier,
-        messagesUsed: resetUsage ? 0 : user.subscription.messagesUsed,
+        messagesUsed: resetUsage ? 0 : sub.messagesUsed,
         messagesLimit: tierConfig.messagesLimit,
-        premiumMessagesUsed: resetUsage
-          ? 0
-          : user.subscription.premiumMessagesUsed,
+        premiumMessagesUsed: resetUsage ? 0 : sub.premiumMessagesUsed,
         premiumMessagesLimit: tierConfig.premiumMessagesLimit,
         currentPeriodStart: periodStart,
         currentPeriodEnd: periodEnd,
@@ -689,51 +711,41 @@ export const getSubscriptionStatusByWallet = query({
       return null;
     }
 
-    const tierConfig = SUBSCRIPTION_TIERS[user.subscription.tier];
+    const sub = getSafeSubscription(user);
+    const tierConfig = SUBSCRIPTION_TIERS[sub.tier];
     const now = Date.now();
 
     const messageUsagePercent =
-      user.subscription.messagesLimit > 0
-        ? (user.subscription.messagesUsed / user.subscription.messagesLimit) *
-          100
-        : 0;
+      sub.messagesLimit > 0 ? (sub.messagesUsed / sub.messagesLimit) * 100 : 0;
     const premiumUsagePercent =
-      user.subscription.premiumMessagesLimit > 0
-        ? (user.subscription.premiumMessagesUsed /
-            user.subscription.premiumMessagesLimit) *
-          100
+      sub.premiumMessagesLimit > 0
+        ? (sub.premiumMessagesUsed / sub.premiumMessagesLimit) * 100
         : 0;
-    const isExpired = user.subscription.currentPeriodEnd < now;
+    const isExpired = sub.currentPeriodEnd < now;
 
     return {
-      tier: user.subscription.tier,
-      messagesUsed: user.subscription.messagesUsed,
-      messagesLimit: user.subscription.messagesLimit,
-      messagesRemaining: Math.max(
-        0,
-        user.subscription.messagesLimit - user.subscription.messagesUsed
-      ),
-      premiumMessagesUsed: user.subscription.premiumMessagesUsed,
-      premiumMessagesLimit: user.subscription.premiumMessagesLimit,
+      tier: sub.tier,
+      messagesUsed: sub.messagesUsed,
+      messagesLimit: sub.messagesLimit,
+      messagesRemaining: Math.max(0, sub.messagesLimit - sub.messagesUsed),
+      premiumMessagesUsed: sub.premiumMessagesUsed,
+      premiumMessagesLimit: sub.premiumMessagesLimit,
       premiumMessagesRemaining: Math.max(
         0,
-        user.subscription.premiumMessagesLimit -
-          user.subscription.premiumMessagesUsed
+        sub.premiumMessagesLimit - sub.premiumMessagesUsed
       ),
       messageUsagePercent,
       premiumUsagePercent,
-      currentPeriodStart: user.subscription.currentPeriodStart,
-      currentPeriodEnd: user.subscription.currentPeriodEnd,
+      currentPeriodStart: sub.currentPeriodStart,
+      currentPeriodEnd: sub.currentPeriodEnd,
       isExpired,
-      autoRenew: user.subscription.autoRenew,
-      planPriceSol: user.subscription.planPriceSol,
-      features: user.subscription.features,
+      autoRenew: sub.autoRenew,
+      planPriceSol: sub.planPriceSol,
+      features: sub.features,
       availableModels: tierConfig.availableModels,
       daysRemaining: Math.max(
         0,
-        Math.floor(
-          (user.subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000)
-        )
+        Math.floor((sub.currentPeriodEnd - now) / (24 * 60 * 60 * 1000))
       ),
     };
   },
@@ -780,52 +792,39 @@ export const getSubscriptionStatus = query({
       };
     }
 
-    const tierConfig = SUBSCRIPTION_TIERS[user.subscription.tier];
+    const sub = getSafeSubscription(user);
+    const tierConfig = SUBSCRIPTION_TIERS[sub.tier];
     const now = Date.now();
 
     const messageUsagePercent =
-      user.subscription.messagesLimit > 0
-        ? (user.subscription.messagesUsed / user.subscription.messagesLimit) *
-          100
-        : 0;
+      sub.messagesLimit > 0 ? (sub.messagesUsed / sub.messagesLimit) * 100 : 0;
     const premiumUsagePercent =
-      user.subscription.premiumMessagesLimit > 0
-        ? (user.subscription.premiumMessagesUsed /
-            user.subscription.premiumMessagesLimit) *
-          100
+      sub.premiumMessagesLimit > 0
+        ? (sub.premiumMessagesUsed / sub.premiumMessagesLimit) * 100
         : 0;
-    const isExpired = user.subscription.currentPeriodEnd < now;
+    const isExpired = sub.currentPeriodEnd < now;
 
     return {
-      tier: user.subscription.tier,
-      messagesUsed: user.subscription.messagesUsed,
-      messagesLimit: user.subscription.messagesLimit,
-      messagesRemaining: Math.max(
-        0,
-        user.subscription.messagesLimit - user.subscription.messagesUsed
-      ),
-      premiumMessagesUsed: user.subscription.premiumMessagesUsed,
-      premiumMessagesLimit: user.subscription.premiumMessagesLimit,
+      tier: sub.tier,
+      messagesUsed: sub.messagesUsed,
+      messagesLimit: sub.messagesLimit,
+      messagesRemaining: Math.max(0, sub.messagesLimit - sub.messagesUsed),
+      premiumMessagesUsed: sub.premiumMessagesUsed,
+      premiumMessagesLimit: sub.premiumMessagesLimit,
       premiumMessagesRemaining: Math.max(
         0,
-        user.subscription.premiumMessagesLimit -
-          user.subscription.premiumMessagesUsed
+        sub.premiumMessagesLimit - sub.premiumMessagesUsed
       ),
       messageUsagePercent,
       premiumUsagePercent,
-      currentPeriodStart: user.subscription.currentPeriodStart,
-      currentPeriodEnd: user.subscription.currentPeriodEnd,
+      currentPeriodStart: sub.currentPeriodStart,
+      currentPeriodEnd: sub.currentPeriodEnd,
       isExpired,
-      autoRenew: user.subscription.autoRenew,
-      planPriceSol: user.subscription.planPriceSol,
-      features: user.subscription.features,
+      autoRenew: sub.autoRenew,
+      planPriceSol: sub.planPriceSol,
+      features: sub.features,
       availableModels: tierConfig.availableModels,
-      daysRemaining: Math.max(
-        0,
-        Math.floor(
-          (user.subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000)
-        )
-      ),
+      daysRemaining: Math.max(0, Math.floor((sub.currentPeriodEnd - now) / (24 * 60 * 60 * 1000))),
     };
   },
 });

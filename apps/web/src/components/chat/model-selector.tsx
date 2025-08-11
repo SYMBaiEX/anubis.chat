@@ -94,27 +94,55 @@ export function ModelSelector({
 
   const selectedModel = AI_MODELS.find((model) => model.id === value);
 
-  // Filter models based on subscription and provider
-  const isAdmin = subscription?.tier === 'admin';
-  const availableModels = AI_MODELS.filter((model) => {
+  // Filter models based on provider only (show all models but some disabled)
+  const filteredModels = AI_MODELS.filter((model) => {
     // Provider filter
     if (providerFilter !== 'all' && model.provider !== providerFilter) {
       return false;
     }
+    // Show all models regardless of subscription
+    return true;
+  });
 
-    // Subscription filter
-    if (isAdmin) {
-      return true;
+  // Sort models by tier: Free -> Standard -> Premium
+  const availableModels = filteredModels.sort((a, b) => {
+    // Determine tier for each model
+    const getTierPriority = (model: AIModel) => {
+      const isFree = model.pricing.input === 0 && model.pricing.output === 0;
+      const isPremium = isPremiumModel(model);
+      
+      if (isFree) return 0; // Free first
+      if (!isPremium) return 1; // Standard second
+      return 2; // Premium last
+    };
+    
+    const aPriority = getTierPriority(a);
+    const bPriority = getTierPriority(b);
+    
+    // Sort by tier priority, then by name
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority;
     }
+    return a.name.localeCompare(b.name);
+  });
+  
+  // Check if user can use a model
+  const canUseModel = (model: AIModel) => {
+    const isAdmin = subscription?.tier === 'admin';
+    if (isAdmin) return true;
     if (subscription?.tier === 'free') {
       return !isPremiumModel(model);
     }
-    return true; // Pro and Pro+ users can see all models
-  });
+    // Pro and Pro+ users can use all models (subject to quota)
+    return true;
+  };
 
   const handleModelSelect = (model: AIModel) => {
-    onValueChange(model.id);
-    setOpen(false);
+    // Only select if user can use the model
+    if (canUseModel(model)) {
+      onValueChange(model.id);
+      setOpen(false);
+    }
   };
 
   return (
@@ -162,7 +190,7 @@ export function ModelSelector({
 
         {/* Models Grid */}
         <div className="max-h-[60vh] overflow-y-auto">
-          <div className="grid grid-cols-1 gap-3 p-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-1.5 p-1 sm:gap-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {availableModels.map((model) => (
               <ModelCard
                 isSelected={value === model.id}

@@ -256,10 +256,9 @@
   }
 
   /* Smooth Transitions */
-  * {
-    @apply transition-colors duration-200;
-  }
+  /* Do not apply always-on transitions globally; gate them via html.theme-transition */
 }
+/* Theme transition helpers removed for simplification */
 
 /* Utility Classes */
 @layer utilities {
@@ -525,6 +524,7 @@
 }
 
 /* Animations */
+
 @keyframes gradient {
   0% {
     background-position: 0% 50%;

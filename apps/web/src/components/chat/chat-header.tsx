@@ -87,24 +87,72 @@ export function ChatHeader({
     return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
   };
 
-  const formatLastActive = (timestamp?: number) => {
-    if (!timestamp) return null;
-
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInMinutes = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60)
-    );
-
-    if (diffInMinutes < 1) return 'Active now';
-    if (diffInMinutes < 60) return `Active ${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440)
-      return `Active ${Math.floor(diffInMinutes / 60)}h ago`;
-    return `Active ${date.toLocaleDateString()}`;
-  };
 
   return (
-    <div className={cn('flex items-center space-x-3', className)}>
+    <div className={cn('flex items-center gap-2', className)}>
+      {/* Actions Menu on mobile - moved to left side */}
+      <div className="flex-shrink-0 sm:hidden">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              className="button-press h-8 w-8 p-0" 
+              size="icon" 
+              variant="outline"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="start" className="w-48">
+            {/* Chat Settings - Primary option */}
+            {onSettingsClick && (
+              <DropdownMenuItem onClick={onSettingsClick}>
+                <Settings className="mr-2 h-4 w-4" />
+                Chat Settings
+              </DropdownMenuItem>
+            )}
+
+            {/* Model and Agent selection */}
+            {onModelSelectorClick && (
+              <DropdownMenuItem onClick={onModelSelectorClick}>
+                <Brain className="mr-2 h-4 w-4" />
+                Select Model
+              </DropdownMenuItem>
+            )}
+
+            {onAgentSelectorClick && (
+              <DropdownMenuItem onClick={onAgentSelectorClick}>
+                <Bot className="mr-2 h-4 w-4" />
+                Select Agent
+              </DropdownMenuItem>
+            )}
+
+            <DropdownMenuSeparator />
+
+            {/* Chat management options */}
+            <DropdownMenuItem onClick={() => setIsEditing(true)}>
+              <Edit3 className="mr-2 h-4 w-4" />
+              Rename Chat
+            </DropdownMenuItem>
+
+            <DropdownMenuItem onClick={onClearHistory}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Clear History
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+              onClick={onDelete}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Chat
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       {/* Chat Icon */}
       <div className="flex-shrink-0">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
@@ -144,16 +192,32 @@ export function ChatHeader({
               </Button>
             </div>
           ) : (
-            <div className="group flex flex-1 items-center space-x-2">
+            <div className="group flex flex-1 items-center gap-2 overflow-hidden">
+              {/* Mobile chat name - displays title, click to rename */}
+              <div className="flex max-w-[8rem] items-center sm:hidden">
+                <Button
+                  className="button-press h-auto justify-start rounded-lg bg-primary/20 p-1 px-2 shadow-md hover:bg-primary/30 hover:shadow-lg dark:bg-primary/10 dark:hover:bg-primary/20"
+                  onClick={() => setIsEditing(true)}
+                  size="sm"
+                  variant="ghost"
+                  title="Click to rename chat"
+                >
+                  <span className="truncate font-medium text-sm text-black dark:text-white">
+                    {chat.title}
+                  </span>
+                </Button>
+              </div>
+              
+              {/* Desktop version */}
               <h3
-                className="cursor-pointer truncate font-medium text-sm transition-colors hover:text-primary"
+                className="hidden cursor-pointer truncate font-medium text-sm transition-colors hover:text-primary sm:block"
                 onClick={() => setIsEditing(true)}
-                title="Click to rename chat"
+                title={chat.title}
               >
                 {chat.title}
               </h3>
               <Button
-                className="h-4 w-4 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                className="hidden h-4 w-4 flex-shrink-0 p-0 opacity-0 transition-opacity group-hover:opacity-100 sm:flex"
                 onClick={() => setIsEditing(true)}
                 size="sm"
                 variant="ghost"
@@ -162,81 +226,40 @@ export function ChatHeader({
               </Button>
             </div>
           )}
-
-          {!isEditing && (
-            <Badge
-              className={cn('text-xs', getModelColor(chat.model))}
-              variant="secondary"
-            >
-              {getModelDisplayName(chat.model)}
-            </Badge>
-          )}
         </div>
 
         {/* Chat Status */}
         <div className="flex items-center space-x-2 text-muted-foreground text-xs">
-          {formatLastActive(chat.lastMessageAt ?? chat.updatedAt) && (
-            <span>
-              {formatLastActive(chat.lastMessageAt ?? chat.updatedAt)}
-            </span>
-          )}
-
           {chat.systemPrompt && (
-            <>
-              <span>•</span>
-              <span className="flex items-center space-x-1">
-                <Info className="h-3 w-3" />
-                <span>Custom prompt</span>
-              </span>
-            </>
+            <span className="flex items-center space-x-1">
+              <Info className="h-3 w-3" />
+              <span>Custom prompt</span>
+            </span>
           )}
 
           {chat.temperature && chat.temperature !== 0.7 && (
             <>
-              <span>•</span>
+              {chat.systemPrompt && <span>•</span>}
               <span>Temp: {chat.temperature}</span>
             </>
           )}
         </div>
       </div>
 
-      {/* Actions Menu */}
-      <div className="flex-shrink-0">
+      {/* Desktop Actions Menu - three dots */}
+      <div className="hidden flex-shrink-0 sm:block">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="ghost">
+            <Button 
+              className="button-press h-8 w-8 p-0" 
+              size="icon" 
+              variant="ghost"
+            >
               <MoreVertical className="h-4 w-4" />
-              <span className="sr-only">Chat options</span>
             </Button>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-48">
-            {/* Mobile-only options */}
-            <div className="sm:hidden">
-              {onModelSelectorClick && (
-                <DropdownMenuItem onClick={onModelSelectorClick}>
-                  <Brain className="mr-2 h-4 w-4" />
-                  Select Model
-                </DropdownMenuItem>
-              )}
-
-              {onAgentSelectorClick && (
-                <DropdownMenuItem onClick={onAgentSelectorClick}>
-                  <Bot className="mr-2 h-4 w-4" />
-                  Select Agent
-                </DropdownMenuItem>
-              )}
-
-              {onSettingsClick && (
-                <DropdownMenuItem onClick={onSettingsClick}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Chat Settings
-                </DropdownMenuItem>
-              )}
-
-              <DropdownMenuSeparator />
-            </div>
-
             {/* Always visible options */}
             <DropdownMenuItem onClick={() => setIsEditing(true)}>
               <Edit3 className="mr-2 h-4 w-4" />

@@ -91,12 +91,12 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${ibmPlexMono.variable} font-sans antialiased`}
+        className={`${inter.variable} ${ibmPlexMono.variable} font-sans antialiased overflow-hidden`}
       >
         <ErrorBoundary>
           <Providers>
             <ServiceWorkerManager />
-            <main className="min-h-screen overflow-x-hidden">{children}</main>
+            <main className="h-screen w-full overflow-x-hidden overflow-hidden">{children}</main>
           </Providers>
         </ErrorBoundary>
       </body>

@@ -5,20 +5,12 @@ import type { Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import {
   Bot,
-  Brain,
-  Globe,
   MessageSquare,
-  Monitor,
-  Moon,
-  Palette,
   Plus,
-  Settings,
   Sidebar,
-  Sun,
-  Volume2,
   X,
-  Zap,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from 'react';
@@ -43,7 +35,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ModelGrid } from '@/components/ui/model-grid';
-import { type GridSetting, SettingsGrid } from '@/components/ui/settings-grid';
 import { useConvexChat } from '@/hooks/use-convex-chat';
 import { useTypingIndicator } from '@/hooks/use-typing-indicator';
 import { AI_MODELS, DEFAULT_MODEL } from '@/lib/constants/ai-models';
@@ -137,7 +128,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     api.userPreferences.updateUserPreferences
   );
 
-  // Sync theme from database to next-themes on load
+  // Sync theme from database to next-themes on load (no animation)
   useEffect(() => {
     if (userPreferences?.theme && userPreferences.theme !== theme) {
       setTheme(userPreferences.theme);
@@ -355,7 +346,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, useReasoning?: boolean) => {
     if (!(selectedChatId && user && userWalletAddress)) {
       console.error('Missing requirements for sending message:', {
         selectedChatId,
@@ -371,8 +362,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
 
     try {
-      // Use the new Convex streaming function with selected model
-      await sendMessage(content, userWalletAddress, selectedModel);
+      // Use the new Convex streaming function with selected model and reasoning settings
+      await sendMessage(content, userWalletAddress, selectedModel, useReasoning);
     } catch (error: any) {
       log.error('Failed to send message', { error: error?.message });
       // If error is about limits, show upgrade prompt
@@ -510,15 +501,16 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   }
 
   return (
-    <div className={cn('flex h-full min-h-0', className)}>
+    <div className={cn('flex h-full min-h-0 w-full overflow-hidden', className)}>
       {/* Main Chat Area */}
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Top Bar */}
-        <div className="flex h-14 items-center justify-between border-border/50 border-b bg-card/30 px-3 backdrop-blur sm:px-4 lg:px-6">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <div className="flex h-14 min-h-[3.5rem] items-center justify-between border-border/50 border-b bg-card/30 px-2 backdrop-blur sm:px-3 md:px-4 lg:px-6">
+          <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2 md:gap-3">
+            {/* Hamburger menu */}
             {!sidebarOpen && (
               <Button
-                className="button-press flex-shrink-0"
+                className="button-press flex-shrink-0 p-1.5 sm:p-2"
                 onClick={() => setSidebarOpen(true)}
                 size="sm"
                 variant="ghost"
@@ -526,6 +518,18 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 <Sidebar className="h-4 w-4" />
               </Button>
             )}
+            
+            {/* Mobile New Chat button - between hamburger and chat header */}
+            <Button
+              className="button-press flex-shrink-0 sm:hidden"
+              disabled={isCreatingChat}
+              onClick={handleCreateChat}
+              size="sm"
+              variant="outline"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="ml-1">New</span>
+            </Button>
 
             {currentChat ? (
               <div className="min-w-0 flex-1">
@@ -560,17 +564,17 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             ) : (
               <div className="flex min-w-0 items-center gap-2">
                 <MessageSquare className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
-                <span className="truncate font-medium text-muted-foreground text-sm sm:text-base">
+                <span className="hidden truncate font-medium text-muted-foreground text-xs sm:inline-block sm:text-sm md:text-base">
                   Select a chat to begin
                 </span>
               </div>
             )}
           </div>
 
-          <div className="flex flex-shrink-0 items-center gap-1 sm:gap-2">
+          <div className="flex flex-shrink-0 items-center gap-0.5 sm:gap-1 md:gap-2">
             {/* Model Selector - responsive width */}
             {currentChat && (
-              <div className="hidden w-40 sm:block md:w-48 lg:w-56">
+              <div className="hidden sm:block sm:w-32 md:w-40 lg:w-48 xl:w-56">
                 <ModelSelector
                   disabled={isStreaming}
                   onValueChange={handleModelChange}
@@ -579,35 +583,39 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               </div>
             )}
 
-            {/* Agent Selector - hide on mobile */}
+            {/* Agent Selector - hide on smaller screens */}
             {isInitialized && (
-              <div className="hidden lg:block">
+              <div className="hidden xl:block">
                 <AgentSelectorDialog />
               </div>
             )}
 
+            {/* Desktop New Chat button */}
             <Button
-              className="button-press"
+              className="button-press hidden sm:flex"
               disabled={isCreatingChat}
               onClick={handleCreateChat}
               size="sm"
               variant="outline"
             >
               <Plus className="h-4 w-4" />
-              <span className="ml-1 hidden sm:inline-block">New Chat</span>
+              <span className="ml-1">New</span>
+              <span className="ml-1 hidden md:inline-block">Chat</span>
             </Button>
 
-            <ChatSettingsDialog
-              className="hidden sm:flex"
-              onSettingsChange={handleSettingsChange}
-              settings={chatSettings}
-            />
+            {/* Desktop Settings Button */}
+            <div className="hidden md:block">
+              <ChatSettingsDialog
+                onSettingsChange={handleSettingsChange}
+                settings={chatSettings}
+              />
+            </div>
           </div>
         </div>
 
         {/* Chat Content */}
         {currentChat ? (
-          <div className="flex min-h-0 flex-1 flex-col bg-transparent">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">
             {/* Message List */}
             <div className="relative flex-1 overflow-hidden">
               {messages === undefined ? (
@@ -653,7 +661,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             {/* Upgrade Prompt */}
             {upgradePrompt.shouldShow && upgradePrompt.urgency === 'high' && (
               <div className="border-border/50 border-t bg-card/30 p-2 sm:p-3 md:p-4">
-                <div className="mx-auto w-full max-w-full sm:max-w-6xl md:max-w-7xl xl:max-w-none xl:px-8">
+                <div className="mx-auto w-full max-w-full px-0 sm:max-w-6xl md:max-w-7xl lg:px-4 xl:px-8">
                   <UpgradePrompt
                     onDismiss={() => setShowUpgradePrompt(false)}
                     prompt={upgradePrompt}
@@ -665,8 +673,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
             {/* Message Input */}
             <div className="border-border/50 border-t bg-card/30 backdrop-blur">
-              <div className="p-1.5 sm:p-2 md:p-3 lg:p-4">
-                <div className="mx-auto w-full max-w-full sm:max-w-6xl md:max-w-7xl xl:max-w-none xl:px-8">
+              <div className="p-2 sm:p-3 md:p-4">
+                <div className="mx-auto w-full max-w-full px-0 sm:max-w-6xl md:max-w-7xl lg:px-4 xl:px-8">
                   <MessageInput
                     disabled={
                       !selectedChatId ||
@@ -714,7 +722,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         onOpenChange={setShowMobileModelSelector}
         open={showMobileModelSelector}
       >
-        <DialogContent className="max-h-[80vh] max-w-6xl overflow-hidden">
+        <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] max-w-[680px] overflow-hidden sm:w-[90vw] md:w-auto md:max-w-3xl lg:max-w-4xl">
           <DialogHeader>
             <DialogTitle>Select AI Model</DialogTitle>
             <DialogDescription>
@@ -724,7 +732,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
           <div className="max-h-[60vh] overflow-y-auto">
             <ModelGrid
-              columns={3}
+              columns={5}
               models={AI_MODELS}
               onModelSelect={(model) => {
                 handleModelChange(model.id);
@@ -741,7 +749,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         onOpenChange={setShowMobileAgentSelector}
         open={showMobileAgentSelector}
       >
-        <DialogContent className="max-h-[80vh] max-w-6xl overflow-hidden">
+        <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] max-w-[680px] overflow-hidden sm:w-[90vw] md:w-auto md:max-w-3xl lg:max-w-4xl">
           <DialogHeader>
             <DialogTitle>Select AI Agent</DialogTitle>
             <DialogDescription>
@@ -753,7 +761,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             {agents && (
               <AgentGrid
                 agents={agents}
-                columns={2}
+                columns={5}
                 onAgentSelect={async (agent) => {
                   selectAgent(agent._id);
                   setShowMobileAgentSelector(false);
@@ -777,305 +785,32 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               />
             )}
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Mobile Settings Dialog */}
-      <Dialog onOpenChange={setShowMobileSettings} open={showMobileSettings}>
-        <DialogContent className="max-h-[85vh] max-w-6xl overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>Chat Settings</DialogTitle>
-            <DialogDescription>
-              Configure AI model behavior and interface preferences
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="max-h-[65vh] overflow-y-auto">
-            <SettingsGrid
-              columns={2}
-              compact={false}
-              settings={[
-                // Model Settings
-                {
-                  id: 'model',
-                  title: 'AI Model',
-                  description: 'Select the AI model to use for responses',
-                  type: 'select',
-                  value: chatSettings.model,
-                  onChange: (value) =>
-                    handleSettingsChange({ ...chatSettings, model: value }),
-                  options: AI_MODELS.map((model) => ({
-                    value: model.id,
-                    label: model.name,
-                    badge: model.provider,
-                  })),
-                  icon: <Brain className="h-4 w-4" />,
-                  category: 'model',
-                },
-                {
-                  id: 'temperature',
-                  title: 'Temperature',
-                  description:
-                    'Controls randomness: Lower is more focused, higher is more creative',
-                  type: 'slider',
-                  value: chatSettings.temperature,
-                  onChange: (value) =>
-                    handleSettingsChange({
-                      ...chatSettings,
-                      temperature: value,
-                    }),
-                  min: 0,
-                  max: 2,
-                  step: 0.1,
-                  icon: <Zap className="h-4 w-4" />,
-                  category: 'model',
-                },
-                {
-                  id: 'maxTokens',
-                  title: 'Max Tokens',
-                  description: 'Maximum length of the response',
-                  type: 'slider',
-                  value: chatSettings.maxTokens,
-                  onChange: (value) =>
-                    handleSettingsChange({ ...chatSettings, maxTokens: value }),
-                  min: 100,
-                  max: 4000,
-                  step: 100,
-                  icon: <Brain className="h-4 w-4" />,
-                  category: 'model',
-                },
-                // Behavior Settings
-                {
-                  id: 'systemPrompt',
-                  title: 'System Prompt',
-                  description:
-                    "Instructions that define the AI's behavior and personality",
-                  type: 'textarea',
-                  value: chatSettings.systemPrompt,
-                  onChange: (value) =>
-                    handleSettingsChange({
-                      ...chatSettings,
-                      systemPrompt: value,
-                    }),
-                  placeholder: 'You are a helpful AI assistant...',
-                  rows: 4,
-                  icon: <Settings className="h-4 w-4" />,
-                  category: 'behavior',
-                },
-                {
-                  id: 'streamResponses',
-                  title: 'Stream Responses',
-                  description: "Show responses as they're generated",
-                  type: 'switch',
-                  value: chatSettings.streamResponses,
-                  onChange: (value) =>
-                    handleSettingsChange({
-                      ...chatSettings,
-                      streamResponses: value,
-                    }),
-                  icon: <Zap className="h-4 w-4" />,
-                  category: 'behavior',
-                },
-                {
-                  id: 'enableMemory',
-                  title: 'Enable Memory',
-                  description: 'Remember context across conversations',
-                  type: 'switch',
-                  value: chatSettings.enableMemory,
-                  onChange: (value) =>
-                    handleSettingsChange({
-                      ...chatSettings,
-                      enableMemory: value,
-                    }),
-                  icon: <Brain className="h-4 w-4" />,
-                  category: 'behavior',
-                },
-                // Interface Settings
-                {
-                  id: 'theme',
-                  title: 'Theme',
-                  description: 'Choose your preferred color scheme',
-                  type: 'select',
-                  value: chatSettings.theme,
-                  onChange: (value) =>
-                    handleSettingsChange({ ...chatSettings, theme: value }),
-                  options: [
-                    {
-                      value: 'light',
-                      label: 'Light',
-                      icon: <Sun className="h-4 w-4" />,
-                    },
-                    {
-                      value: 'dark',
-                      label: 'Dark',
-                      icon: <Moon className="h-4 w-4" />,
-                    },
-                    {
-                      value: 'system',
-                      label: 'System',
-                      icon: <Monitor className="h-4 w-4" />,
-                    },
-                  ],
-                  icon: <Palette className="h-4 w-4" />,
-                  category: 'interface',
-                },
-                {
-                  id: 'language',
-                  title: 'Language',
-                  description: 'Select your preferred language',
-                  type: 'select',
-                  value: chatSettings.language,
-                  onChange: (value) =>
-                    handleSettingsChange({ ...chatSettings, language: value }),
-                  options: [
-                    { value: 'en', label: 'English' },
-                    { value: 'es', label: 'Spanish' },
-                    { value: 'fr', label: 'French' },
-                    { value: 'de', label: 'German' },
-                    { value: 'zh', label: 'Chinese' },
-                    { value: 'ja', label: 'Japanese' },
-                  ],
-                  icon: <Globe className="h-4 w-4" />,
-                  category: 'interface',
-                },
-                {
-                  id: 'soundEnabled',
-                  title: 'Sound Effects',
-                  description: 'Play sounds for notifications',
-                  type: 'switch',
-                  value: chatSettings.soundEnabled,
-                  onChange: (value) =>
-                    handleSettingsChange({
-                      ...chatSettings,
-                      soundEnabled: value,
-                    }),
-                  icon: <Volume2 className="h-4 w-4" />,
-                  category: 'interface',
-                },
-                {
-                  id: 'autoScroll',
-                  title: 'Auto-scroll',
-                  description: 'Automatically scroll to new messages',
-                  type: 'switch',
-                  value: chatSettings.autoScroll,
-                  onChange: (value) =>
-                    handleSettingsChange({
-                      ...chatSettings,
-                      autoScroll: value,
-                    }),
-                  icon: <Monitor className="h-4 w-4" />,
-                  category: 'interface',
-                },
-                // Advanced Settings
-                {
-                  id: 'topP',
-                  title: 'Top P',
-                  description:
-                    'Nucleus sampling: Higher values = more diverse responses',
-                  type: 'slider',
-                  value: chatSettings.topP,
-                  onChange: (value) =>
-                    handleSettingsChange({ ...chatSettings, topP: value }),
-                  min: 0,
-                  max: 1,
-                  step: 0.1,
-                  icon: <Settings className="h-4 w-4" />,
-                  category: 'advanced',
-                },
-                {
-                  id: 'frequencyPenalty',
-                  title: 'Frequency Penalty',
-                  description: 'Reduce repetitive responses',
-                  type: 'slider',
-                  value: chatSettings.frequencyPenalty,
-                  onChange: (value) =>
-                    handleSettingsChange({
-                      ...chatSettings,
-                      frequencyPenalty: value,
-                    }),
-                  min: -2,
-                  max: 2,
-                  step: 0.1,
-                  icon: <Settings className="h-4 w-4" />,
-                  category: 'advanced',
-                },
-                {
-                  id: 'presencePenalty',
-                  title: 'Presence Penalty',
-                  description: 'Encourage talking about new topics',
-                  type: 'slider',
-                  value: chatSettings.presencePenalty,
-                  onChange: (value) =>
-                    handleSettingsChange({
-                      ...chatSettings,
-                      presencePenalty: value,
-                    }),
-                  min: -2,
-                  max: 2,
-                  step: 0.1,
-                  icon: <Settings className="h-4 w-4" />,
-                  category: 'advanced',
-                },
-                {
-                  id: 'saveHistory',
-                  title: 'Save History',
-                  description: 'Store conversation history locally',
-                  type: 'switch',
-                  value: chatSettings.saveHistory,
-                  onChange: (value) =>
-                    handleSettingsChange({
-                      ...chatSettings,
-                      saveHistory: value,
-                    }),
-                  icon: <Settings className="h-4 w-4" />,
-                  category: 'advanced',
-                },
-                {
-                  id: 'contextWindow',
-                  title: 'Context Window',
-                  description:
-                    'Number of previous messages to include in context',
-                  type: 'slider',
-                  value: chatSettings.contextWindow,
-                  onChange: (value) =>
-                    handleSettingsChange({
-                      ...chatSettings,
-                      contextWindow: value,
-                    }),
-                  min: 1,
-                  max: 50,
-                  step: 1,
-                  icon: <Brain className="h-4 w-4" />,
-                  category: 'advanced',
-                },
-                {
-                  id: 'responseFormat',
-                  title: 'Response Format',
-                  description: 'Format for AI responses',
-                  type: 'select',
-                  value: chatSettings.responseFormat,
-                  onChange: (value) =>
-                    handleSettingsChange({
-                      ...chatSettings,
-                      responseFormat: value,
-                    }),
-                  options: [
-                    { value: 'text', label: 'Plain Text' },
-                    { value: 'markdown', label: 'Markdown' },
-                    { value: 'json', label: 'JSON' },
-                  ],
-                  icon: <Settings className="h-4 w-4" />,
-                  category: 'advanced',
-                },
-              ]}
-            />
-          </div>
-
-          <div className="flex justify-end border-t pt-4">
-            <Button onClick={() => setShowMobileSettings(false)}>Done</Button>
+          
+          {/* Create New Agent Button */}
+          <div className="border-t pt-4">
+            <Link href="/agents" className="block">
+              <Button
+                className="w-full"
+                onClick={() => setShowMobileAgentSelector(false)}
+                variant="outline"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create a New Agent
+              </Button>
+            </Link>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile Settings Dialog - Using responsive ChatSettingsDialog */}
+      {showMobileSettings && (
+        <ChatSettingsDialog
+          open={showMobileSettings}
+          onOpenChange={setShowMobileSettings}
+          onSettingsChange={handleSettingsChange}
+          settings={chatSettings}
+        />
+      )}
 
       {/* Upgrade Prompt Modal */}
       {showUpgradePrompt && upgradePrompt.suggestedTier && (

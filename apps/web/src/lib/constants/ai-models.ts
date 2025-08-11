@@ -129,6 +129,28 @@ export const AI_MODELS: AIModel[] = [
     default: false,
   },
   {
+    id: 'gpt-5-mini',
+    name: 'GPT-5 Mini',
+    provider: 'openai',
+    description:
+      'Smaller, faster version of GPT-5 with excellent cost-performance ratio',
+    contextWindow: 128_000,
+    maxOutput: 8_192,
+    pricing: { input: 5, output: 20 },
+    capabilities: [
+      'coding',
+      'reasoning',
+      'creative',
+      'analysis',
+      'general',
+      'tools',
+    ],
+    speed: 'fast',
+    intelligence: 'expert',
+    released: 'August 2025',
+    default: false,
+  },
+  {
     id: 'o4-mini',
     name: 'OpenAI o4-mini',
     provider: 'openai',
@@ -138,7 +160,7 @@ export const AI_MODELS: AIModel[] = [
     pricing: { input: 3, output: 12 },
     capabilities: ['reasoning', 'coding', 'math'],
     speed: 'fast',
-    intelligence: 'advanced',
+    intelligence: 'expert',  // Changed to expert to make it premium
     released: '2025',
   },
   {
@@ -297,7 +319,7 @@ export const isPremiumModel = (model: AIModel): boolean => {
     model.intelligence === 'frontier' ||
     model.intelligence === 'expert' ||
     // Specific high-value models
-    ['gpt-4.1-mini'].includes(model.id)
+    ['gpt-4.1-mini', 'gpt-5-mini'].includes(model.id)
   );
 };
 

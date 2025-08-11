@@ -15,7 +15,6 @@ export interface Agent {
   id: string;
   name: string;
   description?: string;
-  model: string;
   systemPrompt: string;
   temperature?: number;
   maxTokens?: number;
@@ -329,6 +328,7 @@ export interface CreateAgentRequest {
 export interface ExecuteAgentRequest {
   agentId: string;
   input: string;
+  model?: string; // Model to use for this execution
   maxSteps?: number;
   autoApprove?: boolean;
   metadata?: Record<string, unknown>;

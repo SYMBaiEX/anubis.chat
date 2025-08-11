@@ -9,7 +9,7 @@ export default function ChatPage() {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-primary/5 dark:from-primary/10">
+      <div className="flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-b from-primary/5 dark:from-primary/10">
         <div className="text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="text-muted-foreground">Loading chat...</p>
@@ -19,9 +19,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="h-full w-full bg-gradient-to-b from-primary/5 dark:from-primary/10">
+    <div className="h-full w-full overflow-hidden bg-gradient-to-b from-primary/5 dark:from-primary/10">
       {/* Chat Interface takes full height */}
-      <div className="relative h-full">
+      <div className="relative h-full w-full overflow-hidden">
         <ChatInterface />
       </div>
     </div>
