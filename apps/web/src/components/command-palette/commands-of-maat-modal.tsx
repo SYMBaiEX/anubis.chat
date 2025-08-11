@@ -126,7 +126,10 @@ export function CommandsOfMaatModal({
 
           {/* Category Tabs */}
           <Tabs
-            onValueChange={(v) => setActiveCategory(v as any)}
+            onValueChange={(v) =>
+-              setActiveCategory(v as any)
++              setActiveCategory(v as keyof typeof MAAT_CATEGORIES | 'all')
+            }
             value={activeCategory}
           >
             <TabsList className="grid w-full grid-cols-6 bg-muted/50">
