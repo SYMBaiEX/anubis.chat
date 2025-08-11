@@ -69,6 +69,7 @@ export const updateUserPreferences = mutation({
 
     // Chat Preferences
     contextWindow: v.optional(v.number()),
+    autoCreateTitles: v.optional(v.boolean()),
 
     // Notification Settings
     emailNotifications: v.optional(v.boolean()),
@@ -125,6 +126,7 @@ export const updateUserPreferences = mutation({
       enableMemory: args.enableMemory ?? true,
       responseFormat: args.responseFormat ?? 'markdown',
       contextWindow: args.contextWindow ?? 10,
+      autoCreateTitles: args.autoCreateTitles ?? true,
       emailNotifications: args.emailNotifications ?? false,
       pushNotifications: args.pushNotifications ?? true,
       dataCollection: args.dataCollection ?? true,
@@ -165,6 +167,7 @@ export const resetUserPreferences = mutation({
       enableMemory: true,
       responseFormat: 'markdown' as const,
       contextWindow: 10,
+      autoCreateTitles: true,
       emailNotifications: false,
       pushNotifications: true,
       dataCollection: true,
@@ -207,6 +210,7 @@ export const getUserPreferencesWithDefaults = query({
         enableMemory: true,
         responseFormat: 'markdown' as const,
         contextWindow: 10,
+        autoCreateTitles: true,
         emailNotifications: false,
         pushNotifications: true,
         dataCollection: true,
@@ -234,6 +238,7 @@ export const getUserPreferencesWithDefaults = query({
         enableMemory: true,
         responseFormat: 'markdown' as const,
         contextWindow: 10,
+        autoCreateTitles: true,
         emailNotifications: false,
         pushNotifications: true,
         dataCollection: true,

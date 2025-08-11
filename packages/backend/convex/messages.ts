@@ -1,4 +1,5 @@
 import { v } from 'convex/values';
+import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
@@ -123,6 +124,15 @@ export const create = mutation({
       args.tokenCount ?? args.metadata?.usage?.totalTokens ?? 0;
     await incrementChatCounters(ctx, args.chatId, now, tokenCount);
 
+    // Check if we should auto-generate a title
+    if (args.role === 'user') {
+      await checkAndScheduleTitleGeneration(
+        ctx,
+        args.chatId,
+        args.walletAddress
+      );
+    }
+
     return await ctx.db.get(messageId);
   },
 });
@@ -186,6 +196,94 @@ async function incrementChatCounters(
     messageCount: currentCount + 1,
     totalTokens: currentTokens + tokenIncrement,
   });
+}
+
+// Helper: check if we should generate a title for the chat
+async function checkAndScheduleTitleGeneration(
+  ctx: { db: any; scheduler: any },
+  chatId: Id<'chats'>,
+  walletAddress: string
+): Promise<void> {
+  try {
+    // Get the chat to check its title
+    const chat = await ctx.db.get(chatId);
+    if (!chat) {
+      console.warn('Chat not found for title generation:', chatId);
+      return;
+    }
+
+    // Check if title is already meaningful (not a default "New Chat" title)
+    // Also check for other common default patterns
+    const defaultTitlePatterns = [
+      /^New Chat/i,
+      /^Untitled/i,
+      /^Chat \d+$/i,
+      /^Conversation$/i,
+    ];
+
+    const hasDefaultTitle = defaultTitlePatterns.some((pattern) =>
+      pattern.test(chat.title || '')
+    );
+
+    if (!hasDefaultTitle && chat.title && chat.title.length > 5) {
+      // Title seems meaningful already
+      return;
+    }
+
+    // Get the user to check their preferences
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_wallet', (q: any) => q.eq('walletAddress', walletAddress))
+      .unique();
+
+    if (!user) {
+      console.warn('User not found for wallet:', walletAddress);
+      return;
+    }
+
+    // Get user preferences
+    const preferences = await ctx.db
+      .query('userPreferences')
+      .withIndex('by_user', (q: any) => q.eq('userId', user._id))
+      .first();
+
+    // Check if auto-create titles is enabled (default to true if not set)
+    const autoCreateTitles = preferences?.autoCreateTitles !== false;
+
+    if (!autoCreateTitles) {
+      return;
+    }
+
+    // Check if this is the first meaningful user message in the chat
+    const userMessages = await ctx.db
+      .query('messages')
+      .withIndex('by_chat', (q: any) => q.eq('chatId', chatId))
+      .filter((q: any) => q.eq(q.field('role'), 'user'))
+      .take(2); // Get first 2 to check if this is really the first
+
+    // Only generate title after the first user message that has meaningful content
+    if (userMessages.length === 1) {
+      const firstMessage = userMessages[0];
+
+      // Check if message has enough content to generate a title from
+      if (!firstMessage.content || firstMessage.content.trim().length < 3) {
+        console.log('Message too short for title generation');
+        return;
+      }
+
+      // Schedule the title generation as a background action
+      // Use a slight delay to ensure the message is fully saved
+      await ctx.scheduler.runAfter(2000, api.chats.generateAndUpdateTitle, {
+        chatId,
+        ownerId: user._id,
+      });
+
+      console.log('Scheduled title generation for chat:', chatId);
+    }
+  } catch (error) {
+    // Log error but don't fail the message creation
+    console.error('Error checking for title generation:', error);
+  }
 }
 
 // Update message content (for editing)

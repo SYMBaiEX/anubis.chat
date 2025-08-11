@@ -6,13 +6,15 @@ import {
   Check,
   Edit3,
   Info,
+  Loader2,
   MoreVertical,
   RefreshCw,
   Settings,
+  Sparkles,
   Trash2,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -34,6 +36,7 @@ export function ChatHeader({
   onRename,
   onClearHistory,
   onDelete,
+  onGenerateTitle,
   onSettingsClick,
   onModelSelectorClick,
   onAgentSelectorClick,
@@ -42,6 +45,14 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editingTitle, setEditingTitle] = useState(chat.title);
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+
+  // Update editingTitle when chat.title changes (e.g., after generation)
+  React.useEffect(() => {
+    if (!isEditing) {
+      setEditingTitle(chat.title);
+    }
+  }, [chat.title, isEditing]);
 
   const handleSaveTitle = () => {
     if (editingTitle.trim() && editingTitle !== chat.title) {
@@ -62,6 +73,17 @@ export function ChatHeader({
     } else if (e.key === 'Escape') {
       e.preventDefault();
       handleCancelEdit();
+    }
+  };
+
+  const handleGenerateTitle = async () => {
+    if (!onGenerateTitle || isGeneratingTitle) return;
+
+    setIsGeneratingTitle(true);
+    try {
+      await onGenerateTitle();
+    } finally {
+      setIsGeneratingTitle(false);
     }
   };
 
@@ -146,6 +168,20 @@ export function ChatHeader({
               <Edit3 className="mr-2 h-4 w-4" />
               Rename Chat
             </DropdownMenuItem>
+
+            {onGenerateTitle && (
+              <DropdownMenuItem
+                disabled={isGeneratingTitle}
+                onClick={handleGenerateTitle}
+              >
+                {isGeneratingTitle ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                {isGeneratingTitle ? 'Generating...' : 'Generate Title'}
+              </DropdownMenuItem>
+            )}
 
             <DropdownMenuItem onClick={onClearHistory}>
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -277,6 +313,20 @@ export function ChatHeader({
               <Edit3 className="mr-2 h-4 w-4" />
               Rename Chat
             </DropdownMenuItem>
+
+            {onGenerateTitle && (
+              <DropdownMenuItem
+                disabled={isGeneratingTitle}
+                onClick={handleGenerateTitle}
+              >
+                {isGeneratingTitle ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                {isGeneratingTitle ? 'Generating...' : 'Generate Title'}
+              </DropdownMenuItem>
+            )}
 
             <DropdownMenuItem onClick={onClearHistory}>
               <RefreshCw className="mr-2 h-4 w-4" />
