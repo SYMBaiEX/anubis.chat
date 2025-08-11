@@ -1,17 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Check, Info, Search, X } from 'lucide-react';
+import { Check, Search } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { capabilities, categories } from './constants';
 import type { AgentCapability } from './types';

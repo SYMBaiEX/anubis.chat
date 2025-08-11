@@ -69,7 +69,7 @@ export default function SubscriptionPage() {
         )
       : 0;
 
-  const getTierColor = (tier: string) => {
+  const _getTierColor = (tier: string) => {
     if (tier === 'pro_plus') {
       return 'text-purple-600 dark:text-purple-400';
     }
@@ -79,7 +79,7 @@ export default function SubscriptionPage() {
     return 'text-slate-600 dark:text-slate-400';
   };
 
-  const getTierBg = (tier: string) => {
+  const _getTierBg = (tier: string) => {
     if (tier === 'pro_plus') {
       return 'bg-purple-100 dark:bg-purple-900';
     }
@@ -89,7 +89,7 @@ export default function SubscriptionPage() {
     return 'bg-slate-100 dark:bg-slate-800';
   };
 
-  const formatDate = (timestamp: number) => {
+  const _formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -261,18 +261,24 @@ function CurrentSubscriptionCard({
   currentPeriodEnd,
   onManage,
 }: CurrentSubscriptionCardProps) {
-  const getTierColor = (t: string) =>
-    t === 'pro_plus'
-      ? 'text-purple-600 dark:text-purple-400'
-      : t === 'pro'
-        ? 'text-blue-600 dark:text-blue-400'
-        : 'text-slate-600 dark:text-slate-400';
-  const getTierBg = (t: string) =>
-    t === 'pro_plus'
-      ? 'bg-purple-100 dark:bg-purple-900'
-      : t === 'pro'
-        ? 'bg-blue-100 dark:bg-blue-900'
-        : 'bg-slate-100 dark:bg-slate-800';
+  const getTierColor = (t: string) => {
+    if (t === 'pro_plus') {
+      return 'text-purple-600 dark:text-purple-400';
+    }
+    if (t === 'pro') {
+      return 'text-blue-600 dark:text-blue-400';
+    }
+    return 'text-slate-600 dark:text-slate-400';
+  };
+  const getTierBg = (t: string) => {
+    if (t === 'pro_plus') {
+      return 'bg-purple-100 dark:bg-purple-900';
+    }
+    if (t === 'pro') {
+      return 'bg-blue-100 dark:bg-blue-900';
+    }
+    return 'bg-slate-100 dark:bg-slate-800';
+  };
   const formatDate = (timestamp: number) =>
     new Date(timestamp).toLocaleDateString('en-US', {
       year: 'numeric',

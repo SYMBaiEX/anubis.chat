@@ -46,7 +46,9 @@ export function useSubscription() {
   );
 
   const normalizedSubscription = useMemo((): SubscriptionStatus | null => {
-    if (!subscription) return null;
+    if (!subscription) {
+      return null;
+    }
     const allowedTiers = ['free', 'pro', 'pro_plus', 'admin'] as const;
     const tier = (allowedTiers as readonly string[]).includes(subscription.tier)
       ? (subscription.tier as (typeof allowedTiers)[number])

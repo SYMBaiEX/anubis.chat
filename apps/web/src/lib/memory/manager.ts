@@ -5,7 +5,6 @@
 
 import type { CoreMessage } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
-import { z } from 'zod';
 
 // Memory Types
 export type MemoryType =
@@ -79,7 +78,6 @@ export interface MemorySearchOptions {
 // Context Window Manager
 export class ContextWindowManager {
   private maxTokens: number;
-  private compressionRatio: number;
 
   constructor(maxTokens = 128_000, compressionRatio = 0.3) {
     this.maxTokens = maxTokens;
@@ -182,21 +180,21 @@ export class ContextWindowManager {
   private createSummary(messages: CoreMessage[]): string {
     // Simple summary - in production, use LLM for better summaries
     const topics = new Set<string>();
-    const actions = new Set<string>();
+    const _actions = new Set<string>();
 
-    messages.forEach((msg) => {
+    for (const msg of messages) {
       const content =
         typeof msg.content === 'string'
           ? msg.content
           : JSON.stringify(msg.content);
       // Extract key phrases (simplified)
       const words = content.split(' ').slice(0, 10);
-      words.forEach((word) => {
+      for (const word of words) {
         if (word.length > 5) {
           topics.add(word);
         }
-      });
-    });
+      }
+    }
 
     return `Topics discussed: ${Array.from(topics).slice(0, 5).join(', ')}`;
   }
@@ -322,10 +320,10 @@ export class MemoryManager {
     }
 
     // Update access counts
-    results.forEach((memory) => {
+    for (const memory of results) {
       memory.metadata.accessCount++;
       memory.metadata.lastAccessed = Date.now();
-    });
+    }
 
     return results;
   }
@@ -363,7 +361,9 @@ export class MemoryManager {
    * Calculate cosine similarity between embeddings
    */
   private cosineSimilarity(a: number[], b: number[]): number {
-    if (a.length !== b.length) return 0;
+    if (a.length !== b.length) {
+      return 0;
+    }
 
     let dotProduct = 0;
     let normA = 0;
@@ -375,7 +375,9 @@ export class MemoryManager {
       normB += b[i] * b[i];
     }
 
-    if (normA === 0 || normB === 0) return 0;
+    if (normA === 0 || normB === 0) {
+      return 0;
+    }
     return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
   }
 
@@ -425,7 +427,7 @@ export class MemoryManager {
     // Update messages with context management
     context.messages = await this.contextManager.manageContext(
       context.messages,
-      messages[messages.length - 1]
+      messages.at(-1)
     );
 
     // Extract topics and entities
@@ -481,15 +483,17 @@ export class MemoryManager {
     // Placeholder - integrate with NLP service
     const topics = new Set<string>();
 
-    messages.forEach((msg) => {
+    for (const msg of messages) {
       const content =
         typeof msg.content === 'string'
           ? msg.content
           : JSON.stringify(msg.content);
       // Simple keyword extraction
       const words = content.split(' ').filter((w) => w.length > 5);
-      words.slice(0, 3).forEach((word) => topics.add(word));
-    });
+      for (const word of words.slice(0, 3)) {
+        topics.add(word);
+      }
+    }
 
     return Array.from(topics);
   }
@@ -502,7 +506,7 @@ export class MemoryManager {
     const entities: Entity[] = [];
 
     // Simple entity extraction
-    messages.forEach((msg) => {
+    for (const msg of messages) {
       const content =
         typeof msg.content === 'string'
           ? msg.content
@@ -510,7 +514,7 @@ export class MemoryManager {
       // Look for capitalized words as potential entities
       const matches = content.match(/[A-Z][a-z]+/g) || [];
 
-      matches.forEach((match) => {
+      for (const match of matches) {
         const existing = entities.find((e) => e.name === match);
         if (existing) {
           existing.mentions++;
@@ -524,8 +528,8 @@ export class MemoryManager {
             relationships: [],
           });
         }
-      });
-    });
+      }
+    }
 
     return entities;
   }
@@ -533,7 +537,7 @@ export class MemoryManager {
   /**
    * Analyze sentiment of messages
    */
-  private async analyzeSentiment(messages: CoreMessage[]): Promise<number> {
+  private async analyzeSentiment(_messages: CoreMessage[]): Promise<number> {
     // Placeholder - integrate with sentiment analysis service
     // Return value between -1 (negative) and 1 (positive)
     return 0;
@@ -579,12 +583,12 @@ export class MemoryManager {
     memories: MemoryEntry[];
     conversations: ConversationContext[];
   }): void {
-    data.memories.forEach((memory) => {
+    for (const memory of data.memories) {
       this.memories.set(memory.id, memory);
-    });
+    }
 
-    data.conversations.forEach((conversation) => {
+    for (const conversation of data.conversations) {
       this.conversations.set(conversation.id, conversation);
-    });
+    }
   }
 }

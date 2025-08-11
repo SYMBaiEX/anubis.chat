@@ -13,7 +13,6 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -66,24 +65,38 @@ export function ChatHeader({
     }
   };
 
-  const getModelDisplayName = (model: string) => {
-    if (model.includes('gpt-4')) return 'GPT-4';
-    if (model.includes('gpt-3.5')) return 'GPT-3.5';
-    if (model.includes('claude')) return 'Claude';
-    if (model.includes('deepseek')) return 'DeepSeek';
-    if (model.includes('llama')) return 'Llama';
+  const _getModelDisplayName = (model: string) => {
+    if (model.includes('gpt-4')) {
+      return 'GPT-4';
+    }
+    if (model.includes('gpt-3.5')) {
+      return 'GPT-3.5';
+    }
+    if (model.includes('claude')) {
+      return 'Claude';
+    }
+    if (model.includes('deepseek')) {
+      return 'DeepSeek';
+    }
+    if (model.includes('llama')) {
+      return 'Llama';
+    }
     return model.split('-')[0]?.toUpperCase() ?? 'AI';
   };
 
-  const getModelColor = (model: string) => {
-    if (model.includes('gpt-4'))
+  const _getModelColor = (model: string) => {
+    if (model.includes('gpt-4')) {
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-    if (model.includes('gpt-3.5'))
+    }
+    if (model.includes('gpt-3.5')) {
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-    if (model.includes('claude'))
+    }
+    if (model.includes('claude')) {
       return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-    if (model.includes('deepseek'))
+    }
+    if (model.includes('deepseek')) {
       return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+    }
     return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
   };
 

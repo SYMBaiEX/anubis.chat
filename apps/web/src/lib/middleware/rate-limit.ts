@@ -5,7 +5,6 @@
 
 import type { NextRequest } from 'next/server';
 import { rateLimitConfig } from '../env';
-import { APIErrorCode } from '../types/api';
 import { addRateLimitHeaders, rateLimitResponse } from '../utils/api-response';
 import { createModuleLogger } from '../utils/logger';
 import { extractWalletFromRequest } from './auth';
@@ -69,7 +68,7 @@ class MemoryStore {
   }
 
   increment(key: string, windowMs: number): RateLimitEntry {
-    const now = new Date();
+    const _now = new Date();
     const resetTime = new Date(Date.now() + windowMs);
 
     let entry = this.get(key);
@@ -220,7 +219,7 @@ export function createRateLimiter(options: RateLimitOptions) {
     const totalHitsRemaining = Math.max(0, maxRequests - entry.totalHits);
     const isLimitExceeded = entry.totalHits > maxRequests;
 
-    const rateLimitInfo: RateLimitInfo = {
+    const _rateLimitInfo: RateLimitInfo = {
       totalHits: entry.totalHits,
       totalHitsRemaining,
       resetTime: entry.resetTime,
@@ -252,25 +251,17 @@ export function createRateLimiter(options: RateLimitOptions) {
     }
 
     // Execute the handler
-    let response: Response;
-    try {
-      response = await handler(request);
-    } catch (error) {
-      // If handler throws, we still need to handle rate limiting
-      throw error;
-    }
+    const response: Response = await handler(request);
 
     // Skip counting based on response status
     const shouldSkip =
       (skipSuccessfulRequests && response.status < 400) ||
       (skipFailedRequests && response.status >= 400);
 
-    if (shouldSkip) {
+    if (shouldSkip && entry.totalHits > 0) {
       // Decrement the counter if we're skipping
-      if (entry.totalHits > 0) {
-        entry.totalHits--;
-        store.set(key, entry);
-      }
+      entry.totalHits--;
+      store.set(key, entry);
     }
 
     // Add rate limit headers to response

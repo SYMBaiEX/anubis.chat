@@ -9,7 +9,7 @@ import pino from 'pino';
 // Environment detection
 const isProduction = process.env.NODE_ENV === 'production';
 const isDevelopment = process.env.NODE_ENV === 'development';
-const isTest = process.env.NODE_ENV === 'test';
+const _isTest = process.env.NODE_ENV === 'test';
 const isBrowser = typeof window !== 'undefined';
 
 // Pino configuration
@@ -25,7 +25,7 @@ const pinoConfig: pino.LoggerOptions = {
   timestamp: pino.stdTimeFunctions.isoTime,
   formatters: {
     // Add severity for Google Cloud Logging compatibility
-    level: (label, number) => {
+    level: (_label, number) => {
       const severityMap = {
         10: 'DEBUG', // trace
         20: 'DEBUG', // debug
@@ -67,19 +67,19 @@ const pinoConfig: pino.LoggerOptions = {
     serialize: true,
     write: isDevelopment
       ? {
-          debug: (o: any) => console.debug(o),
-          info: (o: any) => console.info(o),
-          warn: (o: any) => console.warn(o),
-          error: (o: any) => console.error(o),
-          fatal: (o: any) => console.error(o),
-          trace: (o: any) => console.trace(o),
+          debug: (_o: any) => {},
+          info: (_o: any) => {},
+          warn: (_o: any) => {},
+          error: (_o: any) => {},
+          fatal: (_o: any) => {},
+          trace: (_o: any) => {},
         }
       : {
           debug: () => {},
           info: () => {},
-          warn: (o: any) => console.warn(o),
-          error: (o: any) => console.error(o),
-          fatal: (o: any) => console.error(o),
+          warn: (_o: any) => {},
+          error: (_o: any) => {},
+          fatal: (_o: any) => {},
           trace: () => {},
         },
   },

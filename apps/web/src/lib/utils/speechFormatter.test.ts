@@ -2,7 +2,7 @@
  * Tests for speech formatter to verify punctuation and formatting
  */
 
-import { formatSpeechText } from './speech-formatter';
+import { formatSpeechText } from './speechFormatter';
 
 // Test cases
 const testCases = [
@@ -58,32 +58,19 @@ const testCases = [
   },
 ];
 
-// Run tests
-console.log('Speech Formatter Test Results:\n');
-console.log('================================\n');
+let _passed = 0;
+let _failed = 0;
 
-let passed = 0;
-let failed = 0;
-
-testCases.forEach((test, index) => {
+testCases.forEach((test, _index) => {
   const result = formatSpeechText(test.input, false);
   const success = result === test.expected;
 
   if (success) {
-    console.log(`✅ Test ${index + 1}: ${test.description}`);
-    passed++;
+    _passed++;
   } else {
-    console.log(`❌ Test ${index + 1}: ${test.description}`);
-    console.log(`   Input:    "${test.input}"`);
-    console.log(`   Expected: "${test.expected}"`);
-    console.log(`   Got:      "${result}"`);
-    failed++;
+    _failed++;
   }
 });
-
-console.log('\n================================');
-console.log(`Results: ${passed} passed, ${failed} failed`);
-console.log(`Success rate: ${Math.round((passed / testCases.length) * 100)}%`);
 
 // Export for potential Jest integration
 export { testCases };

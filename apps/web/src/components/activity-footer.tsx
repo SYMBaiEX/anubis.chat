@@ -2,19 +2,17 @@
 
 import {
   Activity,
-  Cable,
   CheckCircle2,
   Layers,
   MessageSquarePlus,
   Settings,
   ShieldCheck,
-  Sparkles,
   User2,
   Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ModeToggle } from '@/components/mode-toggle';
 import {
   useAuthContext,
@@ -61,7 +59,9 @@ export default function ActivityFooter() {
   // NOTE: Avoid showing wallet/public identifiers in footer to reduce exposure
   const hasUser = Boolean(user?.walletAddress);
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <footer

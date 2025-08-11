@@ -78,7 +78,7 @@ export function TransactionConfirmation({
       await onConfirm();
 
       // Simulate getting signature
-      setSignature('3J2KxV8k...' + Math.random().toString(36).substr(2, 9));
+      setSignature(`3J2KxV8k...${Math.random().toString(36).substr(2, 9)}`);
       setConfirmationStep('success');
     } catch (err: any) {
       setError(err.message || 'Transaction failed');
@@ -123,8 +123,12 @@ export function TransactionConfirmation({
   };
 
   const getRiskLevel = () => {
-    if (transaction.priceImpact && transaction.priceImpact > 5) return 'high';
-    if (transaction.priceImpact && transaction.priceImpact > 2) return 'medium';
+    if (transaction.priceImpact && transaction.priceImpact > 5) {
+      return 'high';
+    }
+    if (transaction.priceImpact && transaction.priceImpact > 2) {
+      return 'medium';
+    }
     return 'low';
   };
 
@@ -140,15 +144,15 @@ export function TransactionConfirmation({
   };
 
   const copySignature = async () => {
-    if (!signature) return;
+    if (!signature) {
+      return;
+    }
 
     try {
       await navigator.clipboard.writeText(signature);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy signature:', error);
-    }
+    } catch (_error) {}
   };
 
   const getProgressValue = () => {

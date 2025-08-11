@@ -8,10 +8,7 @@ import {
   DollarSign,
   ExternalLink,
   RefreshCw,
-  TrendingDown,
-  TrendingUp,
   Users,
-  Wallet,
   XCircle,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -30,7 +27,7 @@ import { usePaymentAdminMonitoring } from '@/hooks/use-payment-monitoring';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
 
-const log = createModuleLogger('payment-dashboard');
+const _log = createModuleLogger('payment-dashboard');
 
 interface PaymentDashboardProps {
   className?: string;
@@ -138,7 +135,9 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
   };
 
   const renderMetricsCards = () => {
-    if (!metrics) return null;
+    if (!metrics) {
+      return null;
+    }
 
     const metricsData = [
       {
@@ -277,7 +276,9 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
   };
 
   const renderPerformanceChart = () => {
-    if (!performance?.hourlyData) return null;
+    if (!performance?.hourlyData) {
+      return null;
+    }
 
     const data = performance.hourlyData.slice(-12); // Last 12 hours
 
@@ -297,7 +298,7 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
             {data.map((hour, index) => {
               const successRate = hour.successRate;
               const total = hour.successful + hour.failed;
-              const time = new Date(hour.hour + ':00').toLocaleTimeString([], {
+              const time = new Date(`${hour.hour}:00`).toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
               });
@@ -338,7 +339,9 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
   };
 
   const renderErrorDistribution = () => {
-    if (!metrics?.metrics.errorDistribution) return null;
+    if (!metrics?.metrics.errorDistribution) {
+      return null;
+    }
 
     const errorTypes = Object.entries(metrics.metrics.errorDistribution);
     const totalErrors = errorTypes.reduce((sum, [_, count]) => sum + count, 0);

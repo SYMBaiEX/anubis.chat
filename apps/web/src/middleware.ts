@@ -26,7 +26,9 @@ export function middleware(request: NextRequest) {
   );
 
   // Check if the current route is admin-only
-  const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route));
+  const _isAdminRoute = ADMIN_ROUTES.some((route) =>
+    pathname.startsWith(route)
+  );
 
   // If it's not a protected route, allow access
   if (!isProtectedRoute) {

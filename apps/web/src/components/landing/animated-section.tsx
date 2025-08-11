@@ -80,7 +80,9 @@ export default function AnimatedSection({
   }, [glyphIntensity, dustIntensity]);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      return;
+    }
     // Respect reduced motion
     const prefersReducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)'

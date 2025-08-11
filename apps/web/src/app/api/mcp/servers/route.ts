@@ -107,7 +107,7 @@ const initServerSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   return aiRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+    return withAuth(req, async (_authReq: AuthenticatedRequest) => {
       try {
         // Ensure MCP servers are initialized
         await ensureMCPServersInitialized();
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   return aiRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+    return withAuth(req, async (_authReq: AuthenticatedRequest) => {
       try {
         const body = await req.json();
         const validation = initServerSchema.safeParse(body);
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
   });
 }
 
-export async function OPTIONS() {
+export function OPTIONS() {
   const response = new NextResponse(null, { status: 200 });
   return addSecurityHeaders(response);
 }

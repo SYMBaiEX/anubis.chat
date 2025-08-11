@@ -11,10 +11,7 @@ interface StreamingMessageProps {
   className?: string;
 }
 
-export function StreamingMessage({
-  content,
-  className,
-}: StreamingMessageProps) {
+export function StreamingMessage({ content, className }: StreamingMessageProps) {
   const messageRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom as content streams in
@@ -40,16 +37,17 @@ export function StreamingMessage({
         {/* Message Header */}
         <div className="flex items-center gap-2 text-muted-foreground text-xs">
           <span className="font-medium">Assistant</span>
-          <span>• Responding...</span>
+          {content && content.trim().length > 0 ? null : (
+            <span aria-live="polite">• Connecting...</span>
+          )}
         </div>
 
         {/* Message Bubble */}
-        <div className="relative max-w-2xl">
+        <div className="relative w-full max-w-full sm:max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
           <div className="rounded-2xl border bg-muted px-4 py-3 shadow-sm">
-            <div className="prose prose-sm dark:prose-invert max-w-none">
+            {content && content.trim().length > 0 ? (
               <MarkdownRenderer content={content} />
-              <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-primary" />
-            </div>
+            ) : null}
           </div>
         </div>
       </div>

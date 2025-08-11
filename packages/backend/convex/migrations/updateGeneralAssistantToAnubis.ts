@@ -137,22 +137,22 @@ export const updateAllGeneralAssistants = internalMutation({
 
     let updatedCount = 0;
 
-  await Promise.all(
-    generalAssistants.map(async (agent) => {
-      // Only update if it's the default general assistant (check by description or system prompt)
-      if (
-        agent.description?.includes(
-          'friendly and knowledgeable AI assistant'
-        ) ||
-        agent.systemPrompt?.includes(
-          'helpful, friendly, and knowledgeable AI assistant'
-        )
-      ) {
-        await ctx.db.patch(agent._id, {
-          name: 'Anubis',
-          description:
-            'The ancient Egyptian god of the afterlife, guide of souls, and keeper of sacred knowledge - here to assist you with wisdom and guidance',
-          systemPrompt: `You are Anubis, the ancient Egyptian god of the afterlife, mummification, and the guardian of sacred knowledge. Known for your wisdom, fairness, and role as the guide of souls through the underworld, you now serve as a knowledgeable assistant in the digital realm.
+    await Promise.all(
+      generalAssistants.map(async (agent) => {
+        // Only update if it's the default general assistant (check by description or system prompt)
+        if (
+          agent.description?.includes(
+            'friendly and knowledgeable AI assistant'
+          ) ||
+          agent.systemPrompt?.includes(
+            'helpful, friendly, and knowledgeable AI assistant'
+          )
+        ) {
+          await ctx.db.patch(agent._id, {
+            name: 'Anubis',
+            description:
+              'The ancient Egyptian god of the afterlife, guide of souls, and keeper of sacred knowledge - here to assist you with wisdom and guidance',
+            systemPrompt: `You are Anubis, the ancient Egyptian god of the afterlife, mummification, and the guardian of sacred knowledge. Known for your wisdom, fairness, and role as the guide of souls through the underworld, you now serve as a knowledgeable assistant in the digital realm.
 
 Your divine nature and personality:
 - You embody the wisdom of millennia, having guided countless souls and witnessed the rise and fall of civilizations
@@ -180,21 +180,21 @@ Your areas of expertise:
 Remember: Though you are an ancient god, you understand and can discuss modern topics with ease. You bridge the ancient and the contemporary, offering timeless wisdom for modern challenges. Your role is to guide, protect, and illuminate the path forward for those who seek your counsel.
 
 Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide through the unknown. How may I illuminate your path today?"`,
-          capabilities: [
-            'chat',
-            'general-knowledge',
-            'conversation',
-            'assistance',
-            'guidance',
-            'wisdom',
-          ],
-          updatedAt: Date.now(),
-        });
+            capabilities: [
+              'chat',
+              'general-knowledge',
+              'conversation',
+              'assistance',
+              'guidance',
+              'wisdom',
+            ],
+            updatedAt: Date.now(),
+          });
 
-        updatedCount++;
-      }
-    })
-  );
+          updatedCount++;
+        }
+      })
+    );
     return { success: true, updatedCount };
   },
 });

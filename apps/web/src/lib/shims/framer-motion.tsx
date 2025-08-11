@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Fragment, type PropsWithChildren } from 'react';
+import React, { type PropsWithChildren } from 'react';
 
 // Minimal no-op shim for framer-motion APIs used in the project
 // Provides motion.div, motion.span, etc., and AnimatePresence that just renders children
@@ -23,7 +23,7 @@ export const motion: Record<string, React.ComponentType<AnyProps>> = new Proxy(
 );
 
 export function AnimatePresence({ children }: PropsWithChildren) {
-  return <Fragment>{children}</Fragment>;
+  return <>{children}</>;
 }
 
 export default { motion, AnimatePresence };

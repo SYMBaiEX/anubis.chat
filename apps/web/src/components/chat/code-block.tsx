@@ -3,7 +3,7 @@
 import { Check, Copy } from 'lucide-react';
 // Import Prism.js and themes
 import Prism from 'prismjs';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

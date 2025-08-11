@@ -23,9 +23,31 @@ export function useTypingIndicator(
       : 'skip'
   );
 
+  // Stop typing (declare before startTyping to avoid TDZ issues)
+  const stopTyping = useCallback(async () => {
+    if (!(chatId && walletAddress)) {
+      return;
+    }
+
+    try {
+      await setTyping({
+        chatId: chatId as Id<'chats'>,
+        walletAddress,
+        isTyping: false,
+      });
+    } catch (_error) {}
+
+    // Clear timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+  }, [chatId, walletAddress, setTyping]);
+
   // Start typing
   const startTyping = useCallback(async () => {
-    if (!(chatId && walletAddress)) return;
+    if (!(chatId && walletAddress)) {
+      return;
+    }
 
     try {
       await setTyping({
@@ -41,32 +63,10 @@ export function useTypingIndicator(
 
       // Set timeout to stop typing after 3 seconds of inactivity
       typingTimeoutRef.current = setTimeout(() => {
-        stopTyping();
+        void stopTyping();
       }, 3000);
-    } catch (error) {
-      console.error('Failed to set typing status:', error);
-    }
-  }, [chatId, walletAddress, setTyping]);
-
-  // Stop typing
-  const stopTyping = useCallback(async () => {
-    if (!(chatId && walletAddress)) return;
-
-    try {
-      await setTyping({
-        chatId: chatId as Id<'chats'>,
-        walletAddress,
-        isTyping: false,
-      });
-    } catch (error) {
-      console.error('Failed to clear typing status:', error);
-    }
-
-    // Clear timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-  }, [chatId, walletAddress, setTyping]);
+    } catch (_error) {}
+  }, [chatId, walletAddress, setTyping, stopTyping]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -75,7 +75,7 @@ export function useTypingIndicator(
         clearTimeout(typingTimeoutRef.current);
       }
       // Stop typing when component unmounts
-      stopTyping();
+      void stopTyping();
     };
   }, [stopTyping]);
 

@@ -3,14 +3,7 @@
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
-import {
-  Bot,
-  Clock,
-  MessageSquare,
-  Plus,
-  Sparkles,
-  Trash2,
-} from 'lucide-react';
+import { Bot, MessageSquare, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { LoadingStates } from '@/components/data/loading-states';
@@ -47,17 +40,21 @@ export function ChatSidebar({
   const deleteChat = useMutation(api.chatsAuth.deleteMyChat);
 
   const handleCreateChat = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      return;
+    }
     setIsCreatingChat(true);
     try {
       const newChat = await createChat({
         title: `New Chat ${new Date().toLocaleTimeString()}`,
         model: DEFAULT_MODEL.id,
       });
-      if (newChat && newChat._id) {
+      if (newChat?._id) {
         // Navigate to the chat page with the new chat ID
         router.push(`/chat?chatId=${newChat._id}`);
-        if (onChatSelect) onChatSelect(newChat._id);
+        if (onChatSelect) {
+          onChatSelect(newChat._id);
+        }
       }
     } finally {
       setIsCreatingChat(false);
@@ -67,12 +64,16 @@ export function ChatSidebar({
   const handleChatSelect = (chatId: string) => {
     // Navigate to the chat page with the selected chat ID
     router.push(`/chat?chatId=${chatId}`);
-    if (onChatSelect) onChatSelect(chatId);
+    if (onChatSelect) {
+      onChatSelect(chatId);
+    }
   };
 
   const handleDeleteChat = async (chatId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      return;
+    }
     await deleteChat({
       id: chatId as Id<'chats'>,
     });
@@ -84,9 +85,15 @@ export function ChatSidebar({
     const days = Math.floor(
       (now.getTime() - chatDate.getTime()) / (1000 * 60 * 60 * 24)
     );
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days} days ago`;
+    if (days === 0) {
+      return 'Today';
+    }
+    if (days === 1) {
+      return 'Yesterday';
+    }
+    if (days < 7) {
+      return `${days} days ago`;
+    }
     return chatDate.toLocaleDateString();
   };
 

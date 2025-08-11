@@ -32,7 +32,7 @@ export async function DELETE(
   { params }: { params: Promise<{ name: string }> }
 ) {
   return aiRateLimit(request, async (req) => {
-    return withAuth(req, async (authReq: AuthenticatedRequest) => {
+    return withAuth(req, async (_authReq: AuthenticatedRequest) => {
       const { name: serverName } = await params;
 
       try {
@@ -69,7 +69,7 @@ export async function DELETE(
   });
 }
 
-export async function OPTIONS() {
+export function OPTIONS() {
   const response = new NextResponse(null, { status: 200 });
   return addSecurityHeaders(response);
 }

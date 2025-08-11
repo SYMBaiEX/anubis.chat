@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   // PWA and static assets
-  headers() {
+  async headers() {
     return [
       {
         source: '/favicon/:path*',

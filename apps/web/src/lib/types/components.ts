@@ -3,14 +3,12 @@
  * Comprehensive type definitions for all UI components
  */
 
-import type { VariantProps } from 'class-variance-authority';
 import type { ReactNode } from 'react';
 import type {
   AIModel,
   Chat,
   ChatMessage,
   Document,
-  MessageMetadata,
   SearchResult,
   StreamingMessage,
   User,

@@ -1,16 +1,10 @@
 'use client';
 
 import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Loader from '@/components/loader';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -44,8 +38,7 @@ export function WalletModal({ open, onClose }: WalletModalProps) {
         await connect();
         onClose();
       }
-    } catch (err) {
-      console.error('Failed to connect wallet:', err);
+    } catch (_err) {
     } finally {
       setSelectedWallet(null);
     }

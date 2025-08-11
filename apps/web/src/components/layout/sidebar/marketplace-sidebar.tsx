@@ -1,6 +1,6 @@
 'use client';
 
-import { Package, Star, Store, TrendingUp } from 'lucide-react';
+import { Package, Star, TrendingUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export function MarketplaceSidebar() {

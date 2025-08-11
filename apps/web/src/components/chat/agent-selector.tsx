@@ -26,7 +26,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -94,7 +93,9 @@ export function AgentSelector({ className }: AgentSelectorProps) {
   };
 
   const getAgentDescription = (agent: Agent) => {
-    if (agent.description) return agent.description;
+    if (agent.description) {
+      return agent.description;
+    }
 
     // Fallback descriptions
     switch (agent.type) {

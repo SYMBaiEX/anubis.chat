@@ -34,7 +34,9 @@ export function SettingsCategoryFilter({
 }: SettingsCategoryFilterProps) {
   // Count settings by category
   const getCategoryCount = (category: SettingsCategory): number => {
-    if (category === 'all') return settings.length;
+    if (category === 'all') {
+      return settings.length;
+    }
     return settings.filter((setting) => setting.category === category).length;
   };
 
@@ -53,7 +55,9 @@ export function SettingsCategoryFilter({
         const isSelected = selected === category;
 
         // Don't show categories with no settings (except 'all')
-        if (count === 0 && category !== 'all') return null;
+        if (count === 0 && category !== 'all') {
+          return null;
+        }
 
         return (
           <Button

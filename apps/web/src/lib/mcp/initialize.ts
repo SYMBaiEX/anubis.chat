@@ -4,7 +4,7 @@
  */
 
 import { createModuleLogger } from '../utils/logger';
-import { initializeDefaultMCPServers, mcpManager } from './client';
+import { initializeDefaultMCPServers } from './client';
 
 const log = createModuleLogger('mcp-initialize');
 

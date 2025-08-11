@@ -15,7 +15,7 @@ import {
 } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 import type { FC, ReactNode } from 'react';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 // Import wallet adapter CSS
@@ -64,8 +64,12 @@ export const WalletProvider: FC<WalletProviderProps> = ({
     const seen = new Set<string>();
     return configured.filter((w) => {
       const name = String(w.name || '');
-      if (name === 'MetaMask') return false;
-      if (seen.has(name)) return false;
+      if (name === 'MetaMask') {
+        return false;
+      }
+      if (seen.has(name)) {
+        return false;
+      }
       seen.add(name);
       return true;
     });

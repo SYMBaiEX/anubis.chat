@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,6 @@ import {
   ConvexErrorBoundary,
   isSuccess,
   QueryStateIndicator,
-  type Result,
   useChats,
   useCreateChat,
   useUpdateUserPreferences,
@@ -77,7 +76,7 @@ export function ConvexIntegrationExample({
       } else {
         toast.error(`Failed to create chat: ${result.error.message}`);
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Unexpected error creating chat');
     } finally {
       setIsCreatingChat(false);
@@ -85,7 +84,9 @@ export function ConvexIntegrationExample({
   };
 
   const handleToggleTheme = async () => {
-    if (!userQuery.data) return;
+    if (!userQuery.data) {
+      return;
+    }
 
     const newTheme =
       userQuery.data.preferences.theme === 'light' ? 'dark' : 'light';

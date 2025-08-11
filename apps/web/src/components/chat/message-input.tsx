@@ -3,14 +3,12 @@
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import {
   Brain,
-  FileText,
   Image,
   Mic,
   MicOff,
   Paperclip,
   Send,
   Smile,
-  Square,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from 'react';
@@ -33,7 +31,6 @@ import type { MessageInputProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { type FontSize, getFontSizeClasses } from '@/lib/utils/font-sizes';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { getVoiceCommands } from '@/lib/utils/speech-formatter';
 
 // Initialize logger
 const log = createModuleLogger('message-input');
@@ -104,14 +101,15 @@ export function MessageInput({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height =
-        Math.min(textareaRef.current.scrollHeight, 200) + 'px';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
-  }, [message]);
+  }, []);
 
   const handleSend = () => {
     const trimmedMessage = message.trim();
-    if (!trimmedMessage || disabled) return;
+    if (!trimmedMessage || disabled) {
+      return;
+    }
 
     onSend(trimmedMessage, useReasoning);
     setMessage('');

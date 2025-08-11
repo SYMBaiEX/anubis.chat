@@ -1,7 +1,7 @@
 'use client';
 
 import { BarChart3, Crown, Info, MessageCircle, Zap } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { PaymentModal } from '@/components/auth/payment-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -51,17 +51,27 @@ export function UsageIndicator({
     subscription.tier === 'admin' ? 'pro_plus' : subscription.tier;
 
   const getUsageColor = (percentage: number) => {
-    if (percentage >= 95) return 'text-red-600 dark:text-red-400';
-    if (percentage >= 75) return 'text-amber-600 dark:text-amber-400';
-    if (percentage >= 50) return 'text-blue-600 dark:text-blue-400';
+    if (percentage >= 95) {
+      return 'text-red-600 dark:text-red-400';
+    }
+    if (percentage >= 75) {
+      return 'text-amber-600 dark:text-amber-400';
+    }
+    if (percentage >= 50) {
+      return 'text-blue-600 dark:text-blue-400';
+    }
     return 'text-green-600 dark:text-green-400';
   };
 
   const getProgressVariant = (
     percentage: number
   ): 'default' | 'warning' | 'error' => {
-    if (percentage >= 90) return 'error';
-    if (percentage >= 75) return 'warning';
+    if (percentage >= 90) {
+      return 'error';
+    }
+    if (percentage >= 75) {
+      return 'warning';
+    }
     return 'default';
   };
 

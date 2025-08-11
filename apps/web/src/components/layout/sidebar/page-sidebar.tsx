@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { AgentsSidebar } from './agents-sidebar';
-import { ChatSidebar } from './chat-sidebar';
 import { DashboardSidebar } from './dashboard-sidebar';
 import { MarketplaceSidebar } from './marketplace-sidebar';
 import { McpSidebar } from './mcp-sidebar';
@@ -20,7 +19,9 @@ export function PageSidebar() {
   const getSidebarContent = () => {
     // Do not render a page-level sidebar on chat pages.
     // Chat history is now displayed in the global app sidebar.
-    if (pathname.startsWith('/chat')) return null;
+    if (pathname.startsWith('/chat')) {
+      return null;
+    }
     if (pathname.startsWith('/dashboard')) {
       return <DashboardSidebar />;
     }

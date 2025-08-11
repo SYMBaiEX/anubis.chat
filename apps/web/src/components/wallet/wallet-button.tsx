@@ -1,7 +1,6 @@
 'use client';
 
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import React from 'react';
 import Loader from '@/components/loader';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@/hooks/useWallet';

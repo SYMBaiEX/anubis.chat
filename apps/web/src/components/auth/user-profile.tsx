@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { FormWrapper } from '@/components/forms/form-wrapper';
@@ -20,6 +20,7 @@ import type {
   SubscriptionLimits,
   UpgradePrompt,
 } from '@/hooks/use-subscription';
+import type { User } from '@/lib/types/api';
 import type { UserProfileProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -84,7 +85,9 @@ export function UserProfile({
     canvas.width = Math.round(bitmap.width * scale);
     canvas.height = Math.round(bitmap.height * scale);
     const ctx2d = canvas.getContext('2d');
-    if (!ctx2d) throw new Error('Canvas not supported');
+    if (!ctx2d) {
+      throw new Error('Canvas not supported');
+    }
     ctx2d.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     const blob: Blob = await new Promise((resolve, reject) => {
       canvas.toBlob(
@@ -103,7 +106,9 @@ export function UserProfile({
       input.accept = 'image/*';
       input.onchange = async () => {
         const file = input.files?.[0];
-        if (!file) return;
+        if (!file) {
+          return;
+        }
         if (file.size > 5 * 1024 * 1024) {
           toast.error('Please choose an image under 5MB.');
           return;
@@ -112,21 +117,23 @@ export function UserProfile({
           const compressed = await compressImage(file);
           const url: string = await generateUploadUrl({});
           const res = await fetch(url, { method: 'POST', body: compressed });
-          if (!res.ok) throw new Error('Upload failed');
+          if (!res.ok) {
+            throw new Error('Upload failed');
+          }
           const { storageId } = await res.json();
           await setAvatarFromStorage({ storageId });
           toast.success('Profile photo updated');
-        } catch (err) {
+        } catch (_err) {
           toast.error('Failed to update photo');
         }
       };
       input.click();
-    } catch (e) {
+    } catch (_e) {
       toast.error('Unable to start upload');
     }
   };
 
-  const handleProfileUpdate = async (data: any) => {
+  const handleProfileUpdate = async (data: Partial<User>) => {
     try {
       await onUpdate?.(data);
       setIsEditing(false);
@@ -153,7 +160,6 @@ export function UserProfile({
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
       case 'pro':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'free':
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
     }
@@ -165,7 +171,6 @@ export function UserProfile({
         return 'Pro+';
       case 'pro':
         return 'Pro';
-      case 'free':
       default:
         return 'Free';
     }
@@ -235,8 +240,6 @@ export function UserProfile({
                         editable && setIsEditingName(true);
                       }
                     }}
-                    role="button"
-                    tabIndex={0}
                   >
                     {user?.displayName ?? 'Anonymous User'}
                   </h3>

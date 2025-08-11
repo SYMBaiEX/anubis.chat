@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import LandingFooter from '@/components/landing/landing-footer';
 import LandingHeader from '@/components/landing/landing-header';
 import { useAuthContext } from '@/components/providers/auth-provider';
@@ -9,10 +9,10 @@ import CTA from './(landing)/components/cta';
 import FAQ from './(landing)/components/faq';
 import Features from './(landing)/components/features';
 import Hero from './(landing)/components/hero';
-import HowItWorks from './(landing)/components/how-it-works';
+import HowItWorks from './(landing)/components/howItWorks';
 import Models from './(landing)/components/models';
 import Pricing from './(landing)/components/pricing';
-import ReferralProgram from './(landing)/components/referral-program';
+import ReferralProgram from './(landing)/components/referralProgram';
 import Security from './(landing)/components/security';
 import Testimonials from './(landing)/components/testimonials';
 

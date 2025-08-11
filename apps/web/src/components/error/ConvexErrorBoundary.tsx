@@ -108,7 +108,9 @@ export class ConvexErrorBoundary extends Component<Props, State> {
   };
 
   private renderConvexErrorDetails(error: ConvexError) {
-    if (!this.props.showDetails) return null;
+    if (!this.props.showDetails) {
+      return null;
+    }
 
     return (
       <details className="mt-4 text-sm">

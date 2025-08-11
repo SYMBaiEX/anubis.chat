@@ -20,7 +20,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -60,7 +59,9 @@ export function AgentManagement() {
   };
 
   const handleSaveAgent = async () => {
-    if (!editingAgent) return;
+    if (!editingAgent) {
+      return;
+    }
 
     try {
       await updateAgent({
@@ -76,9 +77,9 @@ export function AgentManagement() {
 
       setIsDialogOpen(false);
       setEditingAgent(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
-        error?.message || 'Failed to update agent. Please try again.'
+        error instanceof Error ? error.message : 'Failed to update agent. Please try again.'
       );
     }
   };

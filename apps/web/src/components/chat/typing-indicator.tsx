@@ -15,7 +15,9 @@ export function TypingIndicator({
   className,
   children,
 }: TypingIndicatorProps) {
-  if (!isTyping) return null;
+  if (!isTyping) {
+    return null;
+  }
 
   return (
     <div className={cn('flex gap-3 py-4', className)}>

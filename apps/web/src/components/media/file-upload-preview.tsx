@@ -64,29 +64,42 @@ const fileTypeIcons: Record<string, React.ComponentType<any>> = {
 };
 
 const getFileIcon = (type: string) => {
-  if (type.startsWith('image/')) return fileTypeIcons.image;
-  if (type.startsWith('video/')) return fileTypeIcons.video;
-  if (type.startsWith('audio/')) return fileTypeIcons.audio;
-  if (type.startsWith('text/')) return fileTypeIcons.text;
-  if (type.includes('zip') || type.includes('rar') || type.includes('tar'))
+  if (type.startsWith('image/')) {
+    return fileTypeIcons.image;
+  }
+  if (type.startsWith('video/')) {
+    return fileTypeIcons.video;
+  }
+  if (type.startsWith('audio/')) {
+    return fileTypeIcons.audio;
+  }
+  if (type.startsWith('text/')) {
+    return fileTypeIcons.text;
+  }
+  if (type.includes('zip') || type.includes('rar') || type.includes('tar')) {
     return fileTypeIcons.archive;
-  if (type.includes('sheet') || type.includes('excel'))
+  }
+  if (type.includes('sheet') || type.includes('excel')) {
     return fileTypeIcons.spreadsheet;
+  }
   if (
     type.includes('javascript') ||
     type.includes('typescript') ||
     type.includes('python')
-  )
+  ) {
     return fileTypeIcons.code;
+  }
   return fileTypeIcons.default;
 };
 
 const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / k ** i) * 100) / 100 + ' ' + sizes[i];
+  return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
 };
 
 export function FileUploadPreview({
@@ -113,13 +126,16 @@ export function FileUploadPreview({
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
 
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    handleFiles(droppedFiles);
-  }, []);
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      handleFiles(droppedFiles);
+    },
+    [handleFiles]
+  );
 
   const handleFiles = (newFiles: File[]) => {
     // Validate file count

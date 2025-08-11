@@ -17,8 +17,6 @@ import {
 import { useCallback, useRef, useState } from 'react';
 import '@xyflow/react/dist/style.css';
 import {
-  Bot,
-  Copy,
   Download,
   Play,
   Redo,
@@ -33,13 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import CustomNode from './CustomNode';
 import WorkflowSidebar from './WorkflowSidebar';
-import type {
-  NodeType,
-  WorkflowEdge as WorkflowEdgeType,
-  WorkflowNodeData,
-  WorkflowNode as WorkflowNodeType,
-  WorkflowTemplate,
-} from './workflow-types';
+import type { WorkflowNodeData, WorkflowTemplate } from './workflow-types';
 
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
@@ -68,7 +60,7 @@ function WorkflowCanvasContent({
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [_selectedNode, setSelectedNode] = useState<Node | null>(null);
   const { getIntersectingNodes, fitView } = useReactFlow();
   const [history, setHistory] = useState<WorkflowHistory[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -84,7 +76,7 @@ function WorkflowCanvasContent({
       setEdges((eds) => addEdge(newEdge, eds));
       saveToHistory();
     },
-    [setEdges]
+    [setEdges, saveToHistory]
   );
 
   // Save state to history for undo/redo
@@ -126,13 +118,17 @@ function WorkflowCanvasContent({
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      if (!reactFlowWrapper.current) return;
+      if (!reactFlowWrapper.current) {
+        return;
+      }
 
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       const type = event.dataTransfer.getData('application/reactflow');
       const nodeDataString = event.dataTransfer.getData('nodeData');
 
-      if (!(type && nodeDataString)) return;
+      if (!(type && nodeDataString)) {
+        return;
+      }
 
       const nodeData = JSON.parse(nodeDataString) as WorkflowNodeData;
 
@@ -155,12 +151,12 @@ function WorkflowCanvasContent({
   );
 
   // Handle node selection
-  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
   }, []);
 
   // Delete selected elements
-  const handleDelete = useCallback(() => {
+  const _handleDelete = useCallback(() => {
     setNodes((nds) => nds.filter((n) => !n.selected));
     setEdges((eds) => eds.filter((e) => !e.selected));
     saveToHistory();
@@ -320,13 +316,17 @@ function WorkflowCanvasContent({
     input.onchange = (e: Event) => {
       const target = e.target as HTMLInputElement;
       const file = target.files?.[0];
-      if (!file) return;
+      if (!file) {
+        return;
+      }
 
       const reader = new FileReader();
       reader.onload = (event: ProgressEvent<FileReader>) => {
         try {
           const result = event.target?.result;
-          if (typeof result !== 'string') return;
+          if (typeof result !== 'string') {
+            return;
+          }
 
           const workflow = JSON.parse(result);
           setNodes(workflow.nodes || []);
@@ -334,7 +334,7 @@ function WorkflowCanvasContent({
           saveToHistory();
           toast.success('Workflow imported successfully');
           setTimeout(() => fitView(), 100);
-        } catch (error) {
+        } catch (_error) {
           toast.error('Failed to import workflow');
         }
       };

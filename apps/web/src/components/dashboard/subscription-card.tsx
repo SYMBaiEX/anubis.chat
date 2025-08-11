@@ -49,7 +49,9 @@ function formatTierLabel(tier?: string): string {
 export function SubscriptionCard() {
   const subscription = useSubscriptionStatus();
 
-  if (!subscription) return null;
+  if (!subscription) {
+    return null;
+  }
 
   return (
     <Card className="p-3 transition-colors hover:ring-1 hover:ring-primary/20 sm:p-4 md:p-5">

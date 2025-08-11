@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowRight, Crown, Shield, X, Zap } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -64,7 +64,9 @@ export function UpgradePrompt({
   const [showModal, setShowModal] = useState(false);
   const { openUpgradeModal } = useUpgrade();
 
-  if (!prompt.shouldShow) return null;
+  if (!prompt.shouldShow) {
+    return null;
+  }
 
   const suggestedTier = prompt.suggestedTier;
   const tierDetails = suggestedTier ? TIER_DETAILS[suggestedTier] : null;

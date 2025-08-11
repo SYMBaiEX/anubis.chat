@@ -4,7 +4,6 @@
  * Strict TypeScript - No any, unknown, or void types allowed
  */
 
-import type { z } from 'zod';
 import type { Result } from './result';
 
 // =============================================================================

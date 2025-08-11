@@ -383,7 +383,9 @@ export const batchDelete = mutation({
           )
           .filter((q) => q.eq(q.field('fileId'), fileId))
           .first();
-        if (!vectorStoreFile) return false;
+        if (!vectorStoreFile) {
+          return false;
+        }
         await ctx.db.delete(vectorStoreFile._id);
         // Update counts based on status
         fileCounts.total = Math.max(0, fileCounts.total - 1);

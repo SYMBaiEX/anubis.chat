@@ -13,12 +13,10 @@ import { useMutation, useQuery } from 'convex/react';
 import {
   AlertCircle,
   Check,
-  Crown,
   ExternalLink,
   Loader,
   Shield,
   Wallet,
-  X,
   Zap,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -120,7 +118,7 @@ export function UpgradeModal({
 
   // User data comes from useSubscription hook
   const { subscription, upgradePrompt } = useSubscription();
-  const processPayment = useMutation(api.subscriptions.processPayment);
+  const _processPayment = useMutation(api.subscriptions.processPayment);
   const checkPaymentStatus = useQuery(
     api.subscriptions.checkPaymentStatus,
     paymentDetails.txSignature

@@ -196,7 +196,7 @@ export function useWebSocket(
       if (!handlersRef.current.has(event)) {
         handlersRef.current.set(event, new Set());
       }
-      handlersRef.current.get(event)!.add(handler);
+      handlersRef.current.get(event)?.add(handler);
 
       // Add listener to socket
       if (socketRef.current) {
@@ -213,7 +213,9 @@ export function useWebSocket(
    */
   const off = useCallback(
     (event: WebSocketEvent, handler?: (data: unknown) => void) => {
-      if (!socketRef.current) return;
+      if (!socketRef.current) {
+        return;
+      }
 
       if (handler) {
         // Remove specific handler
@@ -267,13 +269,13 @@ export function useWebSocket(
   // Re-attach handlers when socket reconnects
   useEffect(() => {
     if (isConnected && socketRef.current) {
-      handlersRef.current.forEach((handlers, event) => {
-        handlers.forEach((handler) => {
-          socketRef.current!.on(event, (message: WebSocketMessage) => {
+      for (const [event, handlers] of handlersRef.current) {
+        for (const handler of handlers) {
+          socketRef.current?.on(event, (message: WebSocketMessage) => {
             handler(message.data);
           });
-        });
-      });
+        }
+      }
     }
   }, [isConnected]);
 
@@ -307,7 +309,9 @@ export function useAgentExecution(agentId?: string) {
   const [isExecuting, setIsExecuting] = useState(false);
 
   useEffect(() => {
-    if (!ws.isConnected) return;
+    if (!ws.isConnected) {
+      return;
+    }
 
     const handleStarted = (data: unknown) => {
       const executionData = data as AgentExecutionData;
@@ -426,7 +430,9 @@ export function useMemoryUpdates() {
   const [memoryUpdates, setMemoryUpdates] = useState<MemoryUpdate[]>([]);
 
   useEffect(() => {
-    if (!ws.isConnected) return;
+    if (!ws.isConnected) {
+      return;
+    }
 
     const handleCreated = (data: unknown) => {
       const memoryData = data as MemoryEventData;
@@ -508,7 +514,9 @@ export function useConversationUpdates(conversationId?: string) {
     useState<ConversationMessage | null>(null);
 
   useEffect(() => {
-    if (!ws.isConnected) return;
+    if (!ws.isConnected) {
+      return;
+    }
 
     const handleMessage = (data: unknown) => {
       const conversationData = data as ConversationEventData;

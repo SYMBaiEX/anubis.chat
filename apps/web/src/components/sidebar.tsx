@@ -9,8 +9,6 @@ import {
   Menu,
   Moon,
   Settings,
-  Shield,
-  Sparkles,
   Sun,
   User,
   Wallet,
@@ -107,7 +105,7 @@ export default function Sidebar() {
   // Close mobile sidebar on route change
   useEffect(() => {
     setIsMobileOpen(false);
-  }, [pathname]);
+  }, []);
 
   // Handle escape key
   useEffect(() => {
@@ -137,6 +135,7 @@ export default function Sidebar() {
         aria-label="Toggle menu"
         className="button-press fixed top-3 right-3 z-50 rounded-md border border-sidebar-border bg-sidebar-background/90 p-1.5 shadow-sm backdrop-blur lg:hidden"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
+        type="button"
       >
         {isMobileOpen ? (
           <X className="h-4 w-4" />
@@ -184,6 +183,7 @@ export default function Sidebar() {
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               className="hidden rounded p-0.5 transition-colors hover:bg-sidebar-accent lg:block"
               onClick={toggleCollapsed}
+              type="button"
             >
               {isCollapsed ? (
                 <ChevronRight className="h-3 w-3" />
@@ -288,11 +288,10 @@ export default function Sidebar() {
                 if (isAuthenticated) {
                   try {
                     await updateUserPreferences({ theme: newTheme });
-                  } catch (error) {
-                    console.error('Failed to update theme preference:', error);
-                  }
+                  } catch (_error) {}
                 }
               }}
+              type="button"
             >
               {mounted ? (
                 theme === 'dark' ? (

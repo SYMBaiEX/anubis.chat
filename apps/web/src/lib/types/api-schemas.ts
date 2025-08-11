@@ -17,7 +17,6 @@ import {
   Theme,
   WebhookEventType,
 } from './api';
-import type { JsonObject, JsonValue } from './mcp';
 
 // =============================================================================
 // Common Schemas

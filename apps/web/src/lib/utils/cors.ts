@@ -95,12 +95,12 @@ export function addCorsHeaders(
 
   response.headers.set(
     'Access-Control-Allow-Methods',
-    corsOptions.methods?.join(', ') ?? DEFAULT_CORS_OPTIONS.methods!.join(', ')
+    corsOptions.methods?.join(', ') ?? DEFAULT_CORS_OPTIONS.methods?.join(', ')
   );
 
   response.headers.set(
     'Access-Control-Allow-Headers',
-    corsOptions.headers?.join(', ') ?? DEFAULT_CORS_OPTIONS.headers!.join(', ')
+    corsOptions.headers?.join(', ') ?? DEFAULT_CORS_OPTIONS.headers?.join(', ')
   );
 
   if (corsOptions.credentials) {
@@ -182,10 +182,10 @@ export function getStreamingHeaders(
     headers['Access-Control-Allow-Origin'] = allowedOrigin;
     headers['Access-Control-Allow-Methods'] =
       corsOptions.methods?.join(', ') ??
-      DEFAULT_CORS_OPTIONS.methods!.join(', ');
+      DEFAULT_CORS_OPTIONS.methods?.join(', ');
     headers['Access-Control-Allow-Headers'] =
       corsOptions.headers?.join(', ') ??
-      DEFAULT_CORS_OPTIONS.headers!.join(', ');
+      DEFAULT_CORS_OPTIONS.headers?.join(', ');
 
     if (corsOptions.credentials) {
       headers['Access-Control-Allow-Credentials'] = 'true';
@@ -213,7 +213,7 @@ export function withCors<T extends any[]>(
     try {
       const response = await handler(...args);
       return addSecurityHeaders(response, origin, corsOptions);
-    } catch (error) {
+    } catch (_error) {
       // Create error response with proper CORS headers
       const errorResponse = NextResponse.json(
         { error: 'Internal Server Error' },

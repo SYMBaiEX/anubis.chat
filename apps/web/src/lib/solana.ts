@@ -17,7 +17,6 @@ const getNetwork = (): WalletAdapterNetwork => {
       return WalletAdapterNetwork.Mainnet;
     case 'testnet':
       return WalletAdapterNetwork.Testnet;
-    case 'devnet':
     default:
       return WalletAdapterNetwork.Devnet;
   }
@@ -54,9 +53,15 @@ export const formatSolanaAddress = (
   address: string | null | undefined,
   length = 4
 ): string => {
-  if (!address) return '';
-  if (address.length <= length * 2 + 3) return address;
-  if (length === 0) return '...';
+  if (!address) {
+    return '';
+  }
+  if (address.length <= length * 2 + 3) {
+    return address;
+  }
+  if (length === 0) {
+    return '...';
+  }
   return `${address.slice(0, length)}...${address.slice(-length)}`;
 };
 
@@ -64,7 +69,9 @@ export const formatSolanaAddress = (
 export const validateSolanaAddress = (
   address: string | null | undefined
 ): boolean => {
-  if (!address) return false;
+  if (!address) {
+    return false;
+  }
   try {
     new PublicKey(address);
     return true;
@@ -138,7 +145,7 @@ export const checkTransactionStatus = async (
   try {
     const status = await connection.getSignatureStatus(signature);
 
-    if (!(status && status.value)) {
+    if (!status?.value) {
       return { confirmed: false };
     }
 
@@ -152,7 +159,6 @@ export const checkTransactionStatus = async (
 
     return { confirmed: isConfirmed };
   } catch (error) {
-    console.error('Error checking transaction status:', error);
     return {
       confirmed: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -227,7 +233,7 @@ export const processPaymentTransaction = async (
     // Get the transaction signature BEFORE signing (for idempotency tracking)
     // This is the fee payer's signature which uniquely identifies the transaction
     const transactionMessage = transaction.compileMessage();
-    const messageHash = transactionMessage.serialize();
+    const _messageHash = transactionMessage.serialize();
 
     // Sign the transaction
     const signedTransaction = await signTransaction(transaction);
@@ -244,9 +250,6 @@ export const processPaymentTransaction = async (
       signedTransaction.serialize(),
       sendOptions
     );
-
-    // The sentSignature is the actual transaction ID we should use
-    console.log('Transaction sent with signature:', sentSignature);
 
     // Use stored confirmation metadata if available
     const meta = transactionMetaMap.get(transaction);
@@ -302,10 +305,6 @@ export const processPaymentTransaction = async (
         'Transaction simulation failed: This transaction has already been processed'
       )
     ) {
-      // This is actually a success case - the transaction was already processed
-      // We should check if it was successful
-      console.warn('Transaction appears to be duplicate, checking status...');
-
       // Try to get the transaction signature from the error or the transaction
       const sig = transaction.signatures[0]?.toString();
       if (sig) {
@@ -314,8 +313,6 @@ export const processPaymentTransaction = async (
           status?.value?.confirmationStatus === 'confirmed' ||
           status?.value?.confirmationStatus === 'finalized'
         ) {
-          // Transaction was already successful
-          console.log('Duplicate transaction was already successful:', sig);
           return sig;
         }
       }

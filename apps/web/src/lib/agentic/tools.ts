@@ -54,7 +54,7 @@ export const calculatorTool: AgentTool<{ expression: string }> = {
   }),
   async execute(
     params: { expression: string },
-    context: AgentContext
+    _context: AgentContext
   ): Promise<ToolResult> {
     const startTime = Date.now();
 
@@ -113,7 +113,7 @@ export const textAnalyzerTool: AgentTool<{
   }),
   async execute(
     params: { text: string; analysisTypes: string[] },
-    context: AgentContext
+    _context: AgentContext
   ): Promise<ToolResult> {
     const startTime = Date.now();
 
@@ -225,7 +225,7 @@ export const timestampTool: AgentTool<TimestampParams> = {
   }),
   async execute(
     params: TimestampParams,
-    context: AgentContext
+    _context: AgentContext
   ): Promise<ToolResult> {
     const startTime = Date.now();
 
@@ -250,8 +250,9 @@ export const timestampTool: AgentTool<TimestampParams> = {
           break;
 
         case 'convert': {
-          if (!params.timestamp)
+          if (!params.timestamp) {
             throw new Error('Timestamp required for conversion');
+          }
           const date = new Date(params.timestamp);
           result = {
             unix: params.timestamp,
@@ -263,8 +264,9 @@ export const timestampTool: AgentTool<TimestampParams> = {
         }
 
         case 'format':
-          if (!params.timestamp)
+          if (!params.timestamp) {
             throw new Error('Timestamp required for formatting');
+          }
           result = formatTimestamp(
             params.timestamp,
             params.format,
@@ -323,7 +325,7 @@ export const webSearchTool: AgentTool<{
   }),
   async execute(
     params: { query: string; limit: number; type: string },
-    context: AgentContext
+    _context: AgentContext
   ): Promise<ToolResult> {
     const startTime = Date.now();
 
@@ -454,7 +456,7 @@ export const chatCompletionTool: AgentTool<ChatCompletionParams> = {
   }),
   async execute(
     params: ChatCompletionParams,
-    context: AgentContext
+    _context: AgentContext
   ): Promise<ToolResult> {
     const startTime = Date.now();
 
@@ -574,12 +576,12 @@ function evaluateMathExpression(expression: string): number {
     // Use Function constructor for evaluation (more secure than eval)
     const result = new Function(`return ${expression}`)();
 
-    if (typeof result !== 'number' || !isFinite(result)) {
+    if (typeof result !== 'number' || !Number.isFinite(result)) {
       throw new Error('Expression did not evaluate to a valid number');
     }
 
     return result;
-  } catch (error) {
+  } catch (_error) {
     throw new Error(`Cannot evaluate expression: ${expression}`);
   }
 }
@@ -615,14 +617,21 @@ function analyzeSentiment(text: string): {
   let negativeCount = 0;
 
   for (const word of words) {
-    if (positiveWords.includes(word)) positiveCount++;
-    if (negativeWords.includes(word)) negativeCount++;
+    if (positiveWords.includes(word)) {
+      positiveCount++;
+    }
+    if (negativeWords.includes(word)) {
+      negativeCount++;
+    }
   }
 
   const score = (positiveCount - negativeCount) / words.length;
   let label = 'neutral';
-  if (score > 0.1) label = 'positive';
-  else if (score < -0.1) label = 'negative';
+  if (score > 0.1) {
+    label = 'positive';
+  } else if (score < -0.1) {
+    label = 'negative';
+  }
 
   return {
     score,
@@ -644,12 +653,19 @@ function calculateReadability(text: string): { level: string; score: number } {
     206.835 - 1.015 * (words / sentences) - 84.6 * (syllables / words);
 
   let level = 'Graduate';
-  if (score >= 90) level = 'Very Easy';
-  else if (score >= 80) level = 'Easy';
-  else if (score >= 70) level = 'Fairly Easy';
-  else if (score >= 60) level = 'Standard';
-  else if (score >= 50) level = 'Fairly Difficult';
-  else if (score >= 30) level = 'Difficult';
+  if (score >= 90) {
+    level = 'Very Easy';
+  } else if (score >= 80) {
+    level = 'Easy';
+  } else if (score >= 70) {
+    level = 'Fairly Easy';
+  } else if (score >= 60) {
+    level = 'Standard';
+  } else if (score >= 50) {
+    level = 'Fairly Difficult';
+  } else if (score >= 30) {
+    level = 'Difficult';
+  }
 
   return { level, score };
 }
@@ -693,7 +709,9 @@ function detectLanguage(text: string): {
 
   let englishMatches = 0;
   for (const word of words) {
-    if (commonEnglishWords.includes(word)) englishMatches++;
+    if (commonEnglishWords.includes(word)) {
+      englishMatches++;
+    }
   }
 
   const confidence = Math.min((englishMatches / words.length) * 5, 1);
@@ -703,7 +721,7 @@ function detectLanguage(text: string): {
 function formatTimestamp(
   timestamp: number,
   format?: string,
-  timezone?: string
+  _timezone?: string
 ): string | { iso: string; utc: string; local: string; unix: number } {
   const date = new Date(timestamp);
 
@@ -776,7 +794,7 @@ type DocumentOperationResult =
 
 async function mockDocumentOperation(
   params: DocumentRetrievalParams,
-  walletAddress: string
+  _walletAddress: string
 ): Promise<DocumentOperationResult> {
   // Mock document operations - integrate with actual document storage
   switch (params.operation) {

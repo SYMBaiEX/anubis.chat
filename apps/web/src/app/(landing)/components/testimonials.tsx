@@ -1,9 +1,8 @@
 'use client';
 
 import { Star } from 'lucide-react';
-import React, { memo } from 'react';
+import { memo } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
-import { Card } from '@/components/ui/card';
 
 const testimonials = [
   {
@@ -55,7 +54,7 @@ function Testimonials() {
                 {Array.from({ length: t.rating }).map((_, i) => (
                   <Star
                     className="h-4 w-4 fill-egypt-gold text-egypt-gold"
-                    key={i}
+                    key={`${t.name}-star-${i}`}
                   />
                 ))}
               </div>

@@ -13,7 +13,7 @@ import { useWallet } from '@/hooks/useWallet';
 import type { AuthSession, User } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';
 
-const log = createModuleLogger('auth-provider');
+const _log = createModuleLogger('auth-provider');
 
 interface AuthContextValue {
   // Auth state
@@ -61,7 +61,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const normalizedSubscription = useMemo((): SubscriptionStatus | null => {
-    if (!subscription) return null;
+    if (!subscription) {
+      return null;
+    }
     const allowedTiers = ['free', 'pro', 'pro_plus', 'admin'] as const;
     const tier = (allowedTiers as readonly string[]).includes(subscription.tier)
       ? (subscription.tier as (typeof allowedTiers)[number])
@@ -100,7 +102,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Calculate subscription limits
   const limits = useMemo((): SubscriptionLimits | null => {
-    if (!normalizedSubscription) return null;
+    if (!normalizedSubscription) {
+      return null;
+    }
 
     const messagesRemaining = Math.max(
       0,
@@ -265,7 +269,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       normalizedSubscription,
       limits,
       upgradePrompt,
-      refreshSubscription,
     ]
   );
 

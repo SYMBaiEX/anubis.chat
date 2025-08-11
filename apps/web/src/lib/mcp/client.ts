@@ -10,10 +10,8 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 // We'll store MCP tool definitions, not AI SDK tools
 import type {
-  CallToolRequest,
   CallToolResult,
   ListToolsResult,
-  Tool as MCPServerTool,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import type { MCPTransportConfig as MCPTransportConfigType } from '@/lib/types/mcp';

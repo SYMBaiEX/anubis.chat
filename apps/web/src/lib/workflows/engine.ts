@@ -6,8 +6,18 @@
 import type { tool } from 'ai';
 import PQueue from 'p-queue';
 import { v4 as uuidv4 } from 'uuid';
-import { z } from 'zod';
-import type { Agent, AgentResult, AgentTask } from '@/lib/agents/core';
+import type { Agent, AgentTask } from '@/lib/agents/core';
+
+// Workflow data types
+export type WorkflowValue =
+  | string
+  | number
+  | boolean
+  | null
+  | WorkflowValue[]
+  | { [key: string]: WorkflowValue };
+export type WorkflowVariables = Record<string, WorkflowValue>;
+export type WorkflowMetadata = Record<string, WorkflowValue>;
 
 // Workflow Node Types
 export type NodeType =
@@ -118,22 +128,22 @@ export interface WorkflowDefinition {
   version: string;
   nodes: WorkflowNode[];
   edges: Array<{ from: string; to: string; condition?: string }>;
-  variables?: Record<string, any>;
+  variables?: WorkflowVariables;
   timeout?: number;
-  metadata?: Record<string, any>;
+  metadata?: WorkflowMetadata;
 }
 
 // Workflow Context
 export interface WorkflowContext {
   workflowId: string;
   executionId: string;
-  variables: Record<string, any>;
-  results: Map<string, any>;
+  variables: WorkflowVariables;
+  results: Map<string, WorkflowValue>;
   errors: Map<string, Error>;
   currentNode?: string;
   history: string[];
   startTime: number;
-  metadata?: Record<string, any>;
+  metadata?: WorkflowMetadata;
 }
 
 // Workflow Execution State
@@ -150,11 +160,11 @@ export interface WorkflowExecutionResult {
   executionId: string;
   workflowId: string;
   state: WorkflowState;
-  results: Record<string, any>;
+  results: Record<string, WorkflowValue>;
   errors?: Record<string, string>;
   duration: number;
   nodesExecuted: string[];
-  metadata?: Record<string, any>;
+  metadata?: WorkflowMetadata;
 }
 
 // Workflow Engine
@@ -162,7 +172,6 @@ export class WorkflowEngine {
   private workflows: Map<string, WorkflowDefinition> = new Map();
   private executions: Map<string, WorkflowContext> = new Map();
   private agents: Map<string, Agent> = new Map();
-  private executionQueue: PQueue;
   private nodeExecutors: Map<NodeType, NodeExecutor> = new Map();
 
   constructor() {
@@ -200,7 +209,7 @@ export class WorkflowEngine {
    */
   async executeWorkflow(
     workflowId: string,
-    inputs?: Record<string, any>
+    inputs?: WorkflowVariables
   ): Promise<WorkflowExecutionResult> {
     const workflow = this.workflows.get(workflowId);
     if (!workflow) {
@@ -240,7 +249,7 @@ export class WorkflowEngine {
         nodesExecuted: context.history,
         metadata: context.metadata,
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         executionId,
         workflowId,
@@ -321,7 +330,7 @@ export class WorkflowEngine {
       return; // Workflow complete
     }
 
-    const nextNodes = await this.determineNextNodes(node, context, workflow);
+    const nextNodes = this.determineNextNodes(node, context, workflow);
     for (const nextNodeId of nextNodes) {
       const nextNode = workflow.nodes.find((n) => n.id === nextNodeId);
       if (nextNode) {
@@ -333,11 +342,11 @@ export class WorkflowEngine {
   /**
    * Determine next nodes to execute
    */
-  private async determineNextNodes(
+  private determineNextNodes(
     node: WorkflowNode,
-    context: WorkflowContext,
+    _context: WorkflowContext,
     workflow: WorkflowDefinition
-  ): Promise<string[]> {
+  ): string[] {
     if (!node.next) {
       // Find edges from this node
       const edges = workflow.edges.filter((e) => e.from === node.id);
@@ -354,7 +363,7 @@ export class WorkflowEngine {
   /**
    * Pause a workflow execution
    */
-  async pauseExecution(executionId: string): Promise<void> {
+  pauseExecution(executionId: string): void {
     const context = this.executions.get(executionId);
     if (context) {
       // Implementation for pausing
@@ -365,7 +374,7 @@ export class WorkflowEngine {
   /**
    * Resume a workflow execution
    */
-  async resumeExecution(executionId: string): Promise<void> {
+  async resumeExecution(_executionId: string): Promise<void> {
     // Implementation for resuming
     // This would require loading from persistent storage
   }
@@ -373,7 +382,7 @@ export class WorkflowEngine {
   /**
    * Cancel a workflow execution
    */
-  async cancelExecution(executionId: string): Promise<void> {
+  cancelExecution(executionId: string): void {
     const context = this.executions.get(executionId);
     if (context) {
       this.executions.delete(executionId);
@@ -432,7 +441,7 @@ class ConditionNodeExecutor extends NodeExecutor {
   async execute(
     node: WorkflowNode,
     context: WorkflowContext,
-    agents: Map<string, Agent>
+    _agents: Map<string, Agent>
   ): Promise<void> {
     const config = node.config as ConditionNodeConfig;
     if (!config) {
@@ -478,7 +487,7 @@ class ParallelNodeExecutor extends NodeExecutor {
   async execute(
     node: WorkflowNode,
     context: WorkflowContext,
-    agents: Map<string, Agent>
+    _agents: Map<string, Agent>
   ): Promise<void> {
     const config = node.config as ParallelNodeConfig;
     if (!config) {
@@ -516,7 +525,7 @@ class LoopNodeExecutor extends NodeExecutor {
   async execute(
     node: WorkflowNode,
     context: WorkflowContext,
-    agents: Map<string, Agent>
+    _agents: Map<string, Agent>
   ): Promise<void> {
     const config = node.config as LoopNodeConfig;
     if (!config) {
@@ -547,7 +556,7 @@ class SubworkflowNodeExecutor extends NodeExecutor {
   async execute(
     node: WorkflowNode,
     context: WorkflowContext,
-    agents: Map<string, Agent>
+    _agents: Map<string, Agent>
   ): Promise<void> {
     // For subworkflow nodes, config should contain workflowId and inputs
     const config = node.config as {
@@ -592,7 +601,7 @@ export class WorkflowBuilder {
     return this;
   }
 
-  setVariables(variables: Record<string, any>): WorkflowBuilder {
+  setVariables(variables: WorkflowVariables): WorkflowBuilder {
     this.workflow.variables = variables;
     return this;
   }

@@ -1,17 +1,15 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   CheckCircle,
   Copy,
   Download,
   Edit3,
   Flag,
-  MessageSquare,
   MoreVertical,
   RotateCw,
   Share2,
-  Sparkles,
   ThumbsDown,
   ThumbsUp,
   Trash2,
@@ -69,9 +67,11 @@ export function MessageActions({
       await navigator.clipboard.writeText(content);
       setCopied(true);
       toast.success('Copied to clipboard');
-      if (onCopy) onCopy(content);
+      if (onCopy) {
+        onCopy(content);
+      }
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to copy');
     }
   };

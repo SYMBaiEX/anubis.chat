@@ -3,9 +3,8 @@
  * Handles real-time communication for agent execution, workflows, and memory updates
  */
 
-import type { Server as HTTPServer } from 'http';
+import type { Server as HTTPServer } from 'node:http';
 import { type Socket, Server as SocketIOServer } from 'socket.io';
-import { z } from 'zod';
 import type {
   AgentExecutionResult,
   AgentStep,
@@ -129,7 +128,9 @@ export class WebSocketManager {
    * Setup WebSocket event handlers
    */
   private setupEventHandlers(): void {
-    if (!this.io) return;
+    if (!this.io) {
+      return;
+    }
 
     this.io.on('connection', (socket: Socket) => {
       log.info('New WebSocket connection', {
@@ -266,7 +267,9 @@ export class WebSocketManager {
     event: WebSocketEvent,
     data: JsonValue
   ): void {
-    if (!this.io) return;
+    if (!this.io) {
+      return;
+    }
 
     const message: WebSocketMessage = {
       type: event,
@@ -281,7 +284,9 @@ export class WebSocketManager {
    * Emit event to all subscribers of an event type
    */
   emitToEventSubscribers(event: WebSocketEvent, data: JsonValue): void {
-    if (!this.io) return;
+    if (!this.io) {
+      return;
+    }
 
     const message: WebSocketMessage = {
       type: event,
@@ -296,7 +301,9 @@ export class WebSocketManager {
    * Broadcast event to all connected users
    */
   broadcast(event: WebSocketEvent, data: JsonValue): void {
-    if (!this.io) return;
+    if (!this.io) {
+      return;
+    }
 
     const message: WebSocketMessage = {
       type: event,

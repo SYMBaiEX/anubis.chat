@@ -138,7 +138,9 @@ class AuthCache {
       data = this.get();
     }
 
-    if (!data) return true;
+    if (!data) {
+      return true;
+    }
 
     const now = Date.now();
     const timeUntilExpiry = data.expiresAt - now;
@@ -152,7 +154,9 @@ class AuthCache {
    */
   update(updates: Partial<AuthCacheData>, options: CacheOptions = {}): void {
     const current = this.get();
-    if (!current) return;
+    if (!current) {
+      return;
+    }
 
     const updated = {
       ...current,
@@ -169,11 +173,15 @@ class AuthCache {
   async validateToken(token: string): Promise<boolean> {
     try {
       // Quick validation - check if token exists and has proper format
-      if (!token || typeof token !== 'string') return false;
+      if (!token || typeof token !== 'string') {
+        return false;
+      }
 
       // Check if it's a JWT token
       const parts = token.split('.');
-      if (parts.length !== 3) return false;
+      if (parts.length !== 3) {
+        return false;
+      }
 
       // Decode and check expiration
       try {
@@ -195,7 +203,9 @@ class AuthCache {
   // Private methods
 
   private isValid(data: AuthCacheData): boolean {
-    if (!data) return false;
+    if (!data) {
+      return false;
+    }
 
     // Check expiration
     if (data.expiresAt && data.expiresAt < Date.now()) {
@@ -221,11 +231,15 @@ class AuthCache {
   }
 
   private getFromSession(): AuthCacheData | null {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') {
+      return null;
+    }
 
     try {
       const data = sessionStorage.getItem(this.CACHE_KEY);
-      if (!data) return null;
+      if (!data) {
+        return null;
+      }
       return JSON.parse(data);
     } catch (error) {
       log.error('Failed to parse session cache', error);
@@ -234,11 +248,15 @@ class AuthCache {
   }
 
   private getFromLocal(): AuthCacheData | null {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') {
+      return null;
+    }
 
     try {
       const data = localStorage.getItem(this.CACHE_KEY);
-      if (!data) return null;
+      if (!data) {
+        return null;
+      }
 
       const parsed = JSON.parse(data);
 
@@ -260,7 +278,9 @@ class AuthCache {
   }
 
   private setToSession(data: AuthCacheData, encrypt = false): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     try {
       const toStore = encrypt ? this.encrypt(data) : JSON.stringify(data);
@@ -271,7 +291,9 @@ class AuthCache {
   }
 
   private setToLocal(data: AuthCacheData, encrypt = false): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     try {
       // Don't store sensitive data in local storage
@@ -293,11 +315,6 @@ class AuthCache {
   private encrypt(data: AuthCacheData): string {
     // Simple obfuscation - in production, use proper encryption
     return btoa(JSON.stringify(data));
-  }
-
-  private decrypt(data: string): AuthCacheData {
-    // Simple deobfuscation - in production, use proper decryption
-    return JSON.parse(atob(data));
   }
 }
 

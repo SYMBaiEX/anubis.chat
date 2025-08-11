@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { formatSpeechText } from '@/lib/utils/speech-formatter';
+import { formatSpeechText } from '@/lib/utils/speechFormatter';
 
 const log = createModuleLogger('speech-recognition');
 
@@ -151,12 +151,12 @@ export function useSpeechRecognition({
       if (recognitionRef.current && isListening) {
         try {
           recognitionRef.current.abort();
-        } catch (e) {
+        } catch (_e) {
           // Ignore errors during cleanup
         }
       }
     };
-  }, []); // Empty deps - only run once
+  }, [continuous, interimResults, isListening, language]); // Empty deps - only run once
 
   // Update recognition settings when props change
   useEffect(() => {
@@ -189,7 +189,7 @@ export function useSpeechRecognition({
       log.info('Started speech recognition');
     } catch (error: any) {
       // If it's already started, that's ok
-      if (error.message && error.message.includes('already started')) {
+      if (error.message?.includes('already started')) {
         setIsListening(true);
         log.info('Speech recognition already started');
       } else {
@@ -215,7 +215,7 @@ export function useSpeechRecognition({
         // Fallback to abort() for immediate cancellation if stop() fails
         try {
           recognitionRef.current.abort();
-        } catch (e) {
+        } catch (_e) {
           // Ignore
         }
         setIsListening(false);

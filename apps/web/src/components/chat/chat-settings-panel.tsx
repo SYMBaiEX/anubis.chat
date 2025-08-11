@@ -4,20 +4,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Brain,
   ChevronLeft,
-  Database,
-  Globe,
-  Info,
-  Key,
   Monitor,
   Moon,
   Palette,
-  RefreshCw,
   RotateCcw,
   Save,
   Settings,
-  Shield,
   Sun,
-  Volume2,
   Zap,
 } from 'lucide-react';
 import { useState } from 'react';

@@ -5,7 +5,7 @@ import { useQuery } from 'convex/react';
 import { useCallback } from 'react';
 import { createModuleLogger } from '@/lib/utils/logger';
 
-const log = createModuleLogger('payment-monitoring');
+const _log = createModuleLogger('payment-monitoring');
 
 export interface PaymentMetrics {
   timeframe: '1h' | '24h' | '7d' | '30d';
@@ -97,7 +97,9 @@ export function usePaymentMonitoring() {
   // Helper function to format metrics for display
   const formatMetrics = useCallback(
     (metrics: PaymentMetrics | undefined): string => {
-      if (!metrics) return 'Loading...';
+      if (!metrics) {
+        return 'Loading...';
+      }
 
       const { successRate, avgProcessingTime, metrics: data } = metrics;
       return `Success Rate: ${successRate}% | Avg Time: ${avgProcessingTime}ms | Total: ${data.totalEvents}`;
@@ -121,8 +123,12 @@ export function usePaymentMonitoring() {
 
   // Helper function to format processing time
   const formatProcessingTime = useCallback((timeMs: number): string => {
-    if (timeMs < 1000) return `${timeMs}ms`;
-    if (timeMs < 60_000) return `${(timeMs / 1000).toFixed(1)}s`;
+    if (timeMs < 1000) {
+      return `${timeMs}ms`;
+    }
+    if (timeMs < 60_000) {
+      return `${(timeMs / 1000).toFixed(1)}s`;
+    }
     return `${(timeMs / 60_000).toFixed(1)}m`;
   }, []);
 
@@ -177,10 +183,18 @@ export function usePaymentAdminMonitoring() {
 
   // Overall system status
   const overallStatus = useCallback(() => {
-    if (!systemHealth) return 'loading';
-    if (systemHealth.status === 'critical') return 'critical';
-    if (systemHealth.status === 'warning' || hasRecentErrors) return 'warning';
-    if (successRate >= 95) return 'healthy';
+    if (!systemHealth) {
+      return 'loading';
+    }
+    if (systemHealth.status === 'critical') {
+      return 'critical';
+    }
+    if (systemHealth.status === 'warning' || hasRecentErrors) {
+      return 'warning';
+    }
+    if (successRate >= 95) {
+      return 'healthy';
+    }
     return 'warning';
   }, [systemHealth, hasRecentErrors, successRate]);
 

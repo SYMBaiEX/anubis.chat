@@ -28,7 +28,7 @@ export function useReferralTracking() {
           // Try to get IP address from a service (optional - you may want to use your own IP detection)
           // For now, we'll rely on server-side IP detection in the mutation
           ipAddress = undefined;
-        } catch (error) {
+        } catch (_error) {
           // Ignore client-side detection errors
         }
 
@@ -54,16 +54,9 @@ export function useReferralTracking() {
             : window.location.pathname;
 
           router.replace(newUrl);
-
-          console.log(
-            'Referral attribution tracked successfully:',
-            referralCode
-          );
           return true;
         }
-      } catch (error: any) {
-        console.error('Failed to track referral attribution:', error);
-
+      } catch (_error: any) {
         // Still store in localStorage even if tracking fails (for retry later)
         if (referralCode) {
           localStorage.setItem('referralCode', referralCode);
@@ -87,20 +80,21 @@ export function useReferralTracking() {
       if (isValidCode) {
         captureReferralCode(refParam.toUpperCase());
       } else {
-        console.warn('Invalid referral code format:', refParam);
       }
     }
   }, [searchParams, captureReferralCode]);
 
   // Function to get stored referral code
   const getStoredReferralCode = useCallback(() => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') {
+      return null;
+    }
 
     const referralCode = localStorage.getItem('referralCode');
     const timestamp = localStorage.getItem('referralTimestamp');
 
     if (referralCode && timestamp) {
-      const storedTime = Number.parseInt(timestamp);
+      const storedTime = Number.parseInt(timestamp, 10);
       const now = Date.now();
       const thirtyDays = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 
@@ -118,7 +112,9 @@ export function useReferralTracking() {
 
   // Function to clear stored referral code (call after successful attribution)
   const clearStoredReferralCode = useCallback(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     localStorage.removeItem('referralCode');
     localStorage.removeItem('referralTimestamp');
@@ -165,19 +161,12 @@ export function useReferralAttribution() {
         if (result.success && result.attributed) {
           // Clear stored referral code after successful attribution
           clearStoredReferralCode();
-          console.log('Referral successfully attributed:', referralCode);
           return { success: true, referralCode };
         }
         if (result.success && !result.attributed) {
-          // Attribution tracking was successful but no matching pending attribution found
-          console.log(
-            'No pending attribution found for referral code:',
-            referralCode
-          );
           return { success: false, reason: 'No pending attribution found' };
         }
       } catch (error: any) {
-        console.error('Failed to attribute referral:', error);
         return {
           success: false,
           reason: error.message || 'Attribution failed',

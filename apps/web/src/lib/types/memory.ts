@@ -111,9 +111,15 @@ export function formatImportanceScore(importance: number): string {
 }
 
 export function getImportanceColor(importance: number): string {
-  if (importance >= 0.8) return 'text-red-600 dark:text-red-400';
-  if (importance >= 0.6) return 'text-orange-600 dark:text-orange-400';
-  if (importance >= 0.4) return 'text-yellow-600 dark:text-yellow-400';
+  if (importance >= 0.8) {
+    return 'text-red-600 dark:text-red-400';
+  }
+  if (importance >= 0.6) {
+    return 'text-orange-600 dark:text-orange-400';
+  }
+  if (importance >= 0.4) {
+    return 'text-yellow-600 dark:text-yellow-400';
+  }
   return 'text-gray-600 dark:text-gray-400';
 }
 
@@ -132,11 +138,21 @@ export function formatRelativeTime(timestamp: number): string {
   const months = Math.floor(days / 30);
   const years = Math.floor(days / 365);
 
-  if (years > 0) return `${years} year${years > 1 ? 's' : ''} ago`;
-  if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
-  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  if (years > 0) {
+    return `${years} year${years > 1 ? 's' : ''} ago`;
+  }
+  if (months > 0) {
+    return `${months} month${months > 1 ? 's' : ''} ago`;
+  }
+  if (days > 0) {
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+  }
+  if (hours > 0) {
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  }
+  if (minutes > 0) {
+    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  }
   return 'Just now';
 }
 

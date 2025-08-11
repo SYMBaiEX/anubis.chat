@@ -35,7 +35,9 @@ function requiresPremium(
 }
 
 function canAccessFeature(tier: string, feature: string): boolean {
-  if (tier === 'admin') return true;
+  if (tier === 'admin') {
+    return true;
+  }
   const tierLevel = tier === 'pro_plus' ? 2 : tier === 'pro' ? 1 : 0;
   const requiredTier = requiresPremium(feature as any);
   const requiredLevel = requiredTier === 'pro_plus' ? 2 : 1;

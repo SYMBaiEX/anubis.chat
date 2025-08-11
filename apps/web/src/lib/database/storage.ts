@@ -28,7 +28,9 @@ class EphemeralAuthStorage {
     nonce: string
   ): Promise<boolean> {
     const record = this.noncesByPublicKey.get(publicKey);
-    if (!record) return false;
+    if (!record) {
+      return false;
+    }
 
     const now = Date.now();
     if (record.expiresAt < now) {
@@ -44,7 +46,9 @@ class EphemeralAuthStorage {
 
   async isTokenBlacklisted(jti: string): Promise<boolean> {
     const expiresAt = this.blacklistedTokens.get(jti);
-    if (expiresAt === undefined) return false;
+    if (expiresAt === undefined) {
+      return false;
+    }
     const now = Date.now();
     if (expiresAt < now) {
       this.blacklistedTokens.delete(jti);
@@ -61,11 +65,15 @@ class EphemeralAuthStorage {
     const now = Date.now();
     // Cleanup expired nonces
     for (const [pubkey, { expiresAt }] of this.noncesByPublicKey.entries()) {
-      if (expiresAt < now) this.noncesByPublicKey.delete(pubkey);
+      if (expiresAt < now) {
+        this.noncesByPublicKey.delete(pubkey);
+      }
     }
     // Cleanup expired blacklisted tokens
     for (const [jti, expiresAt] of this.blacklistedTokens.entries()) {
-      if (expiresAt < now) this.blacklistedTokens.delete(jti);
+      if (expiresAt < now) {
+        this.blacklistedTokens.delete(jti);
+      }
     }
   }
 }

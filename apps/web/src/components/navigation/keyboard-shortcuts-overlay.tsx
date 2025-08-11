@@ -11,7 +11,6 @@ import {
   Search,
   Settings,
   Terminal,
-  User,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -130,7 +129,9 @@ const defaultShortcuts: Shortcut[] = [
 ];
 
 const getPlatformKey = () => {
-  if (typeof window === 'undefined') return '⌘';
+  if (typeof window === 'undefined') {
+    return '⌘';
+  }
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   return isMac ? '⌘' : 'Ctrl';
 };

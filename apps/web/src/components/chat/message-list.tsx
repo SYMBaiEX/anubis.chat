@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowDown, MessageSquare } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import { Button } from '@/components/ui/button';
@@ -34,50 +34,59 @@ export function MessageList({
   // Get dynamic font size classes
   const fontSizes = getFontSizeClasses(fontSize);
 
+  // Stable scroll-to-bottom helper
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (!scrollRef.current) {
+      return;
+    }
+
+    scrollRef.current.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: smooth ? 'smooth' : 'auto',
+    });
+  }, []);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages && messages.length > lastMessageCount) {
       scrollToBottom();
       setLastMessageCount(messages.length);
     }
-  }, [messages, lastMessageCount]);
+  }, [messages, lastMessageCount, scrollToBottom]);
 
   // Handle scroll event to show/hide scroll-to-bottom button
   const handleScroll = () => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current) {
+      return;
+    }
 
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
     setShowScrollButton(!isNearBottom && messages && messages.length > 0);
   };
 
-  const scrollToBottom = (smooth = true) => {
-    if (!scrollRef.current) return;
 
-    scrollRef.current.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: smooth ? 'smooth' : 'auto',
-    });
-  };
 
   // Group messages by date for date separators
   const groupMessagesByDate = (
     list: Array<ChatMessage | StreamingMessage | MinimalMessage>
   ) => {
-    if (!list) return [] as Array<{ date: string; messages: typeof list }>;
+    if (!list) {
+      return [] as Array<{ date: string; messages: typeof list }>;
+    }
 
     const groups: Array<{
       date: string;
       messages: Array<ChatMessage | StreamingMessage | MinimalMessage>;
     }> = [];
 
-    list.forEach((message) => {
+    for (const message of list) {
       const createdAt =
         'createdAt' in message && message.createdAt
           ? message.createdAt
           : Date.now();
       const messageDate = new Date(createdAt).toDateString();
-      const lastGroup = groups[groups.length - 1];
+      const lastGroup = groups.at(-1);
 
       if (lastGroup && lastGroup.date === messageDate) {
         lastGroup.messages.push(message);
@@ -87,7 +96,7 @@ export function MessageList({
           messages: [message],
         });
       }
-    });
+    }
 
     return groups;
   };
@@ -150,7 +159,7 @@ export function MessageList({
         ref={scrollRef}
       >
         <div className="mx-auto w-full max-w-full space-y-2 overflow-x-hidden p-2 sm:max-w-6xl sm:space-y-4 sm:p-3 md:max-w-7xl md:p-4 lg:p-6 xl:px-8">
-          {messageGroups.map((group, groupIndex) => (
+          {messageGroups.map((group, _groupIndex) => (
             <div key={group.date}>
               {/* Date Separator */}
               <div className="flex items-center justify-center py-1 sm:py-2">
@@ -169,7 +178,7 @@ export function MessageList({
                 {group.messages.map(
                   (
                     message: ChatMessage | StreamingMessage | MinimalMessage,
-                    messageIndex: number
+                    _messageIndex: number
                   ) => {
                     // Check if this is a streaming message
                     if (
@@ -194,7 +203,7 @@ export function MessageList({
                             (message as ChatMessage | MinimalMessage).content
                           );
                         }}
-                        onEdit={(_newContent) => {}}
+                        onEdit={(_newContent) => { }}
                         onRegenerate={() =>
                           onMessageRegenerate?.(
                             (message as ChatMessage | MinimalMessage)._id

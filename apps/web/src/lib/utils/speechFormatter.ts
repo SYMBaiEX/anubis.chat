@@ -6,7 +6,7 @@
 
 // Punctuation mappings - spoken word to actual punctuation
 // Multi-word phrases must come before single words for proper matching
-const PUNCTUATION_PHRASES: Array<[string, string]> = [
+const PUNCTUATION_PHRASES: [string, string][] = [
   // Multi-word punctuation (must be first for matching priority)
   ['question mark', '?'],
   ['exclamation mark', '!'],
@@ -57,14 +57,14 @@ const PUNCTUATION_PHRASES: Array<[string, string]> = [
 // Formatting commands
 const FORMATTING_COMMANDS: Record<string, (text: string) => string> = {
   // Line breaks
-  'new line': (text) => text + '\n',
-  'new paragraph': (text) => text + '\n\n',
+  'new line': (text) => `${text}\n`,
+  'new paragraph': (text) => `${text}\n\n`,
 
   // Text formatting (these would need rich text support in the input)
   // For now, we'll just add markdown-style formatting
-  bold: (text) => text + '**',
-  italic: (text) => text + '_',
-  code: (text) => text + '`',
+  bold: (text) => `${text}**`,
+  italic: (text) => `${text}_`,
+  code: (text) => `${text}\``,
 };
 
 // Special commands that affect the next word
@@ -82,17 +82,19 @@ const SPECIAL_COMMANDS = {
  * @param isInterim - Whether this is interim (not final) text
  * @returns Formatted text with punctuation and commands applied
  */
-export function formatSpeechText(text: string, isInterim = false): string {
-  if (!text) return '';
+export function formatSpeechText(text: string, _isInterim = false): string {
+  if (!text) {
+    return '';
+  }
 
   let processed = text;
-  const capitalizeNext = false;
-  const uppercaseNext = false;
+  const _capitalizeNext = false;
+  const _uppercaseNext = false;
 
   // Process multi-word phrases first (longest to shortest for priority)
   for (const [phrase, replacement] of PUNCTUATION_PHRASES) {
     const regex = new RegExp(`\\b${phrase}\\b`, 'gi');
-    processed = processed.replace(regex, (match) => {
+    processed = processed.replace(regex, (_match) => {
       // Handle special cases for line breaks - keep the space behavior
       if (phrase === 'new line') {
         return '\n';
@@ -108,7 +110,7 @@ export function formatSpeechText(text: string, isInterim = false): string {
   // Handle capitalization commands - don't lowercase the rest of the word
   processed = processed.replace(
     /\b(capital|capitalize|uppercase|caps|all caps)\s+(\w+)/gi,
-    (match, command, word) => {
+    (_match, command, word) => {
       const cmd = command.toLowerCase();
       if (cmd === 'uppercase' || cmd === 'all caps' || cmd === 'caps') {
         return word.toUpperCase();
@@ -153,8 +155,8 @@ export function formatSpeechText(text: string, isInterim = false): string {
   // Auto-capitalize after sentence endings
   processed = processed.replace(
     /([.!?])\s+([a-z])/g,
-    (match, punct, letter) => {
-      return punct + ' ' + letter.toUpperCase();
+    (_match, punct, letter) => {
+      return `${punct} ${letter.toUpperCase()}`;
     }
   );
 

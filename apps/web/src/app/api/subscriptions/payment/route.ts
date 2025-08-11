@@ -4,12 +4,11 @@
  */
 
 import { api } from '@convex/_generated/api';
-import { getAuthUserId } from '@convex-dev/auth/server';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection } from '@solana/web3.js';
 import { ConvexHttpClient } from 'convex/browser';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { convexConfig, paymentConfig, solanaConfig } from '@/lib/env';
+import { convexConfig, solanaConfig } from '@/lib/env';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import {
   addSecurityHeaders,
@@ -89,8 +88,12 @@ async function verifyPayment(
 
     for (let i = 0; i < allAccountKeys.length; i++) {
       const key = allAccountKeys[i].toBase58();
-      if (key === senderAddress) senderIndex = i;
-      if (key === TREASURY_WALLET) treasuryIndex = i;
+      if (key === senderAddress) {
+        senderIndex = i;
+      }
+      if (key === TREASURY_WALLET) {
+        treasuryIndex = i;
+      }
     }
 
     if (senderIndex === -1 || treasuryIndex === -1) {
@@ -244,17 +247,17 @@ export async function POST(request: NextRequest) {
   });
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   // Health check endpoint
   try {
     await connection.getVersion();
     return successResponse({ status: 'healthy', rpc: SOLANA_RPC_URL });
-  } catch (error) {
+  } catch (_error) {
     return internalErrorResponse('Solana RPC connection failed');
   }
 }
 
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(_request: NextRequest) {
   const response = new NextResponse(null, { status: 200 });
   return addSecurityHeaders(response);
 }

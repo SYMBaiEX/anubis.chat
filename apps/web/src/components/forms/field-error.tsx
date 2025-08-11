@@ -1,5 +1,4 @@
 import { AlertCircle } from 'lucide-react';
-import * as React from 'react';
 import type { FieldErrorProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 

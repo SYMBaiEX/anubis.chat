@@ -1,32 +1,15 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Activity,
-  AlertCircle,
   BarChart3,
   Bot,
   Brain,
-  CheckCircle2,
   Code,
   Coins,
-  Copy,
-  Cpu,
   Database,
   Download,
   Eye,
-  FileText,
-  GitBranch,
-  Globe,
-  HelpCircle,
   Image,
-  Info,
-  Layers,
-  Link,
-  Lock,
-  MessageSquare,
-  Palette,
-  Plus,
   RefreshCw,
   Save,
   Settings,
@@ -35,14 +18,9 @@ import {
   Sparkles,
   Terminal,
   TestTube,
-  Trash2,
   TrendingUp,
-  Unlock,
   Upload,
   Vote,
-  Wallet,
-  Wand2,
-  X,
   Zap,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -71,12 +49,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { err, ok, type Result } from '@/lib/types/result';
 import { cn } from '@/lib/utils';
 import { AgentCapabilitySelector } from './agent-capability-selector';
@@ -174,11 +147,15 @@ export function AgentBuilder({
 
   const validateAgent = () => {
     const newErrors: Record<string, string> = {};
-    if (!agentData.name) newErrors.name = 'Agent name is required';
-    if (!agentData.description)
+    if (!agentData.name) {
+      newErrors.name = 'Agent name is required';
+    }
+    if (!agentData.description) {
       newErrors.description = 'Description is required';
-    if (agentData.capabilities.length === 0)
+    }
+    if (agentData.capabilities.length === 0) {
       newErrors.capabilities = 'Select at least one capability';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -298,11 +275,7 @@ export function AgentBuilder({
                 onClick={async () => {
                   const result = await handleSave();
                   if (!result.ok) {
-                    // Handle error - you may want to show a toast or error message
-                    console.error(
-                      'Failed to save agent:',
-                      result.error.message
-                    );
+                    // Error handling is done in handleSave
                   }
                 }}
               >

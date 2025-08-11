@@ -2,12 +2,9 @@
 
 import { api } from '@convex/_generated/api';
 import { useAuthActions } from '@convex-dev/auth/react';
-import {
-  useConnection,
-  useWallet as useSolanaWallet,
-} from '@solana/wallet-adapter-react';
+import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { Connection, type PublicKey } from '@solana/web3.js';
+import type { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { useMutation } from 'convex/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -44,7 +41,7 @@ export interface UseWalletReturn extends WalletConnectionState {
 // 2025 Security Constants
 const CONNECTION_TIMEOUT = 30_000; // 30 seconds
 const HEALTH_CHECK_INTERVAL = 60_000; // 1 minute
-const MAX_RETRY_ATTEMPTS = 3;
+const _MAX_RETRY_ATTEMPTS = 3;
 
 // Health Check Thresholds
 const HEALTH_CHECK_EXCELLENT_THRESHOLD = 1000; // < 1s = excellent (100-80 score)
@@ -91,17 +88,18 @@ export const useWallet = (): UseWalletReturn => {
 
     try {
       const startTime = Date.now();
-      const balance = await connection.getBalance(walletPublicKey);
+      const _balance = await connection.getBalance(walletPublicKey);
       const responseTime = Date.now() - startTime;
 
       // Calculate health score based on response time using defined thresholds
       let healthScore = HEALTH_SCORE_EXCELLENT;
-      if (responseTime > HEALTH_CHECK_WARNING_THRESHOLD)
+      if (responseTime > HEALTH_CHECK_WARNING_THRESHOLD) {
         healthScore = HEALTH_SCORE_CRITICAL;
-      else if (responseTime > HEALTH_CHECK_GOOD_THRESHOLD)
+      } else if (responseTime > HEALTH_CHECK_GOOD_THRESHOLD) {
         healthScore = HEALTH_SCORE_WARNING;
-      else if (responseTime > HEALTH_CHECK_EXCELLENT_THRESHOLD)
+      } else if (responseTime > HEALTH_CHECK_EXCELLENT_THRESHOLD) {
         healthScore = HEALTH_SCORE_GOOD;
+      }
 
       setConnectionHealthScore(healthScore);
       setIsHealthy(healthScore >= HEALTH_SCORE_WARNING);
@@ -109,7 +107,7 @@ export const useWallet = (): UseWalletReturn => {
 
       // Health check completed successfully
       // Note: In production, send metrics to monitoring service instead of console
-    } catch (error) {
+    } catch (_error) {
       retryCountRef.current += 1;
       const healthScore = Math.max(20, 100 - retryCountRef.current * 20);
       setConnectionHealthScore(healthScore);
@@ -130,7 +128,7 @@ export const useWallet = (): UseWalletReturn => {
     }
   }, []);
 
-  const retrieveWalletState = useCallback((stored: string): unknown => {
+  const _retrieveWalletState = useCallback((stored: string): unknown => {
     try {
       return JSON.parse(stored);
     } catch {
@@ -169,14 +167,7 @@ export const useWallet = (): UseWalletReturn => {
         clearInterval(healthCheckRef.current);
       }
     };
-  }, [
-    connected,
-    connecting,
-    walletPublicKey,
-    wallet,
-    walletSignMessage,
-    performHealthCheck,
-  ]);
+  }, [connected, connecting, walletPublicKey, performHealthCheck]);
 
   // Fetch balance when wallet connects
   const fetchBalance = useCallback(
@@ -357,12 +348,11 @@ export const useWallet = (): UseWalletReturn => {
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to sign message';
-        console.error('Signing error details:', error);
         setState((prev) => ({ ...prev, error: errorMessage }));
         throw new Error(`Message signing failed: ${errorMessage}`);
       }
     },
-    [walletSignMessage, walletPublicKey, wallet, signIn]
+    [walletSignMessage, walletPublicKey, signIn]
   );
 
   const signInWithSolana = useCallback(async (): Promise<{
@@ -480,7 +470,9 @@ export const useWallet = (): UseWalletReturn => {
 
   const formatAddress = useCallback(
     (length = 4): string => {
-      if (!walletPublicKey) return '';
+      if (!walletPublicKey) {
+        return '';
+      }
       const address = walletPublicKey.toString();
       return `${address.slice(0, length)}...${address.slice(-length)}`;
     },

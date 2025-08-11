@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreVertical, Plus, Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useState } from 'react';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
@@ -38,7 +38,7 @@ export function ChatList({
     setIsLoading(true);
     try {
       await onChatCreate?.();
-    } catch (error: any) {
+    } catch (_error: unknown) {
       // Silently ignore; parent handles error reporting
     } finally {
       setIsLoading(false);
@@ -48,13 +48,15 @@ export function ChatList({
   const handleDeleteChat = async (chatId: string) => {
     try {
       await onChatDelete?.(chatId);
-    } catch (error: any) {
+    } catch (_error: unknown) {
       // Silently ignore; parent handles error reporting
     }
   };
 
-  const formatLastMessageTime = (timestamp?: number) => {
-    if (!timestamp) return '';
+  const _formatLastMessageTime = (timestamp?: number) => {
+    if (!timestamp) {
+      return '';
+    }
 
     const date = new Date(timestamp);
     const now = new Date();
@@ -150,7 +152,9 @@ export function ChatList({
                   key={chat._id}
                   onClick={() => onChatSelect?.(chat._id)}
                   onDelete={() => handleDeleteChat(chat._id)}
-                  onRename={(_newTitle) => {}}
+                  onRename={(_newTitle) => {
+                    // Rename functionality not implemented yet
+                  }}
                 />
               ))}
           </div>

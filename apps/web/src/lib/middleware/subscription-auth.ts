@@ -9,10 +9,7 @@ import { ConvexHttpClient } from 'convex/browser';
 import type { NextRequest } from 'next/server';
 import { convexConfig } from '@/lib/env';
 import { APIErrorCode } from '@/lib/types/api';
-import {
-  createErrorResponse,
-  createSuccessResponse,
-} from '@/lib/utils/api-response';
+import { createErrorResponse } from '@/lib/utils/api-response';
 import { createModuleLogger } from '@/lib/utils/logger';
 import { isValidSolanaAddress, verifyJWTToken } from './auth';
 
@@ -165,7 +162,7 @@ export async function verifyAuthToken(
   try {
     // Extract token from Authorization header
     const authHeader = request.headers.get('Authorization');
-    if (!(authHeader && authHeader.startsWith('Bearer '))) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return {
         success: false,
         error: 'Missing or invalid authorization header',

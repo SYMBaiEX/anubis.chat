@@ -2,7 +2,6 @@
 
 import { Rocket, Wallet } from 'lucide-react';
 import Link from 'next/link';
-import React from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 import { Button } from '@/components/ui/button';
 

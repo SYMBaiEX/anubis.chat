@@ -8,8 +8,11 @@ import {
   Clock,
   Copy,
   Edit,
+  Link as LinkIcon,
   MoreVertical,
   RotateCcw,
+  ThumbsDown,
+  ThumbsUp,
   User,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -47,7 +50,8 @@ export function MessageBubble({
   fontSize = 'medium',
 }: MessageProps & { fontSize?: FontSize }) {
   const [copied, setCopied] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [_isEditing, setIsEditing] = useState(false);
+  const [showReasoning, setShowReasoning] = useState(false);
 
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
@@ -81,21 +85,45 @@ export function MessageBubble({
   };
 
   const getAvatarIcon = () => {
-    if (isUser) return <User className="h-4 w-4" />;
-    if (isSystem) return <AlertCircle className="h-4 w-4" />;
+    if (isUser) {
+      return <User className="h-4 w-4" />;
+    }
+    if (isSystem) {
+      return <AlertCircle className="h-4 w-4" />;
+    }
     return <Bot className="h-4 w-4" />;
   };
 
   const getAvatarBg = () => {
-    if (isUser)
+    if (isUser) {
       return 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400';
-    if (isSystem)
+    }
+    if (isSystem) {
       return 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400';
+    }
     return 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400';
   };
 
   const formatTimestamp = (timestamp: number) => {
     return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+  };
+
+  // Basic feedback handlers (stubbed; hook up to backend/analytics later)
+  const handleLike = () => {
+    log.info('feedback_like', { role: message.role });
+  };
+  const handleDislike = () => {
+    log.info('feedback_dislike', { role: message.role });
+  };
+  const handleShare = () => {
+    try {
+      void navigator.share?.({
+        title: 'Anubis Chat Snippet',
+        text: message.content.slice(0, 300),
+      });
+    } catch (_e) {
+      // no-op if not supported
+    }
   };
 
   // Don't show system messages in chat bubbles
@@ -147,19 +175,19 @@ export function MessageBubble({
           </span>
           <span>{formatTimestamp(message.createdAt)}</span>
 
-          {message.metadata?.tokensUsed && (
+          {message.metadata?.usage?.totalTokens !== undefined && (
             <>
               <span>•</span>
-              <span>{message.metadata.tokensUsed} tokens</span>
+              <span>{message.metadata.usage.totalTokens} tokens</span>
             </>
           )}
 
-          {message.metadata?.processingTime && (
+          {message.metadata?.tools && message.metadata.tools.length > 0 && (
             <>
               <span>•</span>
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {message.metadata.processingTime}ms
+                {message.metadata.tools.reduce((sum, t) => sum + (t.result?.executionTime || 0), 0)}ms
               </span>
             </>
           )}
@@ -194,16 +222,49 @@ export function MessageBubble({
               )}
             </div>
 
-            {/* Citations */}
+            {/* Reasoning toggle and content */}
+            {isAssistant && message.metadata?.reasoning && (
+              <div className="mt-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  aria-expanded={showReasoning}
+                  aria-controls={`reasoning-${message._id}`}
+                  onClick={() => setShowReasoning((v) => !v)}
+                >
+                  {showReasoning ? 'Hide thinking' : 'Show thinking'}
+                </Button>
+                {showReasoning && (
+                  <div
+                    id={`reasoning-${message._id}`}
+                    className="mt-2 rounded-md border bg-background p-3 text-muted-foreground text-xs"
+                  >
+                    <div className="mb-1 font-medium">Reasoning</div>
+                    <pre className="whitespace-pre-wrap">{message.metadata.reasoning}</pre>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Sources (inline, accessible) */}
             {message.metadata?.citations &&
               message.metadata.citations.length > 0 && (
                 <div className="mt-3 border-t pt-2">
-                  <div className="text-muted-foreground text-xs">
+                  <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
                     <span className="font-medium">Sources:</span>
-                    {message.metadata.citations.map((citation, index) => (
-                      <span className="ml-1" key={citation}>
-                        [{index + 1}]
-                      </span>
+                    {message.metadata.citations.map((citation: string, index: number) => (
+                      <a
+                        key={citation}
+                        className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-foreground"
+                        href={citation}
+                        rel="noopener"
+                        target="_blank"
+                        title={`Open source ${index + 1}`}
+                      >
+                        <LinkIcon className="h-3 w-3" />
+                        <span>[{index + 1}]</span>
+                      </a>
                     ))}
                   </div>
                 </div>
@@ -232,6 +293,21 @@ export function MessageBubble({
                     <RotateCcw className="h-3 w-3" />
                   </Button>
                 )}
+
+                {/* Feedback and share */}
+                {isAssistant && (
+                  <>
+                    <Button onClick={handleLike} size="sm" variant="ghost" aria-label="Like response" title="Like response">
+                      <ThumbsUp className="h-3 w-3" />
+                    </Button>
+                    <Button onClick={handleDislike} size="sm" variant="ghost" aria-label="Dislike response" title="Dislike response">
+                      <ThumbsDown className="h-3 w-3" />
+                    </Button>
+                  </>
+                )}
+                <Button onClick={handleShare} size="sm" variant="ghost" aria-label="Share snippet" title="Share snippet">
+                  <LinkIcon className="h-3 w-3" />
+                </Button>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

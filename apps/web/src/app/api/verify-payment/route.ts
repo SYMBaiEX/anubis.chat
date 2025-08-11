@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
 
     // Convex HTTP actions are accessed at the deployment URL with the path defined in http.ts
     const httpActionUrl = `${httpUrl}/verify-payment`;
-    console.log('Calling Convex HTTP action at:', httpActionUrl);
 
     const response = await fetch(httpActionUrl, {
       method: 'POST',
@@ -35,14 +34,8 @@ export async function POST(request: NextRequest) {
 
     // Check if response is JSON
     const contentType = response.headers.get('content-type');
-    if (!(contentType && contentType.includes('application/json'))) {
-      console.error(
-        'Non-JSON response from Convex:',
-        response.status,
-        response.statusText
-      );
-      const text = await response.text();
-      console.error('Response body:', text);
+    if (!contentType?.includes('application/json')) {
+      const _text = await response.text();
       return NextResponse.json(
         {
           success: false,
@@ -62,8 +55,7 @@ export async function POST(request: NextRequest) {
         'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
-  } catch (error) {
-    console.error('Payment verification API error:', error);
+  } catch (_error) {
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -71,7 +63,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function OPTIONS() {
+export function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
@@ -83,7 +75,7 @@ export async function OPTIONS() {
 }
 
 // Debug endpoint to verify route is working
-export async function GET() {
+export function GET() {
   return NextResponse.json({
     message: 'Payment verification API is running',
     convexUrl:

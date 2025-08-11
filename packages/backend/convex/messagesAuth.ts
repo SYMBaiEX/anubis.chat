@@ -113,8 +113,7 @@ export const createMyMessage = mutation({
     if (args.role === 'user' && user.subscription) {
       const { subscription } = user;
       const overLimit =
-        (subscription.messagesUsed ?? 0) >=
-        (subscription.messagesLimit ?? 0);
+        (subscription.messagesUsed ?? 0) >= (subscription.messagesLimit ?? 0);
       if (overLimit) {
         throw new Error(
           'Message limit reached. Please upgrade your subscription.'

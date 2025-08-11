@@ -39,7 +39,7 @@ export function ModelGrid({
 }: ModelGridProps) {
   const [providerFilter, setProviderFilter] =
     useState<ProviderFilterType>('all');
-  const subscription = useSubscriptionStatus();
+  const _subscription = useSubscriptionStatus();
 
   // Filter models based on provider only (show all models but some disabled)
   const sourceModels = models ?? AI_MODELS;
@@ -59,8 +59,12 @@ export function ModelGrid({
       const isFree = model.pricing.input === 0 && model.pricing.output === 0;
       const isPremium = isPremiumModel(model);
 
-      if (isFree) return 0; // Free first
-      if (!isPremium) return 1; // Standard second
+      if (isFree) {
+        return 0; // Free first
+      }
+      if (!isPremium) {
+        return 1; // Standard second
+      }
       return 2; // Premium last
     };
 
@@ -82,7 +86,6 @@ export function ModelGrid({
         return 'grid-cols-2 lg:grid-cols-3';
       case 4:
         return 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
-      case 5:
       default:
         return 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5';
     }

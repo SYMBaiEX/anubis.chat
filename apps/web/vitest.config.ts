@@ -1,12 +1,12 @@
+import path from 'node:path';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
-    setupFiles: ['./src/test-setup.ts'],
+    setupFiles: ['./src/testSetup.ts'],
     globals: true,
     silent: false,
     logLevel: 'warn',
@@ -15,7 +15,7 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov'],
       exclude: [
         'node_modules/',
-        'src/test-setup.ts',
+        'src/testSetup.ts',
         'src/test-utils/',
         '**/*.d.ts',
         '**/*.config.*',

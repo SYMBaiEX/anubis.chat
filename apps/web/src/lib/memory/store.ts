@@ -4,7 +4,6 @@
  */
 
 import { nanoid } from 'nanoid';
-import { z } from 'zod';
 
 // =============================================================================
 // Types
@@ -80,7 +79,7 @@ export class MemoryStore {
     if (!this.userMemories.has(userId)) {
       this.userMemories.set(userId, new Set());
     }
-    this.userMemories.get(userId)!.add(memory.id);
+    this.userMemories.get(userId)?.add(memory.id);
 
     return memory;
   }
@@ -103,7 +102,9 @@ export class MemoryStore {
    */
   getUserMemories(userId: string, type?: Memory['type']): Memory[] {
     const memoryIds = this.userMemories.get(userId);
-    if (!memoryIds) return [];
+    if (!memoryIds) {
+      return [];
+    }
 
     const memories = Array.from(memoryIds)
       .map((id) => this.memories.get(id))
@@ -135,10 +136,10 @@ export class MemoryStore {
       .slice(0, limit);
 
     // Update access counts
-    results.forEach((m) => {
+    for (const m of results) {
       m.accessCount++;
       m.lastAccessedAt = Date.now();
-    });
+    }
 
     return results;
   }
@@ -152,7 +153,9 @@ export class MemoryStore {
     metadata?: Record<string, any>
   ): Memory | undefined {
     const memory = this.memories.get(memoryId);
-    if (!memory) return;
+    if (!memory) {
+      return;
+    }
 
     memory.content = content;
     if (metadata) {
@@ -168,7 +171,9 @@ export class MemoryStore {
    */
   deleteMemory(memoryId: string): boolean {
     const memory = this.memories.get(memoryId);
-    if (!memory) return false;
+    if (!memory) {
+      return false;
+    }
 
     // Remove from user's memory index
     const userMemories = this.userMemories.get(memory.userId);
@@ -205,7 +210,7 @@ export class MemoryStore {
     if (!this.userConversations.has(userId)) {
       this.userConversations.set(userId, new Set());
     }
-    this.userConversations.get(userId)!.add(conversation.id);
+    this.userConversations.get(userId)?.add(conversation.id);
 
     return conversation;
   }
@@ -222,7 +227,9 @@ export class MemoryStore {
    */
   getUserConversations(userId: string): ConversationContext[] {
     const conversationIds = this.userConversations.get(userId);
-    if (!conversationIds) return [];
+    if (!conversationIds) {
+      return [];
+    }
 
     return Array.from(conversationIds)
       .map((id) => this.conversations.get(id))
@@ -296,7 +303,7 @@ export class MemoryStore {
     // Generate next cursor (ID of last conversation in current page)
     const nextCursor =
       paginatedConversations.length > 0
-        ? paginatedConversations[paginatedConversations.length - 1].id
+        ? paginatedConversations.at(-1).id
         : undefined;
 
     return {
@@ -320,7 +327,9 @@ export class MemoryStore {
     metadata?: Record<string, any>
   ): ConversationMessage | undefined {
     const conversation = this.conversations.get(conversationId);
-    if (!conversation) return;
+    if (!conversation) {
+      return;
+    }
 
     const message: ConversationMessage = {
       role,
@@ -347,7 +356,9 @@ export class MemoryStore {
     const conversation = this.conversations.get(conversationId);
     const memory = this.memories.get(memoryId);
 
-    if (!(conversation && memory)) return false;
+    if (!(conversation && memory)) {
+      return false;
+    }
 
     if (!conversation.memories.includes(memoryId)) {
       conversation.memories.push(memoryId);
@@ -361,7 +372,9 @@ export class MemoryStore {
    */
   getConversationMemories(conversationId: string): Memory[] {
     const conversation = this.conversations.get(conversationId);
-    if (!conversation) return [];
+    if (!conversation) {
+      return [];
+    }
 
     return conversation.memories
       .map((id) => this.memories.get(id))

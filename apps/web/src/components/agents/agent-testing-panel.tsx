@@ -3,27 +3,16 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
-  AlertCircle,
-  BarChart3,
   Bot,
-  Bug,
   Check,
-  ChevronRight,
   Clock,
-  Copy,
-  Database,
   Download,
-  FileText,
   Info,
   MessageSquare,
-  Pause,
   Play,
   RefreshCw,
   RotateCcw,
   Send,
-  Sparkles,
-  Terminal,
-  TestTube,
   Upload,
   User,
   Zap,
@@ -39,22 +28,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type {
   Agent,
-  AgentTool,
   TestMessage as TestMessageType,
   TestScenario as TestScenarioType,
 } from './types';
@@ -82,14 +60,28 @@ const testScenarios: TestScenario[] = [
     id: 'greeting',
     name: 'Basic Greeting',
     description: 'Test how the agent responds to greetings',
-    messages: [{ role: 'user', content: 'Hello! How are you today?' }],
+    messages: [
+      {
+        id: 'scenario_greeting_user_1',
+        role: 'user',
+        content: 'Hello! How are you today?',
+        timestamp: new Date(0),
+      },
+    ],
     expectedBehavior: 'Agent should greet back politely and offer assistance',
   },
   {
     id: 'trading',
     name: 'Trading Request',
     description: 'Test trading capability responses',
-    messages: [{ role: 'user', content: 'I want to swap 100 USDC for SOL' }],
+    messages: [
+      {
+        id: 'scenario_trading_user_1',
+        role: 'user',
+        content: 'I want to swap 100 USDC for SOL',
+        timestamp: new Date(0),
+      },
+    ],
     expectedBehavior:
       'Agent should explain the swap process and request confirmation',
   },
@@ -99,8 +91,10 @@ const testScenarios: TestScenario[] = [
     description: 'Test analytical capabilities',
     messages: [
       {
+        id: 'scenario_analysis_user_1',
         role: 'user',
         content: 'What do you think about the current SOL price action?',
+        timestamp: new Date(0),
       },
     ],
     expectedBehavior:
@@ -111,7 +105,12 @@ const testScenarios: TestScenario[] = [
     name: 'Error Handling',
     description: 'Test how agent handles errors',
     messages: [
-      { role: 'user', content: 'Execute an invalid transaction: xyz123' },
+      {
+        id: 'scenario_error_user_1',
+        role: 'user',
+        content: 'Execute an invalid transaction: xyz123',
+        timestamp: new Date(0),
+      },
     ],
     expectedBehavior:
       'Agent should gracefully handle the error and explain the issue',
@@ -121,13 +120,25 @@ const testScenarios: TestScenario[] = [
     name: 'Multi-turn Conversation',
     description: 'Test context retention across messages',
     messages: [
-      { role: 'user', content: 'I want to learn about DeFi' },
       {
-        role: 'agent',
+        id: 'scenario_multiturn_user_1',
+        role: 'user',
+        content: 'I want to learn about DeFi',
+        timestamp: new Date(0),
+      },
+      {
+        id: 'scenario_multiturn_assistant_1',
+        role: 'assistant',
         content:
           'I can help you understand DeFi. What aspect interests you most?',
+        timestamp: new Date(0),
       },
-      { role: 'user', content: 'Tell me about yield farming' },
+      {
+        id: 'scenario_multiturn_user_2',
+        role: 'user',
+        content: 'Tell me about yield farming',
+        timestamp: new Date(0),
+      },
     ],
     expectedBehavior:
       'Agent should maintain context and provide relevant information',
@@ -148,7 +159,9 @@ export function AgentTestingPanel({ agent }: AgentTestingPanelProps) {
   const [testResults, setTestResults] = useState<Record<string, boolean>>({});
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim()) {
+      return;
+    }
 
     const userMessage: TestMessage = {
       id: `msg_${Date.now()}`,
@@ -186,8 +199,8 @@ export function AgentTestingPanel({ agent }: AgentTestingPanelProps) {
           prev.totalMessages === 0
             ? agentMessage.metadata?.responseTime || 0
             : (prev.avgResponseTime * prev.totalMessages +
-                (agentMessage.metadata?.responseTime || 0)) /
-              (prev.totalMessages + 1),
+              (agentMessage.metadata?.responseTime || 0)) /
+            (prev.totalMessages + 1),
         totalTokens:
           prev.totalTokens + (agentMessage.metadata?.tokensUsed || 0),
         successRate: 100,

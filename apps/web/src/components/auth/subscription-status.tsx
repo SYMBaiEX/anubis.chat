@@ -104,8 +104,12 @@ export function SubscriptionStatus({
   };
 
   const getProgressVariant = (percentage: number) => {
-    if (percentage >= 90) return 'error';
-    if (percentage >= 75) return 'warning';
+    if (percentage >= 90) {
+      return 'error';
+    }
+    if (percentage >= 75) {
+      return 'warning';
+    }
     return 'default';
   };
 

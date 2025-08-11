@@ -1,11 +1,10 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Activity,
   AlertCircle,
   Coins,
-  Info,
   TrendingDown,
   TrendingUp,
   Zap,
@@ -66,21 +65,32 @@ export function TokenUsageIndicator({
   }, [isOverLimit, alertShown, onLimitReached]);
 
   const formatNumber = (num: number) => {
-    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    if (num >= 1_000_000) {
+      return `${(num / 1_000_000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
     return num.toString();
   };
 
   const getProgressVariant = () => {
-    if (isOverLimit) return 'error' as const;
-    if (isNearLimit) return 'warning' as const;
+    if (isOverLimit) {
+      return 'error' as const;
+    }
+    if (isNearLimit) {
+      return 'warning' as const;
+    }
     return 'default' as const;
   };
 
   const getStatusIcon = () => {
-    if (isOverLimit)
+    if (isOverLimit) {
       return <AlertCircle className="h-4 w-4 text-destructive" />;
-    if (isNearLimit) return <AlertCircle className="h-4 w-4 text-amber-500" />;
+    }
+    if (isNearLimit) {
+      return <AlertCircle className="h-4 w-4 text-amber-500" />;
+    }
     return <Zap className="h-4 w-4 text-primary" />;
   };
 

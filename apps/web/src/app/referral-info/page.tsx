@@ -18,6 +18,7 @@ import LandingFooter from '@/components/landing/landing-footer';
 import LandingHeader from '@/components/landing/landing-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import AnimatedSection from '@/components/landing/animated-section';
 
 export default function ReferralInfoPage() {
   const subscriptionStatus = useQuery(api.subscriptions.getSubscriptionStatus);
@@ -30,27 +31,26 @@ export default function ReferralInfoPage() {
 
       <main className="w-full flex-1 pt-16 pb-10">
         {/* Back to Home Link */}
-        <div className="w-full bg-gradient-to-b from-primary/5 to-transparent">
-          <div className="mx-auto max-w-6xl px-6 py-4">
+        <AnimatedSection className="px-6 py-6" auroraVariant="primary" softEdges>
+          <div className="mx-auto max-w-6xl">
             <Link
-              className="inline-flex items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
               href="/"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Link>
           </div>
-        </div>
+        </AnimatedSection>
 
         {/* Hero Section */}
-        <div className="bg-gradient-to-b from-primary/10 to-background p-6 sm:p-8 md:p-12">
+        <AnimatedSection className="p-6 sm:p-8 md:p-12" auroraVariant="gold">
           <div className="mx-auto max-w-4xl text-center">
-            <h1 className="mb-4 font-bold text-3xl sm:text-4xl md:text-5xl">
-              ANUBIS Referral Program
+            <h1 className="mb-4 text-3xl font-bold sm:text-4xl md:text-5xl">
+              <span className="text-gradient">ANUBIS Referral Program</span>
             </h1>
             <p className="mb-8 text-lg text-muted-foreground sm:text-xl">
-              Earn up to 5% commission on every payment your referrals make -
-              forever!
+              Earn up to 5% commission on every payment your referrals make — forever.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
               {canCreateReferral ? (
@@ -68,11 +68,7 @@ export default function ReferralInfoPage() {
                     </Button>
                   </Link>
                   <Link href="/referrals">
-                    <Button
-                      className="w-full sm:w-auto"
-                      size="lg"
-                      variant="outline"
-                    >
+                    <Button className="w-full sm:w-auto" size="lg" variant="outline">
                       View Referral Dashboard
                     </Button>
                   </Link>
@@ -80,12 +76,12 @@ export default function ReferralInfoPage() {
               )}
             </div>
           </div>
-        </div>
+        </AnimatedSection>
 
         {/* Key Features */}
         <div className="mx-auto max-w-6xl p-6 sm:p-8">
           <div className="mb-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <Card>
+            <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-primary" />
@@ -101,7 +97,7 @@ export default function ReferralInfoPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
@@ -116,7 +112,7 @@ export default function ReferralInfoPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Zap className="h-5 w-5 text-primary" />
@@ -131,7 +127,7 @@ export default function ReferralInfoPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" />
@@ -146,7 +142,7 @@ export default function ReferralInfoPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5 text-primary" />
@@ -161,7 +157,7 @@ export default function ReferralInfoPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-primary" />
@@ -178,7 +174,7 @@ export default function ReferralInfoPage() {
           </div>
 
           {/* Commission Tiers */}
-          <Card className="mb-12">
+          <Card className="mb-12 card-hover">
             <CardHeader>
               <CardTitle className="text-2xl">Commission Tier System</CardTitle>
               <p className="text-muted-foreground text-sm">
@@ -203,9 +199,8 @@ export default function ReferralInfoPage() {
                     { tier: 11, referrals: '50+', rate: '5.0%', isMax: true },
                   ].map((tier) => (
                     <div
-                      className={`rounded-lg border p-4 ${
-                        tier.isMax ? 'border-primary bg-primary/5' : ''
-                      }`}
+                      className={`rounded-lg border p-4 transition-colors ${tier.isMax ? 'border-primary bg-primary/5' : 'hover:border-primary/40'
+                        }`}
                       key={tier.tier}
                     >
                       <div className="flex items-center justify-between">
@@ -234,7 +229,7 @@ export default function ReferralInfoPage() {
           </Card>
 
           {/* How It Works */}
-          <Card className="mb-12">
+          <Card className="mb-12 card-hover">
             <CardHeader>
               <CardTitle className="text-2xl">How It Works</CardTitle>
             </CardHeader>

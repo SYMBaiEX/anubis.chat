@@ -4,7 +4,6 @@ import { api } from '@convex/_generated/api';
 import { useMutation } from 'convex/react';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import * as React from 'react';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,9 +37,7 @@ export function ModeToggle() {
             if (isAuthenticated) {
               try {
                 await updateUserPreferences({ theme: 'light' });
-              } catch (error) {
-                console.error('Failed to update theme preference:', error);
-              }
+              } catch (_error) {}
             }
           }}
         >
@@ -52,9 +49,7 @@ export function ModeToggle() {
             if (isAuthenticated) {
               try {
                 await updateUserPreferences({ theme: 'dark' });
-              } catch (error) {
-                console.error('Failed to update theme preference:', error);
-              }
+              } catch (_error) {}
             }
           }}
         >
@@ -66,9 +61,7 @@ export function ModeToggle() {
             if (isAuthenticated) {
               try {
                 await updateUserPreferences({ theme: 'system' });
-              } catch (error) {
-                console.error('Failed to update theme preference:', error);
-              }
+              } catch (_error) {}
             }
           }}
         >

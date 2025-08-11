@@ -79,11 +79,11 @@ const envSchema = z.object({
   RATE_LIMIT_MAX_REQUESTS: z
     .string()
     .default('100')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
   RATE_LIMIT_WINDOW_MS: z
     .string()
     .default('900000')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
 
   // Database
   STORAGE_TYPE: z.enum(['convex', 'supabase', 'memory']).default('convex'),
@@ -121,17 +121,17 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUBSCRIPTION_PRO_PRICE_USD: z
     .string()
     .default('12')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
   NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_PRICE_USD: z
     .string()
     .default('25')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
 
   // Payment Processing
   NEXT_PUBLIC_PAYMENT_TIMEOUT_MS: z
     .string()
     .default('300000')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
   NEXT_PUBLIC_SOLANA_COMMITMENT: z
     .enum(['processed', 'confirmed', 'finalized'])
     .default('confirmed'),

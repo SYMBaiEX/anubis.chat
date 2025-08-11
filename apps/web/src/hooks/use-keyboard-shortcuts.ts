@@ -35,7 +35,9 @@ const KEY_ALIASES: Record<string, string> = {
  * @returns The normalized shortcut string with consistent modifier order and aliases resolved
  */
 function normalizeShortcut(shortcut: string): string {
-  if (!shortcut) return '';
+  if (!shortcut) {
+    return '';
+  }
 
   // Lowercase and split by '+'
   const parts = shortcut
@@ -116,9 +118,15 @@ export function useKeyboardShortcuts(
       const modifiers: string[] = [];
 
       // Use 'mod' for cross-platform compatibility
-      if (e.ctrlKey || e.metaKey) modifiers.push('mod');
-      if (e.shiftKey) modifiers.push('shift');
-      if (e.altKey) modifiers.push('alt');
+      if (e.ctrlKey || e.metaKey) {
+        modifiers.push('mod');
+      }
+      if (e.shiftKey) {
+        modifiers.push('shift');
+      }
+      if (e.altKey) {
+        modifiers.push('alt');
+      }
 
       // Apply key aliases to the event key
       const normalizedKey = KEY_ALIASES[key] || key;

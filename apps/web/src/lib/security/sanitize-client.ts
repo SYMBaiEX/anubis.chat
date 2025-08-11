@@ -44,8 +44,7 @@ export function sanitizeCodeHTML(html: string): string {
       return sanitizeText(html);
     }
     return DOMPurify.sanitize(html, DEFAULT_CODE_SANITIZE_OPTIONS) as string;
-  } catch (error) {
-    console.error('Code sanitization failed:', error);
+  } catch (_error) {
     return '';
   }
 }
@@ -61,8 +60,7 @@ export function sanitizeUserHTML(html: string): string {
       return sanitizeText(html);
     }
     return DOMPurify.sanitize(html, STRICT_SANITIZE_OPTIONS) as string;
-  } catch (error) {
-    console.error('User content sanitization failed:', error);
+  } catch (_error) {
     return '';
   }
 }

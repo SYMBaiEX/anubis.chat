@@ -1,22 +1,13 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
 import {
-  AlertCircle,
   Check,
-  ChevronRight,
-  Cloud,
   Code,
   Copy,
   Database,
-  ExternalLink,
-  FileJson,
-  GitBranch,
   Globe,
   Info,
-  Key,
   Layers,
-  Link,
   Lock,
   Package,
   Play,
@@ -24,7 +15,6 @@ import {
   RefreshCw,
   Server,
   Settings,
-  Shield,
   Sparkles,
   Terminal,
   TestTube,
@@ -177,7 +167,9 @@ export function AgentToolBuilder({
       }
     >
   >({});
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [_selectedTemplate, setSelectedTemplate] = useState<string | null>(
+    null
+  );
 
   const [newTool, setNewTool] = useState<Partial<Tool>>({
     name: '',

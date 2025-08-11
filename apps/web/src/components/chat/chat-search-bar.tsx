@@ -5,16 +5,14 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bot,
   Calendar as CalendarIcon,
-  ChevronDown,
   Clock,
   Filter,
-  Hash,
   Search,
   Sparkles,
   User,
   X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -22,7 +20,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -369,6 +366,7 @@ export function ChatSearchBar({
                         setShowSuggestions(false);
                         handleSearch();
                       }}
+                      type="button"
                     >
                       {search}
                     </button>
@@ -393,6 +391,7 @@ export function ChatSearchBar({
                         setShowSuggestions(false);
                         handleSearch();
                       }}
+                      type="button"
                     >
                       {suggestion}
                     </button>

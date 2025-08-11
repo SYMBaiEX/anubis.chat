@@ -192,7 +192,7 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
         // In production, the private key should NOT be stored on the frontend
         // Instead, the agent operations should be executed on the backend
         // For now, we'll create the kit without the private key and use it for read-only operations
-        const rpcUrl =
+        const _rpcUrl =
           process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
           process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta'
             ? 'https://api.mainnet-beta.solana.com'
@@ -205,14 +205,7 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
         setAgentKit(null);
         setIsInitialized(true);
         setError(null);
-
-        console.log('Solana Agent Kit initialized for read-only operations', {
-          publicKey: wallet.publicKey?.toString(),
-          network: process.env.NEXT_PUBLIC_SOLANA_NETWORK,
-          userId: user.walletAddress,
-        });
-      } catch (err) {
-        console.error('Failed to initialize Solana Agent Kit:', err);
+      } catch (_err) {
         setError('Failed to initialize blockchain agent');
         setIsInitialized(false);
       }
@@ -241,17 +234,14 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   );
 
   const createCustomAgent = useCallback(
-    async (config: Partial<Agent>): Promise<string | null> => {
-      if (!user) return null;
+    async (_config: Partial<Agent>): Promise<string | null> => {
+      if (!user) {
+        return null;
+      }
 
       try {
-        // This would call a Convex mutation to create the agent
-        // const agentId = await createAgent({ ...config, createdBy: user.walletAddress });
-        // return agentId;
-        console.log('Creating custom agent:', config);
         return null;
-      } catch (err) {
-        console.error('Failed to create custom agent:', err);
+      } catch (_err) {
         setError('Failed to create custom agent');
         return null;
       }
@@ -266,51 +256,46 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
           'Agent kit not initialized, no agent selected, or wallet not connected'
         );
       }
+      // Execute the tool based on its name
+      // This is a simplified example - you'd have a proper tool registry
+      switch (execution.toolName) {
+        case 'getBalance':
+          // Use wallet balance since we have access to it
+          return wallet.balance || 0;
 
-      try {
-        // Execute the tool based on its name
-        // This is a simplified example - you'd have a proper tool registry
-        switch (execution.toolName) {
-          case 'getBalance':
-            // Use wallet balance since we have access to it
-            return wallet.balance || 0;
+        case 'getAddress':
+          return wallet.publicKey;
 
-          case 'getAddress':
-            return wallet.publicKey;
+        case 'getTokenBalances':
+          // For now, return empty array - would need to implement token balance fetching
+          return [];
 
-          case 'getTokenBalances':
-            // For now, return empty array - would need to implement token balance fetching
-            return [];
+        // Transaction-based tools should be executed server-side with proper security
+        case 'deployToken':
+        case 'transfer':
+        case 'swap':
+          throw new Error(
+            `Tool '${execution.toolName}' requires server-side execution for security`
+          );
 
-          // Transaction-based tools should be executed server-side with proper security
-          case 'deployToken':
-          case 'transfer':
-          case 'swap':
-            throw new Error(
-              `Tool '${execution.toolName}' requires server-side execution for security`
-            );
-
-          // Add more read-only tools as needed
-          default:
-            throw new Error(`Unknown tool: ${execution.toolName}`);
-        }
-      } catch (err) {
-        console.error('Tool execution failed:', err);
-        throw err;
+        // Add more read-only tools as needed
+        default:
+          throw new Error(`Unknown tool: ${execution.toolName}`);
       }
     },
     [agentKit, selectedAgent, wallet]
   );
 
   const getBalance = useCallback(async (): Promise<number | null> => {
-    if (!wallet.isConnected) return null;
+    if (!wallet.isConnected) {
+      return null;
+    }
 
     try {
       // Use the balance from the wallet hook
       await wallet.refreshBalance();
       return wallet.balance;
-    } catch (err) {
-      console.error('Failed to get balance:', err);
+    } catch (_err) {
       setError('Failed to get wallet balance');
       return null;
     }
@@ -320,25 +305,22 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
     mint: string;
     amount: string;
   }> | null> => {
-    if (!wallet.isConnected) return null;
+    if (!wallet.isConnected) {
+      return null;
+    }
 
     try {
       // For now, return empty array
       // In production, this would fetch token balances from the RPC
       // using the connection and wallet's public key
       return [];
-    } catch (err) {
-      console.error('Failed to get token balances:', err);
+    } catch (_err) {
       setError('Failed to get token balances');
       return null;
     }
   }, [wallet.isConnected]);
 
-  const refreshData = useCallback(() => {
-    // Trigger data refresh for queries
-    // This would typically refresh the Convex queries
-    console.log('Refreshing agent data...');
-  }, []);
+  const refreshData = useCallback(() => {}, []);
 
   const clearError = useCallback(() => {
     setError(null);

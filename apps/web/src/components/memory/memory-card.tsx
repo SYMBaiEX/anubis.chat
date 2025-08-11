@@ -112,8 +112,7 @@ export function MemoryCard({
       }
       setIsEditing(false);
       toast.success('Memory updated successfully');
-    } catch (error) {
-      console.error('Failed to update memory:', error);
+    } catch (_error) {
       toast.error('Failed to update memory');
     }
   };
@@ -134,8 +133,7 @@ export function MemoryCard({
       setShowDeleteDialog(false);
       toast.success('Memory deleted successfully');
       onDelete?.();
-    } catch (error) {
-      console.error('Failed to delete memory:', error);
+    } catch (_error) {
       toast.error('Failed to delete memory');
     }
   };
@@ -144,9 +142,7 @@ export function MemoryCard({
     try {
       await updateAccess({ id: memory._id });
       onView?.();
-    } catch (error) {
-      console.error('Failed to update access:', error);
-    }
+    } catch (_error) {}
   };
 
   const handleTagsChange = (tagsString: string) => {

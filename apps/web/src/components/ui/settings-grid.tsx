@@ -38,7 +38,9 @@ export function SettingsGrid({
 
   // Filter settings based on category
   const filteredSettings = settings.filter((setting) => {
-    if (categoryFilter === 'all') return true;
+    if (categoryFilter === 'all') {
+      return true;
+    }
     return setting.category === categoryFilter;
   });
 
@@ -48,7 +50,6 @@ export function SettingsGrid({
         return 'grid-cols-1 sm:grid-cols-2';
       case 3:
         return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
-      case 4:
       default:
         return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
     }

@@ -1,7 +1,6 @@
 'use client';
 
 import { Brain, Database, Globe, Network, Shield, Zap } from 'lucide-react';
-import React from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 
 const featureList = [

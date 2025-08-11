@@ -308,9 +308,7 @@ export class AgenticEngine {
     // Create final result
     const finalResult: AgentExecutionResult = {
       success: true,
-      output:
-        execution.steps[execution.steps.length - 1]?.output ||
-        'No output generated',
+      output: execution.steps.at(-1)?.output || 'No output generated',
       finalStep: currentStep - 1,
       totalSteps: execution.steps.length,
       toolsUsed: Array.from(toolsUsed),
@@ -448,7 +446,9 @@ export class AgenticEngine {
    */
   async cancelExecution(executionId: string): Promise<boolean> {
     const execution = this.activeExecutions.get(executionId);
-    if (!execution) return false;
+    if (!execution) {
+      return false;
+    }
 
     execution.status = 'cancelled';
     execution.completedAt = Date.now();
@@ -476,7 +476,9 @@ export class AgenticEngine {
     message?: string
   ): Promise<boolean> {
     const approval = this.pendingApprovals.get(approvalId);
-    if (!approval) return false;
+    if (!approval) {
+      return false;
+    }
 
     approval.status = approved ? 'approved' : 'rejected';
     approval.respondedAt = Date.now();

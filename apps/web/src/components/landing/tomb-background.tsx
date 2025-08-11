@@ -185,6 +185,7 @@ export function TombBackground({
         className={`absolute inset-0 transition-opacity duration-700 ${isDark ? 'opacity-20' : 'opacity-15'}`}
       >
         <svg
+          aria-hidden="true"
           className="h-full w-full transition-all duration-700"
           preserveAspectRatio="none"
           viewBox="0 0 100 100"

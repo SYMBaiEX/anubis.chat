@@ -5,7 +5,6 @@ import { api } from '@convex/_generated/api';
 import { useQuery } from 'convex/react';
 import { useCallback, useState } from 'react';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { useSubscription } from './use-subscription';
 
 const log = createModuleLogger('use-upgrade-modal');
 

@@ -46,7 +46,9 @@ const getAgentIcon = (type: Agent['type']) => {
 const getAgentColor = () => 'bg-primary/10 text-primary dark:bg-primary/15';
 
 const getAgentDescription = (agent: Agent) => {
-  if (agent.description) return agent.description;
+  if (agent.description) {
+    return agent.description;
+  }
 
   // Fallback descriptions
   switch (agent.type) {

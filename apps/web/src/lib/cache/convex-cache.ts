@@ -3,8 +3,6 @@
  * Optimizes Convex queries and mutations with intelligent caching
  */
 
-import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('convex-cache');
@@ -45,7 +43,9 @@ class ConvexCache {
     // Notify subscribers
     const subscribers = this.subscriptions.get(key);
     if (subscribers) {
-      subscribers.forEach((callback) => callback(data));
+      for (const callback of subscribers) {
+        callback(data);
+      }
     }
   }
 
@@ -55,7 +55,9 @@ class ConvexCache {
   getCachedQuery<T>(key: string): T | null {
     const cached = this.queryCache.get(key);
 
-    if (!cached) return null;
+    if (!cached) {
+      return null;
+    }
 
     // Check if cache is still valid
     if (Date.now() - cached.timestamp > cached.ttl) {
@@ -118,7 +120,7 @@ class ConvexCache {
   invalidate(pattern: string | RegExp): void {
     const keys = Array.from(this.queryCache.keys());
 
-    keys.forEach((key) => {
+    for (const key of keys) {
       if (typeof pattern === 'string') {
         if (key.includes(pattern)) {
           this.queryCache.delete(key);
@@ -128,7 +130,7 @@ class ConvexCache {
         this.queryCache.delete(key);
         log.debug(`Invalidated cache for ${key}`);
       }
-    });
+    }
   }
 
   /**
@@ -149,7 +151,7 @@ class ConvexCache {
       this.subscriptions.set(key, new Set());
     }
 
-    this.subscriptions.get(key)!.add(callback);
+    this.subscriptions.get(key)?.add(callback);
 
     // Return unsubscribe function
     return () => {
@@ -196,7 +198,7 @@ class ConvexCache {
     let oldest = Number.POSITIVE_INFINITY;
     let newest = 0;
 
-    this.queryCache.forEach((entry) => {
+    for (const entry of this.queryCache.values()) {
       // Rough memory estimation
       stats.memoryUsage += JSON.stringify(entry.data).length;
 
@@ -206,7 +208,7 @@ class ConvexCache {
       if (entry.timestamp > newest) {
         newest = entry.timestamp;
       }
-    });
+    }
 
     if (oldest !== Number.POSITIVE_INFINITY) {
       stats.oldestEntry = new Date(oldest);

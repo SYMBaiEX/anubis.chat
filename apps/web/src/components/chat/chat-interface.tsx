@@ -3,12 +3,11 @@
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
-import { Bot, MessageSquare, Plus, Sidebar, X } from 'lucide-react';
+import { MessageSquare, Plus, Sidebar } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { useEffect, useRef, useState } from 'react';
-import { FeatureGate } from '@/components/auth/feature-gate';
+import { useEffect, useState } from 'react';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
@@ -38,13 +37,11 @@ import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
 import { AgentSelectorDialog } from './agent-selector-dialog';
 import { ChatHeader } from './chat-header';
-import { ChatList } from './chat-list';
 import { ChatSettingsDialog } from './chat-settings-dialog';
 import { ChatWelcome } from './chat-welcome';
 import { MessageInput } from './message-input';
 import { MessageList } from './message-list';
 import { ModelSelector } from './model-selector';
-import { UsageIndicator } from './usage-indicator';
 
 const log = createModuleLogger('components/chat/chat-interface');
 
@@ -87,7 +84,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({ className }: ChatInterfaceProps) {
   const { user, isAuthenticated, token } = useAuthContext();
   const userWalletAddress = user?.walletAddress;
-  const limits = useSubscriptionLimits();
+  const _limits = useSubscriptionLimits();
   const upgradePrompt = useUpgradePrompt();
   const canSendMessage = useCanSendMessage();
   const { agents, selectedAgent, selectAgent, isInitialized } =
@@ -203,13 +200,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   }, [userPreferences, isAuthenticated]);
 
   // Debug logging
-  useEffect(() => {
-    console.log('ChatInterface - Auth state:', {
-      isAuthenticated,
-      user,
-      walletAddress: user?.walletAddress,
-    });
-  }, [isAuthenticated, user]);
+  useEffect(() => { }, []);
 
   // Convex queries and mutations - using authenticated queries
   const chats = useQuery(
@@ -239,18 +230,18 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   // Use the dedicated query for the current chat instead of filtering from the list
   const currentChat = currentChatQuery as
     | (Pick<
-        Chat,
-        | 'title'
-        | 'model'
-        | 'lastMessageAt'
-        | 'updatedAt'
-        | 'systemPrompt'
-        | 'temperature'
-      > & {
-        _id: string;
-        agentPrompt?: string;
-        agentId?: string;
-      })
+      Chat,
+      | 'title'
+      | 'model'
+      | 'lastMessageAt'
+      | 'updatedAt'
+      | 'systemPrompt'
+      | 'temperature'
+    > & {
+      _id: string;
+      agentPrompt?: string;
+      agentId?: string;
+    })
     | undefined;
 
   // Sync URL parameter with selected chat ID
@@ -258,7 +249,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     if (urlChatId && urlChatId !== selectedChatId) {
       setSelectedChatId(urlChatId);
     }
-  }, [urlChatId]);
+  }, [urlChatId, selectedChatId]);
 
   // Check for openSettings parameter and open chat settings
   useEffect(() => {
@@ -285,7 +276,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   // Update selected model and settings when chat changes
   useEffect(() => {
-    if (currentChat && currentChat.model) {
+    if (currentChat?.model) {
       setSelectedModel(currentChat.model);
       setChatSettings((prev) => ({
         ...prev,
@@ -307,14 +298,75 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   }, [selectedAgent]);
 
-  const handleChatSelect = (chatId: string) => {
+  // Quick suggestion prompts inspired by AI Elements examples
+  const quickSuggestions = [
+    'Summarize recent messages',
+    'Generate action items from this chat',
+    'Explain this like I’m new to Solana',
+    'Turn this into a tweet thread',
+  ] as const;
+
+  // Regenerate an assistant message by resending the preceding user message
+  const handleRegenerateMessage = (messageId: string) => {
+    if (!messages || messages.length === 0) {
+      return;
+    }
+
+    const findMessageIndex = (id: string) => {
+      for (let i = 0; i < messages.length; i++) {
+        const m = messages[i] as unknown;
+        if (
+          typeof m === 'object' &&
+          m !== null &&
+          'isStreaming' in m &&
+          (m as StreamingMessage).isStreaming
+        ) {
+          if ((m as StreamingMessage).id === id) {
+            return i;
+          }
+          continue;
+        }
+        if (
+          typeof m === 'object' &&
+          m !== null &&
+          '_id' in m &&
+          String((m as { _id: unknown })._id) === id
+        ) {
+          return i;
+        }
+      }
+      return -1;
+    };
+
+    const idx = findMessageIndex(messageId);
+    if (idx < 0) {
+      return;
+    }
+
+    // walk backwards to find the closest previous user message
+    for (let i = idx - 1; i >= 0; i--) {
+      const candidate = messages[i] as unknown;
+      if (
+        typeof candidate === 'object' &&
+        candidate !== null &&
+        'role' in candidate &&
+        (candidate as { role: string }).role === 'user' &&
+        'content' in candidate &&
+        typeof (candidate as { content: unknown }).content === 'string'
+      ) {
+        void handleSendMessage((candidate as { content: string }).content);
+        break;
+      }
+    }
+  };
+
+  const _handleChatSelect = (chatId: string) => {
     setSelectedChatId(chatId);
     router.push(`/chat?chatId=${chatId}`);
   };
 
   const handleCreateChat = async () => {
     if (!isAuthenticated) {
-      console.error('Cannot create chat: User is not authenticated');
       return;
     }
 
@@ -328,13 +380,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         agentId: selectedAgent?._id, // Reference to the agent
       });
       // The create mutation returns the full chat document, extract the _id
-      if (newChat && newChat._id) {
+      if (newChat?._id) {
         setSelectedChatId(newChat._id);
         // Update URL to include the new chat ID
         router.push(`/chat?chatId=${newChat._id}`);
       }
-    } catch (error) {
-      console.error('Failed to create chat:', error);
+    } catch (_error) {
     } finally {
       setIsCreatingChat(false);
     }
@@ -342,10 +393,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   const handleSendMessage = async (content: string, useReasoning?: boolean) => {
     if (!(selectedChatId && user && userWalletAddress)) {
-      console.error('Missing requirements for sending message:', {
-        selectedChatId,
-        user: !!user,
-      });
       return;
     }
 
@@ -363,12 +410,13 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         selectedModel,
         useReasoning
       );
-    } catch (error: any) {
-      log.error('Failed to send message', { error: error?.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log.error('Failed to send message', { error: errorMessage });
       // If error is about limits, show upgrade prompt
       if (
-        error?.message?.includes('limit') ||
-        error?.message?.includes('quota')
+        errorMessage.includes('limit') ||
+        errorMessage.includes('quota')
       ) {
         setShowUpgradePrompt(true);
       }
@@ -443,12 +491,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           defaultFrequencyPenalty: newSettings.frequencyPenalty,
           defaultPresencePenalty: newSettings.presencePenalty,
         });
-      } catch (error: any) {
-        console.warn(
-          'Failed to save user preferences to database:',
-          error?.message
-        );
-      }
+      } catch (_error: any) { }
     }
 
     // Update chat-specific settings in database if needed
@@ -537,10 +580,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 <ChatHeader
                   chat={currentChat}
                   onAgentSelectorClick={() => setShowMobileAgentSelector(true)}
-                  onClearHistory={() => {
-                    // TODO: Implement clear chat history
-                    console.log('Clear history for chat:', currentChat._id);
-                  }}
+                  onClearHistory={() => { }}
                   onDelete={() => {
                     if (selectedChatId) {
                       handleDeleteChat(selectedChatId);
@@ -630,7 +670,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               ) : (
                 <MessageList
                   fontSize={chatSettings.fontSize}
-                  isTyping={isAnyoneTyping}
+                  isTyping={isAnyoneTyping || isStreaming}
                   messages={(messages || []).map((m) => {
                     if ((m as StreamingMessage).isStreaming) {
                       return m as StreamingMessage;
@@ -647,16 +687,32 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       content: doc.content,
                       role: doc.role,
                       createdAt:
-                        doc.createdAt ?? doc._creationTime ?? Date.now(),
+                        (doc.createdAt ?? doc._creationTime ?? Date.now()),
                     };
                     return normalized;
                   })}
-                  onMessageRegenerate={(messageId) => {
-                    // TODO: Implement message regeneration
-                    console.log('Regenerate message:', messageId);
-                  }}
+                  onMessageRegenerate={handleRegenerateMessage}
                 />
               )}
+            </div>
+
+            {/* Quick Suggestions (optional) */}
+            <div className="border-border/50 border-t bg-card/20 px-2 py-1 sm:px-3 md:px-4">
+              <div className="mx-auto w-full max-w-full px-0 sm:max-w-6xl md:max-w-7xl lg:px-4 xl:px-8">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {quickSuggestions.map((s) => (
+                    <Button
+                      key={s}
+                      className="h-7 rounded-full px-2 text-xs sm:h-8 sm:px-3 sm:text-sm"
+                      onClick={() => handleSendMessage(s)}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      {s}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Upgrade Prompt */}

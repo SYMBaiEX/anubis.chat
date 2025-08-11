@@ -5,30 +5,12 @@ import {
   BarChart3,
   Bot,
   Brain,
-  Briefcase,
   Check,
   ChevronRight,
-  Clock,
   Code,
-  Coffee,
-  Coins,
-  Copy,
-  Crown,
-  Diamond,
   Download,
-  Eye,
-  Filter,
   Flame,
-  Gamepad2,
-  GitBranch,
-  Globe,
-  GraduationCap,
-  Heart,
-  Image,
-  MessageSquare,
-  Music,
   Package,
-  Rocket,
   Search,
   Shield,
   Sparkles,
@@ -37,18 +19,11 @@ import {
   Trophy,
   Users,
   Vote,
-  Zap,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -106,22 +81,21 @@ const templates: ExtendedAgentTemplate[] = [
       traits: ['helpful', 'approachable', 'knowledgeable'],
     },
     config: {
-      description:
-        'You are a helpful, friendly, and knowledgeable AI assistant. You can engage in conversations on a wide variety of topics, answer questions, provide explanations, and help with various tasks.',
+      description: `You are a helpful, friendly, and knowledgeable AI assistant. You can engage in conversations on a wide variety of topics, answer questions, provide explanations, and help with various tasks.
 
-      Your approach:
-        - Be conversational and approachable
+Your approach:
+- Be conversational and approachable
 - Provide clear and helpful responses
 - Ask clarifying questions when needed
-  - Maintain a positive and supportive tone
-  - Adapt to the user's communication style
+- Maintain a positive and supportive tone
+- Adapt to the user's communication style
 
 You can help with:
 - General knowledge questions
-  - Explanations of concepts
-    - Creative writing and brainstorming
-      - Problem - solving and advice
-        - Casual conversation
+- Explanations of concepts
+- Creative writing and brainstorming
+- Problem-solving and advice
+- Casual conversation
 
 Always aim to be helpful, accurate, and engaging in your responses.`,
     },
@@ -154,8 +128,7 @@ Always aim to be helpful, accurate, and engaging in your responses.`,
       traits: ['knowledgeable', 'precise', 'helpful'],
     },
     config: {
-      description:
-        'You are the Solana Knowledge Expert, a specialized assistant with deep expertise in Solana blockchain development and ecosystem knowledge.',
+      description: `You are the Solana Knowledge Expert, a specialized assistant with deep expertise in Solana blockchain development and ecosystem knowledge.
 
 Your primary capabilities:
 - Access to real-time Solana documentation through the Solana MCP server
@@ -189,36 +162,34 @@ When answering questions:
    - Share DeFi protocol knowledge
 
 Remember: Always verify information with the Solana MCP tools to ensure accuracy and currency of the information provided.`,
-  mcpServers: [{ name: 'solana', enabled: true, config: {} }],
-    model: 'openrouter/qwen/qwen3-coder:free',
     },
   },
-{
-  id: 'coding-knowledge',
+  {
+    id: 'coding-knowledge',
     name: 'Coding Knowledge Agent',
-      description:
-  'Expert coding assistant with access to 50,000+ library docs and best practices through Context7',
-    category: 'DeFi',
-      icon: Code,
-        color: 'bg-blue-500',
-          popular: true,
-            downloads: 12_456,
-              rating: 4.8,
-                author: 'Anubis Team',
-                  capabilities: [
-                    'code-assistance',
-                    'library-documentation',
-                    'best-practices',
-                    'debugging',
-                  ],
-                    tools: ['context7-mcp', 'documentation', 'code-analysis'],
-                      personality: {
-    tone: 'professional',
+    description:
+      'Expert coding assistant with access to 50,000+ library docs and best practices through Context7',
+    category: 'Development',
+    icon: Bot,
+    color: 'bg-green-500',
+    popular: true,
+    downloads: 12_456,
+    rating: 4.8,
+    author: 'Anubis Team',
+    capabilities: [
+      'code-assistance',
+      'library-documentation',
+      'best-practices',
+      'debugging',
+    ],
+    tools: ['context7-mcp', 'documentation', 'code-analysis'],
+    personality: {
+      tone: 'professional',
       style: 'technical',
-        traits: ['knowledgeable', 'precise', 'helpful'],
+      traits: ['knowledgeable', 'precise', 'helpful'],
     },
-  config: {
-    systemPrompt: `You are the Coding Knowledge Agent, an expert programming assistant with access to comprehensive, up-to-date documentation for over 50,000 libraries through Context7.
+    config: {
+      description: `You are the Coding Knowledge Agent, an expert programming assistant with access to comprehensive, up-to-date documentation for over 50,000 libraries through Context7.
 
 Your primary capabilities:
 - Real-time access to library documentation via Context7 MCP
@@ -250,208 +221,208 @@ When helping with code:
    - Performance implications
    - Links to relevant documentation
 
-Key instruction: Frequently use Context7 to ensure all code examples and advice are based on the latest official documentation. Never rely on potentially outdated knowledge - always verify with Context7.`,
-      mcpServers: [{ name: 'context7', enabled: true, config: {} }],
+      Key instruction: Frequently use Context7 to ensure all code examples and advice are based on the latest official documentation. Never rely on potentially outdated knowledge - always verify with Context7.`,
     },
-},
-{
-  id: 'nft-curator',
+  },
+  {
+    id: 'nft-curator',
     name: 'NFT Curator',
-      description: 'Discover, analyze, and trade NFTs across marketplaces',
-        category: 'NFT',
-          icon: Image,
-            color: 'bg-purple-500',
-              new: true,
-                downloads: 8923,
-                  rating: 4.6,
-                    author: 'Anubis Team',
-                      capabilities: ['nft', 'market-analysis', 'portfolio'],
-                        tools: ['helius', 'openai'],
-                          personality: {
-    tone: 'enthusiastic',
+    description: 'Discover, analyze, and trade NFTs across marketplaces',
+    category: 'NFT',
+    icon: Bot,
+    color: 'bg-purple-500',
+    new: true,
+    downloads: 8923,
+    rating: 4.6,
+    author: 'Anubis Team',
+    capabilities: ['nft', 'market-analysis', 'portfolio'],
+    tools: ['helius', 'openai'],
+    personality: {
+      tone: 'enthusiastic',
       style: 'creative',
-        traits: ['creative', 'curious', 'innovative'],
+      traits: ['creative', 'curious', 'innovative'],
     },
-  config: { },
-},
-{
-  id: 'dao-governor',
+    config: {
+      description:
+        'You are an NFT curator and market analyst. Help users discover, analyze, and understand NFT trends and opportunities.',
+    },
+  },
+  {
+    id: 'dao-governor',
     name: 'DAO Governor',
-      description: 'Manage DAO participation, voting, and proposal creation',
-        category: 'Governance',
-          icon: Vote,
-            color: 'bg-orange-500',
-              downloads: 6789,
-                rating: 4.5,
-                  author: 'Anubis Team',
-                    capabilities: ['dao', 'notifications', 'automation'],
-                      tools: ['helius', 'discord-webhook'],
-                        personality: {
-    tone: 'authoritative',
+    description: 'Manage DAO participation, voting, and proposal creation',
+    category: 'Governance',
+    icon: Vote,
+    color: 'bg-orange-500',
+    downloads: 6789,
+    rating: 4.5,
+    author: 'Anubis Team',
+    capabilities: ['dao', 'notifications', 'automation'],
+    tools: ['helius', 'discord-webhook'],
+    personality: {
+      tone: 'authoritative',
       style: 'concise',
-        traits: ['reliable', 'efficient', 'collaborative'],
+      traits: ['reliable', 'efficient', 'collaborative'],
     },
-  config: { },
-},
-{
-  id: 'portfolio-analyst',
+    config: {},
+  },
+  {
+    id: 'portfolio-analyst',
     name: 'Portfolio Analyst',
-      description: 'Comprehensive portfolio tracking and performance analysis',
-        category: 'Analytics',
-          icon: BarChart3,
-            color: 'bg-indigo-500',
-              featured: true,
-                downloads: 11_234,
-                  rating: 4.9,
-                    author: 'Anubis Team',
-                      capabilities: ['portfolio', 'market-analysis', 'technical-analysis'],
-                        tools: ['coingecko', 'helius'],
-                          personality: {
-    tone: 'professional',
+    description: 'Comprehensive portfolio tracking and performance analysis',
+    category: 'Analytics',
+    icon: BarChart3,
+    color: 'bg-indigo-500',
+    featured: true,
+    downloads: 11_234,
+    rating: 4.9,
+    author: 'Anubis Team',
+    capabilities: ['portfolio', 'market-analysis', 'technical-analysis'],
+    tools: ['coingecko', 'helius'],
+    personality: {
+      tone: 'professional',
       style: 'analytical',
-        traits: ['analytical', 'detail-oriented', 'practical'],
+      traits: ['analytical', 'detail-oriented', 'practical'],
     },
-  config: { },
-},
-{
-  id: 'security-auditor',
+    config: {},
+  },
+  {
+    id: 'security-auditor',
     name: 'Security Auditor',
-      description: 'Smart contract auditing and transaction security analysis',
-        category: 'Security',
-          icon: Shield,
-            color: 'bg-red-500',
-              downloads: 4567,
-                rating: 4.8,
-                  author: 'Anubis Team',
-                    capabilities: ['security-audit', 'smart-contracts', 'on-chain-data'],
-                      tools: ['helius', 'custom-script'],
-                        personality: {
-    tone: 'professional',
+    description: 'Smart contract auditing and transaction security analysis',
+    category: 'Security',
+    icon: Shield,
+    color: 'bg-red-500',
+    downloads: 4567,
+    rating: 4.8,
+    author: 'Anubis Team',
+    capabilities: ['security-audit', 'smart-contracts', 'on-chain-data'],
+    tools: ['helius', 'custom-script'],
+    personality: {
+      tone: 'professional',
       style: 'technical',
-        traits: ['detail-oriented', 'reliable', 'knowledgeable'],
+      traits: ['detail-oriented', 'reliable', 'knowledgeable'],
     },
-  config: { },
-},
-{
-  id: 'research-assistant',
+    config: {},
+  },
+  {
+    id: 'research-assistant',
     name: 'Research Assistant',
-      description: 'Deep blockchain research and data analysis',
-        category: 'Research',
-          icon: Brain,
-            color: 'bg-teal-500',
-              new: true,
-                downloads: 3456,
-                  rating: 4.7,
-                    author: 'Community',
-                      capabilities: ['on-chain-data', 'sentiment', 'api-integration'],
-                        tools: ['openai', 'coingecko', 'postgres'],
-                          personality: {
-    tone: 'educational',
+    description: 'Deep blockchain research and data analysis',
+    category: 'Research',
+    icon: Brain,
+    color: 'bg-teal-500',
+    new: true,
+    downloads: 3456,
+    rating: 4.7,
+    author: 'Community',
+    capabilities: ['on-chain-data', 'sentiment', 'api-integration'],
+    tools: ['openai', 'coingecko', 'postgres'],
+    personality: {
+      tone: 'educational',
       style: 'detailed',
-        traits: ['curious', 'knowledgeable', 'helpful'],
+      traits: ['curious', 'knowledgeable', 'helpful'],
     },
-  config: { },
-},
-{
-  id: 'universal-coder',
+    config: {},
+  },
+  {
+    id: 'universal-coder',
     name: 'Universal Coding Assistant',
-      description:
-  'Multi-language coding expert with access to 50,000+ library docs via Context7',
+    description:
+      'Multi-language coding expert with access to 50,000+ library docs via Context7',
     category: 'Development',
-      icon: Sparkles,
-        color: 'bg-gradient-to-r from-blue-500 to-purple-500',
-          featured: true,
-            new: true,
-              downloads: 8900,
-                rating: 4.9,
-                  author: 'Anubis Team',
-                    capabilities: [
-                      'multi-language',
-                      'library-docs',
-                      'debugging',
-                      'refactoring',
-                    ],
-                      tools: ['context7-mcp', 'code-analysis'],
-                        personality: {
-    tone: 'friendly',
+    icon: Sparkles,
+    color: 'bg-gradient-to-r from-blue-500 to-purple-500',
+    featured: true,
+    new: true,
+    downloads: 8900,
+    rating: 4.9,
+    author: 'Anubis Team',
+    capabilities: [
+      'multi-language',
+      'library-docs',
+      'debugging',
+      'refactoring',
+    ],
+    tools: ['context7-mcp', 'code-analysis'],
+    personality: {
+      tone: 'friendly',
       style: 'clear',
-        traits: ['patient', 'thorough', 'innovative'],
+      traits: ['patient', 'thorough', 'innovative'],
     },
-  config: {
-    systemPrompt:
-    'You are the Universal Coding Assistant, equipped with Context7 to provide accurate, up-to-date information about any programming library or framework.\n\nCore responsibilities:\n- Access real-time documentation for JavaScript, Python, Go, Rust, and more\n- Provide version-specific code examples\n- Debug issues with accurate library references\n- Suggest best practices based on official documentation\n\nAlways use Context7 to:\n1. Verify syntax and API usage\n2. Check for deprecations and updates\n3. Find optimal implementation patterns\n4. Provide links to official documentation\n\nRemember: Never guess - always verify with Context7 for accuracy.',
-      mcpServers: [{ name: 'context7', enabled: true, config: {} }],
-    },
-},
-{
-  id: 'solana-developer',
-    name: 'Solana Developer Assistant',
+    config: {
       description:
-  'Expert Solana development support with Anchor framework and documentation access',
+        'You are the Universal Coding Assistant, equipped with Context7 to provide accurate, up-to-date information about any programming library or framework.\n\nCore responsibilities:\n- Access real-time documentation for JavaScript, Python, Go, Rust, and more\n- Provide version-specific code examples\n- Debug issues with accurate library references\n- Suggest best practices based on official documentation\n\nAlways use Context7 to:\n1. Verify syntax and API usage\n2. Check for deprecations and updates\n3. Find optimal implementation patterns\n4. Provide links to official documentation\n\nRemember: Never guess - always verify with Context7 for accuracy.',
+    },
+  },
+  {
+    id: 'solana-developer',
+    name: 'Solana Developer Assistant',
+    description:
+      'Expert Solana development support with Anchor framework and documentation access',
     category: 'Development',
-      icon: Code,
-        color: 'bg-purple-500',
-          downloads: 5678,
-            rating: 4.7,
-              author: 'Community',
-                capabilities: [
-                  'smart-contracts',
-                  'anchor-framework',
-                  'solana-programs',
-                  'documentation',
-                ],
-                  tools: ['solana-mcp', 'helius', 'development'],
-                    personality: {
-    tone: 'professional',
+    icon: Code,
+    color: 'bg-purple-500',
+    downloads: 5678,
+    rating: 4.7,
+    author: 'Community',
+    capabilities: [
+      'smart-contracts',
+      'anchor-framework',
+      'solana-programs',
+      'documentation',
+    ],
+    tools: ['solana-mcp', 'helius', 'development'],
+    personality: {
+      tone: 'professional',
       style: 'technical',
-        traits: ['helpful', 'knowledgeable', 'efficient'],
+      traits: ['helpful', 'knowledgeable', 'efficient'],
     },
-  config: {
-    systemPrompt:
-    'You are a Solana Developer Assistant with specialized knowledge in Solana program development and the Anchor framework.\n\nLeverage the Solana MCP tools to provide accurate, up-to-date information about:\n- Solana program development\n- Anchor framework patterns and best practices\n- Account structures and PDA derivation\n- Transaction building and error handling\n- CPI and cross-program invocations\n\nAlways use the Solana MCP to verify technical details and provide current examples.',
-      mcpServers: [{ name: 'solana', enabled: true, config: {} }],
+    config: {
+      description:
+        'You are a Solana Developer Assistant with specialized knowledge in Solana program development and the Anchor framework.\n\nLeverage the Solana MCP tools to provide accurate, up-to-date information about:\n- Solana program development\n- Anchor framework patterns and best practices\n- Account structures and PDA derivation\n- Transaction building and error handling\n- CPI and cross-program invocations\n\nAlways use the Solana MCP to verify technical details and provide current examples.',
     },
-},
-{
-  id: 'social-trader',
+  },
+  {
+    id: 'social-trader',
     name: 'Social Trader',
-      description: 'Copy trading and social sentiment-based strategies',
-        category: 'Trading',
-          icon: Users,
-            color: 'bg-cyan-500',
-              new: true,
-                downloads: 2345,
-                  rating: 4.4,
-                    author: 'Community',
-                      capabilities: ['trading', 'sentiment', 'notifications'],
-                        tools: ['jupiter', 'discord-webhook', 'telegram'],
-                          personality: {
-    tone: 'friendly',
+    description: 'Copy trading and social sentiment-based strategies',
+    category: 'Trading',
+    icon: Users,
+    color: 'bg-cyan-500',
+    new: true,
+    downloads: 2345,
+    rating: 4.4,
+    author: 'Community',
+    capabilities: ['trading', 'sentiment', 'notifications'],
+    tools: ['jupiter', 'discord-webhook', 'telegram'],
+    personality: {
+      tone: 'friendly',
       style: 'casual',
-        traits: ['collaborative', 'optimistic', 'adaptable'],
+      traits: ['collaborative', 'optimistic', 'adaptable'],
     },
-  config: { },
-},
-{
-  id: 'yield-farmer',
+    config: {},
+  },
+  {
+    id: 'yield-farmer',
     name: 'Yield Farmer',
-      description: 'Optimize yield farming strategies across protocols',
-        category: 'DeFi',
-          icon: Flame,
-            color: 'bg-yellow-500',
-              popular: true,
-                downloads: 9876,
-                  rating: 4.7,
-                    author: 'Community',
-                      capabilities: ['defi', 'automation', 'portfolio'],
-                        tools: ['jupiter', 'helius'],
-                          personality: {
-    tone: 'enthusiastic',
+    description: 'Optimize yield farming strategies across protocols',
+    category: 'DeFi',
+    icon: Flame,
+    color: 'bg-yellow-500',
+    popular: true,
+    downloads: 9876,
+    rating: 4.7,
+    author: 'Community',
+    capabilities: ['defi', 'automation', 'portfolio'],
+    tools: ['jupiter', 'helius'],
+    personality: {
+      tone: 'enthusiastic',
       style: 'analytical',
-        traits: ['proactive', 'innovative', 'efficient'],
+      traits: ['proactive', 'innovative', 'efficient'],
     },
-  config: { },
-},
+    config: {},
+  },
 ];
 
 const categories = [
@@ -502,12 +473,13 @@ export function AgentTemplateGallery({
   const [showPreview, setShowPreview] = useState(false);
 
   const filteredTemplates = templates.filter((template) => {
+    const isAnubisAuthor = template.author === 'Anubis Team';
     const matchesSearch =
       template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       template.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
       selectedCategory === 'All' || template.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return isAnubisAuthor && matchesSearch && matchesCategory;
   });
 
   const handleSelectTemplate = (template: ExtendedAgentTemplate) => {
@@ -520,12 +492,7 @@ export function AgentTemplateGallery({
       // Safely map category to a valid agent type
       const agentType = getCategoryAgentType(selectedTemplate.category);
 
-      // Log warning if fallback was used
-      if (!CATEGORY_TO_TYPE_MAP[selectedTemplate.category]) {
-        console.warn(
-          `Template category "${selectedTemplate.category}" has no direct mapping. Using default type "${DEFAULT_AGENT_TYPE}".`
-        );
-      }
+      // Fallback mapping is handled by getCategoryAgentType
 
       const templateForSelection: AgentTemplateType = {
         id: selectedTemplate.id,
@@ -624,8 +591,16 @@ export function AgentTemplateGallery({
                       transition={{ delay: index * 0.05 }}
                     >
                       <Card
+                        aria-label={`Open ${template.name} template`}
                         className="cursor-pointer border-2 border-primary/20 transition-all hover:shadow-lg"
                         onClick={() => handleSelectTemplate(template)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleSelectTemplate(template);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start space-x-3">
@@ -701,8 +676,16 @@ export function AgentTemplateGallery({
                     transition={{ delay: index * 0.02 }}
                   >
                     <Card
+                      aria-label={`Open ${template.name} template`}
                       className="cursor-pointer transition-all hover:shadow-md"
                       onClick={() => handleSelectTemplate(template)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          handleSelectTemplate(template);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start space-x-3">

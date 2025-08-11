@@ -113,7 +113,7 @@ describe('useAuth', () => {
     await act(async () => {
       try {
         await result.current.login();
-      } catch (error) {
+      } catch (_error) {
         // Expected to throw
       }
     });
@@ -156,8 +156,12 @@ describe('useAuth', () => {
 
     // Set up localStorage with both token and user data
     mockLocalStorage.getItem.mockImplementation((key) => {
-      if (key === 'anubis-auth-token') return mockToken;
-      if (key === 'anubis-auth-user') return JSON.stringify(mockUser);
+      if (key === 'anubis-auth-token') {
+        return mockToken;
+      }
+      if (key === 'anubis-auth-user') {
+        return JSON.stringify(mockUser);
+      }
       return null;
     });
 
@@ -193,7 +197,7 @@ describe('useAuth', () => {
     );
   });
 
-  it.skip('should refresh token when needed', async () => {
+  it('should refresh token when needed', async () => {
     const mockOldToken = 'old-token';
     const mockNewToken = 'new-token';
     const mockUser = {
@@ -204,8 +208,12 @@ describe('useAuth', () => {
 
     // Set up initial state with token and user
     mockLocalStorage.getItem.mockImplementation((key) => {
-      if (key === 'anubis-auth-token') return mockOldToken;
-      if (key === 'anubis-auth-user') return JSON.stringify(mockUser);
+      if (key === 'anubis-auth-token') {
+        return mockOldToken;
+      }
+      if (key === 'anubis-auth-user') {
+        return JSON.stringify(mockUser);
+      }
       return null;
     });
 
@@ -256,7 +264,7 @@ describe('useAuth', () => {
     await act(async () => {
       try {
         await result.current.login();
-      } catch (error) {
+      } catch (_error) {
         // Expected to throw
       }
     });

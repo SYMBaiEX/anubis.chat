@@ -87,12 +87,8 @@ export function WalletAuthButton({
       log.error('Wallet connection/authentication failed', {
         error: errorMessage,
       });
-
-      // Show user-friendly error message
-      // In production, you might want to use a toast notification
-      console.error('Wallet authentication failed:', errorMessage);
     }
-  }, [wallet]);
+  }, [wallet, attributeStoredReferral]);
 
   const handleDisconnect = useCallback(async () => {
     try {

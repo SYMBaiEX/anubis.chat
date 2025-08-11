@@ -85,7 +85,7 @@ export class MCPClientFactory {
    * Create Context7 MCP client for library documentation
    */
   private static async createContext7Client(
-    server: MCPServerConfig
+    _server: MCPServerConfig
   ): Promise<MCPClient | null> {
     const context7Url =
       process.env.NEXT_PUBLIC_CONTEXT7_MCP_URL ||
@@ -191,7 +191,7 @@ export class MCPClientFactory {
    * Note: Solana MCP is accessed via remote MCP at https://mcp.solana.com/mcp
    */
   private static async createSolanaClient(
-    server: MCPServerConfig
+    _server: MCPServerConfig
   ): Promise<MCPClient | null> {
     const solanaUrl =
       process.env.NEXT_PUBLIC_SOLANA_MCP_URL || 'https://mcp.solana.com/mcp';
@@ -312,10 +312,12 @@ export class MCPClientFactory {
     const allTools: Record<string, Tool> = {};
 
     for (const server of servers) {
-      if (!server.enabled) continue;
+      if (!server.enabled) {
+        continue;
+      }
 
       const mcpClient = await MCPClientFactory.getClient(server);
-      if (mcpClient && mcpClient.tools) {
+      if (mcpClient?.tools) {
         // Prefix tool names with server name to avoid conflicts
         for (const [toolName, tool] of Object.entries(mcpClient.tools)) {
           const prefixedName = `${server.name}_${toolName}`;

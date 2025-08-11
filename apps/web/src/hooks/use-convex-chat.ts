@@ -3,7 +3,7 @@
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { StreamingMessage as UIStreamingMessage } from '@/lib/types/api';
 import { MessageRole } from '@/lib/types/api';
 
@@ -14,6 +14,8 @@ export function useConvexChat(chatId: string | undefined) {
   const [streamingMessage, setStreamingMessage] =
     useState<StreamingMessage | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [streamStartTime, setStreamStartTime] = useState<number | null>(null);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   // Convex queries and mutations - using authenticated queries
   const messages = useQuery(
@@ -21,7 +23,7 @@ export function useConvexChat(chatId: string | undefined) {
     chatId ? { chatId: chatId as Id<'chats'> } : 'skip'
   );
 
-  const createMessage = useMutation(api.messagesAuth.createMyMessage);
+  const _createMessage = useMutation(api.messagesAuth.createMyMessage);
 
   // Send message with streaming response
   const sendMessage = useCallback(
@@ -31,10 +33,14 @@ export function useConvexChat(chatId: string | undefined) {
       model?: string,
       useReasoning?: boolean
     ) => {
-      if (!chatId) return;
+      if (!chatId) {
+        return;
+      }
 
       setIsStreaming(true);
+      setIsFinishing(false);
       setStreamingMessage(null);
+      setStreamStartTime(Date.now());
 
       try {
         // Get Convex deployment URL
@@ -65,7 +71,6 @@ export function useConvexChat(chatId: string | undefined) {
         if (!response.ok) {
           // Try to get error details
           const errorText = await response.text();
-          console.error('Streaming error:', response.status, errorText);
 
           let errorMessage = `Failed to stream response: ${response.status}`;
           try {
@@ -87,24 +92,21 @@ export function useConvexChat(chatId: string | undefined) {
           throw new Error('No response body');
         }
 
-        // Create streaming message placeholder
+        // Prepare streaming message (defer showing until first chunk arrives)
         const tempId = `streaming-${Date.now()}`;
-        setStreamingMessage({
-          id: tempId,
-          content: '',
-          role: MessageRole.ASSISTANT as any,
-          isStreaming: true,
-        });
 
         // Process streaming response
         const reader = response.body.getReader();
+        const responseClone = response.clone();
         const decoder = new TextDecoder();
         let accumulatedContent = '';
 
         while (true) {
           const { done, value } = await reader.read();
 
-          if (done) break;
+          if (done) {
+            break;
+          }
 
           const chunk = decoder.decode(value, { stream: true });
 
@@ -112,20 +114,34 @@ export function useConvexChat(chatId: string | undefined) {
           // Just accumulate the chunks as they come
           accumulatedContent += chunk;
 
-          // Update streaming message
-          setStreamingMessage({
-            id: tempId,
-            content: accumulatedContent,
-            role: MessageRole.ASSISTANT as any,
-            isStreaming: true,
-          });
+          // Update or create the streaming message once we have content
+          if (accumulatedContent.length > 0) {
+            setStreamingMessage({
+              id: tempId,
+              content: accumulatedContent,
+              role: MessageRole.ASSISTANT as any,
+              isStreaming: true,
+            });
+          }
         }
 
-        // Clear streaming message once saved (Convex will update via subscription)
-        setStreamingMessage(null);
-      } catch (error) {
-        console.error('Failed to send message:', error);
-        throw error;
+        // If nothing streamed, fallback to full-body text read
+        try {
+          if (accumulatedContent.length === 0) {
+            const fallbackText = (await responseClone.text()).trim();
+            if (fallbackText.length > 0) {
+              setStreamingMessage({
+                id: tempId,
+                content: fallbackText,
+                role: MessageRole.ASSISTANT as any,
+                isStreaming: true,
+              });
+            }
+          }
+        } catch {}
+
+        // Do not clear immediately; wait for persisted message to arrive
+        setIsFinishing(true);
       } finally {
         setIsStreaming(false);
       }
@@ -134,10 +150,40 @@ export function useConvexChat(chatId: string | undefined) {
   );
 
   // Combine regular messages with streaming message
-  const allMessages = [
-    ...(messages || []),
-    ...(streamingMessage ? [streamingMessage] : []),
-  ];
+  const allMessages = (() => {
+    if (!messages) {
+      return streamingMessage ? [streamingMessage] : [];
+    }
+    // If streaming, hide any assistant messages created after stream start to avoid duplicates
+    const filtered = streamStartTime && streamingMessage
+      ? messages.filter((m) => {
+          return !(
+            (m as any).role === MessageRole.ASSISTANT &&
+            (m as any).createdAt &&
+            (m as any).createdAt >= streamStartTime
+          );
+        })
+      : messages;
+    return streamingMessage ? [...filtered, streamingMessage] : filtered;
+  })();
+
+  // Reconcile: once a persisted assistant message arrives after stream start, remove streaming placeholder
+  useEffect(() => {
+    if (!isFinishing || !streamStartTime || !streamingMessage || !messages) {
+      return;
+    }
+    const hasNewAssistant = messages.some(
+      (m) =>
+        (m as any).role === MessageRole.ASSISTANT &&
+        ((m as any).createdAt || (m as any)._creationTime) &&
+        (((m as any).createdAt || (m as any)._creationTime) >= streamStartTime)
+    );
+    if (hasNewAssistant) {
+      setStreamingMessage(null);
+      setIsFinishing(false);
+      setStreamStartTime(null);
+    }
+  }, [messages, isFinishing, streamStartTime, streamingMessage]);
 
   return {
     messages: allMessages,

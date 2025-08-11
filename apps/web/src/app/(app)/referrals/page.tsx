@@ -352,7 +352,15 @@ export default function ReferralsPage() {
                   <CardContent>
                     {referredUsers ? (
                       <MyReferralsDisplay
-                        referredUsers={referredUsers.referredUsers}
+                        referredUsers={referredUsers.referredUsers.map((u) => ({
+                          userId: u.userId,
+                          displayName: u.displayName,
+                          avatar: u.avatar,
+                          referredAt: u.referredAt ?? Date.now(),
+                          totalCommissionsEarned: u.totalCommissionsEarned,
+                          isActive: u.isActive,
+                          subscriptionTier: u.subscriptionTier,
+                        }))}
                       />
                     ) : (
                       <div className="py-6 text-center text-muted-foreground">
@@ -870,7 +878,7 @@ type ReferredUser = {
   userId: string;
   displayName: string;
   avatar?: string;
-  referredAt: number;
+  referredAt?: number;
   totalCommissionsEarned: number;
   isActive: boolean;
   subscriptionTier?: 'free' | 'pro' | 'pro_plus' | 'admin';
@@ -881,7 +889,10 @@ function MyReferralsDisplay({
 }: {
   referredUsers: ReferredUser[];
 }) {
-  const formatDate = (timestamp: number) => {
+  const formatDate = (timestamp?: number) => {
+    if (!timestamp && timestamp !== 0) {
+      return 'Unknown';
+    }
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', {
       month: 'short',

@@ -36,7 +36,7 @@ export function ChatItem({
 }: ChatItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(chat.title);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [_showDeleteConfirm, _setShowDeleteConfirm] = useState(false);
 
   const handleRename = () => {
     if (editTitle.trim() && editTitle !== chat.title) {
@@ -55,7 +55,9 @@ export function ChatItem({
   };
 
   const formatLastMessageTime = (timestamp?: number) => {
-    if (!timestamp) return null;
+    if (!timestamp) {
+      return null;
+    }
 
     const date = new Date(timestamp);
     const now = new Date();
@@ -76,10 +78,18 @@ export function ChatItem({
 
   const getModelDisplayName = (model: string) => {
     // Extract display name from model identifier
-    if (model.includes('gpt-4')) return 'GPT-4';
-    if (model.includes('gpt-3.5')) return 'GPT-3.5';
-    if (model.includes('claude')) return 'Claude';
-    if (model.includes('deepseek')) return 'DeepSeek';
+    if (model.includes('gpt-4')) {
+      return 'GPT-4';
+    }
+    if (model.includes('gpt-3.5')) {
+      return 'GPT-3.5';
+    }
+    if (model.includes('claude')) {
+      return 'Claude';
+    }
+    if (model.includes('deepseek')) {
+      return 'DeepSeek';
+    }
     return model.split('-')[0]?.toUpperCase() ?? 'AI';
   };
 

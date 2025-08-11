@@ -52,16 +52,28 @@ export function WalletConnectButton({
 
   // 2025 UX: Dynamic styling based on connection health
   const getButtonVariant = () => {
-    if (!isConnected) return 'outline';
-    if (!isHealthy) return 'destructive';
-    if (connectionHealthScore < HEALTH_SCORE_THRESHOLD) return 'secondary';
+    if (!isConnected) {
+      return 'outline';
+    }
+    if (!isHealthy) {
+      return 'destructive';
+    }
+    if (connectionHealthScore < HEALTH_SCORE_THRESHOLD) {
+      return 'secondary';
+    }
     return 'default';
   };
 
   const getHealthIndicator = () => {
-    if (!isConnected) return null;
-    if (!isHealthy) return '🔴';
-    if (connectionHealthScore < HEALTH_SCORE_THRESHOLD) return '🟡';
+    if (!isConnected) {
+      return null;
+    }
+    if (!isHealthy) {
+      return '🔴';
+    }
+    if (connectionHealthScore < HEALTH_SCORE_THRESHOLD) {
+      return '🟡';
+    }
     return '🟢';
   };
 

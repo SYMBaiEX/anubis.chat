@@ -36,7 +36,9 @@ export function AgentGrid({
 
   // Filter agents based on type
   const filteredAgents = agents.filter((agent) => {
-    if (typeFilter === 'all') return true;
+    if (typeFilter === 'all') {
+      return true;
+    }
     return agent.type === typeFilter;
   });
 
@@ -48,7 +50,6 @@ export function AgentGrid({
         return 'grid-cols-2 lg:grid-cols-3';
       case 4:
         return 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
-      case 5:
       default:
         return 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5';
     }

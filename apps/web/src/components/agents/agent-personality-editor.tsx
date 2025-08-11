@@ -3,25 +3,18 @@
 import {
   Activity,
   BarChart3,
-  Book,
   Brain,
   Briefcase,
   Check,
-  ChevronRight,
   Clock,
   Coffee,
   Crown,
-  Diamond,
   Eye,
-  Flame,
   Gamepad2,
-  Globe,
   GraduationCap,
   Heart,
-  Info,
   Lightbulb,
   MessageSquare,
-  Music,
   Palette,
   Plus,
   RefreshCw,
@@ -387,6 +380,7 @@ export function AgentPersonalityEditor({
                     onClick={() =>
                       onChange({ ...personality, tone: option.value })
                     }
+                    type="button"
                   >
                     <Icon className="h-4 w-4 flex-shrink-0" />
                     <div className="min-w-0 flex-1">
@@ -454,6 +448,7 @@ export function AgentPersonalityEditor({
                     )}
                     key={trait.value}
                     onClick={() => handleTraitToggle(trait.value)}
+                    type="button"
                   >
                     <Icon className="h-3 w-3" />
                     <span>{trait.label}</span>

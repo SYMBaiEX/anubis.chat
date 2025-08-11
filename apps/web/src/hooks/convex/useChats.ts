@@ -184,7 +184,7 @@ export function useDuplicateChat() {
 
   return useCallback(
     async (
-      originalChatId: Id<'chats'>,
+      _originalChatId: Id<'chats'>,
       ownerId: string,
       newTitle?: string
     ): Promise<Result<any, Error>> => {

@@ -1,8 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createMockSolanaWallet } from '../../../test-utils/mocks';
 import { WalletConnectButton } from '../wallet-connect-button';
 
 // Mock the wallet modal hook
@@ -41,6 +39,7 @@ vi.mock('../../ui/button', () => ({
       data-testid="wallet-button"
       disabled={disabled}
       onClick={onClick}
+      type="button"
     >
       {children}
     </button>

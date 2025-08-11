@@ -4,7 +4,6 @@ import {
   Home,
   LayoutDashboard,
   MessageSquare,
-  Server,
   Shield,
   Users,
   Workflow,

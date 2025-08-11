@@ -69,10 +69,17 @@ export const generateEmbedding = action({
             `Invalid embedding dimensions: expected ${EMBEDDING_DIMENSIONS}, got ${embedding?.length}`
           );
         }
-        return { embedding, model: EMBEDDING_MODEL, dimensions: EMBEDDING_DIMENSIONS };
+        return {
+          embedding,
+          model: EMBEDDING_MODEL,
+          dimensions: EMBEDDING_DIMENSIONS,
+        };
       } catch (err) {
-        if (attempt >= MAX_RETRIES - 1) throw err;
-        const isRateLimited = err instanceof Error && err.message.includes('429');
+        if (attempt >= MAX_RETRIES - 1) {
+          throw err;
+        }
+        const isRateLimited =
+          err instanceof Error && err.message.includes('429');
         const delay = isRateLimited ? RETRY_DELAY * 2 ** attempt : RETRY_DELAY;
         await new Promise((resolve) => setTimeout(resolve, delay));
         return tryOnce(attempt + 1);
@@ -147,8 +154,11 @@ export const generateBatchEmbeddings = action({
           };
         }
       } catch (err) {
-        if (attempt >= MAX_RETRIES - 1) throw err;
-        const isRateLimited = err instanceof Error && err.message.includes('429');
+        if (attempt >= MAX_RETRIES - 1) {
+          throw err;
+        }
+        const isRateLimited =
+          err instanceof Error && err.message.includes('429');
         const delay = isRateLimited ? RETRY_DELAY * 2 ** attempt : RETRY_DELAY;
         await new Promise((resolve) => setTimeout(resolve, delay));
         await processBatch(cleaned, startIndex, attempt + 1);

@@ -4,19 +4,11 @@
  */
 
 import type { CoreMessage, LanguageModel, LanguageModelUsage } from 'ai';
-import {
-  dynamicTool,
-  generateObject,
-  generateText,
-  streamObject,
-  streamText,
-  tool,
-} from 'ai';
+import { generateObject, generateText, streamText } from 'ai';
 import PQueue from 'p-queue';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { mcpManager } from '@/lib/mcp/client';
-import type { AITool, AIToolCollection } from '@/lib/types/tools';
+import type { AIToolCollection } from '@/lib/types/tools';
 
 // Agent Types
 export type AgentRole =

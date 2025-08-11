@@ -1,9 +1,8 @@
 'use client';
 
 import { KeySquare, Lock, Shield } from 'lucide-react';
-import React, { memo } from 'react';
+import { memo } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
-import { Card } from '@/components/ui/card';
 
 function Security() {
   return (
@@ -46,6 +45,7 @@ function Security() {
         <div
           aria-label="Security panel"
           className="relative overflow-hidden rounded-2xl p-8 ring-1 ring-border/40"
+          role="region"
         >
           <div aria-hidden className="pointer-events-none absolute inset-0" />
           <div className="relative grid gap-4 sm:grid-cols-2">

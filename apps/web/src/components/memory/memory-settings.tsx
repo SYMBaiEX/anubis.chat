@@ -22,7 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -44,11 +43,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import type {
-  MemoryExportData,
-  MemoryImportData,
-  MemoryStats,
-} from '@/lib/types/memory';
+import type { MemoryExportData } from '@/lib/types/memory';
 import { memoryTypeConfigs } from '@/lib/types/memory';
 
 interface MemorySettingsProps {
@@ -84,14 +79,15 @@ export function MemorySettings({ userId }: MemorySettingsProps) {
       // Persist preference in Convex so chat uses it
       await updateUserPreferences({ enableMemory: enabled });
       toast.success(`Memory system ${enabled ? 'enabled' : 'disabled'}`);
-    } catch (error) {
-      console.error('Failed to update memory preference:', error);
+    } catch (_error) {
       toast.error('Failed to save preference');
     }
   };
 
   const handleClearAllMemories = async () => {
-    if (!memories) return;
+    if (!memories) {
+      return;
+    }
 
     try {
       // Delete all memories one by one (since there's no bulk delete in the API)
@@ -102,14 +98,15 @@ export function MemorySettings({ userId }: MemorySettingsProps) {
 
       setShowClearDialog(false);
       toast.success('All memories cleared successfully');
-    } catch (error) {
-      console.error('Failed to clear memories:', error);
+    } catch (_error) {
       toast.error('Failed to clear memories');
     }
   };
 
   const handleExportMemories = async () => {
-    if (!(memories && stats)) return;
+    if (!(memories && stats)) {
+      return;
+    }
 
     const exportData: MemoryExportData = {
       version: '1.0',
@@ -136,7 +133,9 @@ export function MemorySettings({ userId }: MemorySettingsProps) {
   };
 
   const handleImportMemories = async () => {
-    if (!importFile) return;
+    if (!importFile) {
+      return;
+    }
 
     try {
       const fileContent = await importFile.text();
@@ -165,8 +164,7 @@ export function MemorySettings({ userId }: MemorySettingsProps) {
       toast.success(
         `Imported ${memoriesToImport.length} memories successfully`
       );
-    } catch (error) {
-      console.error('Failed to import memories:', error);
+    } catch (_error) {
       toast.error('Failed to import memories. Please check the file format.');
     }
   };
@@ -185,7 +183,7 @@ export function MemorySettings({ userId }: MemorySettingsProps) {
     if (userPreferences) {
       setMemoryEnabled(userPreferences.enableMemory ?? true);
     }
-  }, [userPreferences?.enableMemory]);
+  }, [userPreferences?.enableMemory, userPreferences]);
 
   if (!stats) {
     return (

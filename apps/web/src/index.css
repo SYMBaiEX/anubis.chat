@@ -228,6 +228,16 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Heading typography: use display font and tighten leading */
+  h1, h2, h3, h4 {
+    font-family: var(--font-heading), var(--font-sans);
+    letter-spacing: -0.01em;
+  }
+
+  h1 { line-height: 1.1; }
+  h2 { line-height: 1.15; }
+  h3 { line-height: 1.2; }
+
   /* Focus Styles */
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
@@ -270,8 +280,8 @@
   html.disable-theme-transitions *,
   html.disable-theme-transitions *::before,
   html.disable-theme-transitions *::after {
-    transition: none !important;
-    animation: none !important;
+    transition: none;
+    animation: none;
   }
 }
 /* Theme transition helper class is added/removed by JS */
@@ -670,10 +680,10 @@
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
   }
 }
 
@@ -693,7 +703,7 @@
 /* Print Styles */
 @media print {
   .no-print {
-    display: none !important;
+    display: none;
   }
 
   body {

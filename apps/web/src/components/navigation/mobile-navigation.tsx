@@ -8,7 +8,6 @@ import {
   Menu,
   MessageSquare,
   Plus,
-  Search,
   Settings,
   User,
   Wallet,

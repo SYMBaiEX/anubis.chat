@@ -16,7 +16,7 @@ if (typeof window !== 'undefined') {
 } else {
   // Node.js environment (SSR) - Use dynamic import to avoid bundling jsdom
   // This will only run on the server side
-  const createServerDOMPurify = async () => {
+  const _createServerDOMPurify = async () => {
     const { JSDOM } = await import('jsdom');
     const window = new JSDOM('').window;
     return (DOMPurify as unknown as (win: Window) => typeof DOMPurify)(
@@ -27,7 +27,7 @@ if (typeof window !== 'undefined') {
   // For server-side, we'll create a simple fallback that just escapes HTML
   // The actual DOMPurify instance will be created on demand
   isomorphicDOMPurify = {
-    sanitize: (dirty: string, config?: DOMPurify.Config) => {
+    sanitize: (dirty: string, _config?: DOMPurify.Config) => {
       // Simple HTML escaping as fallback for SSR
       // This is safe but doesn't preserve any formatting
       return dirty
@@ -76,11 +76,7 @@ const STRICT_SANITIZE_OPTIONS: DOMPurify.Config = {
 export function sanitizeCodeHTML(html: string): string {
   try {
     return isomorphicDOMPurify.sanitize(html, DEFAULT_CODE_SANITIZE_OPTIONS);
-  } catch (error) {
-    // Fallback to empty string if sanitization fails
-    // Using console.error here as a fallback since this is a critical security function
-    // and we want to ensure errors are always logged even if logger fails
-    console.error('Code sanitization failed:', error);
+  } catch (_error) {
     return '';
   }
 }
@@ -92,11 +88,7 @@ export function sanitizeCodeHTML(html: string): string {
 export function sanitizeUserHTML(html: string): string {
   try {
     return isomorphicDOMPurify.sanitize(html, STRICT_SANITIZE_OPTIONS);
-  } catch (error) {
-    // Fallback to empty string if sanitization fails
-    // Using console.error here as a fallback since this is a critical security function
-    // and we want to ensure errors are always logged even if logger fails
-    console.error('User content sanitization failed:', error);
+  } catch (_error) {
     return '';
   }
 }

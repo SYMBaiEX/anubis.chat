@@ -89,8 +89,8 @@ export function ModelSelector({
     useState<ProviderFilterType>('all');
 
   const subscription = useSubscriptionStatus();
-  const limits = useSubscriptionLimits();
-  const canUsePremium = useCanUsePremiumModel();
+  const _limits = useSubscriptionLimits();
+  const _canUsePremium = useCanUsePremiumModel();
 
   const selectedModel = AI_MODELS.find((model) => model.id === value);
 
@@ -111,8 +111,12 @@ export function ModelSelector({
       const isFree = model.pricing.input === 0 && model.pricing.output === 0;
       const isPremium = isPremiumModel(model);
 
-      if (isFree) return 0; // Free first
-      if (!isPremium) return 1; // Standard second
+      if (isFree) {
+        return 0; // Free first
+      }
+      if (!isPremium) {
+        return 1; // Standard second
+      }
       return 2; // Premium last
     };
 
@@ -129,7 +133,9 @@ export function ModelSelector({
   // Check if user can use a model
   const canUseModel = (model: AIModel) => {
     const isAdmin = subscription?.tier === 'admin';
-    if (isAdmin) return true;
+    if (isAdmin) {
+      return true;
+    }
     if (subscription?.tier === 'free') {
       return !isPremiumModel(model);
     }

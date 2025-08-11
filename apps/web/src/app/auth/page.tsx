@@ -12,7 +12,6 @@ import {
   Cpu,
   Globe,
   Lock,
-  MessageSquare,
   Shield,
   Sparkles,
   Wallet,
@@ -58,7 +57,7 @@ export default function AuthPage() {
   useEffect(() => {
     if (isAuthenticated && user) {
       const next = searchParams?.get('next');
-      const dest = next && next.startsWith('/') ? next : '/dashboard';
+      const dest = next?.startsWith('/') ? next : '/dashboard';
       router.push(dest);
     }
   }, [isAuthenticated, user, router, searchParams]);
@@ -100,7 +99,7 @@ export default function AuthPage() {
         await disconnect();
       }
       setVisible(true);
-    } catch (e) {
+    } catch (_e) {
       setAuthError('Unable to switch wallet. Please try again.');
     }
   };

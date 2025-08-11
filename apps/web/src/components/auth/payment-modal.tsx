@@ -10,7 +10,7 @@ import {
   Transaction,
 } from '@solana/web3.js';
 import { Check, ExternalLink, Loader2, X } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -20,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -153,7 +152,6 @@ export function PaymentModal({
       setStep('success');
       onSuccess?.();
     } catch (error) {
-      console.error('Payment error:', error);
       setError(error instanceof Error ? error.message : 'Payment failed');
       setStep('error');
     } finally {

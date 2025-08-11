@@ -3,7 +3,6 @@
 import { Bot, Clock, Cpu, Plus, Settings, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 // Mock data - replace with actual data from your backend
 const mockAgents = [

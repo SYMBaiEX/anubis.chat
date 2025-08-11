@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, MessagesSquare, Rocket, Upload, Wallet } from 'lucide-react';
-import React from 'react';
+import { memo } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 import { Card } from '@/components/ui/card';
 
@@ -53,10 +53,10 @@ function HowItWorks() {
         </div>
 
         <ol className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {steps.map((s, i) => {
+          {steps.map((s) => {
             const Icon = s.icon;
             return (
-              <li className="relative" key={s.title + i}>
+              <li className="relative" key={s.title}>
                 <Card className="h-full bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] p-6">
                   <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <Icon aria-hidden className="h-6 w-6 text-primary" />

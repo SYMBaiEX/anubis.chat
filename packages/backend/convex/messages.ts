@@ -128,27 +128,14 @@ export const create = mutation({
 });
 
 // Helper: validate if a user can send a message, including premium model checks
-type QueryDb = {
-  query: <T extends string>(
-    table: T
-  ) => {
-    withIndex: (
-      name: string,
-      fn: (q: { eq: (field: string, value: unknown) => unknown }) => unknown
-    ) => { unique: () => Promise<unknown> };
-  };
-};
-
 async function ensureUserCanSendMessage(
-  ctx: { db: QueryDb },
+  ctx: { db: any },
   walletAddress: string,
   model?: string
 ): Promise<void> {
   const user = await ctx.db
     .query('users')
-    .withIndex('by_wallet', (q: { eq: (f: string, v: string) => unknown }) =>
-      q.eq('walletAddress', walletAddress)
-    )
+    .withIndex('by_wallet', (q: any) => q.eq('walletAddress', walletAddress))
     .unique();
 
   const subscription = user?.subscription;
@@ -183,20 +170,15 @@ async function ensureUserCanSendMessage(
 }
 
 // Helper: increment chat counters atomically and safely
-type PatchDb = {
-  get: <T>(id: Id<string>) => Promise<T | null>;
-  patch: (id: Id<string>, updates: Record<string, unknown>) => Promise<void>;
-};
-
 async function incrementChatCounters(
-  ctx: { db: PatchDb },
+  ctx: { db: any },
   chatId: Id<'chats'>,
   now: number,
   tokenIncrement: number
 ): Promise<void> {
   const chat = await ctx.db.get(chatId);
-  const currentCount = Math.max(0, chat?.messageCount ?? 0);
-  const currentTokens = Math.max(0, chat?.totalTokens ?? 0);
+  const currentCount = Math.max(0, (chat as any)?.messageCount ?? 0);
+  const currentTokens = Math.max(0, (chat as any)?.totalTokens ?? 0);
 
   await ctx.db.patch(chatId, {
     lastMessageAt: now,

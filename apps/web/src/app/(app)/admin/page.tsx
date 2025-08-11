@@ -14,6 +14,7 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { AgentManagement } from '@/components/admin/agent-management';
+import { PaymentDashboard } from '@/components/admin/payment-dashboard';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
 // removed unused Button import
@@ -327,6 +328,7 @@ function AdminDashboardContent() {
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="agents">Agents</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="admins">Admins</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
@@ -399,6 +401,11 @@ function AdminDashboardContent() {
               </Card>
             </div>
           )}
+        </TabsContent>
+
+        {/* Payments Tab */}
+        <TabsContent className="space-y-4" value="payments">
+          <PaymentDashboard />
         </TabsContent>
 
         {/* Admins Tab */}

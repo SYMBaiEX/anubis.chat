@@ -5,7 +5,7 @@
 
 import type { FunctionReference, OptionalRestArgs } from 'convex/server';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useConvexMutation, useConvexQuery } from './useConvexResult';
+import { useConvexQuery } from './useConvexResult';
 
 // =============================================================================
 // Query Deduplication Hook
@@ -40,7 +40,9 @@ export function useDeduplicatedQuery<Query extends FunctionReference<'query'>>(
   );
 
   const shouldQuery = useMemo(() => {
-    if (!(enabled && cacheKey)) return false;
+    if (!(enabled && cacheKey)) {
+      return false;
+    }
 
     const lastQuery = queryTimestamps.get(cacheKey);
     const now = Date.now();
@@ -61,7 +63,9 @@ export function useDeduplicatedQuery<Query extends FunctionReference<'query'>>(
   }, [shouldQuery, cacheKey, queryResult.data]);
 
   return useMemo(() => {
-    if (!enabled) return queryResult;
+    if (!enabled) {
+      return queryResult;
+    }
 
     if (!shouldQuery && cacheKey && queryCache.has(cacheKey)) {
       return {
@@ -105,14 +109,18 @@ export function useMutationQueue<T>() {
   }, []);
 
   const processQueue = useCallback(async () => {
-    if (processingRef.current || queue.length === 0) return;
+    if (processingRef.current || queue.length === 0) {
+      return;
+    }
 
     processingRef.current = true;
     setIsProcessing(true);
 
     while (queue.length > 0) {
       const currentMutation = queue[0];
-      if (!currentMutation) break;
+      if (!currentMutation) {
+        break;
+      }
 
       try {
         const result = await currentMutation.mutation();
@@ -301,14 +309,14 @@ export function useSmartRefresh() {
         'touchstart',
       ];
 
-      events.forEach((event) => {
+      for (const event of events) {
         document.addEventListener(event, resetInactivityTimer, true);
-      });
+      }
 
       return () => {
-        events.forEach((event) => {
+        for (const event of events) {
           document.removeEventListener(event, resetInactivityTimer, true);
-        });
+        }
 
         if (inactivityTimeoutRef.current) {
           clearTimeout(inactivityTimeoutRef.current);
@@ -318,9 +326,15 @@ export function useSmartRefresh() {
   }, [resetInactivityTimer]);
 
   const getRefreshInterval = useCallback(() => {
-    if (connectionSpeed === 'offline') return null;
-    if (!isUserActive) return 60_000; // 1 minute when inactive
-    if (connectionSpeed === 'slow') return 10_000; // 10 seconds on slow connection
+    if (connectionSpeed === 'offline') {
+      return null;
+    }
+    if (!isUserActive) {
+      return 60_000; // 1 minute when inactive
+    }
+    if (connectionSpeed === 'slow') {
+      return 10_000; // 10 seconds on slow connection
+    }
     return 5000; // 5 seconds when active and fast connection
   }, [isUserActive, connectionSpeed]);
 

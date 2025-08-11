@@ -470,12 +470,15 @@ export const streamChat = httpAction(async (ctx, request) => {
 
   // Log for debugging
   if (chat.agentPrompt) {
+    // Debug logging for agent prompt (placeholder)
   }
   if (chat.systemPrompt) {
+    // Debug logging for system prompt (placeholder)
   }
 
   let result;
   let finalText = '';
+  let capturedReasoningSteps: string[] | undefined;
   const totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
   // Determine maxSteps based on reasoning mode
@@ -508,8 +511,7 @@ Step 3: [Continue as needed...]
       const stream = new ReadableStream({
         async start(controller) {
           try {
-            // Step 1: Initial reasoning
-            controller.enqueue('**🧠 Thinking through your request...**\n\n');
+            // Initial reasoning: do not stream anything until final answer is ready
 
             const reasoningResult = await streamText({
               model: aiModel,
@@ -526,30 +528,23 @@ Step 3: [Continue as needed...]
 
             // Extract thinking section and final response
             const thinkingMatch = reasoningContent.match(
-              /<thinking>([\s\S]*?)<\/thinking>/
+              /<(thinking|think)>([\s\S]*?)<\/(thinking|think)>/
             );
-            const thinking = thinkingMatch ? thinkingMatch[1].trim() : '';
+            const thinking = thinkingMatch ? thinkingMatch[2].trim() : '';
             const finalResponse = reasoningContent
-              .replace(/<thinking>[\s\S]*?<\/thinking>/, '')
+              .replace(/<(thinking|think)>[\s\S]*?<\/(thinking|think)>/, '')
               .trim();
 
             if (thinking) {
-              // Stream the thinking process
-              controller.enqueue('### Reasoning Steps:\n\n');
+              // Persist steps for metadata only; do not stream steps to client
               const steps = thinking.split(/Step \d+:/);
-              for (let i = 1; i < Math.min(steps.length, maxSteps + 1); i++) {
-                if (steps[i]?.trim()) {
-                  controller.enqueue(`**Step ${i}:** ${steps[i].trim()}\n\n`);
-                  // Small delay to simulate thinking time
-                  await new Promise((resolve) => setTimeout(resolve, 500));
-                }
-              }
-
-              controller.enqueue('---\n\n');
+              capturedReasoningSteps = steps
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .slice(0, Math.min(steps.length, maxSteps + 1));
             }
 
-            // Stream the final response
-            controller.enqueue('### Final Response:\n\n');
+            // Stream the final response (only)
             finalText = finalResponse || reasoningContent;
 
             // Stream final response character by character for better UX
@@ -577,6 +572,12 @@ Step 3: [Continue as needed...]
 
       // Save the complete message to database
       const completeContent = finalText || 'Multi-step reasoning completed';
+      const reasoningJoined = capturedReasoningSteps
+        ? capturedReasoningSteps
+            .map((s, idx) => `Step ${idx + 1}: ${s}`)
+            .join('\n')
+        : undefined;
+
       const _assistantMessage = await ctx.runMutation(api.messages.create, {
         chatId: chatId as Id<'chats'>,
         walletAddress,
@@ -586,7 +587,7 @@ Step 3: [Continue as needed...]
           model: modelName,
           finishReason: 'stop',
           usage: totalUsage,
-          reasoning: 'multi-step',
+          reasoning: reasoningJoined,
         },
       });
 
@@ -597,7 +598,9 @@ Step 3: [Continue as needed...]
           await ctx.runAction((api as any).memoryExtraction.processNewMessage, {
             messageId: _userMessage._id,
           });
-        } catch (_error) {}
+        } catch (_error) {
+          // Memory extraction is optional, ignore errors
+        }
       }
 
       // Track message usage for subscription (skip for admins) - consume appropriate number of messages
@@ -645,12 +648,38 @@ Use your judgment - only use the thinking section if the query truly benefits fr
       temperature: temperature ?? chat.temperature ?? 0.7,
       maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
       onFinish: async ({ text, finishReason, usage }) => {
+        // Strip out any <thinking>/<think> content and capture reasoning
+        const thinkingMatch = (text || '').match(/<(thinking|think)>([\s\S]*?)<\/(thinking|think)>/);
+        let sanitizedText = (text || '')
+          .replace(/<(thinking|think)>[\s\S]*?<\/(thinking|think)>/g, '')
+          .trim();
+
+        // Optionally capture reasoning steps for metadata (not shown to users)
+        let reasoningSteps: string[] | undefined;
+        if (thinkingMatch && thinkingMatch[2]) {
+          const raw = thinkingMatch[2];
+          const parts = raw.split(/Step \d+:/).map((p) => p.trim()).filter(Boolean);
+          if (parts.length > 0) {
+            reasoningSteps = parts.slice(0, Math.max(1, Math.min(parts.length, 10)));
+          }
+        }
+
+        // Prepare reasoning text if present
+        const reasoningJoined = reasoningSteps && reasoningSteps.length > 0
+          ? reasoningSteps.map((s, i) => `Step ${i + 1}: ${s}`).join('\n')
+          : undefined;
+
+        // Fallback: if sanitization removed everything, persist raw text
+        if (!sanitizedText && (text || '').trim()) {
+          sanitizedText = (text || '').trim();
+        }
+
         // Save assistant message to database
         const _assistantMessage = await ctx.runMutation(api.messages.create, {
           chatId: chatId as Id<'chats'>,
           walletAddress,
           role: 'assistant',
-          content: text,
+          content: sanitizedText,
           metadata: {
             model: modelName,
             finishReason: finishReason || 'stop',
@@ -661,7 +690,7 @@ Use your judgment - only use the thinking section if the query truly benefits fr
                   totalTokens: usage.totalTokens || 0,
                 }
               : undefined,
-            reasoning: maxSteps > 1 ? 'regular' : undefined,
+            reasoning: reasoningJoined,
           },
         });
 
@@ -712,27 +741,38 @@ Use your judgment - only use the thinking section if the query truly benefits fr
 
   // Handle regular streaming response (non-reasoning mode)
   if (result) {
-    // Convert to a proper text stream response with CORS headers
-    // The AI SDK provides toTextStreamResponse() which returns a properly formatted Response
-    const response = result.toTextStreamResponse();
+    // Build a sanitized stream that removes any <thinking>/<think> blocks before sending to client
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          let rawBuffer = '';
+          let emittedLen = 0;
+          const pattern = /<(thinking|think)>[\s\S]*?<\/(thinking|think)>/g;
+          for await (const chunk of result.textStream) {
+            rawBuffer += chunk;
+            const sanitized = rawBuffer.replace(pattern, '');
+            const delta = sanitized.slice(emittedLen);
+            if (delta.length > 0) {
+              controller.enqueue(delta);
+              emittedLen = sanitized.length;
+            }
+          }
+          controller.close();
+        } catch (err) {
+          controller.error(err);
+        }
+      },
+    });
 
-    // Add CORS headers to the response
-    const headers = new Headers(response.headers);
-    headers.set('Access-Control-Allow-Origin', '*');
-    headers.set(
-      'Access-Control-Allow-Methods',
-      'GET, POST, PUT, DELETE, OPTIONS'
-    );
-    headers.set(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, X-Requested-With, Accept'
-    );
-    headers.set('Access-Control-Allow-Credentials', 'true');
-
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers,
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers':
+          'Content-Type, Authorization, X-Requested-With, Accept',
+        'Access-Control-Allow-Credentials': 'true',
+      },
     });
   }
 

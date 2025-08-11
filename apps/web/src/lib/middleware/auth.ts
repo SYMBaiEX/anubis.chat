@@ -41,7 +41,7 @@ export interface WalletSession {
 
 // JWT configuration from environment
 const JWT_SECRET = jwtConfig.secret;
-const JWT_EXPIRES_IN = jwtConfig.expiresIn;
+const _JWT_EXPIRES_IN = jwtConfig.expiresIn;
 
 // Validate JWT secret - required for server-side operations
 if (!JWT_SECRET) {
@@ -180,7 +180,7 @@ export async function withAuth<T extends NextRequest>(
   try {
     // Extract token from Authorization header
     const authHeader = request.headers.get('Authorization');
-    if (!(authHeader && authHeader.startsWith('Bearer '))) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return createErrorResponse(
         APIErrorCode.UNAUTHORIZED,
         'Missing or invalid authorization header'
@@ -240,7 +240,7 @@ export async function withOptionalAuth<T extends NextRequest>(
   try {
     const authHeader = request.headers.get('Authorization');
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       const session = await verifyJWTToken(token);
 
@@ -284,7 +284,7 @@ export async function extractWalletFromRequest(
 ): Promise<string | null> {
   // Try Authorization header first
   const authHeader = request.headers.get('Authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
+  if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
     const session = await verifyJWTToken(token);
     return session?.walletAddress || null;
@@ -403,7 +403,7 @@ export async function blacklistToken(token: string): Promise<boolean> {
     return true;
   } catch (error) {
     log.error('Token blacklisting failed', {
-      token: token.substring(0, 20) + '...', // Log partial token for debugging
+      token: `${token.substring(0, 20)}...`, // Log partial token for debugging
       error: error instanceof Error ? error.message : String(error),
     });
     return false;

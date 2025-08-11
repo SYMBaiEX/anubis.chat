@@ -1,6 +1,5 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
 import { Loader2 } from 'lucide-react';
-import * as React from 'react';
 import type { LoadingStatesProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 

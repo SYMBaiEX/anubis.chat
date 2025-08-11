@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  AlertCircle,
-  CheckCircle,
-  Plus,
-  Power,
-  Server,
-  Settings,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, Plus, Power, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 

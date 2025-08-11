@@ -143,6 +143,7 @@ export function FeatureGate({
             trigger: 'feature_request',
           })
         }
+        type="button"
       >
         Upgrade to access →
       </button>

@@ -2,7 +2,7 @@
 
 import { DollarSign, TrendingUp, Users, Zap } from 'lucide-react';
 import Link from 'next/link';
-import React, { memo } from 'react';
+import { memo } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 import { Button } from '@/components/ui/button';
 

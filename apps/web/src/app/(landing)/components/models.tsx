@@ -1,9 +1,8 @@
 'use client';
 
 import { BrainCircuit } from 'lucide-react';
-import React, { memo } from 'react';
+import { memo } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
-import { Card } from '@/components/ui/card';
 
 const models = [
   { name: 'GPT-5', provider: 'OpenAI', tier: 'Premium' },
@@ -15,6 +14,16 @@ const models = [
   { name: 'Kimi K2', provider: 'OpenRouter', tier: 'Free' },
   { name: 'GPT-5 Nano', provider: 'OpenAI', tier: 'Standard' },
 ];
+
+function getTierStyles(tier: string) {
+  if (tier === 'Free') {
+    return 'bg-emerald-500/10 text-emerald-400';
+  }
+  if (tier === 'Premium') {
+    return 'bg-purple-500/10 text-purple-400';
+  }
+  return 'bg-blue-500/10 text-blue-400';
+}
 
 function Models() {
   return (
@@ -49,13 +58,9 @@ function Models() {
               <h3 className="font-semibold">{m.name}</h3>
               <p className="text-muted-foreground text-sm">{m.provider}</p>
               <span
-                className={`mt-2 inline-block rounded-full px-2 py-1 font-medium text-xs ${
-                  m.tier === 'Free'
-                    ? 'bg-emerald-500/10 text-emerald-400'
-                    : m.tier === 'Premium'
-                      ? 'bg-purple-500/10 text-purple-400'
-                      : 'bg-blue-500/10 text-blue-400'
-                }`}
+                className={`mt-2 inline-block rounded-full px-2 py-1 font-medium text-xs ${getTierStyles(
+                  m.tier
+                )}`}
               >
                 {m.tier}
               </span>

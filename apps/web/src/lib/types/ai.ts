@@ -4,7 +4,6 @@
  */
 
 import type { LanguageModelUsage } from 'ai';
-import type { z } from 'zod';
 
 // =============================================================================
 // Base AI Types

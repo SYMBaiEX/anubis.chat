@@ -25,7 +25,7 @@ const TestComponent = () => {
         <div data-testid="error">{auth.error?.message ?? 'none'}</div>
       </div>
     );
-  } catch (error) {
+  } catch (_error) {
     return <div data-testid="error">Context error</div>;
   }
 };
