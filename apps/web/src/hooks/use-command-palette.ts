@@ -1,6 +1,6 @@
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   getCommandById,
@@ -254,18 +254,31 @@ export function useCommandPalette({
     ]
   );
 
-  // Build keyboard shortcuts object - only for enabled commands
-  const shortcuts = getEnabledCommands().reduce(
-    (acc, command) => {
-      const shortcutKey = command.shortcut.join('+');
-      acc[shortcutKey] = (e: KeyboardEvent) => {
-        e.preventDefault();
-        executeCommand(command.id);
-      };
-      return acc;
-    },
-    {} as Record<string, (e: KeyboardEvent) => void>
-  );
+  // Build keyboard shortcuts object - memoized and only for enabled commands with valid shortcuts
+  const shortcuts = useMemo(() => {
+    const enabledCommands = getEnabledCommands();
+    return enabledCommands.reduce(
+      (acc, command) => {
+        // Skip commands with undefined or empty shortcuts
+        if (!command.shortcut || command.shortcut.length === 0) {
+          return acc;
+        }
+        
+        // Skip if any shortcut part is empty
+        if (command.shortcut.some(key => !key || key.trim() === '')) {
+          return acc;
+        }
+        
+        const shortcutKey = command.shortcut.join('+');
+        acc[shortcutKey] = (e: KeyboardEvent) => {
+          e.preventDefault();
+          executeCommand(command.id);
+        };
+        return acc;
+      },
+      {} as Record<string, (e: KeyboardEvent) => void>
+    );
+  }, [executeCommand]); // Only recreate when executeCommand changes
 
   // Register keyboard shortcuts
   useKeyboardShortcuts(shortcuts);
