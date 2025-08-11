@@ -125,7 +125,6 @@ export function useConvexChat(chatId: string | undefined) {
             isStreaming: true,
           });
         }
-
       } finally {
         setIsStreaming(false);
       }
@@ -147,7 +146,11 @@ export function useConvexChat(chatId: string | undefined) {
       try {
         const role = (m as any).role;
         const createdAt = (m as any).createdAt ?? (m as any)._creationTime ?? 0;
-        return role === 'assistant' && typeof createdAt === 'number' && createdAt >= lastRequestAt;
+        return (
+          role === 'assistant' &&
+          typeof createdAt === 'number' &&
+          createdAt >= lastRequestAt
+        );
       } catch {
         return false;
       }

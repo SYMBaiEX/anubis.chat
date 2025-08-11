@@ -79,7 +79,9 @@ export function AgentManagement() {
       setEditingAgent(null);
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : 'Failed to update agent. Please try again.'
+        error instanceof Error
+          ? error.message
+          : 'Failed to update agent. Please try again.'
       );
     }
   };

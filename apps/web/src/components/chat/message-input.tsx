@@ -310,13 +310,14 @@ export function MessageInput({
                   <PopoverContent
                     align="end"
                     className="w-auto border-0 p-0 duration-100"
+                    forceMount
                     side="top"
                     sideOffset={6}
-                    forceMount
                   >
                     <EmojiPicker
                       emojiStyle={EmojiStyle.NATIVE}
                       height={400}
+                      lazyLoadEmojis
                       onEmojiClick={handleEmojiClick}
                       previewConfig={{
                         showPreview: false,
@@ -324,7 +325,6 @@ export function MessageInput({
                       searchPlaceHolder="Search emoji..."
                       theme={theme === 'dark' ? Theme.DARK : Theme.LIGHT}
                       width={320}
-                      lazyLoadEmojis
                     />
                   </PopoverContent>
                 </Popover>
@@ -338,7 +338,7 @@ export function MessageInput({
                     className={cn(
                       'h-8 w-4 p-0 sm:h-9 sm:w-5',
                       isListening &&
-                      'animate-pulse bg-red-500 text-white hover:bg-red-600'
+                        'animate-pulse bg-red-500 text-white hover:bg-red-600'
                     )}
                     disabled={disabled || !isSpeechSupported}
                     onClick={handleVoiceToggle}
@@ -384,7 +384,7 @@ export function MessageInput({
                           className={cn(
                             'h-8 w-4 p-0 sm:h-9 sm:w-5',
                             useReasoning &&
-                            'bg-blue-500 text-white hover:bg-blue-600'
+                              'bg-blue-500 text-white hover:bg-blue-600'
                           )}
                           size="icon"
                           type="button"

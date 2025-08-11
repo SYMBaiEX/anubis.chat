@@ -283,7 +283,9 @@ export default function Sidebar() {
               )}
               onClick={async () => {
                 const newTheme = theme === 'dark' ? 'light' : 'dark';
-                applyThemeWithTransition(newTheme, setTheme);
+                applyThemeWithTransition(newTheme, setTheme, {
+                  animated: false,
+                });
                 // Update user preferences in database if authenticated
                 if (isAuthenticated) {
                   try {

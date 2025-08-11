@@ -440,16 +440,7 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
             Solana Explorer
           </Button>
 
-          <Button
-            className="w-full"
-            onClick={() =>
-              window.open('mailto:support@anubischat.ai', '_blank')
-            }
-            variant="outline"
-          >
-            <Users className="mr-2 h-4 w-4" />
-            Contact Support
-          </Button>
+          {/* Support email removed per policy */}
         </div>
       </CardContent>
     </Card>

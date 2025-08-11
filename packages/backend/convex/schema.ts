@@ -2287,6 +2287,13 @@ export default defineSchema({
       processingTime: v.optional(v.number()),
       network: v.optional(v.string()),
       rpcEndpoint: v.optional(v.string()),
+      // Added fields to align with MonitoringEvent in monitoring.ts
+      paymentId: v.optional(v.string()),
+      isUpgrade: v.optional(v.boolean()),
+      isProrated: v.optional(v.boolean()),
+      previousTier: v.optional(
+        v.union(v.literal('free'), v.literal('pro'), v.literal('pro_plus'))
+      ),
     }),
     severity: v.union(
       v.literal('info'),

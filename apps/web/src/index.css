@@ -229,14 +229,23 @@
   }
 
   /* Heading typography: use display font and tighten leading */
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     font-family: var(--font-heading), var(--font-sans);
     letter-spacing: -0.01em;
   }
 
-  h1 { line-height: 1.1; }
-  h2 { line-height: 1.15; }
-  h3 { line-height: 1.2; }
+  h1 {
+    line-height: 1.1;
+  }
+  h2 {
+    line-height: 1.15;
+  }
+  h3 {
+    line-height: 1.2;
+  }
 
   /* Focus Styles */
   :focus-visible {

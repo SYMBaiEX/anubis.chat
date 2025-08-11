@@ -1,6 +1,11 @@
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
-import { internalMutation, mutation, query } from './_generated/server';
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from './_generated/server';
 import { getCurrentUser, requireAuth } from './authHelpers';
 
 // Subscription tier configurations
@@ -545,6 +550,17 @@ export const processPayment = mutation({
   },
 });
 
+// Internal query to get payment by signature (for duplicate checking)
+export const getPaymentBySignature = internalQuery({
+  args: { txSignature: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('subscriptionPayments')
+      .withIndex('by_signature', (q) => q.eq('txSignature', args.txSignature))
+      .first();
+  },
+});
+
 // Internal mutation to process verified payment
 export const processVerifiedPayment = internalMutation({
   args: {
@@ -606,13 +622,36 @@ export const processVerifiedPayment = internalMutation({
     }
 
     if (payment.status === 'confirmed') {
-      // Payment already processed
+      // Payment already processed - return success to avoid double processing
+      // But ensure user subscription is up to date
+      const sub = getSafeSubscription(user);
+      if (
+        sub.tier !== args.tier ||
+        sub.subscriptionTxSignature !== args.txSignature
+      ) {
+        // Subscription might be out of sync - update it
+        const tierConfig = SUBSCRIPTION_TIERS[args.tier];
+        await ctx.db.patch(user._id, {
+          subscription: {
+            ...sub,
+            tier: args.tier,
+            subscriptionTxSignature: args.txSignature,
+            messagesLimit: tierConfig.messagesLimit,
+            premiumMessagesLimit: tierConfig.premiumMessagesLimit,
+            planPriceSol: tierConfig.priceSol,
+            features: tierConfig.features,
+          },
+          updatedAt: Date.now(),
+        });
+      }
+
       return {
         success: true,
         paymentId: payment._id,
         tier: args.tier,
         status: 'already_processed',
-        message: 'Payment has already been processed',
+        message:
+          'Payment has already been processed and user subscription updated',
       };
     }
 

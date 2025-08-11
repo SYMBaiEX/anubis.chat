@@ -200,7 +200,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   }, [userPreferences, isAuthenticated]);
 
   // Debug logging
-  useEffect(() => { }, []);
+  useEffect(() => {}, []);
 
   // Convex queries and mutations - using authenticated queries
   const chats = useQuery(
@@ -230,18 +230,18 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   // Use the dedicated query for the current chat instead of filtering from the list
   const currentChat = currentChatQuery as
     | (Pick<
-      Chat,
-      | 'title'
-      | 'model'
-      | 'lastMessageAt'
-      | 'updatedAt'
-      | 'systemPrompt'
-      | 'temperature'
-    > & {
-      _id: string;
-      agentPrompt?: string;
-      agentId?: string;
-    })
+        Chat,
+        | 'title'
+        | 'model'
+        | 'lastMessageAt'
+        | 'updatedAt'
+        | 'systemPrompt'
+        | 'temperature'
+      > & {
+        _id: string;
+        agentPrompt?: string;
+        agentId?: string;
+      })
     | undefined;
 
   // Sync URL parameter with selected chat ID
@@ -405,13 +405,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         useReasoning
       );
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       log.error('Failed to send message', { error: errorMessage });
       // If error is about limits, show upgrade prompt
-      if (
-        errorMessage.includes('limit') ||
-        errorMessage.includes('quota')
-      ) {
+      if (errorMessage.includes('limit') || errorMessage.includes('quota')) {
         setShowUpgradePrompt(true);
       }
     }
@@ -485,7 +483,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           defaultFrequencyPenalty: newSettings.frequencyPenalty,
           defaultPresencePenalty: newSettings.presencePenalty,
         });
-      } catch (_error: any) { }
+      } catch (_error: any) {}
     }
 
     // Update chat-specific settings in database if needed
@@ -574,7 +572,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 <ChatHeader
                   chat={currentChat}
                   onAgentSelectorClick={() => setShowMobileAgentSelector(true)}
-                  onClearHistory={() => { }}
+                  onClearHistory={() => {}}
                   onDelete={() => {
                     if (selectedChatId) {
                       handleDeleteChat(selectedChatId);

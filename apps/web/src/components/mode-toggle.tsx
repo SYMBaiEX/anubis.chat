@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { applyThemeWithTransition } from '@/lib/theme-transition';
 
-export function ModeToggle() {
+export function ModeToggle({ animated = true }: { animated?: boolean } = {}) {
   const { setTheme } = useTheme();
   const { isAuthenticated } = useAuthContext();
   const updateUserPreferences = useMutation(
@@ -33,7 +33,7 @@ export function ModeToggle() {
       <DropdownMenuContent align="end">
         <DropdownMenuItem
           onClick={async () => {
-            applyThemeWithTransition('light', setTheme);
+            applyThemeWithTransition('light', setTheme, { animated });
             if (isAuthenticated) {
               try {
                 await updateUserPreferences({ theme: 'light' });
@@ -45,7 +45,7 @@ export function ModeToggle() {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={async () => {
-            applyThemeWithTransition('dark', setTheme);
+            applyThemeWithTransition('dark', setTheme, { animated });
             if (isAuthenticated) {
               try {
                 await updateUserPreferences({ theme: 'dark' });
@@ -57,7 +57,7 @@ export function ModeToggle() {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={async () => {
-            applyThemeWithTransition('system', setTheme);
+            applyThemeWithTransition('system', setTheme, { animated });
             if (isAuthenticated) {
               try {
                 await updateUserPreferences({ theme: 'system' });

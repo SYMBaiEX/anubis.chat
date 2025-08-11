@@ -138,15 +138,83 @@ const transactionMetaMap = new WeakMap<
   { blockhash: string; lastValidBlockHeight: number }
 >();
 
-// Helper function to check if a transaction has been processed
+// Helper function to check if a transaction has been processed using proper confirmation pattern
 export const checkTransactionStatus = async (
-  signature: string
+  signature: string,
+  blockhash?: string,
+  lastValidBlockHeight?: number
 ): Promise<{ confirmed: boolean; error?: string }> => {
   try {
-    const status = await connection.getSignatureStatus(signature);
+    // Validate signature format before making RPC call
+    if (!signature || typeof signature !== 'string') {
+      return {
+        confirmed: false,
+        error: 'Invalid signature: empty or not a string',
+      };
+    }
+
+    // Signature should be base58 encoded and 64-88 characters long
+    if (signature.length < 64 || signature.length > 88) {
+      return {
+        confirmed: false,
+        error: `Invalid signature length: ${signature.length}`,
+      };
+    }
+
+    // Check for valid base58 characters (basic validation)
+    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]+$/;
+    if (!base58Regex.test(signature)) {
+      return {
+        confirmed: false,
+        error: 'Invalid signature format: contains invalid characters',
+      };
+    }
+
+    // Use proper confirmTransaction if we have blockhash info, otherwise fallback to getSignatureStatus
+    if (blockhash && lastValidBlockHeight) {
+      try {
+        const confirmation = await connection.confirmTransaction(
+          {
+            signature,
+            blockhash,
+            lastValidBlockHeight,
+          },
+          'confirmed'
+        );
+
+        if (confirmation.value?.err) {
+          return {
+            confirmed: false,
+            error: `Transaction failed: ${JSON.stringify(confirmation.value.err)}`,
+          };
+        }
+
+        return { confirmed: true };
+      } catch (confirmError) {
+        // If confirmTransaction fails, fallback to getSignatureStatus
+        const errorMessage =
+          confirmError instanceof Error
+            ? confirmError.message
+            : 'Unknown error';
+
+        if (errorMessage.includes('Invalid param')) {
+          return {
+            confirmed: false,
+            error: `Transaction confirmation failed: ${errorMessage}. Using blockhash confirmation method.`,
+          };
+        }
+
+        // Continue to fallback method below
+      }
+    }
+
+    // Fallback to getSignatureStatus method
+    const status = await connection.getSignatureStatus(signature, {
+      searchTransactionHistory: true,
+    });
 
     if (!status?.value) {
-      return { confirmed: false };
+      return { confirmed: false, error: 'Transaction not found' };
     }
 
     if (status.value.err) {
@@ -159,9 +227,20 @@ export const checkTransactionStatus = async (
 
     return { confirmed: isConfirmed };
   } catch (error) {
+    // Enhanced error handling for RPC failures
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+
+    if (errorMessage.includes('Invalid param')) {
+      return {
+        confirmed: false,
+        error: `RPC parameter error: ${errorMessage}. Signature may be malformed: ${signature.substring(0, 20)}...`,
+      };
+    }
+
     return {
       confirmed: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage,
     };
   }
 };
@@ -276,23 +355,55 @@ export const processPaymentTransaction = async (
     // Fallback: poll for confirmation with timeout if metadata is unavailable
     const confirmationTimeout = 30_000; // 30 seconds
     const startTime = Date.now();
+    let lastError: string | undefined;
+
     while (Date.now() - startTime < confirmationTimeout) {
-      const status = await connection.getSignatureStatus(sentSignature);
-      if (
-        status?.value?.confirmationStatus === 'confirmed' ||
-        status?.value?.confirmationStatus === 'finalized'
-      ) {
-        return sentSignature;
-      }
-      if (status?.value?.err) {
-        throw new Error(
-          `Transaction failed: ${JSON.stringify(status.value.err)}`
+      try {
+        // Use our enhanced status checker with blockhash info if available
+        const statusResult = await checkTransactionStatus(
+          sentSignature,
+          meta?.blockhash,
+          meta?.lastValidBlockHeight
         );
+
+        if (statusResult.confirmed) {
+          return sentSignature;
+        }
+
+        if (statusResult.error) {
+          lastError = statusResult.error;
+
+          // If it's a signature format error, fail immediately
+          if (
+            statusResult.error.includes('Invalid signature') ||
+            statusResult.error.includes('RPC parameter error')
+          ) {
+            throw new Error(
+              `Transaction signature validation failed: ${statusResult.error}`
+            );
+          }
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // Increased to 2s to be less aggressive
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+
+        // If it's a parameter error, fail immediately rather than retry
+        if (errorMessage.includes('Invalid param')) {
+          throw new Error(
+            `RPC error: ${errorMessage}. Transaction signature: ${sentSignature.substring(0, 20)}...`
+          );
+        }
+
+        lastError = errorMessage;
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    throw new Error('Transaction confirmation timeout');
+    throw new Error(
+      `Transaction confirmation timeout${lastError ? `. Last error: ${lastError}` : ''}. Signature: ${sentSignature.substring(0, 20)}...`
+    );
   } catch (error: any) {
     // Enhanced error handling with specific cases
 

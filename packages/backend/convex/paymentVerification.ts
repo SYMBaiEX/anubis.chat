@@ -142,34 +142,28 @@ async function verifyTransaction(
     // Verify the transaction exists and get details with enhanced error handling
     const transaction = await withRetry(
       async () => {
-        const tx = await connection.getTransaction(signature, {
+        // Prefer finalized; fall back to confirmed to avoid blocking upgrades
+        const finalizedTx = await connection.getTransaction(signature, {
           commitment: 'finalized',
           maxSupportedTransactionVersion: 0,
         });
 
-        if (!tx) {
-          // Check if transaction might still be processing
-          try {
-            const confirmedTx = await connection.getTransaction(signature, {
-              commitment: 'confirmed',
-              maxSupportedTransactionVersion: 0,
-            });
-
-            if (confirmedTx) {
-              throw new Error(
-                'Transaction found but not yet finalized - please wait a moment and try again'
-              );
-            }
-          } catch (_confirmedError) {
-            // Ignore confirmed check errors
-          }
-
-          throw new Error(
-            'Transaction not found on blockchain - please verify the transaction ID'
-          );
+        if (finalizedTx) {
+          return finalizedTx;
         }
 
-        return tx;
+        const confirmedTx = await connection.getTransaction(signature, {
+          commitment: 'confirmed',
+          maxSupportedTransactionVersion: 0,
+        });
+
+        if (confirmedTx) {
+          return confirmedTx;
+        }
+
+        throw new Error(
+          'Transaction not found on blockchain - please verify the transaction ID'
+        );
       },
       5,
       2000
@@ -402,6 +396,9 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       },
       'info'
     );
+
+    // Early duplicate check will be handled in processVerifiedPayment
+    // to avoid HTTP action database access limitations
 
     // Enhanced input validation with specific error messages
     if (!txSignature || typeof txSignature !== 'string') {
@@ -655,11 +652,21 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       } else {
         // Single transaction with two transfers: verify both recipient balance changes within the same tx
         const connection = createSolanaConnection();
+        // Try finalized first, then confirmed
         const tx = await Promise.race([
-          connection.getTransaction(txSignature, {
-            commitment: 'finalized',
-            maxSupportedTransactionVersion: 0,
-          }),
+          (async () => {
+            const finalized = await connection.getTransaction(txSignature, {
+              commitment: 'finalized',
+              maxSupportedTransactionVersion: 0,
+            });
+            if (finalized) {
+              return finalized;
+            }
+            return await connection.getTransaction(txSignature, {
+              commitment: 'confirmed',
+              maxSupportedTransactionVersion: 0,
+            });
+          })(),
           timeoutPromise,
         ]);
         if (!tx || tx.meta?.err) {

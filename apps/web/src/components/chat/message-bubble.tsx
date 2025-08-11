@@ -187,7 +187,11 @@ export function MessageBubble({
               <span>•</span>
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {message.metadata.tools.reduce((sum, t) => sum + (t.result?.executionTime || 0), 0)}ms
+                {message.metadata.tools.reduce(
+                  (sum, t) => sum + (t.result?.executionTime || 0),
+                  0
+                )}
+                ms
               </span>
             </>
           )}
@@ -226,22 +230,24 @@ export function MessageBubble({
             {isAssistant && message.metadata?.reasoning && (
               <div className="mt-2">
                 <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  aria-expanded={showReasoning}
                   aria-controls={`reasoning-${message._id}`}
+                  aria-expanded={showReasoning}
                   onClick={() => setShowReasoning((v) => !v)}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
                 >
                   {showReasoning ? 'Hide thinking' : 'Show thinking'}
                 </Button>
                 {showReasoning && (
                   <div
-                    id={`reasoning-${message._id}`}
                     className="mt-2 rounded-md border bg-background p-3 text-muted-foreground text-xs"
+                    id={`reasoning-${message._id}`}
                   >
                     <div className="mb-1 font-medium">Reasoning</div>
-                    <pre className="whitespace-pre-wrap">{message.metadata.reasoning}</pre>
+                    <pre className="whitespace-pre-wrap">
+                      {message.metadata.reasoning}
+                    </pre>
                   </div>
                 )}
               </div>
@@ -253,19 +259,21 @@ export function MessageBubble({
                 <div className="mt-3 border-t pt-2">
                   <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
                     <span className="font-medium">Sources:</span>
-                    {message.metadata.citations.map((citation: string, index: number) => (
-                      <a
-                        key={citation}
-                        className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-foreground"
-                        href={citation}
-                        rel="noopener"
-                        target="_blank"
-                        title={`Open source ${index + 1}`}
-                      >
-                        <LinkIcon className="h-3 w-3" />
-                        <span>[{index + 1}]</span>
-                      </a>
-                    ))}
+                    {message.metadata.citations.map(
+                      (citation: string, index: number) => (
+                        <a
+                          className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-foreground"
+                          href={citation}
+                          key={citation}
+                          rel="noopener"
+                          target="_blank"
+                          title={`Open source ${index + 1}`}
+                        >
+                          <LinkIcon className="h-3 w-3" />
+                          <span>[{index + 1}]</span>
+                        </a>
+                      )
+                    )}
                   </div>
                 </div>
               )}
@@ -297,15 +305,33 @@ export function MessageBubble({
                 {/* Feedback and share */}
                 {isAssistant && (
                   <>
-                    <Button onClick={handleLike} size="sm" variant="ghost" aria-label="Like response" title="Like response">
+                    <Button
+                      aria-label="Like response"
+                      onClick={handleLike}
+                      size="sm"
+                      title="Like response"
+                      variant="ghost"
+                    >
                       <ThumbsUp className="h-3 w-3" />
                     </Button>
-                    <Button onClick={handleDislike} size="sm" variant="ghost" aria-label="Dislike response" title="Dislike response">
+                    <Button
+                      aria-label="Dislike response"
+                      onClick={handleDislike}
+                      size="sm"
+                      title="Dislike response"
+                      variant="ghost"
+                    >
                       <ThumbsDown className="h-3 w-3" />
                     </Button>
                   </>
                 )}
-                <Button onClick={handleShare} size="sm" variant="ghost" aria-label="Share snippet" title="Share snippet">
+                <Button
+                  aria-label="Share snippet"
+                  onClick={handleShare}
+                  size="sm"
+                  title="Share snippet"
+                  variant="ghost"
+                >
                   <LinkIcon className="h-3 w-3" />
                 </Button>
 

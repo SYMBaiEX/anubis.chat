@@ -19,7 +19,7 @@ import {
   Wallet,
   Zap,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -140,6 +140,7 @@ export function UpgradeModal({
   const { setVisible } = useWalletModal();
 
   const selectedConfig = TIER_CONFIG[selectedTier];
+  const isSendingRef = useRef(false);
 
   // Initialize Solana connection
   const connection = new Connection(
@@ -263,76 +264,105 @@ export function UpgradeModal({
       const paymentAmount = isProrated
         ? proratedUpgrade.proratedPrice
         : selectedConfig.priceSOL;
+      // If we already sent a transaction before, reuse its signature to avoid double-charging
+      let txSignatureToVerify = paymentDetails.txSignature;
 
-      // Check wallet balance first
-      const balance = await connection.getBalance(publicKey);
-      const balanceSol = balance / 1_000_000_000; // Convert lamports to SOL
-      if (balanceSol < paymentAmount) {
-        throw new Error(
-          `Insufficient balance. Required: ${paymentAmount} SOL, Available: ${balanceSol.toFixed(4)} SOL`
+      // Only create and send a new transaction if we don't have a prior signature
+      if (!txSignatureToVerify) {
+        if (isSendingRef.current) {
+          // Another send is in progress, rely on verification/polling
+          throw new Error('Payment already in progress');
+        }
+
+        // Set the flag immediately to prevent race conditions
+        isSendingRef.current = true;
+
+        // Check wallet balance first
+        const balance = await connection.getBalance(publicKey);
+        const balanceSol = balance / 1_000_000_000; // Convert lamports to SOL
+        if (balanceSol < paymentAmount) {
+          throw new Error(
+            `Insufficient balance. Required: ${paymentAmount} SOL, Available: ${balanceSol.toFixed(4)} SOL`
+          );
+        }
+
+        // Build transaction; include referral payout in the same transaction when applicable
+        const recipientPublicKey = new PublicKey(solanaConfig.paymentAddress);
+        let tx = new Transaction();
+        let mainAmount = paymentAmount;
+        let referralAmount = 0;
+        let referralWallet: string | undefined;
+
+        if (referrerInfo?.hasReferrer) {
+          referralAmount =
+            Math.round(
+              paymentAmount * (referrerInfo.commissionRate ?? 0) * 1_000_000
+            ) / 1_000_000;
+          mainAmount = Math.max(0, paymentAmount - referralAmount);
+          referralWallet = referrerInfo.referrerWalletAddress;
+        }
+
+        // Create transfer to treasury (mainAmount)
+        const mainTx = await createPaymentTransaction(
+          publicKey,
+          recipientPublicKey,
+          mainAmount
         );
-      }
+        tx = mainTx;
 
-      // IMPORTANT: Build transaction; if referrer exists, we send two transfers:
-      // 1) main payment to treasury for net amount
-      // 2) referral payout to referrer wallet for commission
-      const recipientPublicKey = new PublicKey(solanaConfig.paymentAddress);
-      let tx = new Transaction();
-      let mainAmount = paymentAmount;
-      let referralAmount = 0;
-      let referralWallet: string | undefined;
+        // Add referral payout transfer if applicable
+        if (referralWallet && referralAmount > 0) {
+          const referralIx = SystemProgram.transfer({
+            fromPubkey: publicKey,
+            toPubkey: new PublicKey(referralWallet),
+            lamports: Math.floor(referralAmount * 1_000_000_000),
+          });
+          tx.add(referralIx);
+        }
 
-      if (referrerInfo?.hasReferrer) {
-        referralAmount =
-          Math.round(
-            paymentAmount * (referrerInfo.commissionRate ?? 0) * 1_000_000
-          ) / 1_000_000;
-        mainAmount = Math.max(0, paymentAmount - referralAmount);
-        referralWallet = referrerInfo.referrerWalletAddress;
-      }
-
-      // Create transfer to treasury (mainAmount)
-      const mainTx = await createPaymentTransaction(
-        publicKey,
-        recipientPublicKey,
-        mainAmount
-      );
-      tx = mainTx;
-
-      // Add referral payout transfer if applicable
-      if (referralWallet && referralAmount > 0) {
-        const referralIx = SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: new PublicKey(referralWallet),
-          lamports: Math.floor(referralAmount * 1_000_000_000),
+        log.info('Payment transaction created', {
+          tier: selectedTier,
+          amount: paymentAmount,
+          isProrated,
+          recipient: solanaConfig.paymentAddress,
+          sender: publicKey.toString(),
+          attempt: retryAttempt + 1,
+          blockhash: tx.recentBlockhash,
         });
-        tx.add(referralIx);
+
+        // Send transaction (no auto-retry here; retries handled at higher level)
+        const sentSignature = await processPaymentTransaction(
+          tx,
+          signTransaction,
+          {
+            maxRetries: 0,
+            skipPreflight: false,
+          }
+        );
+
+        // Validate the signature we just received
+        if (
+          !sentSignature ||
+          typeof sentSignature !== 'string' ||
+          sentSignature.length < 64
+        ) {
+          throw new Error(
+            `Invalid transaction signature received: "${sentSignature}"`
+          );
+        }
+
+        txSignatureToVerify = sentSignature;
+        setPaymentDetails((prev) => ({ ...prev, txSignature: sentSignature }));
+
+        log.info('Payment transaction sent', {
+          tier: selectedTier,
+          txSignature: sentSignature,
+          signatureLength: sentSignature.length,
+          attempt: retryAttempt + 1,
+        });
       }
 
-      log.info('Payment transaction created', {
-        tier: selectedTier,
-        amount: paymentAmount,
-        isProrated,
-        recipient: solanaConfig.paymentAddress,
-        sender: publicKey.toString(),
-        attempt: retryAttempt + 1,
-        blockhash: tx.recentBlockhash,
-      });
-
-      // Process the payment with proper retry configuration
-      // Set maxRetries to 0 here since we handle retries at a higher level
-      const txSignature = await processPaymentTransaction(tx, signTransaction, {
-        maxRetries: 0,
-        skipPreflight: false,
-      });
-
-      log.info('Payment transaction sent', {
-        tier: selectedTier,
-        txSignature,
-        attempt: retryAttempt + 1,
-      });
-
-      // Submit to backend for verification with retry logic
+      // Submit to backend for verification with retry logic (does not resend funds)
       let verificationResult;
       let lastError;
 
@@ -344,7 +374,7 @@ export function UpgradeModal({
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              txSignature,
+              txSignature: txSignatureToVerify,
               expectedAmount: paymentAmount,
               tier: selectedTier,
               walletAddress: publicKey.toString(),
@@ -353,7 +383,7 @@ export function UpgradeModal({
                 ? referrerInfo.referralCode
                 : undefined,
               referralPayoutTx: referrerInfo?.hasReferrer
-                ? txSignature
+                ? txSignatureToVerify
                 : undefined,
               referrerWalletAddress: referrerInfo?.referrerWalletAddress,
               commissionRate: referrerInfo?.commissionRate,
@@ -386,11 +416,16 @@ export function UpgradeModal({
 
       if (verificationResult.success) {
         setPaymentStep('success');
-        setPaymentDetails((prev) => ({ ...prev, txSignature }));
+        if (txSignatureToVerify) {
+          setPaymentDetails((prev) => ({
+            ...prev,
+            txSignature: txSignatureToVerify,
+          }));
+        }
 
         log.info('Payment verified successfully', {
           tier: selectedTier,
-          txSignature,
+          txSignature: txSignatureToVerify,
           paymentId: verificationResult.paymentId,
           attempt: retryAttempt + 1,
         });
@@ -417,12 +452,21 @@ export function UpgradeModal({
 
       if (err instanceof Error) {
         // Handle specific error types
-        if (err.message.includes('DUPLICATE_TRANSACTION')) {
+        if (
+          err.message.includes('DUPLICATE_TRANSACTION') ||
+          err.message.includes('already been processed') ||
+          err.message.includes('ALREADY_PROCESSED')
+        ) {
           // This transaction was already processed - NOT retryable
           errorMessage =
             'This payment has already been processed. Please refresh the page to check your subscription status.';
           isRetryable = false;
-        } else if (err.message.includes('SIGNATURE_VERIFICATION_FAILED')) {
+
+          // Set success state since payment was actually processed
+          setPaymentStep('success');
+          return;
+        }
+        if (err.message.includes('SIGNATURE_VERIFICATION_FAILED')) {
           // Signature verification failed - retryable with new transaction
           errorMessage =
             'Transaction signature verification failed. Retrying with fresh transaction...';
@@ -479,8 +523,9 @@ export function UpgradeModal({
           errorMessage = 'Server error - retrying...';
           isRetryable = true;
         } else if (err.message.includes('Verification failed after')) {
-          // Verification failed - retryable
-          errorMessage = 'Payment verification failed - retrying...';
+          // Verification failed after several attempts - retry verification only
+          errorMessage =
+            'Payment verification failed - retrying verification...';
           isRetryable = true;
         } else {
           // Unknown error - don't retry by default
@@ -505,6 +550,7 @@ export function UpgradeModal({
       setError(errorMessage);
       setPaymentStep('error');
     } finally {
+      isSendingRef.current = false;
       setIsProcessing(false);
     }
   };
@@ -989,14 +1035,7 @@ export function UpgradeModal({
             </Button>
           )}
 
-          <Button
-            onClick={() =>
-              window.open('mailto:support@anubischat.ai', '_blank')
-            }
-            variant="outline"
-          >
-            Contact Support
-          </Button>
+          {/* Support email removed per policy */}
         </div>
 
         {/* Transaction details if available for debugging */}

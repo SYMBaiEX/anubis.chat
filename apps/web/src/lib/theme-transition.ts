@@ -5,10 +5,16 @@ export type ThemeOption = 'light' | 'dark' | 'system';
 export const applyThemeWithTransition = (
   targetTheme: ThemeOption,
   setTheme: (t: ThemeOption) => void,
-  options?: { durationMs?: number }
+  options?: { durationMs?: number; animated?: boolean }
 ): void => {
   const root = document.documentElement;
-  const { durationMs = 300 } = options ?? {};
+  const { durationMs = 300, animated = true } = options ?? {};
+
+  // If animation is disabled, apply theme immediately without transitions
+  if (!animated) {
+    setTheme(targetTheme);
+    return;
+  }
 
   const runThemeSwapWithCssGate = () => {
     root.classList.add('theme-transition');

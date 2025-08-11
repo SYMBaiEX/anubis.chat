@@ -199,8 +199,8 @@ export function AgentTestingPanel({ agent }: AgentTestingPanelProps) {
           prev.totalMessages === 0
             ? agentMessage.metadata?.responseTime || 0
             : (prev.avgResponseTime * prev.totalMessages +
-              (agentMessage.metadata?.responseTime || 0)) /
-            (prev.totalMessages + 1),
+                (agentMessage.metadata?.responseTime || 0)) /
+              (prev.totalMessages + 1),
         totalTokens:
           prev.totalTokens + (agentMessage.metadata?.tokensUsed || 0),
         successRate: 100,

@@ -662,7 +662,9 @@ Use your judgment - only use the thinking section if the query truly benefits fr
       maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
       onFinish: async ({ text, finishReason, usage }) => {
         // Strip out any <thinking>/<think> content and capture reasoning
-        const thinkingMatch = (text || '').match(/<(thinking|think)>([\s\S]*?)<\/(thinking|think)>/);
+        const thinkingMatch = (text || '').match(
+          /<(thinking|think)>([\s\S]*?)<\/(thinking|think)>/
+        );
         const sanitizedText = (text || '')
           .replace(/<(thinking|think)>[\s\S]*?<\/(thinking|think)>/g, '')
           .trim();
@@ -671,16 +673,23 @@ Use your judgment - only use the thinking section if the query truly benefits fr
         let reasoningSteps: string[] | undefined;
         if (thinkingMatch && thinkingMatch[2]) {
           const raw = thinkingMatch[2];
-          const parts = raw.split(/Step \d+:/).map((p) => p.trim()).filter(Boolean);
+          const parts = raw
+            .split(/Step \d+:/)
+            .map((p) => p.trim())
+            .filter(Boolean);
           if (parts.length > 0) {
-            reasoningSteps = parts.slice(0, Math.max(1, Math.min(parts.length, 10)));
+            reasoningSteps = parts.slice(
+              0,
+              Math.max(1, Math.min(parts.length, 10))
+            );
           }
         }
 
         // Prepare reasoning text if present
-        const reasoningJoined = reasoningSteps && reasoningSteps.length > 0
-          ? reasoningSteps.map((s, i) => `Step ${i + 1}: ${s}`).join('\n')
-          : undefined;
+        const reasoningJoined =
+          reasoningSteps && reasoningSteps.length > 0
+            ? reasoningSteps.map((s, i) => `Step ${i + 1}: ${s}`).join('\n')
+            : undefined;
 
         // Save assistant message to database
         const _assistantMessage = await ctx.runMutation(api.messages.create, {

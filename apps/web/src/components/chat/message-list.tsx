@@ -69,8 +69,6 @@ export function MessageList({
     setShowScrollButton(!isNearBottom && messages && messages.length > 0);
   };
 
-
-
   // Group messages by date for date separators
   const groupMessagesByDate = (
     list: Array<ChatMessage | StreamingMessage | MinimalMessage>
@@ -207,7 +205,7 @@ export function MessageList({
                             (message as ChatMessage | MinimalMessage).content
                           );
                         }}
-                        onEdit={(_newContent) => { }}
+                        onEdit={(_newContent) => {}}
                         onRegenerate={() =>
                           onMessageRegenerate?.(
                             (message as ChatMessage | MinimalMessage)._id
