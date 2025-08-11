@@ -67,6 +67,7 @@ export const logPaymentEvent = internalMutation({
 
     // For critical events, also log to console for immediate visibility
     if (args.severity === 'critical' || args.severity === 'error') {
+      // Intentionally no console usage per lint policy; hook for external logging can be added here.
     }
 
     return args;
@@ -101,16 +102,18 @@ export const getPaymentMetrics = query({
     const startTime = now - timeRanges[timeframe];
 
     // Query events in time range
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('paymentEvents')
       .withIndex('by_timestamp')
       .filter((q) => q.gte(q.field('timestamp'), startTime));
 
     if (args.eventType) {
-      query = query.filter((q) => q.eq(q.field('eventType'), args.eventType));
+      dbQuery = dbQuery.filter((q) =>
+        q.eq(q.field('eventType'), args.eventType)
+      );
     }
 
-    const events = await query.collect();
+    const events = await dbQuery.collect();
 
     // Calculate metrics
     const totalEvents = events.length;
@@ -160,6 +163,13 @@ export const getPaymentMetrics = query({
         {} as Record<string, number>
       );
 
+    let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+    if (successRate <= 80) {
+      status = 'critical';
+    } else if (successRate <= 95) {
+      status = 'warning';
+    }
+
     return {
       timeframe,
       metrics: {
@@ -175,12 +185,7 @@ export const getPaymentMetrics = query({
         errorDistribution: errorTypes,
       },
       health: {
-        status:
-          successRate > 95
-            ? 'healthy'
-            : successRate > 80
-              ? 'warning'
-              : 'critical',
+        status,
         uptime: successRate,
         lastError:
           events
@@ -257,7 +262,7 @@ export const getPaymentPerformance = query({
       }
     > = {};
 
-    events.forEach((event) => {
+    for (const event of events) {
       const hour = new Date(event.timestamp).toISOString().slice(0, 13); // YYYY-MM-DDTHH
 
       if (!hourlyBuckets[hour]) {
@@ -279,32 +284,34 @@ export const getPaymentPerformance = query({
       } else if (event.eventType === 'payment_failed') {
         hourlyBuckets[hour].failed++;
       }
-    });
+    }
 
     // Calculate averages
-    Object.keys(hourlyBuckets).forEach((hour) => {
+    for (const hour of Object.keys(hourlyBuckets)) {
       const bucket = hourlyBuckets[hour];
       if (bucket.processedTimes.length > 0) {
         bucket.avgProcessingTime =
           bucket.processedTimes.reduce((a, b) => a + b, 0) /
           bucket.processedTimes.length;
       }
-    });
+    }
+
+    const hourlyEntries = Object.entries(hourlyBuckets)
+      .map(([hour, data]) => ({
+        hour,
+        successful: data.successful,
+        failed: data.failed,
+        successRate:
+          data.successful + data.failed > 0
+            ? (data.successful / (data.successful + data.failed)) * 100
+            : 0,
+        avgProcessingTime: Math.round(data.avgProcessingTime),
+      }))
+      .sort((a, b) => a.hour.localeCompare(b.hour));
 
     return {
       timeframe,
-      hourlyData: Object.entries(hourlyBuckets)
-        .map(([hour, data]) => ({
-          hour,
-          successful: data.successful,
-          failed: data.failed,
-          successRate:
-            data.successful + data.failed > 0
-              ? (data.successful / (data.successful + data.failed)) * 100
-              : 0,
-          avgProcessingTime: Math.round(data.avgProcessingTime),
-        }))
-        .sort((a, b) => a.hour.localeCompare(b.hour)),
+      hourlyData: hourlyEntries,
     };
   },
 });
@@ -349,7 +356,7 @@ export const checkPaymentSystemHealth = query({
     // Recent processing times
     const recentProcessingTimes = lastHourEvents
       .filter((e) => e.metadata.processingTime)
-      .map((e) => e.metadata.processingTime!)
+      .map((e) => e.metadata.processingTime ?? 0)
       .sort((a, b) => a - b);
 
     const p95ProcessingTime =

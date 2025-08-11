@@ -24,7 +24,7 @@ import {
  * Get user by wallet address with real-time updates
  */
 export function useUser(walletAddress: string) {
-  return useConvexQuery(api.users.getByWallet, { walletAddress });
+  return useConvexQuery(api.users.getUserByWallet, { walletAddress });
 }
 
 /**

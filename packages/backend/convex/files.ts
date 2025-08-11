@@ -32,13 +32,13 @@ export const list = query({
     const { walletAddress, purpose, limit = 20, cursor } = args;
 
     // Build query
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('files')
       .withIndex('by_wallet', (q) => q.eq('walletAddress', walletAddress));
 
     // Filter by purpose if specified
     if (purpose) {
-      query = query.filter((q) => q.eq(q.field('purpose'), purpose));
+      dbQuery = dbQuery.filter((q) => q.eq(q.field('purpose'), purpose));
     }
 
     // Apply cursor if provided
@@ -47,15 +47,17 @@ export const list = query({
         const cursorId = cursor as Id<'files'>;
         const cursorDoc = await ctx.db.get(cursorId);
         if (cursorDoc) {
-          query = query.filter((q) =>
+          dbQuery = dbQuery.filter((q) =>
             q.lt(q.field('createdAt'), cursorDoc.createdAt)
           );
         }
-      } catch (_error) {}
+      } catch (_error) {
+        // ignore invalid cursor
+      }
     }
 
     // Fetch items with limit + 1 to check for more
-    const items = await query.order('desc').take(limit + 1);
+    const items = await dbQuery.order('desc').take(limit + 1);
 
     // Check if there are more items
     const hasMore = items.length > limit;
@@ -63,7 +65,9 @@ export const list = query({
 
     // Get next cursor without using Array.at for broader lib compatibility
     const nextCursor = hasMore
-      ? returnItems[returnItems.length - 1]?._id
+      ? (returnItems.length > 0
+          ? returnItems[returnItems.length - 1]?._id
+          : undefined)
       : undefined;
 
     return {
@@ -259,9 +263,7 @@ export const deleteFile = mutation({
       .withIndex('by_file', (q) => q.eq('fileId', fileId))
       .collect();
 
-    for (const vsFile of vectorStoreFiles) {
-      await ctx.db.delete(vsFile._id);
-    }
+    await Promise.all(vectorStoreFiles.map((f) => ctx.db.delete(f._id)));
 
     // Delete the file
     await ctx.db.delete(file._id);

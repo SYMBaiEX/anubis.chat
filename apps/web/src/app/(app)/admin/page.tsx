@@ -35,7 +35,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MigrationButton } from './migration-button';
 
 function AdminDashboardContent() {
   const { user } = useAuthContext();
@@ -64,7 +63,7 @@ function AdminDashboardContent() {
   const updateUserSubscription = useMutation(
     api.adminAuth.updateUserSubscription
   );
-  const syncAdminsFromEnv = useMutation(api.adminAuth.syncAdminWallets);
+  const _syncAdminsFromEnv = useMutation(api.adminAuth.syncAdminWallets);
   // removed unused promoteToAdmin, selectedUser/showUserModal, and handleInitializeAdmins
 
   // Handle user subscription update
@@ -80,7 +79,7 @@ function AdminDashboardContent() {
       });
       toast.success('User subscription updated successfully');
     } catch (error) {
-      toast.error('Failed to update subscription: ' + (error as Error).message);
+      toast.error(`Failed to update subscription: ${(error as Error).message}`);
     }
   };
 
@@ -97,7 +96,6 @@ function AdminDashboardContent() {
               {adminStatus?.adminInfo?.role}
             </Badge>
           </div>
-          <MigrationButton />
         </div>
         <p className="text-muted-foreground">
           System administration and user management
@@ -240,11 +238,16 @@ function AdminDashboardContent() {
                                 : 'default'
                             }
                           >
-                            {listedUser.subscription.tier === 'pro_plus'
-                              ? 'Pro+'
-                              : listedUser.subscription.tier === 'pro'
-                                ? 'Pro'
-                                : 'Free'}
+                            {(() => {
+                              const tier = listedUser.subscription?.tier;
+                              if (tier === 'pro_plus') {
+                                return 'Pro+';
+                              }
+                              if (tier === 'pro') {
+                                return 'Pro';
+                              }
+                              return 'Free';
+                            })()}
                           </Badge>
                         )}
                       </TableCell>
@@ -315,7 +318,7 @@ function AdminDashboardContent() {
 
         {/* Subscriptions Tab */}
         <TabsContent className="space-y-4" value="subscriptions">
-          {subscriptionAnalytics && subscriptionAnalytics.tierCounts && (
+          {subscriptionAnalytics?.tierCounts && (
             <div className="grid gap-4 md:grid-cols-3">
               <Card className="p-6">
                 <h3 className="mb-2 font-medium">Free Tier</h3>

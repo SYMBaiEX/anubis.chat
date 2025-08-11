@@ -31,7 +31,7 @@ export default function AccountPage() {
     avatar?: string;
   }) => {
     try {
-      const result: any = await updateProfile({
+      const result = await updateProfile({
         displayName: data.displayName,
         avatar: data.avatar,
       });
@@ -40,7 +40,7 @@ export default function AccountPage() {
         return;
       }
       toast.success('Profile updated');
-    } catch (e) {
+    } catch (_e) {
       toast.error('Failed to update profile');
     }
   };
@@ -86,7 +86,7 @@ export default function AccountPage() {
       {/* Constrained content */}
       <div className="mx-auto w-full max-w-6xl space-y-4 p-4 md:p-6">
         {/* Show upgrade prompt if needed */}
-        {upgradePrompt && upgradePrompt.shouldShow && (
+        {upgradePrompt?.shouldShow && (
           <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20">
             <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
             <AlertDescription className="text-orange-800 dark:text-orange-200">
@@ -107,14 +107,15 @@ export default function AccountPage() {
         )}
 
         <Card className="p-4 ring-1 ring-primary/10 sm:p-5 md:p-6">
-          {isLoading ? (
+          {isLoading && (
             <div className="flex items-center justify-center py-8">
               <Loader className="mr-2 h-4 w-4 animate-spin" />
               <span className="text-muted-foreground text-sm">
                 Loading account data...
               </span>
             </div>
-          ) : user ? (
+          )}
+          {!isLoading && user && (
             <UserProfile
               limits={limits}
               onUpdate={handleUpdate}
@@ -122,7 +123,8 @@ export default function AccountPage() {
               upgradePrompt={upgradePrompt}
               user={user}
             />
-          ) : (
+          )}
+          {!(isLoading || user) && (
             <div className="text-muted-foreground text-sm">No user loaded.</div>
           )}
         </Card>

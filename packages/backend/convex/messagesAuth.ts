@@ -28,15 +28,17 @@ export const getMyMessages = query({
 
     const limit = Math.min(args.limit ?? 50, 100);
 
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('messages')
       .withIndex('by_chat', (q) => q.eq('chatId', args.chatId));
 
     if (args.before !== undefined) {
-      query = query.filter((q) => q.lt(q.field('createdAt'), args.before ?? 0));
+      dbQuery = dbQuery.filter((q) =>
+        q.lt(q.field('createdAt'), args.before ?? 0)
+      );
     }
 
-    const messages = await query.order('desc').take(limit);
+    const messages = await dbQuery.order('desc').take(limit);
 
     // Return in chronological order (oldest first)
     return messages.reverse();
@@ -134,7 +136,7 @@ export const createMyMessage = mutation({
       }
 
       // Update usage counts
-      const updates: any = {
+      const updates: Record<string, unknown> = {
         'subscription.messagesUsed': (user.subscription.messagesUsed ?? 0) + 1,
       };
 
@@ -169,7 +171,7 @@ export const createMyMessage = mutation({
     });
 
     // Update chat's last message timestamp and counts
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       lastMessageAt: now,
       updatedAt: now,
       messageCount: chat.messageCount + 1,
@@ -236,9 +238,7 @@ export const clearMyChatMessages = mutation({
       .withIndex('by_chat', (q) => q.eq('chatId', args.chatId))
       .collect();
 
-    for (const message of messages) {
-      await ctx.db.delete(message._id);
-    }
+    await Promise.all(messages.map((m) => ctx.db.delete(m._id)));
 
     // Reset chat counters
     await ctx.db.patch(args.chatId, {
@@ -283,12 +283,12 @@ export const getMyChatMessageStats = query({
     );
 
     const modelUsage = new Map<string, number>();
-    messages.forEach((m) => {
+    for (const m of messages) {
       const model = m.metadata?.model;
       if (model) {
         modelUsage.set(model, (modelUsage.get(model) || 0) + 1);
       }
-    });
+    }
 
     return {
       totalMessages: messages.length,
@@ -298,7 +298,7 @@ export const getMyChatMessageStats = query({
       modelUsage: Object.fromEntries(modelUsage),
       firstMessage: messages.length > 0 ? messages[0].createdAt : null,
       lastMessage:
-        messages.length > 0 ? messages[messages.length - 1].createdAt : null,
+        messages.length > 0 ? messages[messages.length - 1]?.createdAt : null,
     };
   },
 });

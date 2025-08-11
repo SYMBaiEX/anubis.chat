@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  AlertTriangle,
-  Calendar,
-  Check,
-  Clock,
-  Crown,
-  TrendingUp,
-  Zap,
-} from 'lucide-react';
+import { AlertTriangle, Calendar, Crown, TrendingUp, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { UpgradeModal } from '@/components/auth/upgrade-modal';
 import { UsageIndicator } from '@/components/chat/usage-indicator';
@@ -50,10 +42,12 @@ export default function SubscriptionPage() {
   }, [selectedPlan]);
 
   useEffect(() => {
-    if (!subscription) return;
+    if (!subscription) {
+      return;
+    }
     const tier = subscription.tier === 'admin' ? 'pro_plus' : subscription.tier;
     setSelectedPlan(tier as 'free' | 'pro' | 'pro_plus');
-  }, [subscription?.tier]);
+  }, [subscription, subscription?.tier]);
 
   if (!subscription) {
     return (

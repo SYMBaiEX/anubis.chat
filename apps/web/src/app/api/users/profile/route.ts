@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress, publicKey } = authReq.user;
-        const user = await fetchQuery(api.users.getByWallet, { walletAddress });
+        const user = await fetchQuery(api.users.getUserByWallet, { walletAddress });
         let userProfile: UserProfile;
 
         if (user) {
@@ -191,7 +191,7 @@ export async function PUT(request: NextRequest) {
 
         const user =
           updatedUser ||
-          (await fetchQuery(api.users.getByWallet, { walletAddress }));
+          (await fetchQuery(api.users.getUserByWallet, { walletAddress }));
         const updatedProfile: UserProfile = {
           walletAddress: user.walletAddress,
           publicKey: user.publicKey,

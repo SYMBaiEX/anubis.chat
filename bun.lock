@@ -36,6 +36,7 @@
         "rehype-katex": "^7.0.1",
         "rehype-pretty-code": "^0.14.1",
         "remark-math": "^6.0.0",
+        "tw-animate-css": "^1.3.6",
       },
       "devDependencies": {
         "@tailwindcss/postcss": "^4.1.11",

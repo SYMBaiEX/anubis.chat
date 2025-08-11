@@ -133,11 +133,15 @@ export default function AgentsPage() {
 
   // Initialize default agents on first load
   useEffect(() => {
-    initializeAgents().catch(console.error);
-  }, []);
+    initializeAgents().catch(() => {
+      /* intentionally ignore initialization errors in UI */
+    });
+  }, [initializeAgents]);
 
   const handleDeleteAgent = async () => {
-    if (!(deleteAgentId && user?.walletAddress)) return;
+    if (!(deleteAgentId && user?.walletAddress)) {
+      return;
+    }
 
     try {
       await deleteAgent({
@@ -146,13 +150,20 @@ export default function AgentsPage() {
       });
       toast.success('Agent deleted successfully');
       setDeleteAgentId(null);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to delete agent');
-      console.error(error);
     }
   };
 
-  const handleDuplicateAgent = (agent: any) => {
+  type AgentSummary = {
+    name: string;
+    description?: string;
+    systemPrompt?: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
+
+  const handleDuplicateAgent = (agent: AgentSummary) => {
     // Navigate to create page with pre-filled data
     const params = new URLSearchParams({
       name: `${agent.name} (Copy)`,
@@ -237,7 +248,7 @@ export default function AgentsPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-2.5">
             {agents.map((agent) => {
               const typeInfo = getAgentTypeInfo(agent.type);
-              const TypeIcon = typeInfo.icon;
+              const _TypeIcon = typeInfo.icon;
 
               return (
                 <Card

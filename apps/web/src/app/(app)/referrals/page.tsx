@@ -28,15 +28,19 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 // Client-side validation to mirror backend rules
+const REFERRAL_CODE_REGEX = /^[A-Z0-9]+$/;
+
 function validateReferralCodeFormat(code: string): {
   valid: boolean;
   error?: string;
 } {
-  if (!code) return { valid: true };
+  if (!code) {
+    return { valid: true };
+  }
   if (code.length < 4 || code.length > 12) {
     return { valid: false, error: 'Referral code must be 4-12 characters' };
   }
-  if (!/^[A-Z0-9]+$/.test(code)) {
+  if (!REFERRAL_CODE_REGEX.test(code)) {
     return { valid: false, error: 'Use only letters A-Z and digits 0-9' };
   }
   return { valid: true };
@@ -80,7 +84,7 @@ export default function ReferralsPage() {
           title: 'Copied!',
           description: 'Referral link copied to clipboard',
         });
-      } catch (error) {
+      } catch (_error) {
         toast({
           title: 'Copy failed',
           description: 'Please copy the link manually',
@@ -114,10 +118,10 @@ export default function ReferralsPage() {
         description: 'Your referral code has been created',
       });
       setCustomCode('');
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create referral code',
+        description: (error as Error).message || 'Failed to create referral code',
         variant: 'destructive',
       });
     }
@@ -151,10 +155,10 @@ export default function ReferralsPage() {
         description: result.message || 'Referral claimed successfully',
       });
       setClaimCode('');
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to claim referral',
+        description: (error as Error).message || 'Failed to claim referral',
         variant: 'destructive',
       });
     }
@@ -297,7 +301,9 @@ export default function ReferralsPage() {
                 ) : (
                   <ReferralUpgradePrompt
                     currentTier={currentTier}
-                    onUpgrade={() => (window.location.href = '/subscription')}
+                    onUpgrade={() => {
+                      window.location.href = '/subscription';
+                    }}
                   />
                 )}
               </CardContent>

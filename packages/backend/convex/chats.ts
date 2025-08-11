@@ -12,15 +12,15 @@ export const getByOwner = query({
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 50);
 
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('chats')
       .withIndex('by_owner', (q) => q.eq('ownerId', args.ownerId));
 
     if (args.isActive !== undefined) {
-      query = query.filter((q) => q.eq(q.field('isActive'), args.isActive));
+      dbQuery = dbQuery.filter((q) => q.eq(q.field('isActive'), args.isActive));
     }
 
-    const chats = await query.order('desc').take(limit);
+    const chats = await dbQuery.order('desc').take(limit);
 
     // Get message counts for each chat
     const chatsWithMessageCounts = await Promise.all(
@@ -178,9 +178,7 @@ export const remove = mutation({
       .withIndex('by_chat', (q) => q.eq('chatId', args.id))
       .collect();
 
-    for (const message of messages) {
-      await ctx.db.delete(message._id);
-    }
+    await Promise.all(messages.map((m) => ctx.db.delete(m._id)));
 
     // Delete the chat
     await ctx.db.delete(args.id);
@@ -327,10 +325,9 @@ export const getStats = query({
 
     const totalMessages = allMessages.flat().length;
     const modelUsage = new Map<string, number>();
-
-    chats.forEach((chat) => {
+    for (const chat of chats) {
       modelUsage.set(chat.model, (modelUsage.get(chat.model) || 0) + 1);
-    });
+    }
 
     return {
       totalChats: chats.length,

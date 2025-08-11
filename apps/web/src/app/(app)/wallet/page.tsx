@@ -20,7 +20,7 @@ export default function WalletPage() {
     authenticateWithConvex,
     refreshBalance,
     isHealthy,
-    connectionHealthScore,
+    // connectionHealthScore,
     error,
   } = useWallet();
 

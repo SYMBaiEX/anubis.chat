@@ -2,11 +2,8 @@
 
 import {
   AlertTriangle,
-  Bell,
   Bot,
-  CreditCard,
   Crown,
-  FileText,
   Loader,
   MessageSquare,
   User as UserIcon,
@@ -15,9 +12,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card } from '@/components/ui/card';
 import { type GridSetting, SettingsGrid } from '@/components/ui/settings-grid';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSubscription } from '@/hooks/use-subscription';
 
 export default function SettingsPage() {
@@ -99,7 +94,7 @@ export default function SettingsPage() {
       {/* Constrained content */}
       <div className="mx-auto w-full max-w-6xl space-y-4 p-3 sm:p-4 md:p-6">
         {/* Show upgrade prompt if needed */}
-        {upgradePrompt && upgradePrompt.shouldShow && (
+        {upgradePrompt?.shouldShow && (
           <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20">
             <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
             <AlertDescription className="text-orange-800 dark:text-orange-200">

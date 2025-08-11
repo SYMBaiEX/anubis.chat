@@ -27,6 +27,9 @@ const log = createModuleLogger('api/search/semantic');
 // Request Validation Schemas
 // =============================================================================
 
+const allowedDocTypes = ['text', 'markdown', 'pdf', 'url', 'json', 'csv'] as const;
+type DocType = typeof allowedDocTypes[number];
+
 const semanticSearchSchema = z.object({
   query: z
     .string()
@@ -45,7 +48,7 @@ const semanticSearchSchema = z.object({
   contextLength: z.number().min(100).max(2000).default(500),
   filters: z
     .object({
-      type: z.array(z.enum(['text', 'markdown', 'pdf', 'url'])).optional(),
+      type: z.array(z.enum(allowedDocTypes)).optional(),
       category: z.array(z.string()).optional(),
       tags: z.array(z.string()).optional(),
       dateRange: z
@@ -90,7 +93,7 @@ interface SemanticSearchOptions {
   limit: number;
   contextLength: number;
   filters?: {
-    type?: string[];
+    type?: DocType[];
     category?: string[];
     tags?: string[];
     dateRange?: { start?: number; end?: number };
@@ -134,11 +137,12 @@ async function performSemanticSearch(
   const expandedQuery = expandSearchQuery(options);
 
   // Use Convex documents.search for base retrieval
+  const selectedType: DocType | undefined = options.filters?.type?.[0];
   const docs = await fetchQuery(api.documents.search, {
     ownerId: userWallet,
     query: expandedQuery,
     limit: options.limit,
-    type: options.filters?.type?.[0],
+    type: selectedType,
   });
   const results = (docs || []).map((doc: any) => ({
     document: {

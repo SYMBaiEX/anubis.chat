@@ -12,15 +12,17 @@ export const getByChatId = query({
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 50, 100); // Max 100 messages per request
 
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('messages')
       .withIndex('by_chat', (q) => q.eq('chatId', args.chatId));
 
     if (args.before !== undefined) {
-      query = query.filter((q) => q.lt(q.field('createdAt'), args.before ?? 0));
+      dbQuery = dbQuery.filter((q) =>
+        q.lt(q.field('createdAt'), args.before ?? 0)
+      );
     }
 
-    const messages = await query.order('desc').take(limit);
+    const messages = await dbQuery.order('desc').take(limit);
 
     // Return in chronological order (oldest first)
     return messages.reverse();
@@ -94,45 +96,11 @@ export const create = mutation({
   handler: async (ctx, args) => {
     // For user messages, check subscription limits (assistant/system messages bypass limits)
     if (args.role === 'user') {
-      const user = await ctx.db
-        .query('users')
-        .withIndex('by_wallet', (q) =>
-          q.eq('walletAddress', args.walletAddress)
-        )
-        .unique();
-
-      if (user?.subscription) {
-        // Check if user has reached message limits
-        if (
-          (user.subscription.messagesUsed ?? 0) >=
-          (user.subscription.messagesLimit ?? 0)
-        ) {
-          throw new Error(
-            'Monthly message limit reached. Please upgrade your subscription.'
-          );
-        }
-
-        // Check premium model limits if this is a premium model
-        const isPremiumModel =
-          args.metadata?.model &&
-          ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4'].includes(
-            args.metadata.model
-          );
-
-        if (isPremiumModel && user.subscription.tier === 'free') {
-          throw new Error('Premium models require Pro or Pro+ subscription.');
-        }
-
-        if (
-          isPremiumModel &&
-          (user.subscription.premiumMessagesUsed ?? 0) >=
-            (user.subscription.premiumMessagesLimit ?? 0)
-        ) {
-          throw new Error(
-            'Premium message quota exhausted. Please upgrade or wait for next billing cycle.'
-          );
-        }
-      }
+      await ensureUserCanSendMessage(
+        ctx,
+        args.walletAddress,
+        args.metadata?.model
+      );
     }
 
     const now = Date.now();
@@ -153,17 +121,74 @@ export const create = mutation({
     // Update chat's last message timestamp and counters
     const tokenCount =
       args.tokenCount ?? args.metadata?.usage?.totalTokens ?? 0;
-    await ctx.db.patch(args.chatId, {
-      lastMessageAt: now,
-      updatedAt: now,
-      messageCount: (await ctx.db.get(args.chatId))?.messageCount! + 1,
-      totalTokens:
-        ((await ctx.db.get(args.chatId))?.totalTokens ?? 0) + tokenCount,
-    });
+    await incrementChatCounters(ctx, args.chatId, now, tokenCount);
 
     return await ctx.db.get(messageId);
   },
 });
+
+// Helper: validate if a user can send a message, including premium model checks
+async function ensureUserCanSendMessage(
+  ctx: { db: { query: Function } },
+  walletAddress: string,
+  model?: string
+): Promise<void> {
+  const user = await ctx.db
+    .query('users')
+    .withIndex('by_wallet', (q: { eq: (f: string, v: string) => unknown }) =>
+      q.eq('walletAddress', walletAddress)
+    )
+    .unique();
+
+  const subscription = user?.subscription;
+  if (!subscription) {
+    return;
+  }
+
+  const overMonthly =
+    (subscription.messagesUsed ?? 0) >= (subscription.messagesLimit ?? 0);
+  if (overMonthly) {
+    throw new Error(
+      'Monthly message limit reached. Please upgrade your subscription.'
+    );
+  }
+
+  const premiumList = ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4'];
+  const isPremium = model ? premiumList.includes(model) : false;
+
+  if (isPremium && subscription.tier === 'free') {
+    throw new Error('Premium models require Pro or Pro+ subscription.');
+  }
+
+  if (
+    isPremium &&
+    (subscription.premiumMessagesUsed ?? 0) >=
+      (subscription.premiumMessagesLimit ?? 0)
+  ) {
+    throw new Error(
+      'Premium message quota exhausted. Please upgrade or wait for next billing cycle.'
+    );
+  }
+}
+
+// Helper: increment chat counters atomically and safely
+async function incrementChatCounters(
+  ctx: { db: { get: Function; patch: Function } },
+  chatId: Id<'chats'>,
+  now: number,
+  tokenIncrement: number
+): Promise<void> {
+  const chat = await ctx.db.get(chatId);
+  const currentCount = Math.max(0, chat?.messageCount ?? 0);
+  const currentTokens = Math.max(0, chat?.totalTokens ?? 0);
+
+  await ctx.db.patch(chatId, {
+    lastMessageAt: now,
+    updatedAt: now,
+    messageCount: currentCount + 1,
+    totalTokens: currentTokens + tokenIncrement,
+  });
+}
 
 // Update message content (for editing)
 export const update = mutation({
@@ -350,16 +375,14 @@ export const getRecent = query({
       .take(limit);
 
     // Add chat titles to messages
-    const messagesWithChatInfo = await Promise.all(
-      recentMessages.map(async (message) => {
-        const chat = userChats.find((c) => c._id === message.chatId);
-        return {
-          ...message,
-          chatTitle: chat?.title || 'Unknown Chat',
-          chatModel: chat?.model || 'unknown',
-        };
-      })
-    );
+    const messagesWithChatInfo = recentMessages.map((message) => {
+      const chat = userChats.find((c) => c._id === message.chatId);
+      return {
+        ...message,
+        chatTitle: chat?.title || 'Unknown Chat',
+        chatModel: chat?.model || 'unknown',
+      };
+    });
 
     return messagesWithChatInfo;
   },

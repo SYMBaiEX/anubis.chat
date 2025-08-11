@@ -3,7 +3,7 @@
 import { api } from '@convex/_generated/api';
 import { useForm } from '@tanstack/react-form';
 import { useMutation } from 'convex/react';
-import { AlertTriangle, ArrowLeft, Crown, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Crown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -17,13 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+// Removed unused Select imports
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -125,11 +119,7 @@ type CreateAgentFormData = z.infer<typeof createAgentFormSchema>;
 // API Submission Handler
 // =============================================================================
 
-interface CreateAgentError {
-  code: 'VALIDATION_ERROR' | 'NETWORK_ERROR' | 'API_ERROR' | 'UNKNOWN_ERROR';
-  message: string;
-  details?: Record<string, string[]>;
-}
+// Removed unused CreateAgentError interface
 
 export default function NewAgentPage() {
   const router = useRouter();
@@ -138,15 +128,16 @@ export default function NewAgentPage() {
   const createAgentMutation = useMutation(api.agents.create);
 
   // Check if user has reached agent creation limits
-  const canCreateAgent = subscription
-    ? subscription.tier === 'free'
-      ? true
-      : // Free tier can create basic agents
-        subscription.tier === 'pro'
-        ? true
-        : // Pro tier can create advanced agents
-          true // Pro+ tier can create unlimited agents
-    : false;
+  let _canCreateAgent = false;
+  if (subscription) {
+    if (subscription.tier === 'free') {
+      _canCreateAgent = true;
+    } else if (subscription.tier === 'pro') {
+      _canCreateAgent = true;
+    } else if (subscription.tier === 'pro_plus') {
+      _canCreateAgent = true;
+    }
+  }
 
   const form = useForm({
     defaultValues: {
@@ -170,11 +161,11 @@ export default function NewAgentPage() {
 
       if (!validation.success) {
         const errors = validation.error.flatten().fieldErrors;
-        Object.entries(errors).forEach(([field, messages]) => {
+        for (const [field, messages] of Object.entries(errors)) {
           if (messages) {
             toast.error(`${field}: ${messages[0]}`);
           }
-        });
+        }
         return;
       }
 
@@ -188,15 +179,29 @@ export default function NewAgentPage() {
         // Prepare agent data
         const agentData = {
           name: validation.data.name,
-          type: (validation.data.template === 'custom'
-            ? 'custom'
-            : validation.data.template === 'blockchain'
-              ? 'trading'
-              : validation.data.template === 'analysis'
-                ? 'portfolio'
-                : validation.data.template === 'research'
-                  ? 'general'
-                  : 'general') as
+          type: (():
+            | 'general'
+            | 'custom'
+            | 'trading'
+            | 'defi'
+            | 'nft'
+            | 'dao'
+            | 'portfolio' => {
+            const t = validation.data.template;
+            if (t === 'custom') {
+              return 'custom';
+            }
+            if (t === 'blockchain') {
+              return 'trading';
+            }
+            if (t === 'analysis') {
+              return 'portfolio';
+            }
+            if (t === 'research') {
+              return 'general';
+            }
+            return 'general';
+          })() as
             | 'general'
             | 'custom'
             | 'trading'
@@ -216,16 +221,15 @@ export default function NewAgentPage() {
           mcpServers: validation.data.mcpServers?.filter((s) => s.enabled),
         };
 
-        console.log('Creating agent with data:', agentData);
+        // creating agent with data
 
         // Submit to Convex
-        const result = await createAgentMutation(agentData);
+        const _result = await createAgentMutation(agentData);
 
-        console.log('Agent created successfully:', result);
+        // agent created successfully
         toast.success('Agent created successfully!');
         router.push('/agents');
       } catch (error) {
-        console.error('Failed to create agent:', error);
         const err = error as Error;
         toast.error(err.message || 'Failed to create agent');
       }

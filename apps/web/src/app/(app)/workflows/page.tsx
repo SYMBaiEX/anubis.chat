@@ -17,10 +17,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { AdminGuard } from '@/components/auth/admin-guard';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
-import {
-  useAuthContext,
-  useSubscriptionStatus,
-} from '@/components/providers/auth-provider';
+import { useSubscriptionStatus } from '@/components/providers/auth-provider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,7 +31,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// Removed unused Tabs imports
 import { Textarea } from '@/components/ui/textarea';
 import WorkflowCanvas from '@/components/workflows/WorkflowCanvas';
 import {
@@ -54,7 +51,8 @@ function WorkflowsContent() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
-  const { user } = useAuthContext();
+  // user is not used in this component
+  // const { user } = useAuthContext();
   const subscription = useSubscriptionStatus();
 
   // TODO: Replace with actual wallet address from auth
@@ -62,8 +60,12 @@ function WorkflowsContent() {
 
   // Workflow creation limits based on subscription tier
   const canCreateWorkflows = subscription?.tier === 'pro_plus';
-  const maxWorkflows =
-    subscription?.tier === 'free' ? 0 : subscription?.tier === 'pro' ? 0 : 999; // Pro+ gets unlimited
+  let maxWorkflows = 999;
+  if (subscription?.tier === 'free') {
+    maxWorkflows = 0;
+  } else if (subscription?.tier === 'pro') {
+    maxWorkflows = 0;
+  }
 
   // Use workflows hook
   const {
@@ -123,15 +125,16 @@ function WorkflowsContent() {
       setNewWorkflowDialog(false);
       setNewWorkflow({ name: '', description: '' });
       toast.success('Workflow created successfully');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to create workflow');
-      console.error(error);
     }
   };
 
   // Save workflow
   const handleSaveWorkflow = async (newNodes: Node[], newEdges: Edge[]) => {
-    if (!selectedWorkflow) return;
+    if (!selectedWorkflow) {
+      return;
+    }
 
     try {
       await updateWorkflow(
@@ -142,25 +145,25 @@ function WorkflowsContent() {
       );
 
       toast.success('Workflow saved successfully');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to save workflow');
-      console.error(error);
     }
   };
 
   // Execute workflow
   const handleExecuteWorkflow = async (workflow?: WorkflowMeta) => {
     const workflowToRun = workflow || selectedWorkflow;
-    if (!workflowToRun) return;
+    if (!workflowToRun) {
+      return;
+    }
 
     toast.info(`Executing workflow: ${workflowToRun.name}`);
 
     try {
       await executeWorkflow(workflowToRun._id);
       toast.success('Workflow execution started');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Error executing workflow');
-      console.error(error);
     }
   };
 
@@ -176,9 +179,8 @@ function WorkflowsContent() {
           setIsCreating(false);
         }
         toast.success('Workflow deleted successfully');
-      } catch (error) {
+      } catch (_error) {
         toast.error('Failed to delete workflow');
-        console.error(error);
       }
     }
   };

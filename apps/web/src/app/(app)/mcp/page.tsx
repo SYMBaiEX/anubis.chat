@@ -42,7 +42,9 @@ interface MCPApiResponse {
 }
 
 function isMCPStatusResponse(obj: unknown): obj is MCPStatusResponse {
-  if (obj == null || typeof obj !== 'object') return false;
+  if (obj == null || typeof obj !== 'object') {
+    return false;
+  }
   const maybe = obj as Partial<MCPStatusResponse> & Record<string, unknown>;
   return typeof maybe.initialized === 'boolean' && Array.isArray(maybe.servers);
 }
@@ -79,9 +81,11 @@ export default function MCPServersPage() {
         setIsLoading(false);
       }
     };
-    // Run once on mount
+    load().catch(() => {
+      setIsLoading(false);
+    });
+    // fetchServerStatus is stable here; ignore exhaustive-deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    load();
   }, []);
 
   const handleInitContext7 = async () => {

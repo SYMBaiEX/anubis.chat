@@ -2,15 +2,7 @@
 
 import { api } from '@convex/_generated/api';
 import { useQuery } from 'convex/react';
-import {
-  Brain,
-  Filter,
-  Plus,
-  Search,
-  Settings,
-  SortAsc,
-  SortDesc,
-} from 'lucide-react';
+import { Brain, Filter, Search, Settings, SortAsc, SortDesc } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { AdminGuard } from '@/components/auth/admin-guard';
 import { EmptyState } from '@/components/data/empty-states';
@@ -75,7 +67,9 @@ export default function MemoriesPage() {
 
   // Filter and sort memories
   const filteredMemories = useMemo(() => {
-    if (!memories) return [];
+    if (!memories) {
+      return [];
+    }
 
     const filters: MemoryFilters = {
       type: selectedType === 'all' ? undefined : selectedType,
@@ -89,7 +83,9 @@ export default function MemoriesPage() {
 
   // Group memories by type for overview
   const memoryGroups = useMemo(() => {
-    if (!memories) return {} as Record<MemoryType, Memory[]>;
+    if (!memories) {
+      return {} as Record<MemoryType, Memory[]>;
+    }
 
     return memories.reduce(
       (groups, memory) => {

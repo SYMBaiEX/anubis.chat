@@ -44,7 +44,9 @@ export const list = query({
               : q.gt(q.field('updatedAt'), cursorDoc.updatedAt)
           );
         }
-      } catch (_error) {}
+      } catch (_error) {
+        // ignore invalid cursor
+      }
     }
 
     // Fetch items with limit + 1 to check for more

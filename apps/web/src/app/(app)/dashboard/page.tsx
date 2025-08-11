@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 export default function DashboardPage() {
   const { user } = useAuthContext();
   const subscription = useSubscriptionStatus();
-  const limits = useSubscriptionLimits();
+  const _limits = useSubscriptionLimits();
   const [isEditingName, setIsEditingName] = useState(false);
   const [pendingName, setPendingName] = useState('');
   const [savingName, setSavingName] = useState(false);
@@ -109,10 +109,12 @@ export default function DashboardPage() {
               className="flex w-full max-w-sm items-center gap-2"
               onSubmit={async (e) => {
                 e.preventDefault();
-                if (!pendingName.trim()) return;
+                if (!pendingName.trim()) {
+                  return;
+                }
                 try {
                   setSavingName(true);
-                  const result: any = await updateProfile({
+                  const result = await updateProfile({
                     displayName: pendingName.trim(),
                   });
                   if (result?.success === false) {

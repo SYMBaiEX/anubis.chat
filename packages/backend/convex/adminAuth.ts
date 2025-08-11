@@ -115,7 +115,7 @@ export const promoteUserToAdmin = mutation({
 
     const defaultPermissions: Record<
       'moderator' | 'admin' | 'super_admin',
-      ReadonlyArray<AdminPermission>
+      readonly AdminPermission[]
     > = {
       moderator: ['content_moderation'],
       admin: [

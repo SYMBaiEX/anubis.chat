@@ -44,7 +44,10 @@ interface PaymentVerificationRequest {
 
 // Initialize Solana connection with proper configuration
 function createSolanaConnection(): Connection {
-  const commitment = solanaConfig.commitmentLevel as any;
+  const commitment = solanaConfig.commitmentLevel as unknown as
+    | 'processed'
+    | 'confirmed'
+    | 'finalized';
   return new Connection(solanaConfig.rpcUrl, {
     commitment,
     httpHeaders: {

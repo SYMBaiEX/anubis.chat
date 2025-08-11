@@ -35,7 +35,7 @@ export const useAuth = (): UseAuthReturn => {
 
   // Get current user from Convex
   const currentUser = useQuery(
-    api.users.getByWallet,
+    api.users.getUserByWallet,
     token && publicKey ? { walletAddress: publicKey.toString() } : 'skip'
   );
 
