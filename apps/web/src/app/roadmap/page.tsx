@@ -408,7 +408,8 @@ export default function RoadmapPage(): ReactElement {
             <div className="mt-6 flex flex-col items-center justify-center gap-2 text-muted-foreground text-xs sm:flex-row sm:gap-4">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                Last updated: 2025-08-11
+-                Last updated: 2025-08-11
++                Last updated: {new Date().toISOString().split('T')[0]}
               </span>
               <Badge className="gap-1" variant="outline">
                 <Sparkles className="h-3 w-3" />
