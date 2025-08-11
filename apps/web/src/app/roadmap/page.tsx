@@ -41,6 +41,30 @@ import { cn } from '@/lib/utils';
 type FeatureStatus = 'completed' | 'in-progress' | 'upcoming';
 type ViewMode = 'timeline' | 'kanban' | 'list';
 
+interface EmptySearchStateProps {
+  Icon: React.ComponentType<{ className?: string }>;
+  onClearFilters: () => void;
+}
+
+function EmptySearchState({ Icon, onClearFilters }: EmptySearchStateProps) {
+  return (
+    <div className="py-12 text-center">
+      <Icon className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+      <p className="text-muted-foreground">
+        No features match your search criteria
+      </p>
+      <Button
+        className="mt-4"
+        onClick={onClearFilters}
+        size="sm"
+        variant="outline"
+      >
+        Clear filters
+      </Button>
+    </div>
+  );
+}
+
 function FeatureCard({
   feature,
   expanded,
@@ -519,23 +543,13 @@ export default function RoadmapPage(): ReactElement {
                     onToggleCard={toggleCard}
                   />
                 ) : (
-                  <div className="py-12 text-center">
-                    <Search className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">
-                      No features match your search criteria
-                    </p>
-                    <Button
-                      className="mt-4"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setSelectedFilter('all');
-                      }}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Clear filters
-                    </Button>
-                  </div>
+                  <EmptySearchState
+                    Icon={Search}
+                    onClearFilters={() => {
+                      setSearchQuery('');
+                      setSelectedFilter('all');
+                    }}
+                  />
                 )}
               </TabsContent>
 
@@ -547,23 +561,13 @@ export default function RoadmapPage(): ReactElement {
                     onToggleCard={toggleCard}
                   />
                 ) : (
-                  <div className="py-12 text-center">
-                    <Grid3x3 className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">
-                      No features match your search criteria
-                    </p>
-                    <Button
-                      className="mt-4"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setSelectedFilter('all');
-                      }}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Clear filters
-                    </Button>
-                  </div>
+                  <EmptySearchState
+                    Icon={Grid3x3}
+                    onClearFilters={() => {
+                      setSearchQuery('');
+                      setSelectedFilter('all');
+                    }}
+                  />
                 )}
               </TabsContent>
 
@@ -575,23 +579,13 @@ export default function RoadmapPage(): ReactElement {
                     onToggleCard={toggleCard}
                   />
                 ) : (
-                  <div className="py-12 text-center">
-                    <List className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">
-                      No features match your search criteria
-                    </p>
-                    <Button
-                      className="mt-4"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setSelectedFilter('all');
-                      }}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Clear filters
-                    </Button>
-                  </div>
+                  <EmptySearchState
+                    Icon={List}
+                    onClearFilters={() => {
+                      setSearchQuery('');
+                      setSelectedFilter('all');
+                    }}
+                  />
                 )}
               </TabsContent>
             </Tabs>
