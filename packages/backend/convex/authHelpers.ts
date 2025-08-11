@@ -4,7 +4,7 @@
  */
 
 import { getAuthUserId } from '@convex-dev/auth/server';
-import type { Doc, Id } from './_generated/dataModel';
+import type { Doc } from './_generated/dataModel';
 import type { MutationCtx, QueryCtx } from './_generated/server';
 
 // =============================================================================
@@ -34,7 +34,7 @@ export async function requireAuth(ctx: QueryCtx | MutationCtx) {
   }
 
   const user = await ctx.db.get(userId);
-  if (!(user && user.isActive)) {
+  if (!user?.isActive) {
     throw new Error('User account is inactive');
   }
 
@@ -60,7 +60,9 @@ export async function isCurrentUserAdmin(
   ctx: QueryCtx | MutationCtx
 ): Promise<boolean> {
   const user = await getCurrentUser(ctx);
-  if (!user) return false;
+  if (!user) {
+    return false;
+  }
 
   return (
     user.role === 'admin' ||
@@ -105,10 +107,14 @@ export async function hasPermission(
   permission: string
 ): Promise<boolean> {
   const user = await getCurrentUser(ctx);
-  if (!user) return false;
+  if (!user) {
+    return false;
+  }
 
   // Super admins have all permissions
-  if (user.role === 'super_admin') return true;
+  if (user.role === 'super_admin') {
+    return true;
+  }
 
   // Admins have most permissions by default
   if (user.role === 'admin') {
@@ -124,8 +130,10 @@ export async function hasPermission(
   }
 
   // Check explicit permissions
-  if (!user.permissions) return false;
-  return user.permissions.includes(permission as any);
+  if (!user.permissions) {
+    return false;
+  }
+  return (user.permissions as string[]).includes(permission);
 }
 
 /**
@@ -157,7 +165,7 @@ export async function requirePermission(
   }
 
   // Check explicit permissions for all roles
-  if (!(user.permissions && user.permissions.includes(permission as any))) {
+  if (!(user.permissions as string[] | undefined)?.includes(permission)) {
     throw new Error(`Permission '${permission}' required`);
   }
 
@@ -176,7 +184,9 @@ export async function isResourceOwner(
   resource: { walletAddress?: string; ownerId?: string; userId?: string }
 ): Promise<boolean> {
   const user = await getCurrentUser(ctx);
-  if (!user) return false;
+  if (!user) {
+    return false;
+  }
 
   // Check various owner field patterns
   return (
@@ -221,7 +231,9 @@ export async function hasSubscriptionTier(
   tier: 'free' | 'pro' | 'pro_plus'
 ): Promise<boolean> {
   const user = await getCurrentUser(ctx);
-  if (!user?.subscription) return false;
+  if (!user?.subscription) {
+    return false;
+  }
 
   const tierHierarchy = { free: 1, pro: 2, pro_plus: 3 };
   const userLevel = tierHierarchy[user.subscription.tier];
@@ -251,7 +263,9 @@ export async function requireSubscriptionTier(
  */
 export async function checkMessageUsage(ctx: QueryCtx | MutationCtx) {
   const user = await getCurrentUser(ctx);
-  if (!user?.subscription) return { canSendMessage: false, usage: null };
+  if (!user?.subscription) {
+    return { canSendMessage: false, usage: null };
+  }
 
   const { subscription } = user;
   const regularUsage = subscription.messagesUsed || 0;
@@ -299,7 +313,7 @@ export async function getAllAdmins(ctx: QueryCtx | MutationCtx) {
 /**
  * Check if wallet address is configured as admin
  */
-export async function isWalletAdmin(walletAddress: string): Promise<boolean> {
+export function isWalletAdmin(walletAddress: string): boolean {
   const adminWallets =
     process.env.ADMIN_WALLETS?.split(',').map((w) => w.trim()) || [];
   return adminWallets.includes(walletAddress);

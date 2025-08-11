@@ -4,6 +4,7 @@ import '../index.css';
 import { ErrorBoundary } from '@/components/error-boundary';
 import Providers from '@/components/providers';
 import ServiceWorkerManager from '@/components/service-worker-manager';
+import { Toaster } from '@/components/ui/toaster';
 
 // PRD Typography: Inter for body, IBM Plex Mono for code
 // Note: Satoshi Variable for headers will be loaded via CSS for better Bun runtime performance
@@ -91,12 +92,15 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${ibmPlexMono.variable} font-sans antialiased overflow-hidden`}
+        className={`${inter.variable} ${ibmPlexMono.variable} font-sans antialiased`}
       >
         <ErrorBoundary>
           <Providers>
             <ServiceWorkerManager />
-            <main className="h-screen w-full overflow-x-hidden overflow-hidden">{children}</main>
+            <main className="min-h-screen w-full overflow-x-hidden">
+              {children}
+            </main>
+            <Toaster />
           </Providers>
         </ErrorBoundary>
       </body>

@@ -80,12 +80,8 @@ const getAgentColor = (type: Agent['type']) => {
 export function AgentSelectorDialog({ className }: AgentSelectorDialogProps) {
   const [open, setOpen] = useState(false);
 
-  const {
-    agents,
-    selectedAgent,
-    selectAgent,
-    isInitialized,
-  } = useSolanaAgent();
+  const { agents, selectedAgent, selectAgent, isInitialized } =
+    useSolanaAgent();
 
   const handleAgentSelect = (agent: Agent) => {
     selectAgent(agent._id);
@@ -131,7 +127,7 @@ export function AgentSelectorDialog({ className }: AgentSelectorDialogProps) {
           </Button>
         </DialogTrigger>
 
-          <DialogContent className="max-h-[80vh] w-[95vw] max-w-[680px] overflow-hidden sm:w-auto sm:max-w-6xl">
+        <DialogContent className="max-h-[80vh] w-[95vw] max-w-[680px] overflow-hidden sm:w-auto sm:max-w-6xl">
           <DialogHeader>
             <DialogTitle>Select AI Agent</DialogTitle>
             <DialogDescription>
@@ -150,7 +146,7 @@ export function AgentSelectorDialog({ className }: AgentSelectorDialogProps) {
 
           {/* Create Custom Agent Button */}
           <div className="border-t pt-4">
-            <Link href="/agents" className="block">
+            <Link className="block" href="/agents">
               <Button
                 className="w-full"
                 onClick={() => setOpen(false)}

@@ -108,10 +108,12 @@ export function FeatureGate({
   };
 
   const requiredTier = featureRequirements[feature] || 'pro_plus';
-  const tierLevel = { free: 0, pro: 1, pro_plus: 2 };
+  const tierLevel = { free: 0, pro: 1, pro_plus: 2, admin: 3 } as const;
   const currentTier = subscription?.tier || 'free';
-  const currentLevel = tierLevel[currentTier as keyof typeof tierLevel] || 0;
-  const hasAccess = currentLevel >= tierLevel[requiredTier];
+  const hasAccess =
+    currentTier === 'admin' ||
+    ((tierLevel as Record<string, number>)[currentTier] ?? 0) >=
+      tierLevel[requiredTier];
 
   if (hasAccess) {
     return <>{children}</>;

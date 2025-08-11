@@ -62,33 +62,33 @@ const convexEnvSchema = z.object({
   SUBSCRIPTION_PRO_PRICE_USD: z
     .string()
     .default('12')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
   SUBSCRIPTION_PRO_PLUS_PRICE_USD: z
     .string()
     .default('25')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
 
   // Message limits
   SUBSCRIPTION_FREE_MESSAGE_LIMIT: z
     .string()
     .default('50')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
   SUBSCRIPTION_PRO_MESSAGE_LIMIT: z
     .string()
     .default('1500')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
   SUBSCRIPTION_PRO_PLUS_MESSAGE_LIMIT: z
     .string()
     .default('3000')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
   SUBSCRIPTION_PRO_PREMIUM_LIMIT: z
     .string()
     .default('100')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
   SUBSCRIPTION_PRO_PLUS_PREMIUM_LIMIT: z
     .string()
     .default('300')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
 
   // Payment Processing
   PAYMENT_WEBHOOK_SECRET: z
@@ -98,7 +98,7 @@ const convexEnvSchema = z.object({
   PAYMENT_CONFIRMATION_TIMEOUT_MS: z
     .string()
     .default('300000')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
 
   // Security
   JWT_SECRET: z
@@ -109,11 +109,11 @@ const convexEnvSchema = z.object({
   RATE_LIMIT_MAX_REQUESTS: z
     .string()
     .default('100')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
   RATE_LIMIT_WINDOW_MS: z
     .string()
     .default('900000')
-    .transform((val) => Number.parseInt(val)),
+    .transform((val) => Number.parseInt(val, 10)),
   ALLOWED_ORIGINS: z.string().default('http://localhost:3001'),
   CORS_CREDENTIALS: z
     .string()
@@ -364,7 +364,6 @@ if (isProduction) {
 
   for (const { name, purpose } of recommendedVars) {
     if (!convexEnv[name as keyof ConvexEnv]) {
-      console.warn(`Warning: ${name} not set - ${purpose} will be disabled`);
     }
   }
 }

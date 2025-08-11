@@ -7,6 +7,8 @@ import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { httpAction } from './_generated/server';
 
+// Remove direct imports to avoid TypeScript issues
+
 // Allowed OpenRouter model allowlist for security
 const ALLOWED_OPENROUTER_MODELS = new Set<string>([
   // Newly requested free models
@@ -34,8 +36,15 @@ export const streamChat = httpAction(async (ctx, request) => {
     useReasoning?: boolean;
   };
 
-  const { chatId, walletAddress, content, model, temperature, maxTokens, useReasoning } =
-    body;
+  const {
+    chatId,
+    walletAddress,
+    content,
+    model,
+    temperature,
+    maxTokens,
+    useReasoning,
+  } = body;
 
   // Get the user by wallet address first
   const user = await ctx.runQuery(api.users.getUserByWallet, {
@@ -148,17 +157,80 @@ export const streamChat = httpAction(async (ctx, request) => {
   const modelName = model || chat.model || 'openrouter/openai/gpt-oss-20b:free';
 
   // Create user message using the user ID
-  const userMessage = await ctx.runMutation(api.messages.create, {
+  const _userMessage = await ctx.runMutation(api.messages.create, {
     chatId: chatId as Id<'chats'>,
     walletAddress, // Still need wallet address for legacy compatibility
     role: 'user',
     content,
   });
 
-  console.log(
-    'User message created, preparing AI response with model:',
-    modelName
-  );
+  // Try to kick off memory extraction for this user message
+  try {
+    if (_userMessage) {
+      await ctx.runAction((api as any).memoryExtraction.processNewMessage, {
+        messageId: _userMessage._id,
+      });
+    }
+  } catch (_err) {
+    // Non-blocking
+  }
+
+  // Check user preferences for memory and RAG features
+  const userPreferences = await ctx.runQuery(api.userPreferences.getByUserId, {
+    userId: user._id,
+  });
+  const memoryEnabled = userPreferences?.enableMemory !== false; // Default to true
+
+  // Initialize context to be injected into system prompt
+  let contextToInject = '';
+
+  // If memory is enabled, retrieve and format relevant context using the advanced RAG system
+  if (memoryEnabled) {
+    try {
+      // Use the sophisticated RAG system for context retrieval
+      const ragContext = await ctx.runAction(api.rag.retrieveContext, {
+        userId: user._id,
+        query: content,
+        chatId: chatId as Id<'chats'>,
+        tokenBudget: 3000, // Leave room for conversation
+        includeMemories: true,
+        includeMessages: true,
+        includeDocuments: true,
+        minRelevanceScore: 0.4, // Lower threshold for more context
+        useCache: true,
+      });
+
+      // Format the RAG context for LLM consumption
+      if (ragContext.items.length > 0) {
+        contextToInject = await ctx.runAction(api.rag.formatContextForLLM, {
+          context: ragContext,
+          includeMetadata: false, // Keep it clean for the agent
+        });
+      }
+    } catch (_error) {
+      // Fallback to basic memory system if RAG fails
+      try {
+        const memories = await ctx.runQuery(api.memories.getUserMemories, {
+          userId: user._id,
+        });
+
+        if (memories && memories.length > 0) {
+          const importantMemories = memories
+            .sort((a, b) => b.importance - a.importance)
+            .slice(0, 5);
+
+          contextToInject =
+            '## User Context\n\nKey information about the user:\n';
+          for (const memory of importantMemories) {
+            contextToInject += `- ${memory.content}\n`;
+          }
+          contextToInject += '\n';
+        }
+      } catch (_fallbackError) {
+        // Continue without context rather than failing the entire request
+      }
+    }
+  }
 
   // Get recent messages for context (this query doesn't need auth since we already verified ownership)
   const messages = await ctx.runQuery(api.messages.getByChatId, {
@@ -287,12 +359,10 @@ export const streamChat = httpAction(async (ctx, request) => {
       let apiModelName = modelName;
       if (modelName === 'gpt-5' || modelName === 'gpt-5-pro') {
         apiModelName = 'gpt-4o';
-        console.warn(`Model ${modelName} not yet available, using gpt-4o`);
       } else if (modelName === 'gpt-4.1') {
         apiModelName = 'gpt-4-turbo-preview';
       } else if (modelName === 'o3' || modelName === 'o4-mini') {
         apiModelName = 'gpt-4o';
-        console.warn(`Model ${modelName} not yet available, using gpt-4o`);
       }
       // gpt-5-nano is now available and will be used directly
 
@@ -363,9 +433,6 @@ export const streamChat = httpAction(async (ctx, request) => {
     ) {
       // Gemini 2.5 models might not be available yet
       apiModelName = 'gemini-2.0-flash-exp';
-      console.warn(
-        `Model ${modelName} not yet available, using gemini-2.0-flash-exp`
-      );
     } else if (modelName === 'gemini-2.0-flash') {
       apiModelName = 'gemini-2.0-flash-exp';
     }
@@ -377,35 +444,39 @@ export const streamChat = httpAction(async (ctx, request) => {
       apiKey: process.env.OPENAI_API_KEY,
     });
     aiModel = openai('gpt-4o');
-    console.warn(`Unknown model ${modelName}, using default gpt-4o`);
   }
 
-  // Create streaming response
-  console.log('Creating streaming response with AI model...');
+  // Combine prompts: agent prompt first (most important), then system prompt, then context
+  const prompts = [];
 
-  // Combine prompts with agent prompt first, then user's system prompt
-  const combinedSystemPrompt = [chat.agentPrompt, chat.systemPrompt]
-    .filter(Boolean)
-    .join('\n\n');
+  // Agent prompt should always come first and be clearly delineated
+  if (chat.agentPrompt) {
+    prompts.push(
+      `# AGENT IDENTITY AND CORE INSTRUCTIONS\n\n${chat.agentPrompt}`
+    );
+  }
+
+  // User's custom system prompt comes second
+  if (chat.systemPrompt) {
+    prompts.push(`# USER SYSTEM PREFERENCES\n\n${chat.systemPrompt}`);
+  }
+
+  // RAG context comes last to provide relevant information
+  if (contextToInject) {
+    prompts.push(`# RELEVANT CONTEXT\n\n${contextToInject}`);
+  }
+
+  const combinedSystemPrompt = prompts.join('\n\n---\n\n');
 
   // Log for debugging
   if (chat.agentPrompt) {
-    console.log(
-      'Agent prompt detected (first 100 chars):',
-      chat.agentPrompt.substring(0, 100)
-    );
   }
   if (chat.systemPrompt) {
-    console.log(
-      'User system prompt detected (first 100 chars):',
-      chat.systemPrompt.substring(0, 100)
-    );
   }
-  console.log('Combined prompt length:', combinedSystemPrompt.length);
 
   let result;
   let finalText = '';
-  let totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+  const totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
   // Determine maxSteps based on reasoning mode
   const maxSteps = useReasoning ? 10 : Math.floor(Math.random() * 3) + 1; // Reasoning: 10, Regular: 1-3
@@ -413,9 +484,6 @@ export const streamChat = httpAction(async (ctx, request) => {
 
   try {
     if (useReasoning) {
-      // Multi-step reasoning mode (up to 10 steps, costs 2 messages)
-      console.log(`Starting multi-step reasoning with up to ${maxSteps} steps`);
-      
       const reasoningSystemPrompt = `${combinedSystemPrompt}
 
 When responding to the user's message, use a structured reasoning process with up to ${maxSteps} steps:
@@ -442,7 +510,7 @@ Step 3: [Continue as needed...]
           try {
             // Step 1: Initial reasoning
             controller.enqueue('**🧠 Thinking through your request...**\n\n');
-            
+
             const reasoningResult = await streamText({
               model: aiModel,
               system: reasoningSystemPrompt,
@@ -457,9 +525,13 @@ Step 3: [Continue as needed...]
             }
 
             // Extract thinking section and final response
-            const thinkingMatch = reasoningContent.match(/<thinking>([\s\S]*?)<\/thinking>/);
+            const thinkingMatch = reasoningContent.match(
+              /<thinking>([\s\S]*?)<\/thinking>/
+            );
             const thinking = thinkingMatch ? thinkingMatch[1].trim() : '';
-            const finalResponse = reasoningContent.replace(/<thinking>[\s\S]*?<\/thinking>/, '').trim();
+            const finalResponse = reasoningContent
+              .replace(/<thinking>[\s\S]*?<\/thinking>/, '')
+              .trim();
 
             if (thinking) {
               // Stream the thinking process
@@ -469,22 +541,22 @@ Step 3: [Continue as needed...]
                 if (steps[i]?.trim()) {
                   controller.enqueue(`**Step ${i}:** ${steps[i].trim()}\n\n`);
                   // Small delay to simulate thinking time
-                  await new Promise(resolve => setTimeout(resolve, 500));
+                  await new Promise((resolve) => setTimeout(resolve, 500));
                 }
               }
-              
+
               controller.enqueue('---\n\n');
             }
 
             // Stream the final response
             controller.enqueue('### Final Response:\n\n');
             finalText = finalResponse || reasoningContent;
-            
+
             // Stream final response character by character for better UX
             for (const char of finalText) {
               controller.enqueue(char);
               // Very small delay for streaming effect
-              await new Promise(resolve => setTimeout(resolve, 10));
+              await new Promise((resolve) => setTimeout(resolve, 10));
             }
 
             // Update usage tracking
@@ -492,19 +564,20 @@ Step 3: [Continue as needed...]
             if (usage) {
               totalUsage.inputTokens += usage.inputTokens || 0;
               totalUsage.outputTokens += usage.outputTokens || 0;
-              totalUsage.totalTokens = totalUsage.inputTokens + totalUsage.outputTokens;
+              totalUsage.totalTokens =
+                totalUsage.inputTokens + totalUsage.outputTokens;
             }
 
             controller.close();
           } catch (error) {
             controller.error(error);
           }
-        }
+        },
       });
 
       // Save the complete message to database
       const completeContent = finalText || 'Multi-step reasoning completed';
-      await ctx.runMutation(api.messages.create, {
+      const _assistantMessage = await ctx.runMutation(api.messages.create, {
         chatId: chatId as Id<'chats'>,
         walletAddress,
         role: 'assistant',
@@ -516,6 +589,16 @@ Step 3: [Continue as needed...]
           reasoning: 'multi-step',
         },
       });
+
+      // Extract memories from conversation after AI response (non-blocking)
+      if (memoryEnabled && _userMessage) {
+        // Non-blocking memory extraction
+        try {
+          await ctx.runAction((api as any).memoryExtraction.processNewMessage, {
+            messageId: _userMessage._id,
+          });
+        } catch (_error) {}
+      }
 
       // Track message usage for subscription (skip for admins) - consume appropriate number of messages
       if (!adminStatus.isAdmin) {
@@ -534,16 +617,14 @@ Step 3: [Continue as needed...]
           'Content-Type': 'text/plain',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+          'Access-Control-Allow-Headers':
+            'Content-Type, Authorization, X-Requested-With, Accept',
           'Access-Control-Allow-Credentials': 'true',
         },
       });
+    }
 
-    } else {
-      // Regular chat mode with dynamic steps (1-3 steps, agent decides, costs 1 message)
-      console.log(`Starting regular chat with ${maxSteps} steps`);
-      
-      const regularSystemPrompt = `${combinedSystemPrompt}
+    const regularSystemPrompt = `${combinedSystemPrompt}
 
 When responding to the user's message, you may use up to ${maxSteps} reasoning steps if the problem is complex enough to benefit from step-by-step thinking. For simple queries, respond directly. For more complex ones, use this format:
 
@@ -557,48 +638,59 @@ Step 3: [Third reasoning step if needed - only if really necessary]
 
 Use your judgment - only use the thinking section if the query truly benefits from multi-step reasoning.`;
 
-      result = await streamText({
-        model: aiModel,
-        system: regularSystemPrompt,
-        messages: conversationHistory,
-        temperature: temperature ?? chat.temperature ?? 0.7,
-        maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
-        onFinish: async ({ text, finishReason, usage }) => {
-          // Save assistant message to database
-          await ctx.runMutation(api.messages.create, {
-            chatId: chatId as Id<'chats'>,
-            walletAddress,
-            role: 'assistant',
-            content: text,
-            metadata: {
-              model: modelName,
-              finishReason: finishReason || 'stop',
-              usage: usage
-                ? {
-                    inputTokens: usage.inputTokens || 0,
-                    outputTokens: usage.outputTokens || 0,
-                    totalTokens: usage.totalTokens || 0,
-                  }
-                : undefined,
-              reasoning: maxSteps > 1 ? 'regular' : undefined,
-            },
-          });
+    result = await streamText({
+      model: aiModel,
+      system: regularSystemPrompt,
+      messages: conversationHistory,
+      temperature: temperature ?? chat.temperature ?? 0.7,
+      maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
+      onFinish: async ({ text, finishReason, usage }) => {
+        // Save assistant message to database
+        const _assistantMessage = await ctx.runMutation(api.messages.create, {
+          chatId: chatId as Id<'chats'>,
+          walletAddress,
+          role: 'assistant',
+          content: text,
+          metadata: {
+            model: modelName,
+            finishReason: finishReason || 'stop',
+            usage: usage
+              ? {
+                  inputTokens: usage.inputTokens || 0,
+                  outputTokens: usage.outputTokens || 0,
+                  totalTokens: usage.totalTokens || 0,
+                }
+              : undefined,
+            reasoning: maxSteps > 1 ? 'regular' : undefined,
+          },
+        });
 
-          // Track message usage for subscription (skip for admins) - consume appropriate number of messages
-          if (!adminStatus.isAdmin) {
-            // For reasoning mode, we need to consume 2 messages
-            for (let i = 0; i < messagesConsumed; i++) {
-              await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
-                walletAddress,
-                isPremiumModel,
-              });
-            }
+        // Extract memories from conversation after AI response (non-blocking)
+        if (memoryEnabled && _userMessage) {
+          // Non-blocking memory extraction
+          try {
+            await ctx.runAction(
+              (api as any).memoryExtraction.processNewMessage,
+              {
+                messageId: _userMessage._id,
+              }
+            );
+          } catch (_error) {}
+        }
+
+        // Track message usage for subscription (skip for admins) - consume appropriate number of messages
+        if (!adminStatus.isAdmin) {
+          // For reasoning mode, we need to consume 2 messages
+          for (let i = 0; i < messagesConsumed; i++) {
+            await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
+              walletAddress,
+              isPremiumModel,
+            });
           }
-        },
-      });
-    }
+        }
+      },
+    });
   } catch (error) {
-    console.error('Error creating streaming response:', error);
     return new Response(
       JSON.stringify({
         error: 'Failed to generate AI response',
@@ -655,7 +747,8 @@ Use your judgment - only use the thinking section if the query truly benefits fr
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+        'Access-Control-Allow-Headers':
+          'Content-Type, Authorization, X-Requested-With, Accept',
         'Access-Control-Allow-Credentials': 'true',
       },
     }

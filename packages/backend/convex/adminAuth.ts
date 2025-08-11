@@ -1,11 +1,11 @@
 import { v } from 'convex/values';
+import type { Doc } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 import {
   getCurrentUser,
   getUserStats,
   isCurrentUserAdmin,
   requireAdmin,
-  requireAuth,
   requirePermission,
 } from './authHelpers';
 
@@ -70,12 +70,24 @@ export const promoteUserToAdmin = mutation({
       v.literal('admin'),
       v.literal('moderator')
     ),
-    permissions: v.optional(v.array(v.string())),
+    permissions: v.optional(
+      v.array(
+        v.union(
+          v.literal('user_management'),
+          v.literal('subscription_management'),
+          v.literal('content_moderation'),
+          v.literal('system_settings'),
+          v.literal('financial_data'),
+          v.literal('usage_analytics'),
+          v.literal('admin_management')
+        )
+      )
+    ),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Require admin management permissions
-    const { user: currentAdmin } = await requireAdmin(ctx, 'admin');
+    await requireAdmin(ctx, 'admin');
 
     // Find the user to promote
     const targetUser = await ctx.db
@@ -92,14 +104,26 @@ export const promoteUserToAdmin = mutation({
     }
 
     // Default permissions based on role
-    const defaultPermissions = {
-      moderator: ['content_moderation'] as const,
+    type AdminPermission =
+      | 'user_management'
+      | 'subscription_management'
+      | 'content_moderation'
+      | 'system_settings'
+      | 'financial_data'
+      | 'usage_analytics'
+      | 'admin_management';
+
+    const defaultPermissions: Record<
+      'moderator' | 'admin' | 'super_admin',
+      ReadonlyArray<AdminPermission>
+    > = {
+      moderator: ['content_moderation'],
       admin: [
         'user_management',
         'subscription_management',
         'content_moderation',
         'usage_analytics',
-      ] as const,
+      ],
       super_admin: [
         'user_management',
         'subscription_management',
@@ -108,24 +132,17 @@ export const promoteUserToAdmin = mutation({
         'financial_data',
         'usage_analytics',
         'admin_management',
-      ] as const,
-    } as const;
+      ],
+    };
 
     // Update user with admin role and permissions
     await ctx.db.patch(targetUser._id, {
       role: args.role,
       permissions:
-        (args.permissions as any) ??
-        ([
-          ...defaultPermissions[args.role],
-        ] as unknown as typeof targetUser.permissions),
+        (args.permissions as AdminPermission[] | undefined) ??
+        ([...defaultPermissions[args.role]] as AdminPermission[]),
       updatedAt: Date.now(),
     });
-
-    // Log the promotion for audit purposes
-    console.log(
-      `Admin ${currentAdmin.walletAddress} promoted ${args.walletAddress} to ${args.role}${args.notes ? ': ' + args.notes : ''}`
-    );
 
     return { success: true, userId: targetUser._id };
   },
@@ -145,7 +162,19 @@ export const updateAdminUser = mutation({
         v.literal('user') // Allow demotion to regular user
       )
     ),
-    permissions: v.optional(v.array(v.string())),
+    permissions: v.optional(
+      v.array(
+        v.union(
+          v.literal('user_management'),
+          v.literal('subscription_management'),
+          v.literal('content_moderation'),
+          v.literal('system_settings'),
+          v.literal('financial_data'),
+          v.literal('usage_analytics'),
+          v.literal('admin_management')
+        )
+      )
+    ),
     isActive: v.optional(v.boolean()),
     notes: v.optional(v.string()),
   },
@@ -174,7 +203,9 @@ export const updateAdminUser = mutation({
     }
 
     // Prepare updates
-    const updates: any = { updatedAt: Date.now() };
+    const updates: Partial<Doc<'users'>> & Record<string, unknown> = {
+      updatedAt: Date.now(),
+    };
 
     if (args.role !== undefined) {
       updates.role = args.role;
@@ -185,15 +216,22 @@ export const updateAdminUser = mutation({
       }
     }
 
-    if (args.permissions !== undefined) updates.permissions = args.permissions;
-    if (args.isActive !== undefined) updates.isActive = args.isActive;
+    if (args.permissions !== undefined) {
+      updates.permissions = args.permissions as (
+        | 'user_management'
+        | 'subscription_management'
+        | 'content_moderation'
+        | 'system_settings'
+        | 'financial_data'
+        | 'usage_analytics'
+        | 'admin_management'
+      )[];
+    }
+    if (args.isActive !== undefined) {
+      updates.isActive = args.isActive;
+    }
 
     await ctx.db.patch(targetUser._id, updates);
-
-    // Log the admin action
-    console.log(
-      `Admin ${currentAdmin.walletAddress} updated user ${args.walletAddress}${args.notes ? ': ' + args.notes : ''}`
-    );
 
     return { success: true };
   },
@@ -237,11 +275,6 @@ export const demoteAdminToUser = mutation({
       permissions: undefined, // Remove all admin permissions
       updatedAt: Date.now(),
     });
-
-    // Log the demotion
-    console.log(
-      `Admin ${currentAdmin.walletAddress} demoted ${args.walletAddress} from admin${args.reason ? ': ' + args.reason : ''}`
-    );
 
     return { success: true };
   },
@@ -305,8 +338,7 @@ export const checkCurrentUserAdminStatus = query({
             }
           : null,
       };
-    } catch (error) {
-      console.error('Admin status check failed:', error);
+    } catch (_error) {
       return {
         isAuthenticated: false,
         isAdmin: false,
@@ -333,7 +365,7 @@ export const checkAdminStatusByWallet = query({
         )
         .unique();
 
-      if (!(user && user.isActive && user.role) || user.role === 'user') {
+      if (!(user?.isActive && user.role) || user.role === 'user') {
         return {
           isAdmin: false,
           adminInfo: null,
@@ -348,8 +380,7 @@ export const checkAdminStatusByWallet = query({
           walletAddress: user.walletAddress,
         },
       };
-    } catch (error) {
-      console.error('Admin status check failed:', error);
+    } catch (_error) {
       return {
         isAdmin: false,
         adminInfo: null,
@@ -378,18 +409,18 @@ export const getAllUsers = query({
     // Require user management permissions
     await requirePermission(ctx, 'user_management');
 
-    let query = ctx.db.query('users');
+    let dbQuery = ctx.db.query('users');
 
     // Apply tier filter
     if (args.filterTier) {
-      query = query.filter((q) =>
+      dbQuery = dbQuery.filter((q) =>
         q.eq(q.field('subscription.tier'), args.filterTier)
       );
     }
 
     // Apply search filter
     if (args.search) {
-      query = query.filter((q) =>
+      dbQuery = dbQuery.filter((q) =>
         q.or(
           q.eq(q.field('walletAddress'), args.search),
           q.eq(q.field('displayName'), args.search)
@@ -397,7 +428,7 @@ export const getAllUsers = query({
       );
     }
 
-    const users = await query.order('desc').take(args.limit || 50);
+    const users = await dbQuery.order('desc').take(args.limit || 50);
 
     return users.map((user) => ({
       _id: user._id,
@@ -427,10 +458,7 @@ export const updateUserSubscription = mutation({
   },
   handler: async (ctx, args) => {
     // Require subscription management permissions
-    const { user: currentAdmin } = await requirePermission(
-      ctx,
-      'subscription_management'
-    );
+    await requirePermission(ctx, 'subscription_management');
 
     // Find user to update
     const targetUser = await ctx.db
@@ -443,33 +471,45 @@ export const updateUserSubscription = mutation({
     }
 
     // Prepare subscription updates
-    const updatedSubscription = {
-      ...targetUser.subscription,
+    const now = Date.now();
+    type Subscription = NonNullable<Doc<'users'>['subscription']>;
+    const updatedSubscription: Subscription = {
+      ...(targetUser.subscription as Subscription),
       tier: args.tier,
+      // Reset usage counters when tier changes to avoid stale limits blocking access
+      messagesUsed: 0,
+      premiumMessagesUsed: 0,
     };
 
+    // If explicit limits are not provided, clear them so tier defaults apply
     if (args.messagesLimit !== undefined) {
       updatedSubscription.messagesLimit = args.messagesLimit;
+    } else {
+      updatedSubscription.messagesLimit = undefined;
     }
 
     if (args.premiumMessagesLimit !== undefined) {
       updatedSubscription.premiumMessagesLimit = args.premiumMessagesLimit;
+    } else {
+      updatedSubscription.premiumMessagesLimit = undefined;
     }
 
     if (args.currentPeriodEnd !== undefined) {
       updatedSubscription.currentPeriodEnd = args.currentPeriodEnd;
+    } else {
+      updatedSubscription.currentPeriodStart = now;
+      updatedSubscription.currentPeriodEnd = now + 30 * 24 * 60 * 60 * 1000;
     }
+
+    // Clear feature set and pricing so defaults for the new tier are picked up
+    updatedSubscription.features = undefined;
+    updatedSubscription.planPriceSol = undefined;
 
     // Update user subscription
     await ctx.db.patch(targetUser._id, {
       subscription: updatedSubscription,
       updatedAt: Date.now(),
     });
-
-    // Log the admin action
-    console.log(
-      `Admin ${currentAdmin.walletAddress} updated subscription for ${args.walletAddress}: ${args.reason || 'No reason provided'}`
-    );
 
     return { success: true };
   },
@@ -533,15 +573,19 @@ export const syncAdminWallets = mutation({
     const promoted: string[] = [];
 
     // Check each admin wallet
-    for (const walletAddress of adminWallets) {
-      const user = await ctx.db
-        .query('users')
-        .withIndex('by_wallet', (q) => q.eq('walletAddress', walletAddress))
-        .unique();
+    const users = await Promise.all(
+      adminWallets.map((walletAddress) =>
+        ctx.db
+          .query('users')
+          .withIndex('by_wallet', (q) => q.eq('walletAddress', walletAddress))
+          .unique()
+          .then((user) => ({ walletAddress, user }))
+      )
+    );
 
-      if (user) {
-        // If user exists but is not an admin, promote them
-        if (!user.role || user.role === 'user') {
+    await Promise.all(
+      users.map(async ({ walletAddress, user }) => {
+        if (user && (!user.role || user.role === 'user')) {
           await ctx.db.patch(user._id, {
             role: 'super_admin',
             permissions: [
@@ -556,10 +600,9 @@ export const syncAdminWallets = mutation({
             updatedAt: Date.now(),
           });
           promoted.push(walletAddress);
-          console.log(`Promoted existing user ${walletAddress} to super_admin`);
         }
-      }
-    }
+      })
+    );
 
     return {
       success: true,

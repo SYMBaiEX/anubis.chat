@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useSubscription } from '@/hooks/use-subscription';
+import { formatTierLabel } from '@/lib/format-tier-label';
 import { cn } from '@/lib/utils';
 
 interface UsageIndicatorProps {
@@ -46,6 +47,9 @@ export function UsageIndicator({
         )
       : 0;
 
+  const currentTierForPayment: 'free' | 'pro' | 'pro_plus' =
+    subscription.tier === 'admin' ? 'pro_plus' : subscription.tier;
+
   const getUsageColor = (percentage: number) => {
     if (percentage >= 95) return 'text-red-600 dark:text-red-400';
     if (percentage >= 75) return 'text-amber-600 dark:text-amber-400';
@@ -55,8 +59,9 @@ export function UsageIndicator({
 
   const getProgressVariant = (
     percentage: number
-  ): 'default' | 'destructive' | 'secondary' => {
-    if (percentage >= 90) return 'destructive';
+  ): 'default' | 'warning' | 'error' => {
+    if (percentage >= 90) return 'error';
+    if (percentage >= 75) return 'warning';
     return 'default';
   };
 
@@ -111,7 +116,7 @@ export function UsageIndicator({
 
   if (variant === 'compact') {
     return (
-      <Card className={cn('p-3 overflow-hidden', className)}>
+      <Card className={cn('overflow-hidden p-3', className)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={getUsageColor(usagePercentage)}>
@@ -123,7 +128,7 @@ export function UsageIndicator({
                   {subscription.messagesUsed}/{subscription.messagesLimit}
                 </span>
                 <Badge className="text-xs" variant="outline">
-                  {subscription.tier.replace('_', ' ').toUpperCase()}
+                  {formatTierLabel(subscription.tier)}
                 </Badge>
               </div>
               <Progress
@@ -149,7 +154,7 @@ export function UsageIndicator({
 
         {showPayment && upgradePrompt.suggestedTier && (
           <PaymentModal
-            currentTier={subscription.tier}
+            currentTier={currentTierForPayment}
             isOpen={showPayment}
             onClose={() => setShowPayment(false)}
             onSuccess={() => setShowPayment(false)}
@@ -162,14 +167,14 @@ export function UsageIndicator({
 
   // Detailed variant
   return (
-    <Card className={cn('p-4 overflow-hidden', className)}>
+    <Card className={cn('overflow-hidden p-4', className)}>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="flex items-center gap-2 font-semibold text-sm">
           <BarChart3 className="h-4 w-4" />
           Usage This Month
         </h3>
         <Badge className="text-xs" variant="outline">
-          {subscription.tier.replace('_', ' ').toUpperCase()}
+          {formatTierLabel(subscription.tier)}
         </Badge>
       </div>
 
@@ -256,7 +261,7 @@ export function UsageIndicator({
 
       {showPayment && upgradePrompt.suggestedTier && (
         <PaymentModal
-          currentTier={subscription.tier}
+          currentTier={currentTierForPayment}
           isOpen={showPayment}
           onClose={() => setShowPayment(false)}
           onSuccess={() => setShowPayment(false)}

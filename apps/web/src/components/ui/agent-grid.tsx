@@ -65,7 +65,9 @@ export function AgentGrid({
         />
       )}
 
-      <div className={`grid ${getGridCols()} gap-1.5 sm:gap-2 ${gridClassName}`}>
+      <div
+        className={`grid ${getGridCols()} gap-1.5 sm:gap-2 ${gridClassName}`}
+      >
         {filteredAgents.map((agent) => (
           <AgentCard
             agent={agent}

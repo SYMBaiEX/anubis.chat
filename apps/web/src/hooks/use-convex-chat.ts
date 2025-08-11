@@ -25,7 +25,12 @@ export function useConvexChat(chatId: string | undefined) {
 
   // Send message with streaming response
   const sendMessage = useCallback(
-    async (content: string, walletAddress: string, model?: string, useReasoning?: boolean) => {
+    async (
+      content: string,
+      walletAddress: string,
+      model?: string,
+      useReasoning?: boolean
+    ) => {
       if (!chatId) return;
 
       setIsStreaming(true);

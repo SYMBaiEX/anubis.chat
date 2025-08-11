@@ -14,14 +14,13 @@ import {
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from 'react';
-import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
-import { getVoiceCommands } from '@/lib/utils/speech-formatter';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Tooltip,
@@ -29,10 +28,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import type { MessageInputProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { type FontSize, getFontSizeClasses } from '@/lib/utils/font-sizes';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { getVoiceCommands } from '@/lib/utils/speech-formatter';
 
 // Initialize logger
 const log = createModuleLogger('message-input');
@@ -60,7 +61,7 @@ export function MessageInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { theme } = useTheme();
-  
+
   // Speech recognition setup
   const {
     isListening,
@@ -77,7 +78,7 @@ export function MessageInput({
     onResult: (text, isFinal) => {
       if (isFinal) {
         // Append final formatted transcript to message
-        setMessage(prev => {
+        setMessage((prev) => {
           // Add a space between previous text and new text if needed
           if (prev && !prev.endsWith(' ') && !text.startsWith(' ')) {
             return `${prev} ${text}`;
@@ -143,7 +144,9 @@ export function MessageInput({
       // Start listening - DON'T reset anything, just continue adding
       if (!isSpeechSupported) {
         // Fallback message if browser doesn't support speech recognition
-        alert('Speech recognition is not supported in your browser. Please try Chrome or Edge.');
+        alert(
+          'Speech recognition is not supported in your browser. Please try Chrome or Edge.'
+        );
         return;
       }
       startListening();
@@ -187,7 +190,9 @@ export function MessageInput({
 
   return (
     <TooltipProvider>
-      <div className={cn('flex w-full flex-col space-y-1 sm:space-y-2', className)}>
+      <div
+        className={cn('flex w-full flex-col space-y-1 sm:space-y-2', className)}
+      >
         {/* Character Count */}
         {message.length > maxLength * 0.8 && (
           <div
@@ -207,12 +212,11 @@ export function MessageInput({
           {/* Main Input Area */}
           <div className="relative flex-1 overflow-hidden">
             {/* Attachment Buttons - Inside left side of input */}
-            <div className="-translate-y-1/2 absolute top-1/2 left-1 sm:left-2 flex items-center gap-1">
+            <div className="-translate-y-1/2 absolute top-1/2 left-1 z-20 flex items-center gap-1 sm:left-2">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     className="h-8 w-4 p-0 sm:h-9 sm:w-5"
-                    disabled={disabled}
                     onClick={() => fileInputRef.current?.click()}
                     size="icon"
                     variant="ghost"
@@ -227,7 +231,6 @@ export function MessageInput({
                 <TooltipTrigger asChild>
                   <Button
                     className="h-8 w-4 p-0 sm:h-9 sm:w-5"
-                    disabled={disabled}
                     onClick={() => imageInputRef.current?.click()}
                     size="icon"
                     variant="ghost"
@@ -242,9 +245,9 @@ export function MessageInput({
             <Textarea
               aria-label={placeholder}
               className={cn(
-                'relative z-10 max-h-[200px] min-h-[44px] w-full resize-none bg-transparent pl-20 pr-20 sm:min-h-[52px] sm:pl-24 sm:pr-24',
+                'relative z-0 max-h-[200px] min-h-[44px] w-full resize-none bg-transparent pr-20 pl-20 sm:min-h-[52px] sm:pr-24 sm:pl-24',
                 // Center caret vertically when inactive and empty
-                (!isActive && message.trim().length === 0)
+                !isActive && message.trim().length === 0
                   ? 'py-0 leading-[44px] sm:leading-[52px]'
                   : 'py-2 leading-normal',
                 message.trim() || isActive ? 'text-left' : 'text-center',
@@ -252,6 +255,7 @@ export function MessageInput({
               )}
               disabled={disabled}
               maxLength={maxLength}
+              onBlur={() => setIsActive(message.trim().length > 0)}
               onChange={(e) => {
                 setMessage(e.target.value);
                 // Trigger typing indicator
@@ -259,9 +263,8 @@ export function MessageInput({
                   onTyping();
                 }
               }}
-              onKeyDown={handleKeyDown}
               onFocus={() => setIsActive(true)}
-              onBlur={() => setIsActive(message.trim().length > 0)}
+              onKeyDown={handleKeyDown}
               // Use overlay for visual placeholder to center vertically
               placeholder=""
               ref={textareaRef}
@@ -269,25 +272,32 @@ export function MessageInput({
             />
 
             {/* Centered overlay placeholder to match project styling */}
-            {(!isActive && message.trim().length === 0) && (
-              <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-                <span className="text-muted-foreground/80 font-medium tracking-wide">
+            {!isActive && message.trim().length === 0 && (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute top-0 right-20 bottom-0 left-20 z-10 flex items-center justify-center sm:right-24 sm:left-24"
+              >
+                <span className="font-medium text-muted-foreground/80 tracking-wide">
                   {placeholder || 'Ask Anubis anything'}
                 </span>
               </div>
             )}
 
             {/* Input Controls - Inside message input area on the right */}
-            <div className="-translate-y-1/2 absolute top-1/2 right-1 sm:right-2 flex items-center gap-1">
+            <div className="-translate-y-1/2 absolute top-1/2 right-1 z-20 flex items-center gap-1 sm:right-2">
               {/* Emoji Button (1x2 size, leftmost) */}
-              <Popover onOpenChange={setShowEmojiPicker} open={showEmojiPicker}>
-                <PopoverTrigger asChild>
-                  <Tooltip>
+              <Tooltip>
+                <Popover
+                  onOpenChange={setShowEmojiPicker}
+                  open={showEmojiPicker}
+                >
+                  <PopoverTrigger asChild>
                     <TooltipTrigger asChild>
                       <Button
+                        aria-label="Add emoji"
                         className="h-8 w-4 p-0 sm:h-9 sm:w-5"
-                        disabled={disabled}
                         size="icon"
+                        type="button"
                         variant="ghost"
                       >
                         <Smile
@@ -298,28 +308,28 @@ export function MessageInput({
                         />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="right">Add emoji</TooltipContent>
-                  </Tooltip>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="end"
-                  className="w-auto border-0 p-0"
-                  side="top"
-                  sideOffset={8}
-                >
-                  <EmojiPicker
-                    emojiStyle={EmojiStyle.NATIVE}
-                    height={400}
-                    onEmojiClick={handleEmojiClick}
-                    previewConfig={{
-                      showPreview: false,
-                    }}
-                    searchPlaceHolder="Search emoji..."
-                    theme={theme === 'dark' ? Theme.DARK : Theme.LIGHT}
-                    width={320}
-                  />
-                </PopoverContent>
-              </Popover>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    className="w-auto border-0 p-0"
+                    side="top"
+                    sideOffset={8}
+                  >
+                    <EmojiPicker
+                      emojiStyle={EmojiStyle.NATIVE}
+                      height={400}
+                      onEmojiClick={handleEmojiClick}
+                      previewConfig={{
+                        showPreview: false,
+                      }}
+                      searchPlaceHolder="Search emoji..."
+                      theme={theme === 'dark' ? Theme.DARK : Theme.LIGHT}
+                      width={320}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <TooltipContent side="right">Add emoji</TooltipContent>
+              </Tooltip>
 
               {/* Voice Button (1x2 size) */}
               <Tooltip>
@@ -327,7 +337,8 @@ export function MessageInput({
                   <Button
                     className={cn(
                       'h-8 w-4 p-0 sm:h-9 sm:w-5',
-                      isListening && 'bg-red-500 text-white hover:bg-red-600 animate-pulse'
+                      isListening &&
+                        'animate-pulse bg-red-500 text-white hover:bg-red-600'
                     )}
                     disabled={disabled || !isSpeechSupported}
                     onClick={handleVoiceToggle}
@@ -341,21 +352,23 @@ export function MessageInput({
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-xs">
-                  {!isSpeechSupported ? (
-                    'Speech recognition not supported'
-                  ) : isListening ? (
-                    'Stop speaking'
+                <TooltipContent className="max-w-xs" side="right">
+                  {isSpeechSupported ? (
+                    isListening ? (
+                      'Stop speaking'
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="font-semibold">Speak to type</div>
+                        <div className="text-xs opacity-90">
+                          Say "period", "comma", "question mark" for punctuation
+                        </div>
+                        <div className="text-xs opacity-80">
+                          Say "new line" or "capital" for formatting
+                        </div>
+                      </div>
+                    )
                   ) : (
-                    <div className="space-y-1">
-                      <div className="font-semibold">Speak to type</div>
-                      <div className="text-xs opacity-90">
-                        Say "period", "comma", "question mark" for punctuation
-                      </div>
-                      <div className="text-xs opacity-80">
-                        Say "new line" or "capital" for formatting
-                      </div>
-                    </div>
+                    'Speech recognition not supported'
                   )}
                 </TooltipContent>
               </Tooltip>
@@ -363,24 +376,28 @@ export function MessageInput({
               {/* Reasoning Button (1x2 size) */}
               {reasoningEnabled && (
                 <Popover>
-                  <PopoverTrigger asChild>
-                    <Tooltip>
+                  <Tooltip>
+                    <PopoverTrigger asChild>
                       <TooltipTrigger asChild>
                         <Button
+                          aria-label="Toggle multi-step reasoning"
                           className={cn(
                             'h-8 w-4 p-0 sm:h-9 sm:w-5',
-                            useReasoning && 'bg-blue-500 text-white hover:bg-blue-600'
+                            useReasoning &&
+                              'bg-blue-500 text-white hover:bg-blue-600'
                           )}
-                          disabled={disabled}
                           size="icon"
+                          type="button"
                           variant={useReasoning ? 'default' : 'ghost'}
                         >
                           <Brain className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent side="right">Multi-step reasoning</TooltipContent>
-                    </Tooltip>
-                  </PopoverTrigger>
+                    </PopoverTrigger>
+                    <TooltipContent side="right">
+                      Multi-step reasoning
+                    </TooltipContent>
+                  </Tooltip>
                   <PopoverContent
                     align="end"
                     className="w-80 p-4"
@@ -390,29 +407,21 @@ export function MessageInput({
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="font-semibold">Multi-step Reasoning</h4>
-                        <Button
-                          className={cn(
-                            'h-6 w-11 p-0 rounded-full',
-                            useReasoning ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'
-                          )}
-                          onClick={() => setUseReasoning(!useReasoning)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          <div
-                            className={cn(
-                              'h-4 w-4 rounded-full bg-white transition-transform',
-                              useReasoning ? 'translate-x-5' : 'translate-x-0'
-                            )}
-                          />
-                        </Button>
+                        <Switch
+                          aria-label="Enable multi-step reasoning"
+                          checked={useReasoning}
+                          onCheckedChange={(checked) =>
+                            setUseReasoning(checked)
+                          }
+                        />
                       </div>
                       <div className="space-y-2 text-sm">
-                        <p>Enable deep analysis with up to 10 reasoning steps for complex questions.</p>
-                        <div className="rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20">
-                          <p className="text-amber-800 dark:text-amber-200 font-medium">
-                            ⚠️ This will consume 2 messages instead of 1
-                          </p>
+                        <p>
+                          Enable deep analysis with up to 10 reasoning steps for
+                          complex questions.
+                        </p>
+                        <div className="rounded-lg bg-amber-50 p-3 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+                          ⚠️ Consumes 2 messages per send while enabled
                         </div>
                       </div>
                     </div>
@@ -433,11 +442,12 @@ export function MessageInput({
                     <Send className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">Send message (Enter)</TooltipContent>
+                <TooltipContent side="right">
+                  Send message (Enter)
+                </TooltipContent>
               </Tooltip>
             </div>
           </div>
-
         </div>
 
         {/* Voice Transcription Status */}
@@ -455,7 +465,9 @@ export function MessageInput({
               />
             </div>
             <span className="font-medium text-xs sm:text-sm">
-              {interimTranscript ? `Listening: "${interimTranscript}"` : 'Speak now...'}
+              {interimTranscript
+                ? `Listening: "${interimTranscript}"`
+                : 'Speak now...'}
             </span>
             <Button onClick={handleVoiceToggle} size="sm" variant="ghost">
               <MicOff className="h-4 w-4" />

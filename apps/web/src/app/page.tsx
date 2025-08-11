@@ -12,6 +12,7 @@ import Hero from './(landing)/components/hero';
 import HowItWorks from './(landing)/components/how-it-works';
 import Models from './(landing)/components/models';
 import Pricing from './(landing)/components/pricing';
+import ReferralProgram from './(landing)/components/referral-program';
 import Security from './(landing)/components/security';
 import Testimonials from './(landing)/components/testimonials';
 
@@ -36,6 +37,7 @@ export default function LandingPage() {
         <Security />
         <Models />
         <Pricing />
+        <ReferralProgram />
         <Testimonials />
         <FAQ />
         <CTA />

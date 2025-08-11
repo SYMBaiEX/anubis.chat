@@ -22,7 +22,7 @@ import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('wallet-hook');
 
-interface UseWalletReturn extends WalletConnectionState {
+export interface UseWalletReturn extends WalletConnectionState {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   signMessage: (message: string) => Promise<string>;
@@ -37,6 +37,8 @@ interface UseWalletReturn extends WalletConnectionState {
   isHealthy: boolean;
   connectionHealthScore: number;
   isAuthenticating: boolean;
+  walletName?: string;
+  clearError: () => void;
 }
 
 // 2025 Security Constants
@@ -497,5 +499,7 @@ export const useWallet = (): UseWalletReturn => {
     isHealthy,
     connectionHealthScore,
     isAuthenticating,
+    walletName: wallet?.adapter?.name,
+    clearError: () => setState((prev) => ({ ...prev, error: null })),
   };
 };

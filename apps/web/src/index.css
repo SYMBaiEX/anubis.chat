@@ -256,9 +256,25 @@
   }
 
   /* Smooth Transitions */
-  /* Do not apply always-on transitions globally; gate them via html.theme-transition */
+  /* Gate transitions via html.theme-transition */
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition-property:
+      color, background-color, border-color, fill, stroke, box-shadow;
+    transition-duration: 300ms;
+    transition-timing-function: var(--ease-spring);
+  }
+
+  /* Disable element-level transitions when VT is active to avoid double animations */
+  html.disable-theme-transitions *,
+  html.disable-theme-transitions *::before,
+  html.disable-theme-transitions *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }
-/* Theme transition helpers removed for simplification */
+/* Theme transition helper class is added/removed by JS */
 
 /* Utility Classes */
 @layer utilities {

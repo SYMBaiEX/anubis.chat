@@ -4,8 +4,8 @@ import { cn } from '@/lib/utils';
 interface LogoProps {
   /** Whether to show the text next to the logo */
   showText?: boolean;
-  /** Size of the logo in pixels */
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** Size of the logo text */
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
   /** Additional CSS classes */
   className?: string;
   /** Whether the logo should link to home */
@@ -23,6 +23,8 @@ const sizeMap = {
   md: { text: 'text-lg' },
   lg: { text: 'text-xl' },
   xl: { text: 'text-2xl' },
+  '2xl': { text: 'text-3xl' },
+  '3xl': { text: 'text-4xl' },
 } as const;
 
 export function Logo({
@@ -89,13 +91,17 @@ export function LogoIcon({
     size === 'sm' && 'h-6 w-6',
     size === 'md' && 'h-8 w-8',
     size === 'lg' && 'h-10 w-10',
-    size === 'xl' && 'h-12 w-12'
+    size === 'xl' && 'h-12 w-12',
+    size === '2xl' && 'h-14 w-14',
+    size === '3xl' && 'h-16 w-16'
   );
   const textSize = cn(
     size === 'sm' && 'text-xs',
     size === 'md' && 'text-sm',
     size === 'lg' && 'text-base',
-    size === 'xl' && 'text-lg'
+    size === 'xl' && 'text-lg',
+    size === '2xl' && 'text-xl',
+    size === '3xl' && 'text-2xl'
   );
   return (
     <span

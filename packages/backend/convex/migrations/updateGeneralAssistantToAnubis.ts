@@ -59,8 +59,6 @@ Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide throug
         ],
         updatedAt: Date.now(),
       });
-
-      console.log('Successfully updated Isis to Anubis');
       return { success: true, agentId: isisAgent._id };
     }
 
@@ -118,12 +116,8 @@ Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide throug
         ],
         updatedAt: Date.now(),
       });
-
-      console.log('Successfully updated General Assistant to Anubis');
       return { success: true, agentId: generalAssistant._id };
     }
-
-    console.log('No Isis or General Assistant agent found to update');
     return { success: false, message: 'No agent found to update' };
   },
 });
@@ -199,8 +193,6 @@ Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide throug
         updatedCount++;
       }
     }
-
-    console.log(`Updated ${updatedCount} General Assistant agents to Anubis`);
     return { success: true, updatedCount };
   },
 });

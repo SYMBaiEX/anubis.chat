@@ -1,5 +1,4 @@
 import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // Store typing indicators in memory (ephemeral)
@@ -15,7 +14,7 @@ export const setTyping = mutation({
     walletAddress: v.string(),
     isTyping: v.boolean(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const key = `${args.chatId}:${args.walletAddress}`;
 
     if (args.isTyping) {
@@ -47,7 +46,7 @@ export const getTypingUsers = query({
     chatId: v.id('chats'),
     excludeWallet: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const typingInChat: string[] = [];
     const now = Date.now();
 

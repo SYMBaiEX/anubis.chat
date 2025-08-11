@@ -5,7 +5,87 @@
 
 import { ConvexCredentials } from '@convex-dev/auth/providers/ConvexCredentials';
 import { convexAuth } from '@convex-dev/auth/server';
-import { type DataModel, Id } from './_generated/dataModel';
+import type { DataModel, Doc, Id } from './_generated/dataModel';
+import type { ActionCtx } from './_generated/server';
+
+/**
+ * Type definition for Solana wallet credentials
+ */
+interface SolanaCredentials {
+  publicKey: string;
+  signature: string;
+  message: string;
+  nonce: string;
+}
+
+/**
+ * Extract Solana credentials from the credentials object
+ */
+function extractSolanaCredentials(
+  credentials: unknown
+): SolanaCredentials | null {
+  // Debug logging removed for production
+
+  if (!credentials || typeof credentials !== 'object') {
+    return null;
+  }
+
+  const creds = credentials as Record<string, unknown>;
+
+  const publicKey = creds.publicKey as string;
+  const signature = creds.signature as string;
+  const message = creds.message as string;
+  const nonce = creds.nonce as string;
+
+  // Debug logging removed for production
+
+  return { publicKey, signature, message, nonce };
+}
+
+/**
+ * Validate that all required credential fields are present
+ */
+function validateCredentialFields(
+  publicKey: string,
+  signature: string,
+  message: string,
+  nonce: string
+): boolean {
+  if (!(publicKey && signature && message && nonce)) {
+    // Invalid credentials in non-production can be logged by caller if needed
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Authenticate user with Solana credentials
+ */
+async function authenticateUser(
+  ctx: ActionCtx,
+  credentials: SolanaCredentials
+): Promise<{ userId: Id<'users'> } | null> {
+  try {
+    // Use internal mutations/queries to verify challenge and manage user
+    const result = await ctx.runMutation(
+      internal.auth.verifyAndSignIn,
+      credentials
+    );
+
+    if (!result?.userId) {
+      // Debug logging removed for production
+      return null;
+    }
+
+    // Debug logging removed for production
+
+    // Return the userId for sign-in
+    return { userId: result.userId };
+  } catch (_error) {
+    // Debug logging removed for production
+    return null; // Auth failed
+  }
+}
 
 /**
  * Custom Solana Wallet Credentials Provider
@@ -15,79 +95,26 @@ const SolanaWallet = ConvexCredentials<DataModel>({
   id: 'solana-wallet',
 
   async authorize(credentials, ctx) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('🔍 Convex Auth authorize called', {
-        credentialsType: typeof credentials,
-        credentialsKeys: credentials ? Object.keys(credentials) : [],
-        isObject: credentials && typeof credentials === 'object',
-        hasPublicKey: Boolean(credentials && (credentials as any).publicKey),
-        hasSignature: Boolean(credentials && (credentials as any).signature),
-        hasMessage: Boolean(credentials && (credentials as any).message),
-        hasNonce: Boolean(credentials && (credentials as any).nonce),
-      });
+    // Extract and validate credentials
+    const extractedCredentials = extractSolanaCredentials(credentials);
+    if (!extractedCredentials) {
+      return null;
     }
 
-    // Safely extract signature verification data from the credentials object
-    let publicKey: string;
-    let signature: string;
-    let message: string;
-    let nonce: string;
+    const { publicKey, signature, message, nonce } = extractedCredentials;
 
-    if (credentials && typeof credentials === 'object') {
-      // Direct destructuring from credentials object
-      publicKey = credentials.publicKey as string;
-      signature = credentials.signature as string;
-      message = credentials.message as string;
-      nonce = credentials.nonce as string;
-    } else {
-      return null; // Invalid credentials
+    // Verify all required fields are present
+    if (!validateCredentialFields(publicKey, signature, message, nonce)) {
+      return null;
     }
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('Extracted Solana wallet credentials:', {
-        publicKey: publicKey ? `${publicKey.substring(0, 8)}...` : 'missing',
-        signature: signature ? `${signature.substring(0, 16)}...` : 'missing',
-        message: message ? `${message.substring(0, 32)}...` : 'missing',
-        nonce: nonce ? `${nonce.substring(0, 8)}...` : 'missing',
-      });
-    }
-
-    if (!(publicKey && signature && message && nonce)) {
-      console.error('Missing required Solana wallet credentials:', {
-        publicKey: !!publicKey,
-        signature: !!signature,
-        message: !!message,
-        nonce: !!nonce,
-      });
-      return null; // Missing credentials
-    }
-
-    try {
-      // Use internal mutations/queries to verify challenge and manage user
-      const result = await ctx.runMutation(internal.auth.verifyAndSignIn, {
-        publicKey,
-        signature,
-        message,
-        nonce,
-      });
-
-      if (!(result && result.userId)) {
-        console.error('Authentication failed - no userId returned');
-        return null;
-      }
-
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('✅ Authentication successful, userId:', result.userId);
-      }
-
-      // Return the userId for sign-in
-      return {
-        userId: result.userId,
-      };
-    } catch (error) {
-      console.error('Error in authorize:', error);
-      return null; // Auth failed
-    }
+    // Authenticate user
+    return await authenticateUser(ctx, {
+      publicKey,
+      signature,
+      message,
+      nonce,
+    });
   },
 });
 
@@ -105,7 +132,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
-import { internalMutation, mutation, query } from './_generated/server';
+import { internalMutation, mutation } from './_generated/server';
 
 /**
  * Internal mutation to verify challenge and sign in user
@@ -119,7 +146,7 @@ export const verifyAndSignIn = internalMutation({
     nonce: v.string(),
   },
   handler: async (ctx, args) => {
-    const { publicKey, signature, message, nonce } = args;
+    const { publicKey, signature: _signature, message, nonce } = args;
 
     // Verify the challenge
     const storedChallenge = await ctx.db
@@ -154,7 +181,12 @@ export const verifyAndSignIn = internalMutation({
       const shouldBeAdmin = adminWallets.includes(publicKey);
 
       // Update user status and role if needed
-      const updates: any = {
+      const updates: Partial<
+        Pick<
+          Doc<'users'>,
+          'lastActiveAt' | 'updatedAt' | 'isActive' | 'role' | 'permissions'
+        >
+      > = {
         lastActiveAt: Date.now(),
         updatedAt: Date.now(),
         isActive: true,
@@ -175,9 +207,6 @@ export const verifyAndSignIn = internalMutation({
           'usage_analytics',
           'admin_management',
         ];
-        console.log(
-          `Promoting user ${publicKey} to super_admin based on ADMIN_WALLETS`
-        );
       }
 
       await ctx.db.patch(existingUser._id, updates);
@@ -268,9 +297,10 @@ export const createWalletChallenge = mutation({
       .withIndex('by_key', (q) => q.eq('publicKey', args.publicKey))
       .collect();
 
-    for (const existing of existingChallenges) {
-      await ctx.db.delete(existing._id);
-    }
+    // Delete existing challenges in parallel
+    await Promise.all(
+      existingChallenges.map((existing) => ctx.db.delete(existing._id))
+    );
 
     await ctx.db.insert('solanaWalletChallenges', {
       publicKey: args.publicKey,
@@ -300,12 +330,11 @@ export const cleanupExpiredChallenges = internalMutation({
       .withIndex('by_expires', (q) => q.lt('expiresAt', now))
       .collect();
 
-    let cleaned = 0;
-    for (const challenge of expiredChallenges) {
-      await ctx.db.delete(challenge._id);
-      cleaned++;
-    }
+    // Delete expired challenges in parallel
+    await Promise.all(
+      expiredChallenges.map((challenge) => ctx.db.delete(challenge._id))
+    );
 
-    return { cleaned };
+    return { cleaned: expiredChallenges.length };
   },
 });

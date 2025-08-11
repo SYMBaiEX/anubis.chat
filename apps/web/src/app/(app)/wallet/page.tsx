@@ -34,7 +34,7 @@ export default function WalletPage() {
           <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto] md:items-center">
             <div className="flex items-center gap-2">
               <Wallet className="h-5 w-5" />
-              <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-transparent text-xl sm:text-2xl whitespace-nowrap">
+              <h1 className="whitespace-nowrap bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-transparent text-xl sm:text-2xl">
                 Wallet
               </h1>
             </div>

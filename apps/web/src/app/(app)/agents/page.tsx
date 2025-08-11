@@ -49,68 +49,67 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-// Agent type colors, ring/gradient accents, and icons
+// Agent type icons; colors now driven by theme tokens
 const getAgentTypeInfo = (type: string) => {
   switch (type) {
     case 'general':
       return {
-        color: 'bg-blue-500/10 text-blue-500',
-        ring: 'hover:ring-blue-500/25',
-        gradient: 'from-blue-500/5',
-        accent: 'border-l-blue-500/30',
+        color: 'bg-primary/10 text-primary',
+        ring: 'hover:ring-primary/20',
+        gradient: 'from-primary/5',
+        accent: 'border-l-primary/20',
         icon: Bot,
       };
     case 'trading':
       return {
-        color: 'bg-green-500/10 text-green-500',
-        ring: 'hover:ring-green-500/25',
-        gradient: 'from-green-500/5',
-        accent: 'border-l-green-500/30',
+        color: 'bg-primary/10 text-primary',
+        ring: 'hover:ring-primary/20',
+        gradient: 'from-primary/5',
+        accent: 'border-l-primary/20',
         icon: Zap,
       };
     case 'defi':
       return {
-        color: 'bg-purple-500/10 text-purple-500',
-        ring: 'hover:ring-purple-500/25',
-        gradient: 'from-purple-500/5',
-        accent: 'border-l-purple-500/30',
+        color: 'bg-primary/10 text-primary',
+        ring: 'hover:ring-primary/20',
+        gradient: 'from-primary/5',
+        accent: 'border-l-primary/20',
         icon: Sparkles,
       };
     case 'nft':
       return {
-        color: 'bg-pink-500/10 text-pink-500',
-        ring: 'hover:ring-pink-500/25',
-        gradient: 'from-pink-500/5',
-        accent: 'border-l-pink-500/30',
+        color: 'bg-primary/10 text-primary',
+        ring: 'hover:ring-primary/20',
+        gradient: 'from-primary/5',
+        accent: 'border-l-primary/20',
         icon: Brain,
       };
     case 'portfolio':
       return {
-        color: 'bg-orange-500/10 text-orange-500',
-        ring: 'hover:ring-orange-500/25',
-        gradient: 'from-orange-500/5',
-        accent: 'border-l-orange-500/30',
+        color: 'bg-primary/10 text-primary',
+        ring: 'hover:ring-primary/20',
+        gradient: 'from-primary/5',
+        accent: 'border-l-primary/20',
         icon: Brain,
       };
     case 'custom':
       return {
-        color: 'bg-gray-500/10 text-gray-500',
-        ring: 'hover:ring-gray-500/25',
-        gradient: 'from-gray-500/5',
-        accent: 'border-l-gray-500/30',
+        color: 'bg-primary/10 text-primary',
+        ring: 'hover:ring-primary/20',
+        gradient: 'from-primary/5',
+        accent: 'border-l-primary/20',
         icon: Settings,
       };
     default:
       return {
-        color: 'bg-gray-500/10 text-gray-500',
-        ring: 'hover:ring-gray-500/25',
-        gradient: 'from-gray-500/5',
-        accent: 'border-l-gray-500/30',
+        color: 'bg-primary/10 text-primary',
+        ring: 'hover:ring-primary/20',
+        gradient: 'from-primary/5',
+        accent: 'border-l-primary/20',
         icon: Bot,
       };
   }
 };
-
 
 export default function AgentsPage() {
   const router = useRouter();
@@ -193,7 +192,7 @@ export default function AgentsPage() {
         <div className="mx-auto w-full max-w-6xl">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-center">
             <div>
-              <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl whitespace-nowrap">
+              <h1 className="whitespace-nowrap bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl">
                 AI Agents
               </h1>
               <p className="mt-1 text-muted-foreground text-sm">
@@ -244,12 +243,9 @@ export default function AgentsPage() {
                 <Card
                   className={cn(
                     'group relative flex h-full flex-col overflow-hidden border border-border/60 p-2.5 transition-colors sm:p-3',
-                    'bg-gradient-to-b',
-                    typeInfo.gradient,
-                    'hover:ring-1',
-                    typeInfo.ring,
-                    'border-l-2',
-                    typeInfo.accent
+                    'bg-gradient-to-b from-transparent to-card/40 dark:to-card/20',
+                    'hover:ring-1 hover:ring-primary/20',
+                    'border-l-2 border-l-primary/20'
                   )}
                   key={agent._id}
                 >

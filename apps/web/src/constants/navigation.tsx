@@ -1,10 +1,12 @@
 import {
   Bot,
+  Brain,
   Home,
   LayoutDashboard,
   MessageSquare,
   Server,
   Shield,
+  Users,
   Workflow,
 } from 'lucide-react';
 import type { ElementType } from 'react';
@@ -50,6 +52,23 @@ const allItems: NavItem[] = [
     label: 'Agents',
     href: '/agents',
     icon: Bot,
+    requiresAuth: true,
+    inHeader: true,
+    inSidebar: true,
+  },
+  {
+    label: 'Memories',
+    href: '/memories',
+    icon: Brain,
+    requiresAuth: true,
+    adminOnly: true,
+    inHeader: true,
+    inSidebar: true,
+  },
+  {
+    label: 'Referrals',
+    href: '/referrals',
+    icon: Users,
     requiresAuth: true,
     inHeader: true,
     inSidebar: true,

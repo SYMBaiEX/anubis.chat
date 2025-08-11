@@ -7,6 +7,43 @@ import { v } from 'convex/values';
 import type { Doc, Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
+// Helpers to normalize records to satisfy schema constraints
+function toStringNumberBooleanRecord(
+  input: Record<string, string | number | boolean | null> | undefined
+): Record<string, string | number | boolean> {
+  const output: Record<string, string | number | boolean> = {};
+  if (!input) {
+    return output;
+  }
+  for (const [key, value] of Object.entries(input)) {
+    if (value === null) {
+      continue;
+    }
+    output[key] = value;
+  }
+  return output;
+}
+
+function toStringNumberRecord(
+  input: Record<string, string | number | boolean | null> | undefined
+): Record<string, string | number> | undefined {
+  if (!input) {
+    return;
+  }
+  const output: Record<string, string | number> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (value === null) {
+      continue;
+    }
+    if (typeof value === 'boolean') {
+      output[key] = value ? 1 : 0;
+    } else {
+      output[key] = value;
+    }
+  }
+  return output;
+}
+
 // =============================================================================
 // Workflow Management
 // =============================================================================
@@ -42,7 +79,9 @@ export const getById = query({
   args: { id: v.id('workflows') },
   handler: async (ctx, args) => {
     const workflow = await ctx.db.get(args.id);
-    if (!workflow) return null;
+    if (!workflow) {
+      return null;
+    }
 
     // Get workflow steps
     const steps = await ctx.db
@@ -75,15 +114,15 @@ export const getByOwner = query({
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
 
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('workflows')
       .withIndex('by_owner', (q) => q.eq('walletAddress', args.walletAddress));
 
     if (args.isActive !== undefined) {
-      query = query.filter((q) => q.eq(q.field('isActive'), args.isActive));
+      dbQuery = dbQuery.filter((q) => q.eq(q.field('isActive'), args.isActive));
     }
 
-    return await query.order('desc').take(limit);
+    return await dbQuery.order('desc').take(limit);
   },
 });
 
@@ -108,7 +147,12 @@ export const create = mutation({
         ),
         agentId: v.optional(v.id('agents')),
         condition: v.optional(v.string()),
-        parameters: v.optional(v.any()),
+        parameters: v.optional(
+          v.record(
+            v.string(),
+            v.union(v.string(), v.number(), v.boolean(), v.null())
+          )
+        ),
         nextSteps: v.optional(v.array(v.string())),
         requiresApproval: v.optional(v.boolean()),
         order: v.number(),
@@ -126,7 +170,12 @@ export const create = mutation({
             v.literal('condition')
           ),
           condition: v.string(),
-          parameters: v.optional(v.any()),
+          parameters: v.optional(
+            v.record(
+              v.string(),
+              v.union(v.string(), v.number(), v.boolean(), v.null())
+            )
+          ),
           isActive: v.boolean(),
         })
       )
@@ -146,39 +195,47 @@ export const create = mutation({
     });
 
     // Create workflow steps
-    for (const step of args.steps) {
-      await ctx.db.insert('workflowSteps', {
-        workflowId,
-        stepId: step.stepId,
-        name: step.name,
-        type: 'task',
-        position: step.order,
-        config: {
-          originalType: step.type,
-          agentId: step.agentId,
-          condition: step.condition,
-          parameters: step.parameters,
-          nextSteps: step.nextSteps,
-          requiresApproval: step.requiresApproval,
-        },
-        createdAt: now,
-        updatedAt: now,
-        order: step.order,
-      });
-    }
+    await Promise.all(
+      args.steps.map((step) =>
+        ctx.db.insert('workflowSteps', {
+          workflowId,
+          stepId: step.stepId,
+          name: step.name,
+          type: 'task',
+          position: step.order,
+          config: toStringNumberBooleanRecord({
+            originalType: step.type,
+            agentId: step.agentId ? String(step.agentId) : null,
+            condition: step.condition ?? null,
+            // Store presence of parameters rather than object
+            parameters: step.parameters ? 1 : 0,
+            // Store count for nextSteps instead of array
+            nextSteps: Array.isArray(step.nextSteps)
+              ? step.nextSteps.length
+              : 0,
+            requiresApproval: step.requiresApproval ?? null,
+          }),
+          createdAt: now,
+          updatedAt: now,
+          order: step.order,
+        })
+      )
+    );
 
     // Create workflow triggers
     if (args.triggers) {
-      for (const trigger of args.triggers) {
-        await ctx.db.insert('workflowTriggers', {
-          workflowId,
-          triggerId: trigger.triggerId,
-          type: trigger.type,
-          condition: trigger.condition,
-          parameters: trigger.parameters,
-          isActive: trigger.isActive,
-        });
-      }
+      await Promise.all(
+        args.triggers.map((trigger) =>
+          ctx.db.insert('workflowTriggers', {
+            workflowId,
+            triggerId: trigger.triggerId,
+            type: trigger.type,
+            condition: trigger.condition,
+            parameters: trigger.parameters,
+            isActive: trigger.isActive,
+          })
+        )
+      );
     }
 
     return await ctx.db.get(workflowId);
@@ -203,9 +260,15 @@ export const update = mutation({
 
     const updates: Partial<Doc<'workflows'>> = { updatedAt: Date.now() };
 
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.isActive !== undefined) updates.isActive = args.isActive;
+    if (args.name !== undefined) {
+      updates.name = args.name;
+    }
+    if (args.description !== undefined) {
+      updates.description = args.description;
+    }
+    if (args.isActive !== undefined) {
+      updates.isActive = args.isActive;
+    }
 
     await ctx.db.patch(args.id, updates);
     return await ctx.db.get(args.id);
@@ -248,9 +311,7 @@ export const remove = mutation({
       .withIndex('by_workflow', (q) => q.eq('workflowId', args.id))
       .collect();
 
-    for (const step of steps) {
-      await ctx.db.delete(step._id);
-    }
+    await Promise.all(steps.map((step) => ctx.db.delete(step._id)));
 
     // Delete workflow triggers
     const triggers = await ctx.db
@@ -258,9 +319,7 @@ export const remove = mutation({
       .withIndex('by_workflow', (q) => q.eq('workflowId', args.id))
       .collect();
 
-    for (const trigger of triggers) {
-      await ctx.db.delete(trigger._id);
-    }
+    await Promise.all(triggers.map((trigger) => ctx.db.delete(trigger._id)));
 
     // Delete the workflow
     await ctx.db.delete(args.id);
@@ -278,7 +337,12 @@ export const createExecution = mutation({
   args: {
     workflowId: v.id('workflows'),
     walletAddress: v.string(),
-    variables: v.optional(v.any()),
+    variables: v.optional(
+      v.record(
+        v.string(),
+        v.union(v.string(), v.number(), v.boolean(), v.null())
+      )
+    ),
   },
   handler: async (ctx, args) => {
     // Verify workflow exists and user has access
@@ -318,13 +382,23 @@ export const updateExecution = mutation({
       v.literal('cancelled')
     ),
     currentStep: v.optional(v.string()),
-    variables: v.optional(v.any()),
+    variables: v.optional(
+      v.record(
+        v.string(),
+        v.union(v.string(), v.number(), v.boolean(), v.null())
+      )
+    ),
     error: v.optional(
       v.object({
         stepId: v.string(),
         code: v.string(),
         message: v.string(),
-        details: v.optional(v.any()),
+        details: v.optional(
+          v.record(
+            v.string(),
+            v.union(v.string(), v.number(), v.boolean(), v.null())
+          )
+        ),
       })
     ),
   },
@@ -338,9 +412,15 @@ export const updateExecution = mutation({
       status: args.status,
     };
 
-    if (args.currentStep !== undefined) updates.currentStep = args.currentStep;
-    if (args.variables !== undefined) updates.variables = args.variables;
-    if (args.error !== undefined) updates.error = args.error;
+    if (args.currentStep !== undefined) {
+      updates.currentStep = args.currentStep;
+    }
+    if (args.variables !== undefined) {
+      updates.variables = args.variables;
+    }
+    if (args.error !== undefined) {
+      updates.error = args.error;
+    }
 
     if (['completed', 'failed', 'cancelled'].includes(args.status)) {
       updates.completedAt = Date.now();
@@ -356,7 +436,9 @@ export const getExecutionById = query({
   args: { id: v.id('workflowExecutions') },
   handler: async (ctx, args) => {
     const execution = await ctx.db.get(args.id);
-    if (!execution) return null;
+    if (!execution) {
+      return null;
+    }
 
     // Get associated workflow
     const workflow = await ctx.db.get(execution.workflowId);
@@ -385,15 +467,15 @@ export const getExecutionsByWorkflow = query({
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
 
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('workflowExecutions')
       .withIndex('by_workflow', (q) => q.eq('workflowId', args.workflowId));
 
     if (args.status) {
-      query = query.filter((q) => q.eq(q.field('status'), args.status));
+      dbQuery = dbQuery.filter((q) => q.eq(q.field('status'), args.status));
     }
 
-    return await query.order('desc').take(limit);
+    return await dbQuery.order('desc').take(limit);
   },
 });
 
@@ -413,7 +495,12 @@ export const updateStepResult = mutation({
       v.literal('failed'),
       v.literal('waiting_approval')
     ),
-    output: v.optional(v.any()),
+    output: v.optional(
+      v.record(
+        v.string(),
+        v.union(v.string(), v.number(), v.boolean(), v.null())
+      )
+    ),
     error: v.optional(v.string()),
     retryCount: v.optional(v.number()),
   },
@@ -433,9 +520,15 @@ export const updateStepResult = mutation({
         status: args.status,
       };
 
-      if (args.output !== undefined) updates.output = args.output;
-      if (args.error !== undefined) updates.error = args.error;
-      if (args.retryCount !== undefined) updates.retryCount = args.retryCount;
+      if (args.output !== undefined) {
+        updates.output = args.output;
+      }
+      if (args.error !== undefined) {
+        updates.error = args.error;
+      }
+      if (args.retryCount !== undefined) {
+        updates.retryCount = args.retryCount;
+      }
 
       if (['completed', 'failed'].includes(args.status)) {
         updates.completedAt = now;
@@ -590,8 +683,18 @@ export const saveVisualWorkflow = mutation({
           label: v.string(),
           description: v.optional(v.string()),
           icon: v.optional(v.string()),
-          config: v.optional(v.any()),
-          parameters: v.optional(v.any()),
+          config: v.optional(
+            v.record(
+              v.string(),
+              v.union(v.string(), v.number(), v.boolean(), v.null())
+            )
+          ),
+          parameters: v.optional(
+            v.record(
+              v.string(),
+              v.union(v.string(), v.number(), v.boolean(), v.null())
+            )
+          ),
         }),
       })
     ),
@@ -604,7 +707,12 @@ export const saveVisualWorkflow = mutation({
         targetHandle: v.optional(v.string()),
         label: v.optional(v.string()),
         animated: v.optional(v.boolean()),
-        style: v.optional(v.any()),
+        style: v.optional(
+          v.record(
+            v.string(),
+            v.union(v.string(), v.number(), v.boolean(), v.null())
+          )
+        ),
       })
     ),
   },
@@ -632,21 +740,21 @@ export const saveVisualWorkflow = mutation({
       // Delete existing steps and edges
       const existingSteps = await ctx.db
         .query('workflowSteps')
-        .withIndex('by_workflow', (q) => q.eq('workflowId', workflowId as Id<'workflows'>))
+        .withIndex('by_workflow', (q) =>
+          q.eq('workflowId', workflowId as Id<'workflows'>)
+        )
         .collect();
 
-      for (const step of existingSteps) {
-        await ctx.db.delete(step._id);
-      }
+      await Promise.all(existingSteps.map((s) => ctx.db.delete(s._id)));
 
       const existingEdges = await ctx.db
         .query('workflowEdges')
-        .withIndex('by_workflow', (q) => q.eq('workflowId', workflowId as Id<'workflows'>))
+        .withIndex('by_workflow', (q) =>
+          q.eq('workflowId', workflowId as Id<'workflows'>)
+        )
         .collect();
 
-      for (const edge of existingEdges) {
-        await ctx.db.delete(edge._id);
-      }
+      await Promise.all(existingEdges.map((e) => ctx.db.delete(e._id)));
     } else {
       // Create new workflow
       workflowId = await ctx.db.insert('workflows', {
@@ -665,48 +773,58 @@ export const saveVisualWorkflow = mutation({
     }
 
     // Save nodes as workflow steps
-    for (let i = 0; i < args.nodes.length; i++) {
-      const node = args.nodes[i];
-      await ctx.db.insert('workflowSteps', {
-        workflowId,
-        stepId: node.id,
-        name: node.data.label,
-        type:
-          node.data.type === 'trigger' ||
-          node.data.type === 'condition' ||
-          node.data.type === 'action' ||
-          node.data.type === 'task'
-            ? node.data.type
-            : 'task',
-        position: i,
-        config: node.data.config || {},
-        visualData: {
-          nodeId: node.id,
-          nodeType: node.type,
-          position: node.position,
-          data: node.data,
-        },
-        createdAt: now,
-        updatedAt: now,
-        order: i,
-      });
-    }
+    await Promise.all(
+      args.nodes.map((node, i) =>
+        ctx.db.insert('workflowSteps', {
+          workflowId,
+          stepId: node.id,
+          name: node.data.label,
+          type:
+            node.data.type === 'trigger' ||
+            node.data.type === 'condition' ||
+            node.data.type === 'action' ||
+            node.data.type === 'task'
+              ? node.data.type
+              : 'task',
+          position: i,
+          config: toStringNumberBooleanRecord(node.data.config),
+          visualData: {
+            nodeId: node.id,
+            nodeType: node.type,
+            position: node.position,
+            data: {
+              ...node.data,
+              // Ensure config and parameters match expected types
+              config: toStringNumberBooleanRecord(node.data.config),
+              parameters: node.data.parameters
+                ? toStringNumberBooleanRecord(node.data.parameters)
+                : undefined,
+            },
+          },
+          createdAt: now,
+          updatedAt: now,
+          order: i,
+        })
+      )
+    );
 
     // Save edges
-    for (const edge of args.edges) {
-      await ctx.db.insert('workflowEdges', {
-        workflowId,
-        sourceNodeId: edge.source,
-        targetNodeId: edge.target,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle,
-        label: edge.label,
-        animated: edge.animated,
-        style: edge.style,
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
+    await Promise.all(
+      args.edges.map((edge) =>
+        ctx.db.insert('workflowEdges', {
+          workflowId,
+          sourceNodeId: edge.source,
+          targetNodeId: edge.target,
+          sourceHandle: edge.sourceHandle,
+          targetHandle: edge.targetHandle,
+          label: edge.label,
+          animated: edge.animated,
+          style: toStringNumberRecord(edge.style),
+          createdAt: now,
+          updatedAt: now,
+        })
+      )
+    );
 
     return workflowId;
   },
@@ -717,7 +835,9 @@ export const getVisualWorkflow = query({
   args: { id: v.id('workflows') },
   handler: async (ctx, args) => {
     const workflow = await ctx.db.get(args.id);
-    if (!workflow) return null;
+    if (!workflow) {
+      return null;
+    }
 
     // Get all steps with visual data
     const steps = await ctx.db
@@ -853,25 +973,27 @@ export const cloneWorkflow = mutation({
       .withIndex('by_workflow', (q) => q.eq('workflowId', args.sourceId))
       .collect();
 
-    for (const step of steps) {
-      await ctx.db.insert('workflowSteps', {
-        workflowId: newWorkflowId,
-        stepId: step.stepId,
-        name: step.name,
-        type: step.type,
-        position: step.position,
-        config: step.config,
-        visualData: step.visualData,
-        createdAt: now,
-        updatedAt: now,
-        agentId: step.agentId,
-        condition: step.condition,
-        parameters: step.parameters,
-        nextSteps: step.nextSteps,
-        requiresApproval: step.requiresApproval,
-        order: step.order,
-      });
-    }
+    await Promise.all(
+      steps.map((step) =>
+        ctx.db.insert('workflowSteps', {
+          workflowId: newWorkflowId,
+          stepId: step.stepId,
+          name: step.name,
+          type: step.type,
+          position: step.position,
+          config: step.config,
+          visualData: step.visualData,
+          createdAt: now,
+          updatedAt: now,
+          agentId: step.agentId,
+          condition: step.condition,
+          parameters: step.parameters,
+          nextSteps: step.nextSteps,
+          requiresApproval: step.requiresApproval,
+          order: step.order,
+        })
+      )
+    );
 
     // Copy edges
     const edges = await ctx.db
@@ -879,20 +1001,22 @@ export const cloneWorkflow = mutation({
       .withIndex('by_workflow', (q) => q.eq('workflowId', args.sourceId))
       .collect();
 
-    for (const edge of edges) {
-      await ctx.db.insert('workflowEdges', {
-        workflowId: newWorkflowId,
-        sourceNodeId: edge.sourceNodeId,
-        targetNodeId: edge.targetNodeId,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle,
-        label: edge.label,
-        animated: edge.animated,
-        style: edge.style,
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
+    await Promise.all(
+      edges.map((edge) =>
+        ctx.db.insert('workflowEdges', {
+          workflowId: newWorkflowId,
+          sourceNodeId: edge.sourceNodeId,
+          targetNodeId: edge.targetNodeId,
+          sourceHandle: edge.sourceHandle,
+          targetHandle: edge.targetHandle,
+          label: edge.label,
+          animated: edge.animated,
+          style: edge.style,
+          createdAt: now,
+          updatedAt: now,
+        })
+      )
+    );
 
     return newWorkflowId;
   },

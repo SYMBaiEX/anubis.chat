@@ -141,7 +141,9 @@ export function MessageList({
   const messageGroups = groupMessagesByDate(messages);
 
   return (
-    <div className={cn('relative flex h-full flex-col overflow-hidden', className)}>
+    <div
+      className={cn('relative flex h-full flex-col overflow-hidden', className)}
+    >
       <ScrollArea
         className="flex-1 overflow-x-hidden"
         onScrollCapture={handleScroll}

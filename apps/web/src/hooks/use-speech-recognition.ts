@@ -38,12 +38,12 @@ export function useSpeechRecognition({
   const [interimTranscript, setInterimTranscript] = useState('');
   const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
-  
+
   // Store callbacks and settings in refs to avoid stale closures
   const onResultRef = useRef(onResult);
   const onErrorRef = useRef(onError);
   const enableFormattingRef = useRef(enableFormatting);
-  
+
   useEffect(() => {
     onResultRef.current = onResult;
     onErrorRef.current = onError;
@@ -54,13 +54,13 @@ export function useSpeechRecognition({
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const windowWithSpeech = window as IWindow;
-      const SpeechRecognition = 
-        windowWithSpeech.SpeechRecognition || 
+      const SpeechRecognition =
+        windowWithSpeech.SpeechRecognition ||
         windowWithSpeech.webkitSpeechRecognition;
-      
+
       if (SpeechRecognition) {
         setIsSupported(true);
-        
+
         // Only create recognition instance if it doesn't exist
         if (!recognitionRef.current) {
           const recognition = new SpeechRecognition();
@@ -68,12 +68,12 @@ export function useSpeechRecognition({
           recognition.interimResults = interimResults;
           recognition.lang = language;
           recognition.maxAlternatives = 1; // Faster processing
-          
+
           // Handle results
           recognition.onresult = (event: any) => {
             let finalTranscript = '';
             let interimTranscript = '';
-            
+
             // Process all results from the last index
             for (let i = event.resultIndex; i < event.results.length; i++) {
               const result = event.results[i];
@@ -83,59 +83,61 @@ export function useSpeechRecognition({
                 interimTranscript += result[0].transcript;
               }
             }
-            
+
             if (finalTranscript) {
               // Apply formatting if enabled
-              const formattedText = enableFormattingRef.current 
+              const formattedText = enableFormattingRef.current
                 ? formatSpeechText(finalTranscript, false)
                 : finalTranscript;
-              
+
               // Don't accumulate in the hook - let the component handle it
               setTranscript(formattedText);
               onResultRef.current?.(formattedText, true);
-              log.debug('Final transcript received', { 
+              log.debug('Final transcript received', {
                 transcript: finalTranscript,
                 formatted: formattedText,
-                confidence: event.results[event.resultIndex][0].confidence 
+                confidence: event.results[event.resultIndex][0].confidence,
               });
             }
-            
+
             if (interimTranscript) {
               // Apply formatting to interim results too for real-time feedback
               const formattedInterim = enableFormattingRef.current
                 ? formatSpeechText(interimTranscript, true)
                 : interimTranscript;
-              
+
               setInterimTranscript(formattedInterim);
               onResultRef.current?.(formattedInterim, false);
             }
           };
-          
+
           // Handle errors
           recognition.onerror = (event: any) => {
             const errorMessage = `Speech recognition error: ${event.error}`;
             log.error(errorMessage, { error: event.error });
             onErrorRef.current?.(errorMessage);
             setIsListening(false);
-            
+
             // Handle specific errors
             if (event.error === 'no-speech') {
               log.info('No speech detected');
             } else if (event.error === 'not-allowed') {
               log.error('Microphone permission denied');
-              onErrorRef.current?.('Microphone permission denied. Please allow microphone access.');
+              onErrorRef.current?.(
+                'Microphone permission denied. Please allow microphone access.'
+              );
             } else if (event.error === 'aborted') {
               log.info('Speech recognition aborted');
             }
           };
-          
+
           // Handle end
           recognition.onend = () => {
             setIsListening(false);
             setInterimTranscript(''); // Clear interim when stopped
             log.debug('Speech recognition ended');
           };
-          
+
           recognitionRef.current = recognition;
         }
       } else {
@@ -143,7 +145,7 @@ export function useSpeechRecognition({
         setIsSupported(false);
       }
     }
-    
+
     // Cleanup function
     return () => {
       if (recognitionRef.current && isListening) {
@@ -155,7 +157,7 @@ export function useSpeechRecognition({
       }
     };
   }, []); // Empty deps - only run once
-  
+
   // Update recognition settings when props change
   useEffect(() => {
     if (recognitionRef.current) {
@@ -167,9 +169,11 @@ export function useSpeechRecognition({
 
   // Start listening
   const startListening = useCallback(() => {
-    if (!isSupported || !recognitionRef.current) {
+    if (!(isSupported && recognitionRef.current)) {
       log.error('Speech recognition not available');
-      onErrorRef.current?.('Speech recognition is not supported in your browser');
+      onErrorRef.current?.(
+        'Speech recognition is not supported in your browser'
+      );
       return;
     }
 
@@ -178,7 +182,7 @@ export function useSpeechRecognition({
       if (isListening) {
         recognitionRef.current.abort();
       }
-      
+
       recognitionRef.current.start();
       setIsListening(true);
       // Don't reset transcripts here - let the component control when to reset

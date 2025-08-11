@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { SettingsGrid, type GridSetting } from '@/components/ui/settings-grid';
+import { type GridSetting, SettingsGrid } from '@/components/ui/settings-grid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AI_MODELS } from '@/lib/constants/ai-models';
 import { cn } from '@/lib/utils';
@@ -104,7 +104,7 @@ export function ChatSettingsDialog({
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = externalOnOpenChange || setInternalOpen;
-  
+
   const [localSettings, setLocalSettings] = useState<ChatSettings>(settings);
 
   // Sync local settings when settings prop changes
@@ -208,7 +208,7 @@ export function ChatSettingsDialog({
       icon: <Settings className="h-4 w-4" />,
       category: 'advanced',
     },
-    
+
     // Behavior Settings
     ...(localSettings.agentPrompt
       ? [
@@ -352,9 +352,15 @@ export function ChatSettingsDialog({
   ];
 
   // Create filtered arrays for tabs
-  const modelSettings = allSettings.filter(setting => setting.category === 'model' || setting.category === 'advanced');
-  const behaviorSettings = allSettings.filter(setting => setting.category === 'behavior');
-  const filteredInterfaceSettings = allSettings.filter(setting => setting.category === 'interface');
+  const modelSettings = allSettings.filter(
+    (setting) => setting.category === 'model' || setting.category === 'advanced'
+  );
+  const behaviorSettings = allSettings.filter(
+    (setting) => setting.category === 'behavior'
+  );
+  const filteredInterfaceSettings = allSettings.filter(
+    (setting) => setting.category === 'interface'
+  );
 
   return (
     <div className={cn('flex items-center space-x-2', className)}>
@@ -378,9 +384,15 @@ export function ChatSettingsDialog({
           <div className="max-h-[65vh] overflow-hidden">
             <Tabs className="h-full" defaultValue="model">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger className="text-xs sm:text-sm" value="model">Model</TabsTrigger>
-                <TabsTrigger className="text-xs sm:text-sm" value="behavior">Behavior</TabsTrigger>
-                <TabsTrigger className="text-xs sm:text-sm" value="interface">Interface</TabsTrigger>
+                <TabsTrigger className="text-xs sm:text-sm" value="model">
+                  Model
+                </TabsTrigger>
+                <TabsTrigger className="text-xs sm:text-sm" value="behavior">
+                  Behavior
+                </TabsTrigger>
+                <TabsTrigger className="text-xs sm:text-sm" value="interface">
+                  Interface
+                </TabsTrigger>
               </TabsList>
 
               <div className="mt-4 max-h-[55vh] overflow-y-auto">
@@ -388,8 +400,8 @@ export function ChatSettingsDialog({
                   <SettingsGrid
                     columns={4}
                     compact={true}
-                    settings={modelSettings}
                     gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                    settings={modelSettings}
                     showFilter={false}
                   />
                 </TabsContent>
@@ -398,8 +410,8 @@ export function ChatSettingsDialog({
                   <SettingsGrid
                     columns={4}
                     compact={true}
-                    settings={behaviorSettings}
                     gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                    settings={behaviorSettings}
                     showFilter={false}
                   />
                 </TabsContent>
@@ -408,8 +420,8 @@ export function ChatSettingsDialog({
                   <SettingsGrid
                     columns={4}
                     compact={true}
-                    settings={filteredInterfaceSettings}
                     gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                    settings={filteredInterfaceSettings}
                     showFilter={false}
                   />
                 </TabsContent>

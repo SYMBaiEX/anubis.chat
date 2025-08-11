@@ -25,7 +25,7 @@ export const list = query({
     const { walletAddress, limit = 20, order = 'desc', cursor } = args;
 
     // Build query
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('vectorStores')
       .withIndex('by_wallet', (q) => q.eq('walletAddress', walletAddress))
       .order(order === 'desc' ? 'desc' : 'asc');
@@ -38,27 +38,25 @@ export const list = query({
         const cursorDoc = await ctx.db.get(cursorId);
         if (cursorDoc) {
           // Continue from cursor
-          query = query.filter((q) =>
+          dbQuery = dbQuery.filter((q) =>
             order === 'desc'
               ? q.lt(q.field('updatedAt'), cursorDoc.updatedAt)
               : q.gt(q.field('updatedAt'), cursorDoc.updatedAt)
           );
         }
-      } catch (error) {
-        console.warn('Invalid cursor provided', { cursor, error });
-      }
+      } catch (_error) {}
     }
 
     // Fetch items with limit + 1 to check for more
-    const items = await query.take(limit + 1);
+    const items = await dbQuery.take(limit + 1);
 
     // Check if there are more items
     const hasMore = items.length > limit;
     const returnItems = hasMore ? items.slice(0, limit) : items;
 
-    // Get next cursor
+    // Get next cursor (avoid Array.at for older lib targets)
     const nextCursor = hasMore
-      ? returnItems[returnItems.length - 1]._id
+      ? returnItems[returnItems.length - 1]?._id
       : undefined;
 
     return {
@@ -121,12 +119,12 @@ export const search = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { walletAddress, query, limit = 10 } = args;
+    const { walletAddress, query: searchQuery, limit = 10 } = args;
 
     const results = await ctx.db
       .query('vectorStores')
       .withSearchIndex('search_name', (q) =>
-        q.search('name', query).eq('walletAddress', walletAddress)
+        q.search('name', searchQuery).eq('walletAddress', walletAddress)
       )
       .take(limit);
 
@@ -153,7 +151,7 @@ export const create = mutation({
         days: v.number(),
       })
     ),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -204,7 +202,7 @@ export const update = mutation({
         days: v.number(),
       })
     ),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
   },
   handler: async (ctx, args) => {
     const { id, walletAddress, ...updates } = args;
@@ -260,9 +258,7 @@ export const deleteVectorStore = mutation({
       .withIndex('by_vector_store', (q) => q.eq('vectorStoreId', id))
       .collect();
 
-    for (const file of files) {
-      await ctx.db.delete(file._id);
-    }
+    await Promise.all(files.map((file) => ctx.db.delete(file._id)));
 
     // Delete the vector store
     await ctx.db.delete(id);
@@ -290,17 +286,19 @@ export const queueFileProcessing = mutation({
     const now = Date.now();
 
     // Create vector store file entries
-    for (const fileId of fileIds) {
-      await ctx.db.insert('vectorStoreFiles', {
-        vectorStoreId,
-        fileId,
-        status: 'in_progress',
-        chunkingStrategy: {
-          type: 'auto',
-        },
-        createdAt: now,
-      });
-    }
+    await Promise.all(
+      fileIds.map((fileId) =>
+        ctx.db.insert('vectorStoreFiles', {
+          vectorStoreId,
+          fileId,
+          status: 'in_progress',
+          chunkingStrategy: {
+            type: 'auto',
+          },
+          createdAt: now,
+        })
+      )
+    );
 
     // Update file counts
     await ctx.db.patch(vectorStoreId, {
@@ -381,12 +379,14 @@ export const updateFileStatus = mutation({
     }
 
     // Determine overall status
-    const overallStatus =
-      fileCounts.inProgress > 0
-        ? 'in_progress'
-        : fileCounts.failed === fileCounts.total
-          ? 'expired'
-          : 'completed';
+    let overallStatus: 'in_progress' | 'expired' | 'completed';
+    if (fileCounts.inProgress > 0) {
+      overallStatus = 'in_progress';
+    } else if (fileCounts.failed === fileCounts.total) {
+      overallStatus = 'expired';
+    } else {
+      overallStatus = 'completed';
+    }
 
     await ctx.db.patch(vectorStoreId, {
       fileCounts,

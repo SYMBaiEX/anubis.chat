@@ -45,11 +45,9 @@ export const migrateChatsToUserIds = internalMutation({
           });
           updated++;
         } else {
-          console.warn(`No user found for wallet address: ${chat.ownerId}`);
           errors++;
         }
-      } catch (error) {
-        console.error(`Error migrating chat ${chat._id}:`, error);
+      } catch (_error) {
         errors++;
       }
     }
@@ -84,12 +82,6 @@ export const runFullMigration = internalMutation({
       // Add a small delay to avoid overwhelming the database
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-
-    console.log('Migration completed:', {
-      totalProcessed,
-      totalUpdated,
-      totalErrors,
-    });
 
     return {
       totalProcessed,

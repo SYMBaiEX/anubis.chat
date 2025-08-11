@@ -24,13 +24,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 // =============================================================================
 // Configuration
 // =============================================================================
-
 
 const AGENT_CONFIG = {
   templates: [
@@ -233,7 +232,6 @@ export default function NewAgentPage() {
     },
   });
 
-
   if (!subscription) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -253,7 +251,11 @@ export default function NewAgentPage() {
       <div className="w-full p-4 md:p-6">
         <div className="mx-auto w-full max-w-6xl">
           <div className="mb-2 flex items-center gap-2">
-            <Button onClick={() => router.push('/agents')} size="sm" variant="ghost">
+            <Button
+              onClick={() => router.push('/agents')}
+              size="sm"
+              variant="ghost"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Agents
             </Button>
@@ -261,7 +263,9 @@ export default function NewAgentPage() {
           <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl">
             Create AI Agent
           </h1>
-          <p className="mt-1 text-muted-foreground text-sm">Configure your custom AI agent</p>
+          <p className="mt-1 text-muted-foreground text-sm">
+            Configure your custom AI agent
+          </p>
           <div className="mt-2 flex items-center gap-3">
             <Badge
               className="gap-1"
@@ -271,9 +275,12 @@ export default function NewAgentPage() {
               {subscription.tier} Plan
             </Badge>
             <p className="text-muted-foreground text-sm">
-              {subscription.tier === 'free' && 'Access to basic models and features'}
-              {subscription.tier === 'pro' && 'Access to premium models with limits'}
-              {subscription.tier === 'pro_plus' && 'Full access to all models and features'}
+              {subscription.tier === 'free' &&
+                'Access to basic models and features'}
+              {subscription.tier === 'pro' &&
+                'Access to premium models with limits'}
+              {subscription.tier === 'pro_plus' &&
+                'Full access to all models and features'}
             </p>
           </div>
         </div>
@@ -286,237 +293,244 @@ export default function NewAgentPage() {
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Free tier agents are limited to basic models. Upgrade to Pro or Pro+
-              to access premium AI models.
+              Free tier agents are limited to basic models. Upgrade to Pro or
+              Pro+ to access premium AI models.
             </AlertDescription>
           </Alert>
         )}
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2 p-6">
+          <Card className="p-6 lg:col-span-2">
             <div className="space-y-2">
               <h2 className="font-semibold text-lg">Agent Details</h2>
-              <p className="text-muted-foreground text-sm">Basic information and behavior</p>
+              <p className="text-muted-foreground text-sm">
+                Basic information and behavior
+              </p>
             </div>
             <Separator className="my-4" />
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            form.handleSubmit();
-          }}
-        >
-          {/* Name Field */}
-          <form.Field
-            name="name"
-            validators={{
-              onChange: ({ value }) => {
-                const result = z
-                  .string()
-                  .min(1, 'Name is required')
-                  .max(100, 'Name must be 100 characters or less')
-                  .safeParse(value);
-                return result.success
-                  ? undefined
-                  : result.error.issues[0].message;
-              },
-            }}
-          >
-            {(field) => (
-              <div>
-                <Label htmlFor={field.name}>
-                  Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  aria-describedby={
-                    field.state.meta.errors.length > 0
-                      ? `${field.name}-error`
-                      : undefined
-                  }
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Enter agent name..."
-                  required
-                  value={field.state.value}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p
-                    className="mt-1 text-red-600 text-sm"
-                    id={`${field.name}-error`}
-                  >
-                    {field.state.meta.errors[0]}
-                  </p>
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+              }}
+            >
+              {/* Name Field */}
+              <form.Field
+                name="name"
+                validators={{
+                  onChange: ({ value }) => {
+                    const result = z
+                      .string()
+                      .min(1, 'Name is required')
+                      .max(100, 'Name must be 100 characters or less')
+                      .safeParse(value);
+                    return result.success
+                      ? undefined
+                      : result.error.issues[0].message;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div>
+                    <Label htmlFor={field.name}>
+                      Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      aria-describedby={
+                        field.state.meta.errors.length > 0
+                          ? `${field.name}-error`
+                          : undefined
+                      }
+                      id={field.name}
+                      name={field.name}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Enter agent name..."
+                      required
+                      value={field.state.value}
+                    />
+                    {field.state.meta.errors.length > 0 && (
+                      <p
+                        className="mt-1 text-red-600 text-sm"
+                        id={`${field.name}-error`}
+                      >
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-          </form.Field>
+              </form.Field>
 
-          {/* Description Field */}
-          <form.Field
-            name="description"
-            validators={{
-              onChange: ({ value }) => {
-                const result = z
-                  .string()
-                  .max(500, 'Description must be 500 characters or less')
-                  .safeParse(value);
-                return result.success
-                  ? undefined
-                  : result.error.issues[0].message;
-              },
-            }}
-          >
-            {(field) => (
-              <div>
-                <Label htmlFor={field.name}>Description</Label>
-                <Input
-                  aria-describedby={
-                    field.state.meta.errors.length > 0
-                      ? `${field.name}-error`
-                      : undefined
-                  }
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Brief description of your agent (optional)..."
-                  value={field.state.value}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p
-                    className="mt-1 text-red-600 text-sm"
-                    id={`${field.name}-error`}
-                  >
-                    {field.state.meta.errors[0]}
-                  </p>
+              {/* Description Field */}
+              <form.Field
+                name="description"
+                validators={{
+                  onChange: ({ value }) => {
+                    const result = z
+                      .string()
+                      .max(500, 'Description must be 500 characters or less')
+                      .safeParse(value);
+                    return result.success
+                      ? undefined
+                      : result.error.issues[0].message;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div>
+                    <Label htmlFor={field.name}>Description</Label>
+                    <Input
+                      aria-describedby={
+                        field.state.meta.errors.length > 0
+                          ? `${field.name}-error`
+                          : undefined
+                      }
+                      id={field.name}
+                      name={field.name}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Brief description of your agent (optional)..."
+                      value={field.state.value}
+                    />
+                    {field.state.meta.errors.length > 0 && (
+                      <p
+                        className="mt-1 text-red-600 text-sm"
+                        id={`${field.name}-error`}
+                      >
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-          </form.Field>
+              </form.Field>
 
-          {/* System Prompt Field */}
-          <form.Field
-            name="systemPrompt"
-            validators={{
-              onChange: ({ value }) => {
-                const result = z
-                  .string()
-                  .max(2000, 'System prompt must be 2000 characters or less')
-                  .safeParse(value);
-                return result.success
-                  ? undefined
-                  : result.error.issues[0].message;
-              },
-            }}
-          >
-            {(field) => (
-              <div>
-                <Label htmlFor={field.name}>System Prompt</Label>
-                <Textarea
-                  aria-describedby={
-                    field.state.meta.errors.length > 0
-                      ? `${field.name}-error`
-                      : undefined
-                  }
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Define your agent's behavior and personality (optional)..."
-                  rows={6}
-                  value={field.state.value}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p
-                    className="mt-1 text-red-600 text-sm"
-                    id={`${field.name}-error`}
-                  >
-                    {field.state.meta.errors[0]}
-                  </p>
+              {/* System Prompt Field */}
+              <form.Field
+                name="systemPrompt"
+                validators={{
+                  onChange: ({ value }) => {
+                    const result = z
+                      .string()
+                      .max(
+                        2000,
+                        'System prompt must be 2000 characters or less'
+                      )
+                      .safeParse(value);
+                    return result.success
+                      ? undefined
+                      : result.error.issues[0].message;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div>
+                    <Label htmlFor={field.name}>System Prompt</Label>
+                    <Textarea
+                      aria-describedby={
+                        field.state.meta.errors.length > 0
+                          ? `${field.name}-error`
+                          : undefined
+                      }
+                      id={field.name}
+                      name={field.name}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Define your agent's behavior and personality (optional)..."
+                      rows={6}
+                      value={field.state.value}
+                    />
+                    {field.state.meta.errors.length > 0 && (
+                      <p
+                        className="mt-1 text-red-600 text-sm"
+                        id={`${field.name}-error`}
+                      >
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-          </form.Field>
+              </form.Field>
 
-          <Separator className="my-2" />
-          <div className="space-y-2">
-            <h2 className="font-semibold text-lg">Agent Settings</h2>
-            <p className="text-muted-foreground text-sm">Configure generation parameters</p>
-          </div>
-
-          {/* Temperature Slider */}
-          <form.Field name="temperature">
-            {(field) => (
+              <Separator className="my-2" />
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor={field.name}>Temperature</Label>
-                  <span className="text-muted-foreground text-sm">
-                    {field.state.value}
-                  </span>
-                </div>
-                <Input
-                  className="w-full"
-                  id={field.name}
-                  max={2}
-                  min={0}
-                  name={field.name}
-                  onChange={(e) =>
-                    field.handleChange(
-                      Number.parseFloat(
-                        e.target.value
-                      ) as CreateAgentFormData['temperature']
-                    )
-                  }
-                  step={0.1}
-                  type="range"
-                  value={field.state.value}
-                />
-                <p className="text-muted-foreground text-xs">
-                  Controls randomness: 0 = focused, 2 = creative
+                <h2 className="font-semibold text-lg">Agent Settings</h2>
+                <p className="text-muted-foreground text-sm">
+                  Configure generation parameters
                 </p>
               </div>
-            )}
-          </form.Field>
 
-          {/* Max Tokens */}
-          <form.Field name="maxTokens">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Max Tokens</Label>
-                <Input
-                  id={field.name}
-                  max={128_000}
-                  min={1}
-                  name={field.name}
-                  onChange={(e) =>
-                    field.handleChange(
-                      Number.parseInt(
-                        e.target.value,
-                        10
-                      ) as CreateAgentFormData['maxTokens']
-                    )
-                  }
-                  placeholder="4096"
-                  type="number"
-                  value={field.state.value}
-                />
-                <p className="text-muted-foreground text-xs">
-                  Maximum response length (1 token ≈ 4 characters)
-                </p>
-                {field.state.meta.errors.length > 0 && (
-                  <p className="mt-1 text-red-600 text-sm">
-                    {field.state.meta.errors[0]}
-                  </p>
+              {/* Temperature Slider */}
+              <form.Field name="temperature">
+                {(field) => (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor={field.name}>Temperature</Label>
+                      <span className="text-muted-foreground text-sm">
+                        {field.state.value}
+                      </span>
+                    </div>
+                    <Input
+                      className="w-full"
+                      id={field.name}
+                      max={2}
+                      min={0}
+                      name={field.name}
+                      onChange={(e) =>
+                        field.handleChange(
+                          Number.parseFloat(
+                            e.target.value
+                          ) as CreateAgentFormData['temperature']
+                        )
+                      }
+                      step={0.1}
+                      type="range"
+                      value={field.state.value}
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      Controls randomness: 0 = focused, 2 = creative
+                    </p>
+                  </div>
                 )}
-              </div>
-            )}
-          </form.Field>
+              </form.Field>
 
-          {/* MCP Server Configuration - Temporarily disabled */}
-          {/* <div className="space-y-4">
+              {/* Max Tokens */}
+              <form.Field name="maxTokens">
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label htmlFor={field.name}>Max Tokens</Label>
+                    <Input
+                      id={field.name}
+                      max={128_000}
+                      min={1}
+                      name={field.name}
+                      onChange={(e) =>
+                        field.handleChange(
+                          Number.parseInt(
+                            e.target.value,
+                            10
+                          ) as CreateAgentFormData['maxTokens']
+                        )
+                      }
+                      placeholder="4096"
+                      type="number"
+                      value={field.state.value}
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      Maximum response length (1 token ≈ 4 characters)
+                    </p>
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="mt-1 text-red-600 text-sm">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+
+              {/* MCP Server Configuration - Temporarily disabled */}
+              {/* <div className="space-y-4">
             <div>
               <Label>MCP Server Tools</Label>
               <p className="mb-3 text-muted-foreground text-sm">
@@ -592,34 +606,39 @@ export default function NewAgentPage() {
             </div>
           </div> */}
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-2">
-            <form.Subscribe
-              selector={(state) => [state.canSubmit, state.isSubmitting]}
-            >
-              {([canSubmit, isSubmitting]) => (
-                <Button disabled={!canSubmit || isSubmitting} type="submit">
-                  {isSubmitting ? 'Creating...' : 'Create Agent'}
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                <form.Subscribe
+                  selector={(state) => [state.canSubmit, state.isSubmitting]}
+                >
+                  {([canSubmit, isSubmitting]) => (
+                    <Button disabled={!canSubmit || isSubmitting} type="submit">
+                      {isSubmitting ? 'Creating...' : 'Create Agent'}
+                    </Button>
+                  )}
+                </form.Subscribe>
+                <Button
+                  onClick={() => router.back()}
+                  type="button"
+                  variant="ghost"
+                >
+                  Cancel
                 </Button>
-              )}
-            </form.Subscribe>
-            <Button onClick={() => router.back()} type="button" variant="ghost">
-              Cancel
-            </Button>
-          </div>
-        </form>
+              </div>
+            </form>
           </Card>
 
           {/* Sidebar */}
           <div className="space-y-4">
-
             <Card className="p-5">
               <div className="space-y-1">
                 <h3 className="font-medium text-sm">Tips for better agents</h3>
-                <p className="text-muted-foreground text-xs">Quick guidelines</p>
+                <p className="text-muted-foreground text-xs">
+                  Quick guidelines
+                </p>
               </div>
               <Separator className="my-3" />
-              <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+              <ul className="list-disc space-y-1 pl-5 text-muted-foreground text-xs">
                 <li>Keep names short and descriptive</li>
                 <li>Start with a clear system prompt</li>
                 <li>Use lower temperature for reliability</li>
@@ -627,9 +646,6 @@ export default function NewAgentPage() {
             </Card>
           </div>
         </div>
-      
-      
-      
       </div>
     </div>
   );

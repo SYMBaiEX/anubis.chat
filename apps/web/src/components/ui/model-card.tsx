@@ -210,7 +210,7 @@ export function ModelCard({
         </div>
 
         {/* Description - condensed */}
-        <p className="mb-1.5 line-clamp-2 text-muted-foreground text-[10px] leading-snug">
+        <p className="mb-1.5 line-clamp-2 text-[10px] text-muted-foreground leading-snug">
           {model.description}
         </p>
 
@@ -229,7 +229,7 @@ export function ModelCard({
             ))}
             {model.capabilities.length > 2 && (
               <Badge
-                className="h-3.5 px-1 py-0 text-muted-foreground text-[9px]"
+                className="h-3.5 px-1 py-0 text-[9px] text-muted-foreground"
                 variant="outline"
               >
                 +{model.capabilities.length - 2}

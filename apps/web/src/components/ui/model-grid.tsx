@@ -58,15 +58,15 @@ export function ModelGrid({
     const getTierPriority = (model: AIModel) => {
       const isFree = model.pricing.input === 0 && model.pricing.output === 0;
       const isPremium = isPremiumModel(model);
-      
+
       if (isFree) return 0; // Free first
       if (!isPremium) return 1; // Standard second
       return 2; // Premium last
     };
-    
+
     const aPriority = getTierPriority(a);
     const bPriority = getTierPriority(b);
-    
+
     // Sort by tier priority, then by name
     if (aPriority !== bPriority) {
       return aPriority - bPriority;
@@ -99,7 +99,9 @@ export function ModelGrid({
         />
       )}
 
-      <div className={`grid ${getGridCols()} gap-1.5 sm:gap-2 ${gridClassName}`}>
+      <div
+        className={`grid ${getGridCols()} gap-1.5 sm:gap-2 ${gridClassName}`}
+      >
         {availableModels.map((model) => (
           <ModelCard
             compact={compact}

@@ -49,16 +49,27 @@ export const WalletProvider: FC<WalletProviderProps> = ({
   );
 
   // Curated explicit Solana wallets only (avoid Wallet Standard auto-detection to prevent duplicates like MetaMask)
-  const wallets = useMemo(
-    () => [
+  const wallets = useMemo(() => {
+    const configured = [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter({ network: selectedNetwork }),
       new BackpackWalletAdapter(),
       new TorusWalletAdapter(),
       new LedgerWalletAdapter(),
-    ],
-    [selectedNetwork]
-  );
+    ];
+
+    // Some environments inject Wallet Standard adapters (e.g., MetaMask Snap)
+    // which may lead to duplicate names like "MetaMask". Deduplicate by name
+    // and explicitly exclude MetaMask from Solana wallet list.
+    const seen = new Set<string>();
+    return configured.filter((w) => {
+      const name = String(w.name || '');
+      if (name === 'MetaMask') return false;
+      if (seen.has(name)) return false;
+      seen.add(name);
+      return true;
+    });
+  }, [selectedNetwork]);
 
   // Log available wallets for debugging
   log.info('Solana wallets configured', {

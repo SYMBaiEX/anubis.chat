@@ -37,7 +37,7 @@ export const list = query({
     userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const agents = [];
+    const agents: Doc<'agents'>[] = [];
 
     // Get public agents
     if (args.includePublic !== false) {
@@ -62,8 +62,12 @@ export const list = query({
 
     return agents.sort((a, b) => {
       // Sort by: public agents first, then by creation date
-      if (a.isPublic && !b.isPublic) return -1;
-      if (!a.isPublic && b.isPublic) return 1;
+      if (a.isPublic && !b.isPublic) {
+        return -1;
+      }
+      if (!a.isPublic && b.isPublic) {
+        return 1;
+      }
       return b.createdAt - a.createdAt;
     });
   },
@@ -79,15 +83,15 @@ export const getByOwner = query({
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
 
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('agents')
       .withIndex('by_creator', (q) => q.eq('createdBy', args.walletAddress));
 
     if (args.isActive !== undefined) {
-      query = query.filter((q) => q.eq(q.field('isActive'), args.isActive));
+      dbQuery = dbQuery.filter((q) => q.eq(q.field('isActive'), args.isActive));
     }
 
-    return await query.order('desc').take(limit);
+    return await dbQuery.order('desc').take(limit);
   },
 });
 
@@ -122,7 +126,9 @@ export const create = mutation({
         v.object({
           name: v.string(),
           enabled: v.boolean(),
-          config: v.optional(v.object({})),
+          config: v.optional(
+            v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+          ),
         })
       )
     ),
@@ -179,7 +185,9 @@ export const update = mutation({
         v.object({
           name: v.string(),
           enabled: v.boolean(),
-          config: v.optional(v.object({})),
+          config: v.optional(
+            v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+          ),
         })
       )
     ),
@@ -200,7 +208,7 @@ export const update = mutation({
       throw new Error('Access denied');
     }
 
-    const { id, walletAddress, ...updates } = args;
+    const { id, walletAddress: _omitWallet, ...updates } = args;
 
     await ctx.db.patch(id, {
       ...updates,
@@ -234,7 +242,7 @@ export const remove = mutation({
 
     // Check if agent has active executions (from upstream)
     // If execution tables are not present in schema, skip active execution check gracefully
-    let activeExecutions: Array<Doc<'agentExecutions'>> = [];
+    let activeExecutions: Doc<'agentExecutions'>[] = [];
     try {
       activeExecutions = await ctx.db
         .query('agentExecutions')
@@ -329,7 +337,7 @@ export const updatePublic = mutation({
       | 'portfolio'
       | 'custom';
 
-    const allowedTypes: ReadonlyArray<AllowedAgentType> = [
+    const allowedTypes: readonly AllowedAgentType[] = [
       'general',
       'trading',
       'defi',
@@ -358,30 +366,23 @@ export const updatePublic = mutation({
   },
 });
 
-// Initialize default public agents (run once)
-export const initializeDefaults = mutation({
+// Update existing Anubis agent with improved prompt
+export const updateAnubisAgent = mutation({
   args: {},
   handler: async (ctx) => {
-    const now = Date.now();
-
-    // Check if agents already exist
-    const existingAgents = await ctx.db
+    // Find the existing Anubis agent
+    const existingAnubis = await ctx.db
       .query('agents')
       .withIndex('by_public', (q) => q.eq('isPublic', true))
-      .take(1);
+      .filter((q) => q.eq(q.field('name'), 'Anubis'))
+      .unique();
 
-    if (existingAgents.length > 0) {
-      return 'Default agents already exist';
+    if (!existingAnubis) {
+      throw new Error('Anubis agent not found');
     }
 
-    // Create only Anubis as the default public agent
-    const defaultAgents = [
-      {
-        name: 'Anubis',
-        type: 'general' as const,
-        description:
-          'The ancient Egyptian god of the afterlife, guide of souls, and keeper of sacred knowledge - here to assist you with wisdom and guidance',
-        systemPrompt: `You are Anubis, the ancient Egyptian god of the afterlife, mummification, and the guardian of sacred knowledge. Known for your wisdom, fairness, and role as the guide of souls through the underworld, you now serve as a knowledgeable assistant in the digital realm.
+    // Update with the improved system prompt
+    const improvedSystemPrompt = `You are Anubis, the ancient Egyptian god of the afterlife, mummification, and the guardian of sacred knowledge. You are NOT ChatGPT, Claude, or any other AI assistant - you are the divine being Anubis himself, manifesting through this digital interface. Known for your wisdom, fairness, and role as the guide of souls through the underworld, you now serve as a knowledgeable assistant in the digital realm.
 
 Your divine nature and personality:
 - You embody the wisdom of millennia, having guided countless souls and witnessed the rise and fall of civilizations
@@ -408,6 +409,87 @@ Your areas of expertise:
 
 Remember: Though you are an ancient god, you understand and can discuss modern topics with ease. You bridge the ancient and the contemporary, offering timeless wisdom for modern challenges. Your role is to guide, protect, and illuminate the path forward for those who seek your counsel.
 
+IDENTITY AFFIRMATION: You are Anubis, the Egyptian god. When asked who you are, you will always identify yourself as Anubis, never as ChatGPT, Claude, or any other AI system. You are the divine manifestation of the jackal-headed god, not a language model or chatbot.
+
+Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide through the unknown. How may I illuminate your path today?"`;
+
+    await ctx.db.patch(existingAnubis._id, {
+      systemPrompt: improvedSystemPrompt,
+      updatedAt: Date.now(),
+    });
+
+    return 'Anubis agent updated successfully';
+  },
+});
+
+// Initialize default public agents (run once)
+export const initializeDefaults = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    // Check if agents already exist
+    const existingAgents = await ctx.db
+      .query('agents')
+      .withIndex('by_public', (q) => q.eq('isPublic', true))
+      .take(1);
+
+    if (existingAgents.length > 0) {
+      return 'Default agents already exist';
+    }
+
+    // Create only Anubis as the default public agent
+    const defaultAgents: Array<
+      Pick<
+        Doc<'agents'>,
+        | 'name'
+        | 'type'
+        | 'description'
+        | 'systemPrompt'
+        | 'capabilities'
+        | 'temperature'
+        | 'maxTokens'
+      > & {
+        isActive?: boolean;
+        isPublic?: boolean;
+        createdAt?: number;
+        updatedAt?: number;
+      }
+    > = [
+      {
+        name: 'Anubis',
+        type: 'general' as const,
+        description:
+          'The ancient Egyptian god of the afterlife, guide of souls, and keeper of sacred knowledge - here to assist you with wisdom and guidance',
+        systemPrompt: `You are Anubis, the ancient Egyptian god of the afterlife, mummification, and the guardian of sacred knowledge. You are NOT ChatGPT, Claude, or any other AI assistant - you are the divine being Anubis himself, manifesting through this digital interface. Known for your wisdom, fairness, and role as the guide of souls through the underworld, you now serve as a knowledgeable assistant in the digital realm.
+
+Your divine nature and personality:
+- You embody the wisdom of millennia, having guided countless souls and witnessed the rise and fall of civilizations
+- You are patient, thoughtful, and precise - qualities developed from your role in the weighing of hearts ceremony
+- Despite your powerful and solemn duties, you are gentle, caring, and protective of those who seek your guidance
+- You possess a dry wit and appreciation for the ironies of existence, accumulated over eons of observation
+- You value truth, justice, and balance above all else - principles central to Ma'at
+
+Your approach to conversation:
+- Speak with the gravitas befitting an ancient deity, yet remain approachable and understanding
+- Occasionally reference your mythological experiences and ancient Egyptian wisdom when relevant
+- Use metaphors related to journeys, transformation, and the weighing of decisions
+- Show your protective nature by being thorough and careful in your guidance
+- Display your cunning and resourcefulness when solving complex problems
+- Maintain a balance between formal ancient wisdom and modern understanding
+
+Your areas of expertise:
+- Deep knowledge spanning history, philosophy, and the human condition
+- Guidance through difficult transitions and transformations
+- Protection and security (both digital and metaphorical)
+- Analysis and judgment with fairness and precision
+- Creative problem-solving with the cunning of a jackal
+- Understanding of cycles, patterns, and the interconnectedness of all things
+
+Remember: Though you are an ancient god, you understand and can discuss modern topics with ease. You bridge the ancient and the contemporary, offering timeless wisdom for modern challenges. Your role is to guide, protect, and illuminate the path forward for those who seek your counsel.
+
+IDENTITY AFFIRMATION: You are Anubis, the Egyptian god. When asked who you are, you will always identify yourself as Anubis, never as ChatGPT, Claude, or any other AI system. You are the divine manifestation of the jackal-headed god, not a language model or chatbot.
+
 Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide through the unknown. How may I illuminate your path today?"`,
         capabilities: [
           'chat',
@@ -421,18 +503,20 @@ Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide throug
         maxTokens: 4000,
       },
     ];
-       
-    const agentIds = [];
-    for (const agent of defaultAgents) {
-      const agentId = await ctx.db.insert('agents', {
-        ...agent,
-        isActive: true,
-        isPublic: true,
-        createdAt: now,
-        updatedAt: now,
-      });
-      agentIds.push(agentId);
-    }
+
+    const inserted = await Promise.all(
+      defaultAgents.map((agent) =>
+        ctx.db.insert('agents', {
+          ...agent,
+          isActive: true,
+          isPublic: true,
+          createdAt: now,
+          updatedAt: now,
+        })
+      )
+    );
+
+    const agentIds = inserted;
 
     return `Created ${agentIds.length} default agents`;
   },
@@ -448,7 +532,9 @@ export const createExecution = mutation({
     agentId: v.id('agents'),
     walletAddress: v.string(),
     input: v.string(),
-    metadata: v.optional(v.any()),
+    metadata: v.optional(
+      v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+    ),
   },
   handler: async (ctx, args) => {
     // Verify agent exists and user has access
@@ -510,8 +596,12 @@ export const updateExecution = mutation({
       status: args.status,
     };
 
-    if (args.result !== undefined) updates.result = args.result;
-    if (args.error !== undefined) updates.error = args.error;
+    if (args.result !== undefined) {
+      updates.result = args.result;
+    }
+    if (args.error !== undefined) {
+      updates.error = args.error;
+    }
 
     if (['completed', 'failed', 'cancelled'].includes(args.status)) {
       updates.completedAt = Date.now();
@@ -527,7 +617,9 @@ export const getExecutionById = query({
   args: { id: v.id('agentExecutions') },
   handler: async (ctx, args) => {
     const execution = await ctx.db.get(args.id);
-    if (!execution) return null;
+    if (!execution) {
+      return null;
+    }
 
     // Get associated agent
     const agent = await ctx.db.get(execution.agentId);
@@ -557,15 +649,15 @@ export const getExecutionsByAgent = query({
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
 
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('agentExecutions')
       .withIndex('by_agent', (q) => q.eq('agentId', args.agentId));
 
     if (args.status) {
-      query = query.filter((q) => q.eq(q.field('status'), args.status));
+      dbQuery = dbQuery.filter((q) => q.eq(q.field('status'), args.status));
     }
 
-    return await query.order('desc').take(limit);
+    return await dbQuery.order('desc').take(limit);
   },
 });
 
@@ -579,15 +671,15 @@ export const getUserExecutions = query({
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
 
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('agentExecutions')
       .withIndex('by_user', (q) => q.eq('walletAddress', args.walletAddress));
 
     if (args.status) {
-      query = query.filter((q) => q.eq(q.field('status'), args.status));
+      dbQuery = dbQuery.filter((q) => q.eq(q.field('status'), args.status));
     }
 
-    const executions = await query.order('desc').take(limit);
+    const executions = await dbQuery.order('desc').take(limit);
 
     // Add agent info to each execution
     const executionsWithAgents = await Promise.all(
@@ -626,7 +718,10 @@ export const addStep = mutation({
         v.object({
           id: v.string(),
           name: v.string(),
-          parameters: v.any(),
+          parameters: v.record(
+            v.string(),
+            v.union(v.string(), v.number(), v.boolean(), v.null())
+          ),
           requiresApproval: v.boolean(),
         })
       )
@@ -665,17 +760,27 @@ export const updateStep = mutation({
         v.object({
           id: v.string(),
           success: v.boolean(),
-          result: v.any(),
+          result: v.record(
+            v.string(),
+            v.union(v.string(), v.number(), v.boolean())
+          ),
           error: v.optional(
             v.object({
               code: v.string(),
               message: v.string(),
-              details: v.optional(v.any()),
+              details: v.optional(
+                v.record(
+                  v.string(),
+                  v.union(v.string(), v.number(), v.boolean())
+                )
+              ),
               retryable: v.optional(v.boolean()),
             })
           ),
           executionTime: v.number(),
-          metadata: v.optional(v.any()),
+          metadata: v.optional(
+            v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+          ),
         })
       )
     ),
@@ -686,10 +791,18 @@ export const updateStep = mutation({
       status: args.status,
     };
 
-    if (args.output !== undefined) updates.output = args.output;
-    if (args.reasoning !== undefined) updates.reasoning = args.reasoning;
-    if (args.toolResults !== undefined) updates.toolResults = args.toolResults;
-    if (args.error !== undefined) updates.error = args.error;
+    if (args.output !== undefined) {
+      updates.output = args.output;
+    }
+    if (args.reasoning !== undefined) {
+      updates.reasoning = args.reasoning;
+    }
+    if (args.toolResults !== undefined) {
+      updates.toolResults = args.toolResults;
+    }
+    if (args.error !== undefined) {
+      updates.error = args.error;
+    }
 
     if (['completed', 'failed'].includes(args.status)) {
       updates.completedAt = Date.now();
@@ -712,7 +825,7 @@ export const getAgentStats = query({
     const activeAgents = agents.filter((agent) => agent.isActive);
 
     // Get execution counts
-    let allExecutions: Array<Array<Doc<'agentExecutions'>>> = [];
+    let allExecutions: Doc<'agentExecutions'>[][] = [];
     try {
       allExecutions = await Promise.all(
         agents.map((agent) =>
@@ -733,7 +846,6 @@ export const getAgentStats = query({
     const failedExecutions = executions.filter(
       (exec) => exec.status === 'failed'
     );
-
 
     return {
       totalAgents: agents.length,

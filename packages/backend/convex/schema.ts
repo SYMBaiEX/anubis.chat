@@ -6,15 +6,8 @@ import { v } from 'convex/values';
 // Common Schema Definitions
 // =============================================================================
 
-// JSON-like values that can be stored
-const jsonValue = v.union(
-  v.string(),
-  v.number(),
-  v.boolean(),
-  v.null(),
-  v.array(v.any()), // Arrays can contain mixed types
-  v.object({}) // Objects can have dynamic keys
-);
+// JSON-like values that can be stored (simple union type)
+const _simpleJsonValue = v.union(v.string(), v.number(), v.boolean(), v.null());
 
 // Tool execution arguments - commonly used parameter types
 const toolParameters = v.union(
@@ -27,12 +20,18 @@ const toolParameters = v.union(
     query: v.optional(v.string()),
     limit: v.optional(v.number()),
     offset: v.optional(v.number()),
-    filters: v.optional(v.object({})),
-    options: v.optional(v.object({})),
-    data: v.optional(v.object({})),
-    config: v.optional(v.object({})),
+    filters: v.optional(v.record(v.string(), v.string())),
+    options: v.optional(
+      v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+    ),
+    data: v.optional(
+      v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+    ),
+    config: v.optional(
+      v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+    ),
   }),
-  v.array(jsonValue)
+  v.array(v.union(v.string(), v.number(), v.boolean()))
 );
 
 // Tool execution results
@@ -44,10 +43,12 @@ const toolResult = v.union(
   v.object({
     status: v.optional(v.string()),
     message: v.optional(v.string()),
-    data: v.optional(jsonValue),
-    metadata: v.optional(v.object({})),
+    data: v.optional(v.union(v.string(), v.number(), v.boolean())),
+    metadata: v.optional(
+      v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+    ),
   }),
-  v.array(jsonValue)
+  v.array(v.union(v.string(), v.number(), v.boolean()))
 );
 
 // Error details for various error contexts
@@ -55,7 +56,7 @@ const errorDetails = v.object({
   code: v.optional(v.string()),
   message: v.optional(v.string()),
   stack: v.optional(v.string()),
-  context: v.optional(v.object({})),
+  context: v.optional(v.record(v.string(), v.string())),
   timestamp: v.optional(v.number()),
   severity: v.optional(
     v.union(
@@ -68,7 +69,7 @@ const errorDetails = v.object({
 });
 
 // Workflow/Agent execution metadata
-const executionMetadata = v.object({
+const _executionMetadata = v.object({
   source: v.optional(v.string()),
   priority: v.optional(
     v.union(
@@ -88,16 +89,28 @@ const executionMetadata = v.object({
       initialDelay: v.optional(v.number()),
     })
   ),
-  custom: v.optional(v.object({})),
+  custom: v.optional(
+    v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+  ),
 });
 
 // Workflow variables
 const workflowVariables = v.object({
-  inputs: v.optional(v.object({})),
-  outputs: v.optional(v.object({})),
-  context: v.optional(v.object({})),
-  state: v.optional(v.object({})),
-  temp: v.optional(v.object({})),
+  inputs: v.optional(
+    v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+  ),
+  outputs: v.optional(
+    v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+  ),
+  context: v.optional(
+    v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+  ),
+  state: v.optional(
+    v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+  ),
+  temp: v.optional(
+    v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+  ),
 });
 
 // Search filters
@@ -112,7 +125,7 @@ const searchFilters = v.object({
   tags: v.optional(v.array(v.string())),
   owner: v.optional(v.string()),
   status: v.optional(v.string()),
-  metadata: v.optional(v.object({})),
+  metadata: v.optional(v.record(v.string(), v.string())),
 });
 
 // HTTP headers for webhooks - using underscore-case for valid identifiers
@@ -137,7 +150,7 @@ const httpHeaders = v.object({
 const webhookPayload = v.object({
   event: v.string(),
   timestamp: v.number(),
-  data: v.object({}),
+  data: v.record(v.string(), v.union(v.string(), v.number(), v.boolean())),
   metadata: v.optional(
     v.object({
       version: v.optional(v.string()),
@@ -152,8 +165,10 @@ const approvalData = v.object({
   action: v.string(),
   resource: v.optional(v.string()),
   parameters: v.optional(toolParameters),
-  context: v.optional(v.object({})),
-  metadata: v.optional(v.object({})),
+  context: v.optional(
+    v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+  ),
+  metadata: v.optional(v.record(v.string(), v.string())),
 });
 
 // Approval modifications
@@ -161,12 +176,12 @@ const approvalModifications = v.object({
   parameters: v.optional(toolParameters),
   conditions: v.optional(v.array(v.string())),
   restrictions: v.optional(v.array(v.string())),
-  metadata: v.optional(v.object({})),
+  metadata: v.optional(v.record(v.string(), v.string())),
 });
 
 export default defineSchema({
   // =============================================================================
-  // Convex Auth Tables (Required)
+  // Convex Auth Tables (Required) - Temporarily disabled due to undefined validator
   // =============================================================================
   ...authTables,
 
@@ -228,6 +243,11 @@ export default defineSchema({
     publicKey: v.optional(v.string()), // Solana public key
     displayName: v.optional(v.string()),
     avatar: v.optional(v.string()),
+
+    // Referral tracking - permanent relationship for recurring commissions
+    referredBy: v.optional(v.id('users')), // Who referred this user (for lifetime commissions)
+    referredByCode: v.optional(v.string()), // The referral code used
+    referredAt: v.optional(v.number()), // When they were referred/attributed
 
     // Admin role system integrated with Convex Auth
     role: v.optional(
@@ -302,6 +322,7 @@ export default defineSchema({
     .index('by_wallet', ['walletAddress'])
     .index('by_active', ['isActive', 'lastActiveAt'])
     .index('by_role', ['role'])
+    .index('by_referrer', ['referredBy']) // For querying users referred by someone
     .index('by_tier', ['subscription.tier']),
 
   // =============================================================================
@@ -619,6 +640,8 @@ export default defineSchema({
     description: v.string(),
     systemPrompt: v.string(),
     capabilities: v.array(v.string()), // List of available tools/actions
+    model: v.optional(v.string()),
+    version: v.optional(v.string()),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
     config: v.optional(
@@ -635,7 +658,9 @@ export default defineSchema({
         v.object({
           name: v.string(), // Server name (e.g., 'context7', 'filesystem')
           enabled: v.boolean(),
-          config: v.optional(v.object({})), // Server-specific configuration
+          config: v.optional(
+            v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+          ), // Server-specific configuration
         })
       )
     ),
@@ -710,7 +735,9 @@ export default defineSchema({
     error: v.optional(v.string()),
     startedAt: v.number(),
     completedAt: v.optional(v.number()),
-    metadata: v.optional(v.any()),
+    metadata: v.optional(
+      v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+    ),
   })
     .index('by_agent', ['agentId'])
     .index('by_user', ['walletAddress'])
@@ -740,7 +767,7 @@ export default defineSchema({
         v.object({
           id: v.string(),
           name: v.string(),
-          parameters: v.any(),
+          parameters: toolParameters,
           requiresApproval: v.boolean(),
         })
       )
@@ -752,17 +779,24 @@ export default defineSchema({
         v.object({
           id: v.string(),
           success: v.boolean(),
-          result: v.any(),
+          result: toolResult,
           error: v.optional(
             v.object({
               code: v.string(),
               message: v.string(),
-              details: v.optional(v.any()),
+              details: v.optional(
+                v.record(
+                  v.string(),
+                  v.union(v.string(), v.number(), v.boolean())
+                )
+              ),
               retryable: v.optional(v.boolean()),
             })
           ),
           executionTime: v.number(),
-          metadata: v.optional(v.any()),
+          metadata: v.optional(
+            v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+          ),
         })
       )
     ),
@@ -859,8 +893,8 @@ export default defineSchema({
       v.literal('social'),
       v.literal('utility')
     ),
-    parameters: v.optional(v.any()), // Tool-specific parameters
-    result: v.optional(v.any()), // Tool execution result
+    parameters: v.optional(toolParameters), // Tool-specific parameters
+    result: v.optional(toolResult), // Tool execution result
     success: v.boolean(),
     errorMessage: v.optional(v.string()),
     executionTime: v.optional(v.number()), // milliseconds
@@ -877,7 +911,9 @@ export default defineSchema({
     agentId: v.id('agents'),
     capability: v.string(), // Tool or action name
     enabled: v.boolean(),
-    config: v.optional(v.any()), // Capability-specific configuration
+    config: v.optional(
+      v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+    ), // Capability-specific configuration
     permissions: v.optional(v.array(v.string())), // Required permissions
     description: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -968,12 +1004,16 @@ export default defineSchema({
           label: v.string(),
           description: v.optional(v.string()),
           icon: v.optional(v.string()),
-          config: v.optional(v.any()),
-          parameters: v.optional(v.any()),
+          config: v.optional(
+            v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+          ),
+          parameters: v.optional(toolParameters),
         }),
       })
     ),
-    config: v.optional(v.any()),
+    config: v.optional(
+      v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -989,7 +1029,7 @@ export default defineSchema({
     targetHandle: v.optional(v.string()),
     label: v.optional(v.string()),
     animated: v.optional(v.boolean()),
-    style: v.optional(v.any()),
+    style: v.optional(v.record(v.string(), v.union(v.string(), v.number()))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -1327,13 +1367,16 @@ export default defineSchema({
           v.object({
             name: v.string(),
             description: v.optional(v.string()),
-            parameters: v.object({}),
+            parameters: v.record(
+              v.string(),
+              v.union(v.string(), v.number(), v.boolean())
+            ),
           })
         ),
       })
     ),
     fileIds: v.array(v.string()),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     temperature: v.optional(v.number()),
     topP: v.optional(v.number()),
     responseFormat: v.optional(
@@ -1353,7 +1396,7 @@ export default defineSchema({
 
   // Threads (conversation sessions with assistants)
   threads: defineTable({
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     walletAddress: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -1373,7 +1416,14 @@ export default defineSchema({
         text: v.optional(
           v.object({
             value: v.string(),
-            annotations: v.optional(v.array(v.object({}))),
+            annotations: v.optional(
+              v.array(
+                v.record(
+                  v.string(),
+                  v.union(v.string(), v.number(), v.boolean())
+                )
+              )
+            ),
           })
         ),
         imageFile: v.optional(
@@ -1397,7 +1447,7 @@ export default defineSchema({
     assistantId: v.optional(v.id('assistants')),
     runId: v.optional(v.id('runs')),
     fileIds: v.array(v.string()),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     createdAt: v.number(),
   })
     .index('by_thread', ['threadId', 'createdAt'])
@@ -1451,9 +1501,11 @@ export default defineSchema({
     completedAt: v.optional(v.number()),
     model: v.string(),
     instructions: v.optional(v.string()),
-    tools: v.array(v.object({})),
+    tools: v.array(
+      v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+    ),
     fileIds: v.array(v.string()),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     usage: v.optional(
       v.object({
         promptTokens: v.number(),
@@ -1471,8 +1523,15 @@ export default defineSchema({
         lastMessages: v.optional(v.number()),
       })
     ),
-    responseFormat: v.optional(v.object({})),
-    toolChoice: v.optional(v.union(v.string(), v.object({}))),
+    responseFormat: v.optional(
+      v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+    ),
+    toolChoice: v.optional(
+      v.union(
+        v.string(),
+        v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))
+      )
+    ),
     createdAt: v.number(),
   })
     .index('by_thread', ['threadId', 'createdAt'])
@@ -1503,7 +1562,7 @@ export default defineSchema({
     ),
     expiresAt: v.optional(v.number()),
     lastActiveAt: v.number(),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     walletAddress: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -1574,7 +1633,10 @@ export default defineSchema({
           v.literal('database_query')
         ),
         name: v.string(),
-        config: v.object({}),
+        config: v.record(
+          v.string(),
+          v.union(v.string(), v.number(), v.boolean())
+        ),
         lastSyncAt: v.optional(v.number()),
         status: v.union(
           v.literal('active'),
@@ -1605,7 +1667,7 @@ export default defineSchema({
       v.literal('error'),
       v.literal('disabled')
     ),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     walletAddress: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -1725,7 +1787,7 @@ export default defineSchema({
     model: v.string(),
     embedding: v.array(v.number()),
     dimensions: v.number(),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     walletAddress: v.string(),
     createdAt: v.number(),
   })
@@ -1784,7 +1846,7 @@ export default defineSchema({
         weight: v.optional(v.number()),
       })
     ),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     createdAt: v.number(),
   }).index('by_job', ['fineTuningJobId', 'createdAt']),
 
@@ -1801,7 +1863,7 @@ export default defineSchema({
       v.object({
         stdout: v.optional(v.string()),
         stderr: v.optional(v.string()),
-        result: v.optional(jsonValue),
+        result: v.optional(v.union(v.string(), v.number(), v.boolean())),
         files: v.optional(
           v.array(
             v.object({
@@ -1896,7 +1958,7 @@ export default defineSchema({
     cancelledAt: v.optional(v.number()),
     trialStart: v.optional(v.number()),
     trialEnd: v.optional(v.number()),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -1927,10 +1989,10 @@ export default defineSchema({
         quantity: v.number(),
         unitPrice: v.number(),
         amount: v.number(),
-        metadata: v.optional(v.object({})),
+        metadata: v.optional(v.record(v.string(), v.string())),
       })
     ),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     createdAt: v.number(),
   })
     .index('by_wallet', ['walletAddress', 'createdAt'])
@@ -1949,7 +2011,7 @@ export default defineSchema({
     ),
     name: v.string(),
     description: v.optional(v.string()),
-    config: v.object({}),
+    config: v.record(v.string(), v.union(v.string(), v.number(), v.boolean())),
     status: v.union(
       v.literal('connected'),
       v.literal('disconnected'),
@@ -1957,7 +2019,7 @@ export default defineSchema({
     ),
     lastSyncAt: v.optional(v.number()),
     errorMessage: v.optional(v.string()),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     walletAddress: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -1986,7 +2048,7 @@ export default defineSchema({
     fileUrl: v.optional(v.string()),
     expiresAt: v.optional(v.number()),
     errorMessage: v.optional(v.string()),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
   })
@@ -2017,16 +2079,140 @@ export default defineSchema({
       v.object({
         line: v.optional(v.number()),
         field: v.optional(v.string()),
-        value: v.optional(jsonValue),
+        value: v.optional(v.union(v.string(), v.number(), v.boolean())),
         message: v.string(),
       })
     ),
-    metadata: v.optional(v.object({})),
+    metadata: v.optional(v.record(v.string(), v.string())),
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
   })
     .index('by_wallet', ['walletAddress', 'createdAt'])
     .index('by_status', ['status', 'createdAt']),
+
+  // =============================================================================
+  // Referral System (Enhanced with Auto-Scaling & Direct Payouts)
+  // =============================================================================
+
+  // Referral codes created by Pro+ members with tier-based commission scaling
+  referralCodes: defineTable({
+    userId: v.id('users'), // Pro+ member who created the code
+    code: v.string(), // Unique 8-character code (e.g., "ANUB1S23")
+    customCode: v.optional(v.string()), // Optional user-chosen code
+    isActive: v.boolean(),
+    totalReferrals: v.number(), // Count of successful conversions
+    currentCommissionRate: v.number(), // Dynamic rate 3-5% (0.03-0.05)
+    totalEarnings: v.number(), // Total SOL earned from referrals
+    lifetimePayouts: v.number(), // Total actually paid out to referrer
+    tier: v.number(), // Commission tier (0-10)
+    nextTierAt: v.number(), // Referrals needed for next tier
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_code', ['code'])
+    .index('by_user', ['userId'])
+    .index('by_earnings_desc', ['totalEarnings']) // For leaderboard sorting
+    .index('by_active', ['isActive']),
+
+  // Track referral attribution from click to conversion
+  referralAttributions: defineTable({
+    referralCode: v.string(),
+    referrerId: v.id('users'),
+    referredUserId: v.optional(v.id('users')), // Set when user signs up
+    referredWalletAddress: v.optional(v.string()),
+    status: v.union(
+      v.literal('pending'), // Clicked link, not signed up
+      v.literal('attributed'), // User signed up
+      v.literal('converted') // User made first payment
+    ),
+    ipAddress: v.optional(v.string()), // For fraud detection
+    userAgent: v.optional(v.string()),
+    source: v.optional(v.string()), // Tracking source
+    expiresAt: v.number(), // 30 days from click
+    createdAt: v.number(),
+    convertedAt: v.optional(v.number()),
+  })
+    .index('by_code', ['referralCode'])
+    .index('by_referrer', ['referrerId'])
+    .index('by_referred_wallet', ['referredWalletAddress'])
+    .index('by_status', ['status'])
+    .index('by_expires', ['expiresAt']),
+
+  // Track commission payouts with direct wallet transfers
+  referralPayouts: defineTable({
+    paymentId: v.id('subscriptionPayments'),
+    referralCode: v.string(),
+    referrerId: v.id('users'),
+    referrerWalletAddress: v.string(), // For direct payout verification
+    referredUserId: v.id('users'),
+    paymentAmount: v.number(), // Original payment in SOL
+    commissionRate: v.number(), // Actual rate used (3-5%)
+    commissionAmount: v.number(), // Actual payout (paymentAmount * commissionRate)
+    payoutTxSignature: v.optional(v.string()), // Solana tx for payout
+    status: v.union(
+      v.literal('pending'),
+      v.literal('paid'),
+      v.literal('failed')
+    ),
+    paidAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index('by_referrer', ['referrerId'])
+    .index('by_referred', ['referredUserId'])
+    .index('by_payment', ['paymentId'])
+    .index('by_status', ['status'])
+    .index('by_payout_tx', ['payoutTxSignature']),
+
+  // Referrer balance tracking for dashboard
+  referralBalances: defineTable({
+    userId: v.id('users'),
+    totalEarned: v.number(), // All-time earnings in SOL
+    availableBalance: v.number(), // Available for withdrawal
+    totalWithdrawn: v.number(), // Withdrawn amount
+    lastPayoutAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_user', ['userId']),
+
+  // System-wide referral statistics for leaderboard
+  referralSystemStats: defineTable({
+    totalReferrers: v.number(),
+    totalReferrals: v.number(),
+    totalPayoutsSOL: v.number(),
+    totalPayoutsUSD: v.optional(v.number()),
+    averageCommissionRate: v.number(),
+    topTierReferrers: v.number(), // Count at max 5% tier
+    lastUpdated: v.number(),
+  }),
+
+  // Fraud detection and monitoring
+  referralFraudAlerts: defineTable({
+    type: v.union(
+      v.literal('suspicious_ip_activity'),
+      v.literal('rate_limit_exceeded'),
+      v.literal('self_referral_attempt'),
+      v.literal('duplicate_attribution')
+    ),
+    referralCode: v.string(),
+    referrerId: v.id('users'),
+    details: v.object({
+      ipAddress: v.optional(v.string()),
+      attributionCount: v.optional(v.number()),
+      timeWindow: v.optional(v.string()),
+      additionalInfo: v.optional(v.string()),
+    }),
+    severity: v.union(
+      v.literal('low'),
+      v.literal('medium'),
+      v.literal('high'),
+      v.literal('critical')
+    ),
+    resolved: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index('by_referrer', ['referrerId'])
+    .index('by_severity', ['severity', 'resolved'])
+    .index('by_type', ['type', 'createdAt']),
 
   // =============================================================================
   // File Storage System

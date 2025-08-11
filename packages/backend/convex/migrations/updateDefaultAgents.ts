@@ -2,7 +2,6 @@
  * Migration to update default public agents with new MCP-enabled configurations
  */
 
-import { v } from 'convex/values';
 import { internalMutation } from '../_generated/server';
 
 export const updateDefaultAgents = internalMutation({
@@ -50,7 +49,6 @@ Always aim to be helpful, accurate, and engaging in your responses.`,
         mcpServers: undefined, // Remove any MCP servers
         updatedAt: Date.now(),
       });
-      console.log('Updated ANUBIS General Assistant to General Assistant');
     }
 
     // Find and update Trading Specialist OR Trading Pro to Solana Knowledge Expert
@@ -123,7 +121,6 @@ Remember: Always verify information with the Solana MCP tools to ensure accuracy
         ],
         updatedAt: Date.now(),
       });
-      console.log('Updated Trading agent to Solana Knowledge Expert');
     }
 
     // Find and update DeFi Wizard OR DeFi Expert to Coding Knowledge Agent
@@ -193,7 +190,6 @@ Key instruction: Frequently use Context7 to ensure all code examples and advice 
         ],
         updatedAt: Date.now(),
       });
-      console.log('Updated DeFi agent to Coding Knowledge Agent');
     }
 
     // Also check for any "Solana Developer" agents to update
@@ -237,7 +233,6 @@ Always use the Solana MCP to verify technical details and provide current exampl
         ],
         updatedAt: Date.now(),
       });
-      console.log('Updated Solana Developer agent');
     }
 
     return {

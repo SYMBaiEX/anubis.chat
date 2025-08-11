@@ -4,7 +4,7 @@
  */
 
 import { v } from 'convex/values';
-import { internalMutation, mutation, query } from './_generated/server';
+import { internalMutation, query } from './_generated/server';
 
 // Event types for monitoring
 export const PaymentEventType = v.union(
@@ -67,12 +67,6 @@ export const logPaymentEvent = internalMutation({
 
     // For critical events, also log to console for immediate visibility
     if (args.severity === 'critical' || args.severity === 'error') {
-      console.error('Payment system alert', {
-        event: args.eventType,
-        severity: args.severity,
-        metadata: args.metadata,
-        timestamp: new Date(args.timestamp).toISOString(),
-      });
     }
 
     return args;
@@ -318,7 +312,7 @@ export const getPaymentPerformance = query({
 // Check payment system health
 export const checkPaymentSystemHealth = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const now = Date.now();
     const last24h = now - 24 * 60 * 60 * 1000;
     const last1h = now - 60 * 60 * 1000;

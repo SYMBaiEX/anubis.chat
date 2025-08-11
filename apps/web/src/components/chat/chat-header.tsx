@@ -87,16 +87,15 @@ export function ChatHeader({
     return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
   };
 
-
   return (
     <div className={cn('flex items-center gap-2', className)}>
       {/* Actions Menu on mobile - moved to left side */}
       <div className="flex-shrink-0 sm:hidden">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button 
-              className="button-press h-8 w-8 p-0" 
-              size="icon" 
+            <Button
+              className="button-press h-8 w-8 p-0"
+              size="icon"
               variant="outline"
             >
               <Settings className="h-4 w-4" />
@@ -199,15 +198,15 @@ export function ChatHeader({
                   className="button-press h-auto justify-start rounded-lg bg-primary/20 p-1 px-2 shadow-md hover:bg-primary/30 hover:shadow-lg dark:bg-primary/10 dark:hover:bg-primary/20"
                   onClick={() => setIsEditing(true)}
                   size="sm"
-                  variant="ghost"
                   title="Click to rename chat"
+                  variant="ghost"
                 >
-                  <span className="truncate font-medium text-sm text-black dark:text-white">
+                  <span className="truncate font-medium text-black text-sm dark:text-white">
                     {chat.title}
                   </span>
                 </Button>
               </div>
-              
+
               {/* Desktop version */}
               <h3
                 className="hidden cursor-pointer truncate font-medium text-sm transition-colors hover:text-primary sm:block"
@@ -250,9 +249,9 @@ export function ChatHeader({
       <div className="hidden flex-shrink-0 sm:block">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button 
-              className="button-press h-8 w-8 p-0" 
-              size="icon" 
+            <Button
+              className="button-press h-8 w-8 p-0"
+              size="icon"
               variant="ghost"
             >
               <MoreVertical className="h-4 w-4" />

@@ -56,10 +56,12 @@ export default function AccountPage() {
         <div className="mx-auto w-full max-w-6xl">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-center">
             <div>
-              <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl whitespace-nowrap">
+              <h1 className="whitespace-nowrap bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl">
                 Account
               </h1>
-              <p className="text-muted-foreground">View and update your profile</p>
+              <p className="text-muted-foreground">
+                View and update your profile
+              </p>
             </div>
             {showUpgradeButton && (
               <div className="flex flex-col gap-2 md:flex-row md:justify-end">

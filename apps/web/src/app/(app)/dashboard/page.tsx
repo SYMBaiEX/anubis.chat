@@ -1,6 +1,13 @@
 'use client';
 
-import { Bot, Calendar, Crown, MessageSquare, TrendingUp, Zap } from 'lucide-react';
+import {
+  Bot,
+  Calendar,
+  Crown,
+  MessageSquare,
+  TrendingUp,
+  Zap,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -335,7 +342,6 @@ export default function DashboardPage() {
             </div>
           </Card>
         </div>
-
       </div>
     </div>
   );

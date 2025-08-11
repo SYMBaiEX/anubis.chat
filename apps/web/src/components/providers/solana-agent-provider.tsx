@@ -23,7 +23,7 @@ export interface Agent {
   description: string;
   systemPrompt: string;
   capabilities: string[];
-  model: string;
+  model?: string;
   version?: string;
   temperature?: number;
   maxTokens?: number;

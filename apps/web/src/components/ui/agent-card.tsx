@@ -43,24 +43,7 @@ const getAgentIcon = (type: Agent['type']) => {
   }
 };
 
-const getAgentColor = (type: Agent['type']) => {
-  switch (type) {
-    case 'trading':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-    case 'defi':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-    case 'nft':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-    case 'dao':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-    case 'portfolio':
-      return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
-    case 'custom':
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    default:
-      return 'bg-primary/10 text-primary';
-  }
-};
+const getAgentColor = () => 'bg-primary/10 text-primary dark:bg-primary/15';
 
 const getAgentDescription = (agent: Agent) => {
   if (agent.description) return agent.description;
@@ -110,7 +93,7 @@ export function AgentCard({
               className={cn(
                 'flex flex-shrink-0 items-center justify-center rounded-lg',
                 compact ? 'h-5 w-5 text-xs' : 'h-6 w-6 text-xs',
-                getAgentColor(agent.type)
+                getAgentColor()
               )}
             >
               {getAgentIcon(agent.type)}
@@ -135,7 +118,7 @@ export function AgentCard({
             className={cn(
               'border-0 text-[10px]',
               compact ? 'h-3.5 px-1 py-0' : 'h-4 px-1 py-0',
-              getAgentColor(agent.type)
+              getAgentColor()
             )}
             variant="outline"
           >
@@ -154,7 +137,7 @@ export function AgentCard({
           {isSelected && (
             <Badge
               className={cn(
-                'bg-green-100 px-1 py-0 text-green-800 text-[10px] dark:bg-green-900 dark:text-green-200',
+                'bg-primary/10 px-1 py-0 text-[10px] text-primary dark:bg-primary/15',
                 compact ? 'h-3.5' : 'h-4'
               )}
             >
@@ -166,13 +149,13 @@ export function AgentCard({
 
       <CardContent className={cn('p-2', compact ? 'pt-0' : 'pt-0.5')}>
         {!compact && (
-          <p className="mb-1.5 line-clamp-2 text-muted-foreground text-[10px] leading-snug">
+          <p className="mb-1.5 line-clamp-2 text-[10px] text-muted-foreground leading-snug">
             {getAgentDescription(agent)}
           </p>
         )}
 
         <div className="space-y-1">
-          <div className="flex items-center justify-between text-muted-foreground text-[9px]">
+          <div className="flex items-center justify-between text-[9px] text-muted-foreground">
             <div className="flex items-center gap-0.5">
               <Zap className="h-2.5 w-2.5" />
               <span>{agent.capabilities.length} capabilities</span>
@@ -183,7 +166,10 @@ export function AgentCard({
           <div className="flex flex-wrap gap-0.5">
             {agent.capabilities.slice(0, 2).map((capability) => (
               <Badge
-                className={cn('px-1 py-0 text-[9px]', compact ? 'h-3' : 'h-3.5')}
+                className={cn(
+                  'px-1 py-0 text-[9px]',
+                  compact ? 'h-3' : 'h-3.5'
+                )}
                 key={capability}
                 variant="outline"
               >
@@ -193,7 +179,7 @@ export function AgentCard({
             {agent.capabilities.length > 2 && (
               <Badge
                 className={cn(
-                  'px-1 py-0 text-muted-foreground text-[9px]',
+                  'px-1 py-0 text-[9px] text-muted-foreground',
                   compact ? 'h-3' : 'h-3.5'
                 )}
                 variant="outline"

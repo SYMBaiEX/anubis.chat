@@ -4,10 +4,14 @@
  */
 
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import { httpAction } from './_generated/server';
 import { solanaConfig, subscriptionConfig } from './env';
+import {
+  calculateReferralPayout,
+  validatePayoutParams,
+  verifyDualPayment,
+} from './solanaPayouts';
 
 // Types for transaction verification
 interface VerificationResult {
@@ -32,6 +36,10 @@ interface PaymentVerificationRequest {
   isProrated?: boolean;
   isUpgrade?: boolean;
   previousTier?: 'free' | 'pro' | 'pro_plus';
+  referralCode?: string; // Optional referral code for attribution
+  referralPayoutTx?: string; // Optional referral payout transaction signature
+  referrerWalletAddress?: string; // Optional referrer wallet if client executed split
+  commissionRate?: number; // Optional rate used for client-executed split
 }
 
 // Initialize Solana connection with proper configuration
@@ -119,7 +127,7 @@ async function verifyTransaction(
     try {
       new PublicKey(expectedRecipient);
       new PublicKey(senderAddress);
-    } catch (keyError) {
+    } catch (_keyError) {
       return {
         success: false,
         error: 'Invalid Solana address format',
@@ -149,7 +157,7 @@ async function verifyTransaction(
                 'Transaction found but not yet finalized - please wait a moment and try again'
               );
             }
-          } catch (confirmedError) {
+          } catch (_confirmedError) {
             // Ignore confirmed check errors
           }
 
@@ -277,8 +285,6 @@ async function verifyTransaction(
       },
     };
   } catch (error) {
-    console.error('Transaction verification failed:', error);
-
     // Enhanced error categorization
     let errorMessage = 'Transaction verification failed';
 
@@ -323,10 +329,7 @@ async function logPaymentEvent(
       metadata,
       severity,
     });
-  } catch (error) {
-    // Don't fail the main operation if logging fails
-    console.error('Failed to log payment event:', error);
-  }
+  } catch (_error) {}
 }
 
 // HTTP Action for payment verification with enhanced error handling
@@ -349,7 +352,7 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
     let body: PaymentVerificationRequest;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch (_parseError) {
       await logPaymentEvent(
         ctx,
         'verification_failed',
@@ -369,7 +372,16 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       );
     }
 
-    const { expectedAmount, isProrated, isUpgrade, previousTier } = body;
+    const {
+      expectedAmount,
+      isProrated,
+      isUpgrade,
+      previousTier,
+      referralCode,
+      referralPayoutTx,
+      referrerWalletAddress,
+      commissionRate,
+    } = body;
     ({ txSignature, tier, walletAddress } = body);
 
     // Log verification start
@@ -466,9 +478,6 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
 
     // Validate payment address is configured
     if (!solanaConfig.paymentAddress) {
-      console.error(
-        'Payment configuration missing - SOLANA_PAYMENT_ADDRESS not set'
-      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -515,16 +524,233 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       );
     });
 
-    // Verify the transaction on blockchain with timeout
-    const verificationResult = await Promise.race([
-      verifyTransaction(
-        txSignature,
-        solanaConfig.paymentAddress,
-        expectedAmount,
-        walletAddress
-      ),
-      timeoutPromise,
-    ]);
+    // Handle split/dual payment verification if referral payout is present
+    let verificationResult;
+    let _referralVerificationResult = null;
+
+    if (referralCode && (referralPayoutTx || referrerWalletAddress)) {
+      // Get referral code info to find referrer wallet
+      const referralCodeRecord = await ctx.runQuery(
+        internal.referrals.getReferralCodeByCode,
+        { code: referralCode }
+      );
+
+      if (!referralCodeRecord) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Invalid referral code',
+          }),
+          { status: 400, headers }
+        );
+      }
+
+      const referrer = await ctx.runQuery(internal.referrals.getUserById, {
+        userId: referralCodeRecord.userId,
+      });
+
+      if (!referrer?.walletAddress) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Referrer wallet not found',
+          }),
+          { status: 400, headers }
+        );
+      }
+
+      // Calculate expected referral payout
+      const rateToUse =
+        commissionRate || referralCodeRecord.currentCommissionRate || 0.03;
+      // Determine gross tier amount and split into main/referral expected values
+      const tierPricing =
+        (tier as string) === 'pro'
+          ? subscriptionConfig.pricing.pro
+          : subscriptionConfig.pricing.proPlus;
+      const grossTierAmount =
+        isProrated && tier === 'pro_plus'
+          ? subscriptionConfig.pricing.proPlus.priceSOL -
+            subscriptionConfig.pricing.pro.priceSOL
+          : tierPricing.priceSOL;
+      const expectedReferralAmount = calculateReferralPayout(
+        grossTierAmount,
+        rateToUse
+      );
+      const expectedMainAmount = Math.max(
+        0,
+        grossTierAmount - expectedReferralAmount
+      );
+
+      // Validate payout parameters
+      const validation = validatePayoutParams(
+        referrer.walletAddress,
+        expectedReferralAmount,
+        grossTierAmount,
+        rateToUse
+      );
+
+      if (!validation.valid) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Referral payout validation failed: ${validation.error}`,
+          }),
+          { status: 400, headers }
+        );
+      }
+      // Two cases:
+      // A) Two separate transactions provided -> verify both via helper
+      // B) Single transaction with both transfers (referralPayoutTx equals txSignature or only referrerWallet provided)
+      if (referralPayoutTx && referralPayoutTx !== txSignature) {
+        const dualVerificationResult = await Promise.race([
+          verifyDualPayment(
+            txSignature,
+            referralPayoutTx,
+            expectedMainAmount,
+            expectedReferralAmount,
+            referrer.walletAddress
+          ),
+          timeoutPromise,
+        ]);
+
+        verificationResult = dualVerificationResult.mainPayment;
+        _referralVerificationResult = dualVerificationResult.referralPayout;
+
+        if (!dualVerificationResult.allVerified) {
+          const errors = [] as string[];
+          if (!dualVerificationResult.mainPayment.success) {
+            errors.push(
+              `Main payment: ${dualVerificationResult.mainPayment.error}`
+            );
+          }
+          if (!dualVerificationResult.referralPayout.success) {
+            errors.push(
+              `Referral payout: ${dualVerificationResult.referralPayout.error}`
+            );
+          }
+
+          await logPaymentEvent(
+            ctx,
+            'verification_failed',
+            {
+              txSignature,
+              referralPayoutTx,
+              errorMessage: errors.join('; '),
+              errorCode: 'DUAL_PAYMENT_VERIFICATION_FAILED',
+            },
+            'error'
+          );
+
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Payment verification failed: ${errors.join('; ')}`,
+            }),
+            { status: 400, headers }
+          );
+        }
+      } else {
+        // Single transaction with two transfers: verify both recipient balance changes within the same tx
+        const connection = createSolanaConnection();
+        const tx = await Promise.race([
+          connection.getTransaction(txSignature, {
+            commitment: 'finalized',
+            maxSupportedTransactionVersion: 0,
+          }),
+          timeoutPromise,
+        ]);
+        if (!tx || tx.meta?.err) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'Transaction not found or failed on blockchain',
+            }),
+            { status: 400, headers }
+          );
+        }
+        const message = tx.transaction.message;
+        const messageKeys = message.getAccountKeys({
+          accountKeysFromLookups: tx.meta?.loadedAddresses,
+        });
+        const allAccountKeys = [
+          ...messageKeys.staticAccountKeys,
+          ...(messageKeys.accountKeysFromLookups?.writable ?? []),
+          ...(messageKeys.accountKeysFromLookups?.readonly ?? []),
+        ];
+        const paymentKey = new PublicKey(solanaConfig.paymentAddress);
+        const referrerKey = new PublicKey(referrer.walletAddress);
+        const paymentIndex = allAccountKeys.findIndex((k) =>
+          k.equals(paymentKey)
+        );
+        const referrerIndex = allAccountKeys.findIndex((k) =>
+          k.equals(referrerKey)
+        );
+        if (paymentIndex === -1 || referrerIndex === -1) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error:
+                'Expected recipients not found in transaction account keys',
+            }),
+            { status: 400, headers }
+          );
+        }
+        const pre = tx.meta?.preBalances ?? [];
+        const post = tx.meta?.postBalances ?? [];
+        const paymentDelta =
+          (post[paymentIndex] - pre[paymentIndex]) / LAMPORTS_PER_SOL;
+        const referrerDelta =
+          (post[referrerIndex] - pre[referrerIndex]) / LAMPORTS_PER_SOL;
+        const tolerance = 0.001;
+        if (Math.abs(paymentDelta - expectedMainAmount) > tolerance) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Main amount mismatch: expected ${expectedMainAmount} SOL, received ${paymentDelta.toFixed(6)} SOL`,
+            }),
+            { status: 400, headers }
+          );
+        }
+        if (Math.abs(referrerDelta - expectedReferralAmount) > tolerance) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Referral amount mismatch: expected ${expectedReferralAmount} SOL, received ${referrerDelta.toFixed(6)} SOL`,
+            }),
+            { status: 400, headers }
+          );
+        }
+        // Build verification result shape
+        verificationResult = {
+          success: true,
+          transactionDetails: {
+            signature: txSignature,
+            recipient: solanaConfig.paymentAddress,
+            sender: walletAddress,
+            amount: paymentDelta,
+            timestamp: (tx.blockTime ?? Math.floor(Date.now() / 1000)) * 1000,
+            slot: tx.slot,
+            confirmationStatus: 'finalized',
+          },
+        } as VerificationResult;
+        _referralVerificationResult = { success: true };
+      }
+
+      // Override expectedAmount semantics: for processing, use gross amount to compute commissions
+      // Later mutation will receive the full tier amount so commissions are based on gross
+      (body as any).expectedAmount = grossTierAmount;
+    } else {
+      // Single payment verification (original flow)
+      verificationResult = await Promise.race([
+        verifyTransaction(
+          txSignature,
+          solanaConfig.paymentAddress,
+          expectedAmount,
+          walletAddress
+        ),
+        timeoutPromise,
+      ]);
+    }
 
     if (!verificationResult.success) {
       // Log verification failures for monitoring
@@ -543,15 +769,6 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
         },
         'error'
       );
-
-      console.error('Payment verification failed', {
-        txSignature,
-        error: verificationResult.error,
-        expectedAmount,
-        tier,
-        walletAddress,
-        timestamp: new Date().toISOString(),
-      });
 
       return new Response(
         JSON.stringify({
@@ -579,15 +796,35 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
 
     // Process the payment through Convex mutation with error handling
     try {
+      // Determine amount to record in Convex (gross for split, otherwise provided expectedAmount)
+      const amountForProcessing =
+        referralCode && (referralPayoutTx || referrerWalletAddress)
+          ? (body.expectedAmount as number)
+          : expectedAmount;
+
       const result = await ctx.runMutation(
         internal.subscriptions.processVerifiedPayment,
         {
           tier: tier as 'pro' | 'pro_plus',
           txSignature,
-          amountSol: expectedAmount,
+          amountSol: amountForProcessing,
           walletAddress,
           isProrated,
-          verificationDetails: verificationResult.transactionDetails!,
+          verificationDetails: (verificationResult as any)
+            .transactionDetails || {
+            signature: txSignature,
+            recipient: solanaConfig.paymentAddress,
+            sender: walletAddress,
+            amount: amountForProcessing,
+            timestamp: Date.now(),
+            slot: 0,
+            confirmationStatus: 'finalized',
+          },
+          referralCode: referralCode || undefined,
+          referralPayoutTx:
+            referralCode && (referralPayoutTx || referrerWalletAddress)
+              ? txSignature
+              : referralPayoutTx || undefined,
         }
       );
 
@@ -607,19 +844,11 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
         'info'
       );
 
-      console.log('Payment processed successfully', {
-        paymentId: result.paymentId,
-        tier,
-        amount: expectedAmount,
-        txSignature,
-        timestamp: new Date().toISOString(),
-      });
-
       return new Response(
         JSON.stringify({
           success: true,
           paymentId: result.paymentId,
-          transactionDetails: verificationResult.transactionDetails,
+          transactionDetails: (verificationResult as any).transactionDetails,
         }),
         { status: 200, headers }
       );
@@ -642,11 +871,6 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
           network: solanaConfig.network,
         },
         'error'
-      );
-
-      console.error(
-        'Payment processing error after verification:',
-        mutationError
       );
 
       // Specific error handling for common Convex errors
@@ -687,8 +911,6 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       },
       'critical'
     );
-
-    console.error('Payment verification HTTP action error:', error);
 
     // Enhanced error categorization for HTTP action errors
     let errorMessage = 'Internal server error';

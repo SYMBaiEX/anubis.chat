@@ -30,6 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { formatTierLabel } from '@/lib/format-tier-label';
 import { cn } from '@/lib/utils';
 
 /**
@@ -192,7 +193,7 @@ export function LeftCluster({
           </Button>
           {tier ? (
             <Badge className="ml-1" variant="outline">
-              {tier.replace('_', ' ').toUpperCase()}
+              {formatTierLabel(tier)}
             </Badge>
           ) : null}
         </div>

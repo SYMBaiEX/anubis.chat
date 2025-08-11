@@ -3,13 +3,7 @@
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
-import {
-  Bot,
-  MessageSquare,
-  Plus,
-  Sidebar,
-  X,
-} from 'lucide-react';
+import { Bot, MessageSquare, Plus, Sidebar, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -363,7 +357,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
     try {
       // Use the new Convex streaming function with selected model and reasoning settings
-      await sendMessage(content, userWalletAddress, selectedModel, useReasoning);
+      await sendMessage(
+        content,
+        userWalletAddress,
+        selectedModel,
+        useReasoning
+      );
     } catch (error: any) {
       log.error('Failed to send message', { error: error?.message });
       // If error is about limits, show upgrade prompt
@@ -501,7 +500,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   }
 
   return (
-    <div className={cn('flex h-full min-h-0 w-full overflow-hidden', className)}>
+    <div
+      className={cn('flex h-full min-h-0 w-full overflow-hidden', className)}
+    >
       {/* Main Chat Area */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Top Bar */}
@@ -518,7 +519,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 <Sidebar className="h-4 w-4" />
               </Button>
             )}
-            
+
             {/* Mobile New Chat button - between hamburger and chat header */}
             <Button
               className="button-press flex-shrink-0 sm:hidden"
@@ -785,10 +786,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               />
             )}
           </div>
-          
+
           {/* Create New Agent Button */}
           <div className="border-t pt-4">
-            <Link href="/agents" className="block">
+            <Link className="block" href="/agents">
               <Button
                 className="w-full"
                 onClick={() => setShowMobileAgentSelector(false)}
@@ -805,9 +806,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       {/* Mobile Settings Dialog - Using responsive ChatSettingsDialog */}
       {showMobileSettings && (
         <ChatSettingsDialog
-          open={showMobileSettings}
           onOpenChange={setShowMobileSettings}
           onSettingsChange={handleSettingsChange}
+          open={showMobileSettings}
           settings={chatSettings}
         />
       )}

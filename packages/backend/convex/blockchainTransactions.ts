@@ -150,20 +150,20 @@ export const listByUser = query({
     ),
   },
   handler: async (ctx, args) => {
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('blockchainTransactions')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .order('desc');
 
     if (args.status) {
-      query = query.filter((q) => q.eq(q.field('status'), args.status));
+      dbQuery = dbQuery.filter((q) => q.eq(q.field('status'), args.status));
     }
 
     // Take and collect must be done together
     if (args.limit) {
-      return await query.take(args.limit);
+      return await dbQuery.take(args.limit);
     }
-    return await query.collect();
+    return await dbQuery.collect();
   },
 });
 
@@ -207,20 +207,20 @@ export const listByType = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('blockchainTransactions')
       .withIndex('by_type', (q) => q.eq('type', args.type))
       .order('desc');
 
     if (args.userId) {
-      query = query.filter((q) => q.eq(q.field('userId'), args.userId));
+      dbQuery = dbQuery.filter((q) => q.eq(q.field('userId'), args.userId));
     }
 
     // Take and collect must be done together
     if (args.limit) {
-      return await query.take(args.limit);
+      return await dbQuery.take(args.limit);
     }
-    return await query.collect();
+    return await dbQuery.collect();
   },
 });
 
@@ -247,9 +247,9 @@ export const getStats = query({
     };
 
     // Count by type
-    transactions.forEach((t) => {
+    for (const t of transactions) {
       stats.byType[t.type] = (stats.byType[t.type] || 0) + 1;
-    });
+    }
 
     return stats;
   },

@@ -36,6 +36,19 @@ export default function SubscriptionPage() {
     }
   );
 
+  // Compute preview unconditionally to keep hook order stable between renders
+  const preview = useMemo(() => {
+    const list = getModelsForTier(selectedPlan);
+    const standard = list.filter((m) => !isPremiumModel(m));
+    const premium = list.filter((m) => isPremiumModel(m));
+    return {
+      standardPreview: standard.slice(0, 4),
+      premiumPreview: premium.slice(0, 2),
+      standardTotal: standard.length,
+      premiumTotal: premium.length,
+    };
+  }, [selectedPlan]);
+
   useEffect(() => {
     if (!subscription) return;
     const tier = subscription.tier === 'admin' ? 'pro_plus' : subscription.tier;
@@ -107,18 +120,6 @@ export default function SubscriptionPage() {
       : (subscription.tier as 'free' | 'pro' | 'pro_plus');
   const models = getModelsForTier(tierForModels);
 
-  const preview = useMemo(() => {
-    const list = getModelsForTier(selectedPlan);
-    const standard = list.filter((m) => !isPremiumModel(m));
-    const premium = list.filter((m) => isPremiumModel(m));
-    return {
-      standardPreview: standard.slice(0, 4),
-      premiumPreview: premium.slice(0, 2),
-      standardTotal: standard.length,
-      premiumTotal: premium.length,
-    };
-  }, [selectedPlan]);
-
   const formatTierLabel = (tier: string): string => {
     switch (tier) {
       case 'pro_plus':
@@ -139,7 +140,7 @@ export default function SubscriptionPage() {
         <div className="mx-auto w-full max-w-6xl">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-center">
             <div>
-              <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl whitespace-nowrap">
+              <h1 className="whitespace-nowrap bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl">
                 Subscription Management
               </h1>
               <p className="text-muted-foreground">

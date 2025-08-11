@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import type { Doc, Id } from './_generated/dataModel';
+import type { Doc } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // Get documents by owner with pagination
@@ -23,27 +23,25 @@ export const getByOwner = query({
     const limit = Math.min(args.limit ?? 10, 50); // Max 50 per page
     const offset = (page - 1) * limit;
 
-    let query;
+    let dbQuery = ctx.db
+      .query('documents')
+      .withIndex('by_owner', (q) => q.eq('ownerId', args.ownerId));
 
     // Use the optimized category index when category is specified
     if (args.category) {
-      query = ctx.db
+      dbQuery = ctx.db
         .query('documents')
         .withIndex('by_owner_category', (q) =>
           q.eq('ownerId', args.ownerId).eq('metadata.category', args.category)
         );
-    } else {
-      query = ctx.db
-        .query('documents')
-        .withIndex('by_owner', (q) => q.eq('ownerId', args.ownerId));
     }
 
     // Only apply type filter when not using category index (to maintain efficiency)
     if (args.type) {
-      query = query.filter((q) => q.eq(q.field('type'), args.type));
+      dbQuery = dbQuery.filter((q) => q.eq(q.field('type'), args.type));
     }
 
-    const allDocs = await query.order('desc').collect();
+    const allDocs = await dbQuery.order('desc').collect();
     const total = allDocs.length;
     const documents = allDocs.slice(offset, offset + limit);
 
@@ -127,8 +125,12 @@ export const search = query({
         .includes(args.query.toLowerCase());
 
       let score = 0;
-      if (titleMatch) score += 10;
-      if (contentMatch) score += 5;
+      if (titleMatch) {
+        score += 10;
+      }
+      if (contentMatch) {
+        score += 5;
+      }
 
       // Count occurrences for better scoring
       const titleOccurrences = (
@@ -186,8 +188,9 @@ export const create = mutation({
     const now = Date.now();
 
     // Calculate word and character count if not provided
+    const WORD_SPLIT_REGEX = /\s+/g;
     const wordCount =
-      args.metadata?.wordCount ?? args.content.split(/\s+/).length;
+      args.metadata?.wordCount ?? args.content.split(WORD_SPLIT_REGEX).length;
     const characterCount = args.metadata?.characterCount ?? args.content.length;
 
     const documentId = await ctx.db.insert('documents', {
@@ -247,10 +250,11 @@ export const update = mutation({
     if (args.content !== undefined) {
       updates.content = args.content;
       // Recalculate counts if content changed
+      const WORD_SPLIT_REGEX = /\s+/g;
       updates.metadata = {
         ...document.metadata,
         ...args.metadata,
-        wordCount: args.content.split(/\s+/).length,
+        wordCount: args.content.split(WORD_SPLIT_REGEX).length,
         characterCount: args.content.length,
       };
     } else if (args.metadata) {
@@ -314,11 +318,11 @@ export const getCategories = query({
 
     const categories = new Set<string>();
 
-    documents.forEach((doc) => {
+    for (const doc of documents) {
       if (doc.metadata?.category) {
         categories.add(doc.metadata.category);
       }
-    });
+    }
 
     return Array.from(categories).sort();
   },
@@ -335,11 +339,13 @@ export const getTags = query({
 
     const tags = new Set<string>();
 
-    documents.forEach((doc) => {
+    for (const doc of documents) {
       if (doc.tags) {
-        doc.tags.forEach((tag) => tags.add(tag));
+        for (const tag of doc.tags) {
+          tags.add(tag);
+        }
       }
-    });
+    }
 
     return Array.from(tags).sort();
   },
@@ -370,7 +376,7 @@ export const getStats = query({
       tags: new Set<string>(),
     };
 
-    documents.forEach((doc) => {
+    for (const doc of documents) {
       stats.byType[doc.type]++;
       stats.totalWords += doc.metadata?.wordCount || 0;
       stats.totalCharacters += doc.metadata?.characterCount || 0;
@@ -380,9 +386,11 @@ export const getStats = query({
       }
 
       if (doc.tags) {
-        doc.tags.forEach((tag) => stats.tags.add(tag));
+        for (const tag of doc.tags) {
+          stats.tags.add(tag);
+        }
       }
-    });
+    }
 
     return {
       ...stats,

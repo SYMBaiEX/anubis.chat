@@ -1,4 +1,5 @@
 import { v } from 'convex/values';
+import { internal } from './_generated/api';
 import { internalMutation, mutation, query } from './_generated/server';
 import { getCurrentUser, requireAuth } from './authHelpers';
 
@@ -9,7 +10,12 @@ const SUBSCRIPTION_TIERS = {
     premiumMessagesLimit: 0,
     priceSol: 0,
     features: ['basic_chat', 'limited_models'],
-    availableModels: ['gpt-4o-mini', 'deepseek-chat'],
+    availableModels: [
+      'openrouter/openai/gpt-oss-20b:free',
+      'openrouter/z-ai/glm-4.5-air:free',
+      'openrouter/qwen/qwen3-coder:free',
+      'openrouter/moonshotai/kimi-k2:free',
+    ],
   },
   pro: {
     messagesLimit: 1500,
@@ -23,11 +29,18 @@ const SUBSCRIPTION_TIERS = {
       'chat_history',
     ],
     availableModels: [
-      'gpt-4o-mini',
-      'deepseek-chat',
-      'deepseek-r1',
-      'gpt-4o',
-      'claude-3.5-sonnet',
+      'openrouter/openai/gpt-oss-20b:free',
+      'openrouter/z-ai/glm-4.5-air:free',
+      'openrouter/qwen/qwen3-coder:free',
+      'openrouter/moonshotai/kimi-k2:free',
+      'gpt-5',
+      'gpt-5-mini',
+      'o4-mini',
+      'gpt-4.1-mini',
+      'gemini-2.5-pro',
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.0-flash',
     ],
   },
   pro_plus: {
@@ -44,22 +57,51 @@ const SUBSCRIPTION_TIERS = {
       'unlimited_chats',
     ],
     availableModels: [
-      'gpt-4o-mini',
-      'deepseek-chat',
-      'deepseek-r1',
-      'gpt-4o',
-      'claude-3.5-sonnet',
+      'openrouter/openai/gpt-oss-20b:free',
+      'openrouter/z-ai/glm-4.5-air:free',
+      'openrouter/qwen/qwen3-coder:free',
+      'openrouter/moonshotai/kimi-k2:free',
+      'gpt-5',
+      'gpt-5-mini',
+      'o4-mini',
+      'gpt-4.1-mini',
+      'gemini-2.5-pro',
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.0-flash',
     ],
   },
 };
 
 // Model cost configurations (for internal tracking)
 const MODEL_COSTS = {
-  'gpt-4o': { category: 'premium', costPerMessage: 0.0175 },
-  'gpt-4o-mini': { category: 'standard', costPerMessage: 0.000_675 },
-  'claude-3.5-sonnet': { category: 'premium', costPerMessage: 0.0165 },
-  'deepseek-chat': { category: 'standard', costPerMessage: 0.001_235 },
-  'deepseek-r1': { category: 'standard', costPerMessage: 0.002_325 },
+  // OpenRouter free models (standard)
+  'openrouter/openai/gpt-oss-20b:free': {
+    category: 'standard',
+    costPerMessage: 0.0005,
+  },
+  'openrouter/z-ai/glm-4.5-air:free': {
+    category: 'standard',
+    costPerMessage: 0.0005,
+  },
+  'openrouter/qwen/qwen3-coder:free': {
+    category: 'standard',
+    costPerMessage: 0.0005,
+  },
+  'openrouter/moonshotai/kimi-k2:free': {
+    category: 'standard',
+    costPerMessage: 0.0005,
+  },
+  // OpenAI models (premium)
+  'gpt-5': { category: 'premium', costPerMessage: 0.02 },
+  'gpt-5-mini': { category: 'premium', costPerMessage: 0.01 },
+  'o4-mini': { category: 'premium', costPerMessage: 0.008 },
+  'gpt-4.1-mini': { category: 'premium', costPerMessage: 0.006 },
+  // Google models
+  'gemini-2.5-pro': { category: 'premium', costPerMessage: 0.02 },
+  'gemini-2.5-flash': { category: 'premium', costPerMessage: 0.01 },
+  'gemini-2.5-flash-lite': { category: 'standard', costPerMessage: 0.003 },
+  'gemini-2.0-flash': { category: 'standard', costPerMessage: 0.004 },
 };
 
 // Safely normalize a user's subscription so fields are always defined
@@ -77,7 +119,9 @@ type SubscriptionShape = {
   features: string[];
 };
 
-function getSafeSubscription(user: { subscription?: Partial<SubscriptionShape> | any }): SubscriptionShape {
+function getSafeSubscription(user: {
+  subscription?: Partial<SubscriptionShape> | Record<string, unknown>;
+}): SubscriptionShape {
   // If user already has a subscription with a valid tier, normalize numeric fields
   const candidate = user.subscription as Partial<SubscriptionShape> | undefined;
   const validTier = (candidate?.tier ?? 'free') as Tier;
@@ -91,7 +135,8 @@ function getSafeSubscription(user: { subscription?: Partial<SubscriptionShape> |
     premiumMessagesLimit:
       candidate?.premiumMessagesLimit ?? tierDefaults.premiumMessagesLimit,
     currentPeriodStart: candidate?.currentPeriodStart ?? now,
-    currentPeriodEnd: candidate?.currentPeriodEnd ?? now + 30 * 24 * 60 * 60 * 1000,
+    currentPeriodEnd:
+      candidate?.currentPeriodEnd ?? now + 30 * 24 * 60 * 60 * 1000,
     autoRenew: Boolean(candidate?.autoRenew),
     planPriceSol: candidate?.planPriceSol ?? tierDefaults.priceSol,
     features: candidate?.features ?? tierDefaults.features,
@@ -329,7 +374,9 @@ export const trackDetailedMessageUsage = mutation({
     await ctx.db.insert('messageUsage', {
       userId: user._id,
       model: args.model,
-      modelCategory: (modelConfig?.category ?? 'standard') as 'premium' | 'standard',
+      modelCategory: (modelConfig?.category ?? 'standard') as
+        | 'premium'
+        | 'standard',
       messageCount: 1,
       inputTokens: args.inputTokens,
       outputTokens: args.outputTokens,
@@ -339,7 +386,8 @@ export const trackDetailedMessageUsage = mutation({
     });
 
     // Check if we should show upgrade prompt
-    const usagePercent = (sub.messagesUsed / Math.max(1, sub.messagesLimit)) * 100;
+    const usagePercent =
+      (sub.messagesUsed / Math.max(1, sub.messagesLimit)) * 100;
 
     if (usagePercent >= 80 && usagePercent < 90) {
       await ctx.db.insert('upgradeSuggestions', {
@@ -514,6 +562,8 @@ export const processVerifiedPayment = internalMutation({
       slot: v.number(),
       confirmationStatus: v.string(),
     }),
+    referralCode: v.optional(v.string()),
+    referralPayoutTx: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Find the user by wallet address
@@ -613,6 +663,131 @@ export const processVerifiedPayment = internalMutation({
       updatedAt: now,
     });
 
+    // Process referral payout - check BOTH explicit referral code AND permanent referrer relationship
+    // This ensures referrals earn on EVERY payment (monthly renewals, upgrades, additional purchases)
+    let referralProcessed = false;
+
+    // First check if user has a permanent referrer (from claimReferral or initial attribution)
+    if (user.referredBy && user.referredByCode) {
+      const referredByCode: string = user.referredByCode;
+      try {
+        // Get referral code record to get current commission rate
+        const referralCodeRecord = await ctx.db
+          .query('referralCodes')
+          .withIndex('by_code', (q) => q.eq('code', referredByCode))
+          .first();
+
+        if (referralCodeRecord?.isActive) {
+          // Calculate commission amount
+          const commissionRate = referralCodeRecord.currentCommissionRate;
+          const commissionAmount = args.amountSol * commissionRate;
+
+          // Get referrer wallet address
+          const referrer = await ctx.db.get(user.referredBy);
+
+          if (referrer?.walletAddress) {
+            // Create referral payout record
+            await ctx.db.insert('referralPayouts', {
+              paymentId: payment._id,
+              referralCode: referredByCode,
+              referrerId: user.referredBy,
+              referrerWalletAddress: referrer.walletAddress,
+              referredUserId: user._id,
+              paymentAmount: args.amountSol,
+              commissionRate,
+              commissionAmount,
+              payoutTxSignature: args.referralPayoutTx || 'PENDING_RECURRING',
+              status: args.referralPayoutTx ? 'paid' : 'pending',
+              paidAt: args.referralPayoutTx ? now : undefined,
+              createdAt: now,
+            });
+
+            // Update referrer stats using internal mutation
+            await ctx.runMutation(internal.referrals.updateReferrerStats, {
+              referrerId: user.referredBy,
+              referralCode: referredByCode,
+              commissionAmount,
+            });
+
+            referralProcessed = true;
+          }
+        }
+      } catch (_referralError) {}
+    }
+
+    // Also process explicit referral code if provided (for backward compatibility and first-time conversions)
+    if (args.referralCode && args.referralPayoutTx && !referralProcessed) {
+      const referralCode: string = args.referralCode;
+      try {
+        // Check for referral attribution
+        const attribution = await ctx.db
+          .query('referralAttributions')
+          .withIndex('by_referred_wallet', (q) =>
+            q.eq('referredWalletAddress', args.walletAddress)
+          )
+          .filter((q) => q.eq(q.field('referralCode'), referralCode))
+          .filter((q) => q.eq(q.field('status'), 'attributed'))
+          .first();
+
+        if (attribution) {
+          // Get referral code record to get current commission rate
+          const referralCodeRecord = await ctx.db
+            .query('referralCodes')
+            .withIndex('by_code', (q) => q.eq('code', referralCode))
+            .first();
+
+          if (referralCodeRecord) {
+            // Calculate commission amount
+            const commissionRate = referralCodeRecord.currentCommissionRate;
+            const commissionAmount = args.amountSol * commissionRate;
+
+            // Get referrer wallet address
+            const referrer = await ctx.db.get(referralCodeRecord.userId);
+
+            if (referrer?.walletAddress) {
+              // Create referral payout record
+              await ctx.db.insert('referralPayouts', {
+                paymentId: payment._id,
+                referralCode,
+                referrerId: referralCodeRecord.userId,
+                referrerWalletAddress: referrer.walletAddress,
+                referredUserId: user._id,
+                paymentAmount: args.amountSol,
+                commissionRate,
+                commissionAmount,
+                payoutTxSignature: args.referralPayoutTx,
+                status: 'paid',
+                paidAt: now,
+                createdAt: now,
+              });
+
+              // Update referrer stats using internal mutation
+              await ctx.runMutation(internal.referrals.updateReferrerStats, {
+                referrerId: referralCodeRecord.userId,
+                referralCode,
+                commissionAmount,
+              });
+
+              // Mark attribution as converted
+              await ctx.db.patch(attribution._id, {
+                status: 'converted',
+                convertedAt: now,
+              });
+
+              // If this is the first conversion, update user with permanent referrer relationship
+              if (!user.referredBy) {
+                await ctx.db.patch(user._id, {
+                  referredBy: referralCodeRecord.userId,
+                  referredByCode: args.referralCode,
+                  referredAt: now,
+                });
+              }
+            }
+          }
+        }
+      } catch (_referralError) {}
+    }
+
     return {
       success: true,
       paymentId: payment._id,
@@ -658,10 +833,10 @@ export const confirmPayment = mutation({
 // Initialize user subscription (for new users) - used by auth callback
 export const initializeUserSubscription = mutation({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const { user } = await requireAuth(ctx);
 
-    if (user && user.subscription) {
+    if (user?.subscription) {
       // User already has subscription initialized
       return user.subscription;
     }
@@ -754,7 +929,7 @@ export const getSubscriptionStatusByWallet = query({
 // Get subscription status (for authenticated users)
 export const getSubscriptionStatus = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const user = await getCurrentUser(ctx);
 
     if (!user) {
@@ -824,7 +999,10 @@ export const getSubscriptionStatus = query({
       planPriceSol: sub.planPriceSol,
       features: sub.features,
       availableModels: tierConfig.availableModels,
-      daysRemaining: Math.max(0, Math.floor((sub.currentPeriodEnd - now) / (24 * 60 * 60 * 1000))),
+      daysRemaining: Math.max(
+        0,
+        Math.floor((sub.currentPeriodEnd - now) / (24 * 60 * 60 * 1000))
+      ),
     };
   },
 });
@@ -857,9 +1035,7 @@ export const resetMonthlyUsage = mutation({
             },
             updatedAt: now,
           });
-        } catch (error) {
-          console.error(`Failed to reset usage for user ${user._id}:`, error);
-        }
+        } catch (_error) {}
       }
     }
 

@@ -4,7 +4,6 @@
  */
 
 import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 import { getCurrentUser, requireAuth } from './authHelpers';
 
@@ -24,9 +23,6 @@ export const getMyMessages = query({
     // Verify the chat belongs to the user
     const chat = await ctx.db.get(args.chatId);
     if (!chat || chat.ownerId !== user._id) {
-      console.warn(
-        `Access denied: User ${user._id} tried to access chat ${args.chatId}`
-      );
       return [];
     }
 
@@ -75,11 +71,19 @@ export const createMyMessage = mutation({
             v.object({
               id: v.string(),
               name: v.string(),
-              args: v.any(),
+              args: v.record(
+                v.string(),
+                v.union(v.string(), v.number(), v.boolean(), v.null())
+              ),
               result: v.optional(
                 v.object({
                   success: v.boolean(),
-                  data: v.optional(v.any()),
+                  data: v.optional(
+                    v.record(
+                      v.string(),
+                      v.union(v.string(), v.number(), v.boolean(), v.null())
+                    )
+                  ),
                   error: v.optional(v.string()),
                   executionTime: v.optional(v.number()),
                 })

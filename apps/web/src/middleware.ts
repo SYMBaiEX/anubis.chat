@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Define admin-only routes
-const ADMIN_ROUTES = ['/admin'];
+const ADMIN_ROUTES = ['/admin', '/memories'];
 
 // Define protected routes that require authentication
 const PROTECTED_ROUTES = [

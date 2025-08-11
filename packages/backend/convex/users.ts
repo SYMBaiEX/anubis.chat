@@ -1,13 +1,6 @@
 import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
-import {
-  checkMessageUsage,
-  getCurrentUser,
-  getUserStats,
-  requireAuth,
-  requirePermission,
-} from './authHelpers';
+import { getCurrentUser, requireAuth } from './authHelpers';
 
 // Get user by wallet address (used for streaming and legacy compatibility)
 export const getUserByWallet = query({
@@ -111,7 +104,7 @@ export const setAvatarFromStorage = mutation({
 // Get current user (authenticated)
 export const getCurrentUserProfile = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const user = await getCurrentUser(ctx);
     return user;
   },

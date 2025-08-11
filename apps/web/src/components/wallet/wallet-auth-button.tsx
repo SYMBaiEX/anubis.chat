@@ -4,6 +4,7 @@ import { Loader2, LogOut, Wallet } from 'lucide-react';
 import { useCallback } from 'react';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
+import { useReferralAttribution } from '@/hooks/use-referral-tracking';
 import { useWallet } from '@/hooks/useWallet';
 import { createModuleLogger } from '@/lib/utils/logger';
 
@@ -34,6 +35,7 @@ export function WalletAuthButton({
 }: WalletAuthButtonProps) {
   const wallet = useWallet();
   const { isAuthenticated, user } = useAuthContext();
+  const { attributeStoredReferral } = useReferralAttribution();
 
   const handleConnect = useCallback(async () => {
     try {
@@ -48,6 +50,33 @@ export function WalletAuthButton({
 
       // Step 2: Authenticate with Convex
       await wallet.authenticateWithConvex();
+
+      // Step 3: Handle referral attribution if successful
+      if (wallet.publicKey) {
+        try {
+          const attributionResult = await attributeStoredReferral(
+            wallet.publicKey.toBase58()
+          );
+
+          if (attributionResult.success) {
+            log.info('Referral attribution successful', {
+              referralCode: attributionResult.referralCode,
+            });
+          } else if (attributionResult.reason !== 'No stored referral code') {
+            log.warn('Referral attribution failed', {
+              reason: attributionResult.reason,
+            });
+          }
+        } catch (attributionError) {
+          // Don't fail wallet connection if referral attribution fails
+          log.warn('Referral attribution error (non-critical)', {
+            error:
+              attributionError instanceof Error
+                ? attributionError.message
+                : 'Unknown error',
+          });
+        }
+      }
 
       log.info('Wallet connection and authentication successful', {
         publicKey: wallet.publicKey,
@@ -136,7 +165,6 @@ export function useWalletConnectionStatus() {
     // Connection states
     isConnected: wallet.isConnected,
     isConnecting: wallet.isConnecting,
-    isDisconnecting: wallet.isDisconnecting,
 
     // Authentication states
     isAuthenticated,

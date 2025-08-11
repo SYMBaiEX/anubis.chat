@@ -39,6 +39,8 @@ import type { NavItem } from '@/constants/navigation';
 import { getSidebarNav } from '@/constants/navigation';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useUpgradeModal } from '@/hooks/use-upgrade-modal';
+import { formatTierLabel } from '@/lib/format-tier-label';
+import { applyThemeWithTransition } from '@/lib/theme-transition';
 import { cn } from '@/lib/utils';
 
 const bottomItems: Array<{
@@ -125,6 +127,8 @@ export default function Sidebar() {
   const filteredBottomItems = bottomItems.filter(
     (item) => !item.requiresAuth || isAuthenticated
   );
+
+  // Use shared formatter from lib
 
   return (
     <>
@@ -279,7 +283,7 @@ export default function Sidebar() {
               )}
               onClick={async () => {
                 const newTheme = theme === 'dark' ? 'light' : 'dark';
-                setTheme(newTheme);
+                applyThemeWithTransition(newTheme, setTheme);
                 // Update user preferences in database if authenticated
                 if (isAuthenticated) {
                   try {
@@ -340,7 +344,7 @@ export default function Sidebar() {
                         }
                       >
                         <Crown className="h-3 w-3" />
-                        {subscription.tier}
+                        {formatTierLabel(subscription.tier)}
                       </Badge>
                       {subscription.tier !== 'free' && (
                         <span className="text-[10px] text-muted-foreground">

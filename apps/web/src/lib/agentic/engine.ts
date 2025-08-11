@@ -257,7 +257,7 @@ export class AgenticEngine {
 
             if (isMCPTool) {
               log.info(`Executing MCP tool: ${toolCall.toolName}`, {
-                parameters: (tc as any).input,
+                parameters: (toolCall as any).input,
               });
             }
 
@@ -574,7 +574,6 @@ export function createAgentFromTemplate(
     id: nanoid(),
     name,
     description: `AI agent based on ${template} template`,
-    model: 'gpt-4o-mini',
     systemPrompt: template_config.systemPrompt,
     temperature: 0.7,
     maxTokens: 2000,
@@ -592,7 +591,6 @@ export function validateAgentConfig(agent: Partial<Agent>): string[] {
   if (!agent.name || agent.name.trim().length === 0) {
     errors.push('Agent name is required');
   }
-
 
   if (!agent.systemPrompt || agent.systemPrompt.trim().length === 0) {
     errors.push('System prompt is required');

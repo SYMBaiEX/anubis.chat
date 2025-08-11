@@ -1,9 +1,14 @@
 'use client';
 
-import { api } from '@convex/_generated/api';
+import { api, api as convexApi } from '@convex/_generated/api';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { Connection, PublicKey } from '@solana/web3.js';
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from '@solana/web3.js';
 import { useMutation, useQuery } from 'convex/react';
 import {
   AlertCircle,
@@ -126,6 +131,8 @@ export function UpgradeModal({
     api.subscriptions.calculateProratedUpgrade,
     selectedTier ? { targetTier: selectedTier } : 'skip'
   );
+  // Referral payout info (if user has a referrer)
+  const referrerInfo = useQuery(convexApi.referrals.getReferrerPayoutInfo, {});
 
   // Get user data from Convex query
   const user = useQuery(api.users.getCurrentUserProfile);
@@ -268,14 +275,41 @@ export function UpgradeModal({
         );
       }
 
-      // IMPORTANT: Create a NEW transaction for each attempt with FRESH blockhash
-      // This prevents duplicate transaction errors
+      // IMPORTANT: Build transaction; if referrer exists, we send two transfers:
+      // 1) main payment to treasury for net amount
+      // 2) referral payout to referrer wallet for commission
       const recipientPublicKey = new PublicKey(solanaConfig.paymentAddress);
-      const transaction = await createPaymentTransaction(
+      let tx = new Transaction();
+      let mainAmount = paymentAmount;
+      let referralAmount = 0;
+      let referralWallet: string | undefined;
+
+      if (referrerInfo?.hasReferrer) {
+        referralAmount =
+          Math.round(
+            paymentAmount * (referrerInfo.commissionRate ?? 0) * 1_000_000
+          ) / 1_000_000;
+        mainAmount = Math.max(0, paymentAmount - referralAmount);
+        referralWallet = referrerInfo.referrerWalletAddress;
+      }
+
+      // Create transfer to treasury (mainAmount)
+      const mainTx = await createPaymentTransaction(
         publicKey,
         recipientPublicKey,
-        paymentAmount
+        mainAmount
       );
+      tx = mainTx;
+
+      // Add referral payout transfer if applicable
+      if (referralWallet && referralAmount > 0) {
+        const referralIx = SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: new PublicKey(referralWallet),
+          lamports: Math.floor(referralAmount * 1_000_000_000),
+        });
+        tx.add(referralIx);
+      }
 
       log.info('Payment transaction created', {
         tier: selectedTier,
@@ -284,19 +318,15 @@ export function UpgradeModal({
         recipient: solanaConfig.paymentAddress,
         sender: publicKey.toString(),
         attempt: retryAttempt + 1,
-        blockhash: transaction.recentBlockhash,
+        blockhash: tx.recentBlockhash,
       });
 
       // Process the payment with proper retry configuration
       // Set maxRetries to 0 here since we handle retries at a higher level
-      const txSignature = await processPaymentTransaction(
-        transaction,
-        signTransaction,
-        {
-          maxRetries: 0,
-          skipPreflight: false,
-        }
-      );
+      const txSignature = await processPaymentTransaction(tx, signTransaction, {
+        maxRetries: 0,
+        skipPreflight: false,
+      });
 
       log.info('Payment transaction sent', {
         tier: selectedTier,
@@ -321,6 +351,14 @@ export function UpgradeModal({
               tier: selectedTier,
               walletAddress: publicKey.toString(),
               isProrated,
+              referralCode: referrerInfo?.hasReferrer
+                ? referrerInfo.referralCode
+                : undefined,
+              referralPayoutTx: referrerInfo?.hasReferrer
+                ? txSignature
+                : undefined,
+              referrerWalletAddress: referrerInfo?.referrerWalletAddress,
+              commissionRate: referrerInfo?.commissionRate,
             }),
           });
 

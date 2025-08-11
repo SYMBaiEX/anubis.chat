@@ -139,7 +139,10 @@ export function AgentSelector({ className }: AgentSelectorProps) {
     <div className={cn('flex items-center space-x-2', className)}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="min-w-0 max-w-full justify-between sm:min-w-[200px]" variant="outline">
+          <Button
+            className="min-w-0 max-w-full justify-between sm:min-w-[200px]"
+            variant="outline"
+          >
             <div className="flex min-w-0 flex-1 items-center space-x-2">
               <div className="flex-shrink-0">
                 {selectedAgent && getAgentIcon(selectedAgent.type)}
@@ -152,7 +155,10 @@ export function AgentSelector({ className }: AgentSelectorProps) {
           </Button>
         </DropdownMenuTrigger>
 
-         <DropdownMenuContent align="start" className="w-[90vw] max-w-[320px] sm:w-80">
+        <DropdownMenuContent
+          align="start"
+          className="w-[90vw] max-w-[320px] sm:w-80"
+        >
           {/* Current Agent */}
           {selectedAgent && (
             <>

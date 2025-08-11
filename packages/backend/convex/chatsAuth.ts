@@ -116,15 +116,30 @@ export const updateMyChat = mutation({
       updatedAt: Date.now(),
     };
 
-    if (args.title !== undefined) updates.title = args.title;
-    if (args.model !== undefined) updates.model = args.model;
-    if (args.systemPrompt !== undefined)
+    if (args.title !== undefined) {
+      updates.title = args.title;
+    }
+    if (args.model !== undefined) {
+      updates.model = args.model;
+    }
+    if (args.systemPrompt !== undefined) {
       updates.systemPrompt = args.systemPrompt;
-    if (args.agentPrompt !== undefined) updates.agentPrompt = args.agentPrompt;
-    if (args.agentId !== undefined) updates.agentId = args.agentId;
-    if (args.temperature !== undefined) updates.temperature = args.temperature;
-    if (args.maxTokens !== undefined) updates.maxTokens = args.maxTokens;
-    if (args.isActive !== undefined) updates.isActive = args.isActive;
+    }
+    if (args.agentPrompt !== undefined) {
+      updates.agentPrompt = args.agentPrompt;
+    }
+    if (args.agentId !== undefined) {
+      updates.agentId = args.agentId;
+    }
+    if (args.temperature !== undefined) {
+      updates.temperature = args.temperature;
+    }
+    if (args.maxTokens !== undefined) {
+      updates.maxTokens = args.maxTokens;
+    }
+    if (args.isActive !== undefined) {
+      updates.isActive = args.isActive;
+    }
 
     await ctx.db.patch(args.id, updates);
     return await ctx.db.get(args.id);

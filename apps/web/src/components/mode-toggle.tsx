@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { applyThemeWithTransition } from '@/lib/theme-transition';
 
 export function ModeToggle() {
   const { setTheme } = useTheme();
@@ -33,7 +34,7 @@ export function ModeToggle() {
       <DropdownMenuContent align="end">
         <DropdownMenuItem
           onClick={async () => {
-            setTheme('light');
+            applyThemeWithTransition('light', setTheme);
             if (isAuthenticated) {
               try {
                 await updateUserPreferences({ theme: 'light' });
@@ -47,7 +48,7 @@ export function ModeToggle() {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={async () => {
-            setTheme('dark');
+            applyThemeWithTransition('dark', setTheme);
             if (isAuthenticated) {
               try {
                 await updateUserPreferences({ theme: 'dark' });
@@ -61,7 +62,7 @@ export function ModeToggle() {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={async () => {
-            setTheme('system');
+            applyThemeWithTransition('system', setTheme);
             if (isAuthenticated) {
               try {
                 await updateUserPreferences({ theme: 'system' });

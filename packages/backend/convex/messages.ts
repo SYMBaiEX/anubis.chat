@@ -64,11 +64,19 @@ export const create = mutation({
             v.object({
               id: v.string(),
               name: v.string(),
-              args: v.any(),
+              args: v.record(
+                v.string(),
+                v.union(v.string(), v.number(), v.boolean(), v.null())
+              ),
               result: v.optional(
                 v.object({
                   success: v.boolean(),
-                  data: v.optional(v.any()),
+                  data: v.optional(
+                    v.record(
+                      v.string(),
+                      v.union(v.string(), v.number(), v.boolean(), v.null())
+                    )
+                  ),
                   error: v.optional(v.string()),
                   executionTime: v.optional(v.number()),
                 })
@@ -93,7 +101,7 @@ export const create = mutation({
         )
         .unique();
 
-      if (user && user.subscription) {
+      if (user?.subscription) {
         // Check if user has reached message limits
         if (
           (user.subscription.messagesUsed ?? 0) >=

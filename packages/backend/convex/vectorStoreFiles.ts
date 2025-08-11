@@ -46,14 +46,14 @@ export const list = query({
     }
 
     // Build query
-    let query = ctx.db
+    let dbQuery = ctx.db
       .query('vectorStoreFiles')
       .withIndex('by_vector_store', (q) => q.eq('vectorStoreId', vectorStoreId))
       .order(order === 'desc' ? 'desc' : 'asc');
 
     // Apply filter if provided
     if (filter) {
-      query = query.filter((q) => q.eq(q.field('status'), filter));
+      dbQuery = dbQuery.filter((q) => q.eq(q.field('status'), filter));
     }
 
     // Apply cursor if provided
@@ -62,27 +62,27 @@ export const list = query({
         const cursorId = cursor as Id<'vectorStoreFiles'>;
         const cursorDoc = await ctx.db.get(cursorId);
         if (cursorDoc) {
-          query = query.filter((q) =>
+          dbQuery = dbQuery.filter((q) =>
             order === 'desc'
               ? q.lt(q.field('createdAt'), cursorDoc.createdAt)
               : q.gt(q.field('createdAt'), cursorDoc.createdAt)
           );
         }
-      } catch (error) {
-        console.warn('Invalid cursor provided', { cursor, error });
+      } catch (_error) {
+        // ignore invalid cursor
       }
     }
 
     // Fetch items with limit + 1 to check for more
-    const items = await query.take(limit + 1);
+    const items = await dbQuery.take(limit + 1);
 
     // Check if there are more items
     const hasMore = items.length > limit;
     const returnItems = hasMore ? items.slice(0, limit) : items;
 
-    // Get next cursor
+    // Get next cursor without using Array.at for broader lib compatibility
     const nextCursor = hasMore
-      ? returnItems[returnItems.length - 1]._id
+      ? returnItems[returnItems.length - 1]?._id
       : undefined;
 
     return {

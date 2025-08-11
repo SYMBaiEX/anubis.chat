@@ -135,7 +135,7 @@ export const AI_MODELS: AIModel[] = [
     description:
       'Smaller, faster version of GPT-5 with excellent cost-performance ratio',
     contextWindow: 128_000,
-    maxOutput: 8_192,
+    maxOutput: 8192,
     pricing: { input: 5, output: 20 },
     capabilities: [
       'coding',
@@ -160,7 +160,7 @@ export const AI_MODELS: AIModel[] = [
     pricing: { input: 3, output: 12 },
     capabilities: ['reasoning', 'coding', 'math'],
     speed: 'fast',
-    intelligence: 'expert',  // Changed to expert to make it premium
+    intelligence: 'expert', // Changed to expert to make it premium
     released: '2025',
   },
   {

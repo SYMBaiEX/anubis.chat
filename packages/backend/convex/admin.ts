@@ -94,11 +94,9 @@ export const cleanupExpiredData = mutation({
       .withIndex('by_expires', (q) => q.lt('expiresAt', now))
       .collect();
 
-    let tokensDeleted = 0;
-    for (const token of expiredTokens) {
-      await ctx.db.delete(token._id);
-      tokensDeleted++;
-    }
+    // Delete expired tokens in parallel
+    await Promise.all(expiredTokens.map((token) => ctx.db.delete(token._id)));
+    const tokensDeleted = expiredTokens.length;
 
     // Clean up expired nonces
     const expiredNonces = await ctx.db
@@ -106,11 +104,9 @@ export const cleanupExpiredData = mutation({
       .withIndex('by_expires', (q) => q.lt('expiresAt', now))
       .collect();
 
-    let noncesDeleted = 0;
-    for (const nonce of expiredNonces) {
-      await ctx.db.delete(nonce._id);
-      noncesDeleted++;
-    }
+    // Delete expired nonces in parallel
+    await Promise.all(expiredNonces.map((nonce) => ctx.db.delete(nonce._id)));
+    const noncesDeleted = expiredNonces.length;
 
     // Clean up old usage records (keep last 90 days)
     const oldUsageThreshold = now - 90 * 24 * 60 * 60 * 1000;
@@ -119,11 +115,11 @@ export const cleanupExpiredData = mutation({
       .filter((q) => q.lt(q.field('createdAt'), oldUsageThreshold))
       .collect();
 
-    let usageDeleted = 0;
-    for (const record of oldUsageRecords) {
-      await ctx.db.delete(record._id);
-      usageDeleted++;
-    }
+    // Delete old usage records in parallel
+    await Promise.all(
+      oldUsageRecords.map((record) => ctx.db.delete(record._id))
+    );
+    const usageDeleted = oldUsageRecords.length;
 
     return {
       cleaned: {
@@ -153,9 +149,15 @@ export const getSystemStats = query({
     ]);
 
     // User activity (guard undefined timestamps)
-    const usersLast24h = users.filter((u) => (u.lastActiveAt ?? 0) > dayAgo).length;
-    const usersLast7d = users.filter((u) => (u.lastActiveAt ?? 0) > weekAgo).length;
-    const usersLast30d = users.filter((u) => (u.lastActiveAt ?? 0) > monthAgo).length;
+    const usersLast24h = users.filter(
+      (u) => (u.lastActiveAt ?? 0) > dayAgo
+    ).length;
+    const usersLast7d = users.filter(
+      (u) => (u.lastActiveAt ?? 0) > weekAgo
+    ).length;
+    const usersLast30d = users.filter(
+      (u) => (u.lastActiveAt ?? 0) > monthAgo
+    ).length;
 
     // Content creation
     const docsLast24h = documents.filter((d) => d.createdAt > dayAgo).length;
@@ -248,14 +250,12 @@ export const emergencyDeactivateAllUsers = mutation({
     }
 
     const users = await ctx.db.query('users').collect();
-    let deactivated = 0;
 
-    for (const user of users) {
-      if (user.isActive) {
-        await ctx.db.patch(user._id, { isActive: false });
-        deactivated++;
-      }
-    }
+    const activeUsers = users.filter((user) => user.isActive);
+    await Promise.all(
+      activeUsers.map((user) => ctx.db.patch(user._id, { isActive: false }))
+    );
+    const deactivated = activeUsers.length;
 
     return { deactivated, timestamp: Date.now() };
   },
@@ -283,11 +283,11 @@ export const archiveInactiveChats = mutation({
       )
       .collect();
 
-    let archived = 0;
-    for (const chat of inactiveChats) {
-      await ctx.db.patch(chat._id, { isActive: false });
-      archived++;
-    }
+    // Archive inactive chats in parallel
+    await Promise.all(
+      inactiveChats.map((chat) => ctx.db.patch(chat._id, { isActive: false }))
+    );
+    const archived = inactiveChats.length;
 
     return { archived, threshold, timestamp: Date.now() };
   },

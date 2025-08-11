@@ -89,8 +89,6 @@ export function convexAgentToApiFormat(convexAgent: Doc<'agents'>): Agent {
     throw new Error('Agent name is required and cannot be empty');
   }
 
-
-
   return {
     id: convexAgent._id,
     name: validateOptionalString(convexAgent.name),

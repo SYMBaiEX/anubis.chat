@@ -4,7 +4,7 @@
  */
 
 import { ConvexError, v } from 'convex/values';
-import type { Doc, Id } from './_generated/dataModel';
+import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // =============================================================================
@@ -51,9 +51,7 @@ export const list = query({
             q.lt(q.field('createdAt'), cursorDoc.createdAt)
           );
         }
-      } catch (error) {
-        console.warn('Invalid cursor provided', { cursor, error });
-      }
+      } catch (_error) {}
     }
 
     // Fetch items with limit + 1 to check for more
@@ -63,9 +61,9 @@ export const list = query({
     const hasMore = items.length > limit;
     const returnItems = hasMore ? items.slice(0, limit) : items;
 
-    // Get next cursor
+    // Get next cursor without using Array.at for broader lib compatibility
     const nextCursor = hasMore
-      ? returnItems[returnItems.length - 1]._id
+      ? returnItems[returnItems.length - 1]?._id
       : undefined;
 
     return {
