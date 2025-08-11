@@ -44,7 +44,6 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/prismjs": "^1.26.5",
     "ai": "5.0.5",
-    "@ai-sdk/react": "5.0.5",
     "animejs": "3.2.1",
     "bs58": "^6.0.0",
     "class-variance-authority": "^0.7.1",
