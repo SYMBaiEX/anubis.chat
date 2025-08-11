@@ -8,7 +8,7 @@ import {
 } from '@/lib/constants/commands-of-maat';
 import { useKeyboardShortcuts } from './use-keyboard-shortcuts';
 
-interface UseCommandPaletteProps {
+export type UseCommandPaletteProps = {
   onNewChat?: () => void;
   onSelectChat?: (chatId: string) => void;
   onSelectAgent?: () => void;
@@ -30,7 +30,7 @@ interface UseCommandPaletteProps {
   onUploadFile?: () => void;
   onOpenPreferences?: () => void;
   currentChatId?: string;
-  chats?: Array<{ id: string; title: string }>;
+  chats?: { id: string; title: string }[];
 }
 
 export function useCommandPalette({
