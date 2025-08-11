@@ -186,7 +186,7 @@ export function useCommandPalette({
       setIsShortcutsModalOpen(true);
     },
     'divine-guidance': () => {
-      window.open('/help', '_blank');
+      window.open('/help', '_blank', 'noopener,noreferrer');
     },
     'roadmap-scroll': () => {
       router.push('/roadmap');
