@@ -73,13 +73,22 @@ export function BookOfTheDead({
   const { theme, setTheme } = useTheme();
   const [search, setSearch] = useState('');
 
+  // Platform detection for keyboard shortcuts
+  const isMac = typeof navigator !== 'undefined' && 
+    /Mac|iPhone|iPod|iPad/i.test(navigator.platform);
+  
+  // Define platform-specific key symbols
+  const cmdKey = isMac ? '⌘' : 'Ctrl+';
+  const altKey = isMac ? '⌥' : 'Alt+';
+  const shiftKey = isMac ? '⇧' : 'Shift+';
+
   // Papyrus Commands (Chat)
   const papyrusCommands: CommandItemData[] = [
     {
       id: 'new-papyrus',
       label: 'New Papyrus',
       icon: Plus,
-      shortcut: '⌘N',
+      shortcut: `${cmdKey}N`,
       action: () => {
         onNewChat?.();
         onOpenChange(false);
@@ -90,7 +99,7 @@ export function BookOfTheDead({
       id: 'chronicle',
       label: 'Chronicle of Sessions',
       icon: History,
-      shortcut: '⌘⇧H',
+      shortcut: `${cmdKey}${shiftKey}H`,
       action: () => {
         router.push('/history');
         onOpenChange(false);
@@ -106,7 +115,7 @@ export function BookOfTheDead({
       id: `chat-${chat.id}`,
       label: chat.title || `Chamber ${index + 1}`,
       icon: MessageSquare,
-      shortcut: index < 9 ? `⌥${index + 1}` : undefined,
+      shortcut: index < 9 ? `${altKey}${index + 1}` : undefined,
       action: () => {
         onSelectChat?.(chat.id);
         onOpenChange(false);
@@ -120,7 +129,7 @@ export function BookOfTheDead({
       id: 'summon-anubis',
       label: 'Summon Anubis',
       icon: Shield,
-      shortcut: '⌘⇧A',
+      shortcut: `${cmdKey}${shiftKey}A`,
       action: () => {
         onSelectAgent?.();
         onOpenChange(false);
@@ -131,7 +140,7 @@ export function BookOfTheDead({
       id: 'divine-models',
       label: 'Choose Divine Model',
       icon: Zap,
-      shortcut: '⌘⇧M',
+      shortcut: `${cmdKey}${shiftKey}M`,
       action: () => {
         onSelectModel?.();
         onOpenChange(false);
@@ -146,7 +155,7 @@ export function BookOfTheDead({
       id: 'temple-settings',
       label: 'Temple Settings',
       icon: Settings,
-      shortcut: '⌘⇧T',
+      shortcut: `${cmdKey}${shiftKey}T`,
       action: () => {
         onOpenSettings?.();
         onOpenChange(false);
@@ -181,7 +190,7 @@ export function BookOfTheDead({
       id: 'commands-maat',
       label: "Commands of Ma'at",
       icon: Keyboard,
-      shortcut: '⌘⇧K',
+      shortcut: `${cmdKey}${shiftKey}K`,
       action: () => {
         onShowShortcuts();
         onOpenChange(false);
@@ -192,7 +201,7 @@ export function BookOfTheDead({
       id: 'divine-guidance',
       label: 'Divine Guidance',
       icon: HelpCircle,
-      shortcut: '⌘/',
+      shortcut: `${cmdKey}/`,
       action: () => {
         router.push('/help');
         onOpenChange(false);
