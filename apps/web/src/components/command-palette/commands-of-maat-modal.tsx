@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
@@ -77,13 +78,13 @@ export function CommandsOfMaatModal({
   );
 
   const renderShortcut = (shortcut: string[]) => {
-    const formatted = formatShortcut(shortcut);
-    const keys = formatted.split('');
-
     return (
-      <div className="flex items-center gap-0.5">
-        {keys.map((key, index) => (
-          <ShortcutKey key={index}>{key}</ShortcutKey>
+      <div className="flex items-center gap-1">
+        {shortcut.map((key, index) => (
+          <React.Fragment key={index}>
+            {index > 0 && <span className="text-muted-foreground mx-0.5">+</span>}
+            <ShortcutKey>{formatShortcut([key])}</ShortcutKey>
+          </React.Fragment>
         ))}
       </div>
     );

@@ -63,165 +63,163 @@ export function useCommandPalette({
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Command handlers map
+  const commandHandlers: Record<string, () => void> = {
+    // Papyrus Commands
+    'new-papyrus': () => {
+      onNewChat?.();
+      toast.success('Creating new papyrus...');
+    },
+    'clear-papyrus': () => {
+      if (currentChatId) {
+        onClearChat?.();
+        toast.success('Papyrus cleared');
+      }
+    },
+    'delete-papyrus': () => {
+      if (currentChatId) {
+        onDeleteChat?.();
+        toast.success('Papyrus deleted');
+      }
+    },
+    'rename-papyrus': () => {
+      if (currentChatId) {
+        onRenameChat?.();
+      }
+    },
+    'duplicate-papyrus': () => {
+      if (currentChatId) {
+        onDuplicateChat?.();
+        toast.success('Papyrus duplicated');
+      }
+    },
+
+    // Navigation
+    'open-book-of-dead': () => {
+      setIsCommandPaletteOpen(!isCommandPaletteOpen);
+    },
+    'focus-input': () => {
+      onFocusInput?.();
+      if (messageInputRef.current) {
+        messageInputRef.current.focus();
+      }
+    },
+    'search-scrolls': () => {
+      onSearchConversations?.();
+    },
+    'toggle-sidebar': () => {
+      onToggleSidebar?.();
+    },
+    'scroll-to-bottom': () => {
+      onScrollToBottom?.();
+    },
+    'scroll-to-top': () => {
+      onScrollToTop?.();
+    },
+    'previous-chamber': () => {
+      if (currentChatId && chats.length > 0) {
+        const currentIndex = chats.findIndex((c) => c.id === currentChatId);
+        if (currentIndex > 0) {
+          onSelectChat?.(chats[currentIndex - 1].id);
+          toast.success('Previous chamber opened');
+        }
+      }
+    },
+    'next-chamber': () => {
+      if (currentChatId && chats.length > 0) {
+        const currentIndex = chats.findIndex((c) => c.id === currentChatId);
+        if (currentIndex < chats.length - 1) {
+          onSelectChat?.(chats[currentIndex + 1].id);
+          toast.success('Next chamber opened');
+        }
+      }
+    },
+
+    // Divine Powers
+    'summon-anubis': () => {
+      onSelectAgent?.();
+      toast.success('Summoning Anubis...');
+    },
+    'divine-models': () => {
+      onSelectModel?.();
+    },
+    'toggle-reasoning': () => {
+      onToggleReasoning?.();
+      toast.success('Deep wisdom toggled');
+    },
+    'quick-claude': () => {
+      onQuickSelectClaude?.();
+      toast.success('Claude summoned');
+    },
+    'quick-gpt': () => {
+      onQuickSelectGPT?.();
+      toast.success('GPT summoned');
+    },
+
+    // Temple Settings
+    'temple-settings': () => {
+      onOpenSettings?.();
+    },
+    'toggle-theme': () => {
+      setTheme(theme === 'dark' ? 'light' : 'dark');
+      toast.success(
+        theme === 'dark'
+          ? "Ra's light illuminates your path"
+          : "Osiris' shadow embraces you"
+      );
+    },
+    'upload-papyrus': () => {
+      onUploadFile?.();
+    },
+    'export-chat': () => {
+      if (currentChatId) {
+        onExportChat?.();
+        toast.success('Sacred texts exported');
+      }
+    },
+    'preferences': () => {
+      onOpenPreferences?.();
+    },
+
+    // Sacred Knowledge
+    'commands-maat': () => {
+      setIsShortcutsModalOpen(true);
+    },
+    'divine-guidance': () => {
+      window.open('/help', '_blank');
+    },
+    'roadmap-scroll': () => {
+      router.push('/roadmap');
+    },
+    'escape-underworld': () => {
+      // Close any open dialogs
+      setIsCommandPaletteOpen(false);
+      setIsShortcutsModalOpen(false);
+    },
+  };
+
+  // Handle chamber navigation (1-9)
+  for (let i = 1; i <= 9; i++) {
+    commandHandlers[`chamber-${i}`] = () => {
+      const chatIndex = i - 1;
+      if (chats[chatIndex]) {
+        onSelectChat?.(chats[chatIndex].id);
+        toast.success(`Entering chamber ${i}`);
+      }
+    };
+  }
+
   // Execute command by ID
   const executeCommand = useCallback(
     (commandId: string) => {
       const command = getCommandById(commandId);
       if (!command) return;
 
-      switch (commandId) {
-        // Papyrus Commands
-        case 'new-papyrus':
-          onNewChat?.();
-          toast.success('Creating new papyrus...');
-          break;
-        case 'clear-papyrus':
-          if (currentChatId) {
-            onClearChat?.();
-            toast.success('Papyrus cleared');
-          }
-          break;
-        case 'delete-papyrus':
-          if (currentChatId) {
-            onDeleteChat?.();
-            toast.success('Papyrus deleted');
-          }
-          break;
-        case 'rename-papyrus':
-          if (currentChatId) {
-            onRenameChat?.();
-          }
-          break;
-        case 'duplicate-papyrus':
-          if (currentChatId) {
-            onDuplicateChat?.();
-            toast.success('Papyrus duplicated');
-          }
-          break;
-
-        // Navigation
-        case 'open-book-of-dead':
-          setIsCommandPaletteOpen(!isCommandPaletteOpen);
-          break;
-        case 'focus-input':
-          onFocusInput?.();
-          if (messageInputRef.current) {
-            messageInputRef.current.focus();
-          }
-          break;
-        case 'chamber-1':
-        case 'chamber-2':
-        case 'chamber-3':
-        case 'chamber-4':
-        case 'chamber-5':
-        case 'chamber-6':
-        case 'chamber-7':
-        case 'chamber-8':
-        case 'chamber-9': {
-          const chatIndex = Number.parseInt(commandId.split('-')[1]) - 1;
-          if (chats[chatIndex]) {
-            onSelectChat?.(chats[chatIndex].id);
-            toast.success(`Entering chamber ${chatIndex + 1}`);
-          }
-          break;
-        }
-        case 'previous-chamber': {
-          if (currentChatId && chats.length > 0) {
-            const currentIndex = chats.findIndex((c) => c.id === currentChatId);
-            if (currentIndex > 0) {
-              onSelectChat?.(chats[currentIndex - 1].id);
-              toast.success('Previous chamber opened');
-            }
-          }
-          break;
-        }
-        case 'next-chamber': {
-          if (currentChatId && chats.length > 0) {
-            const currentIndex = chats.findIndex((c) => c.id === currentChatId);
-            if (currentIndex < chats.length - 1) {
-              onSelectChat?.(chats[currentIndex + 1].id);
-              toast.success('Next chamber opened');
-            }
-          }
-          break;
-        }
-        case 'search-scrolls':
-          onSearchConversations?.();
-          break;
-        case 'toggle-sidebar':
-          onToggleSidebar?.();
-          break;
-        case 'scroll-to-bottom':
-          onScrollToBottom?.();
-          break;
-        case 'scroll-to-top':
-          onScrollToTop?.();
-          break;
-
-        // Divine Powers
-        case 'summon-anubis':
-          onSelectAgent?.();
-          toast.success('Summoning Anubis...');
-          break;
-        case 'divine-models':
-          onSelectModel?.();
-          break;
-        case 'toggle-reasoning':
-          onToggleReasoning?.();
-          toast.success('Deep wisdom toggled');
-          break;
-        case 'quick-claude':
-          onQuickSelectClaude?.();
-          toast.success('Claude summoned');
-          break;
-        case 'quick-gpt':
-          onQuickSelectGPT?.();
-          toast.success('GPT summoned');
-          break;
-
-        // Temple Settings
-        case 'temple-settings':
-          onOpenSettings?.();
-          break;
-        case 'toggle-theme':
-          setTheme(theme === 'dark' ? 'light' : 'dark');
-          toast.success(
-            theme === 'dark'
-              ? "Ra's light illuminates your path"
-              : "Osiris' shadow embraces you"
-          );
-          break;
-        case 'upload-papyrus':
-          onUploadFile?.();
-          break;
-        case 'export-chat':
-          if (currentChatId) {
-            onExportChat?.();
-            toast.success('Sacred texts exported');
-          }
-          break;
-        case 'preferences':
-          onOpenPreferences?.();
-          break;
-
-        // Sacred Knowledge
-        case 'commands-maat':
-          setIsShortcutsModalOpen(true);
-          break;
-        case 'divine-guidance':
-          window.open('/help', '_blank');
-          break;
-        case 'roadmap-scroll':
-          router.push('/roadmap');
-          break;
-        case 'escape-underworld':
-          // Close any open dialogs
-          setIsCommandPaletteOpen(false);
-          setIsShortcutsModalOpen(false);
-          break;
-
-        default:
-          console.warn(`Unknown command: ${commandId}`);
+      const handler = commandHandlers[commandId];
+      if (handler) {
+        handler();
+      } else {
+        console.warn(`Unknown command: ${commandId}`);
       }
     },
     [

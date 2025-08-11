@@ -30,251 +30,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  categoryColors,
+  roadmapData,
+  statusConfig,
+  type RoadmapFeature,
+} from '@/lib/constants/roadmap-data';
 import { cn } from '@/lib/utils';
 
 type FeatureStatus = 'completed' | 'in-progress' | 'upcoming';
 type ViewMode = 'timeline' | 'kanban' | 'list';
-
-interface RoadmapLink {
-  label: string;
-  href: string;
-}
-
-interface RoadmapFeature {
-  id: string;
-  title: string;
-  description: string;
-  status: FeatureStatus;
-  progress: number;
-  category: 'MCP' | 'Memories' | 'Workflows' | 'Auth' | 'UI' | 'Referral';
-  quarter: 'Q3 2025' | 'Q4 2025' | '2026';
-  estimatedDate?: string;
-  details?: string[];
-  links?: RoadmapLink[];
-  icon: React.ElementType;
-}
-
-const roadmapData: RoadmapFeature[] = [
-  // Q3 2025 - NOW
-  {
-    id: 'wallet-auth',
-    title: 'Wallet Auth & Subscriptions',
-    description:
-      'Stable Solana wallet sign-in and SOL-based plans. UX polish ongoing.',
-    status: 'completed',
-    progress: 100,
-    category: 'Auth',
-    quarter: 'Q3 2025',
-    estimatedDate: 'Completed',
-    details: [
-      'Phantom wallet integration',
-      'Solflare wallet support',
-      'SOL payment processing',
-      'Subscription management dashboard',
-    ],
-    icon: Trophy,
-  },
-  {
-    id: 'mcp-alpha',
-    title: 'MCP Servers (Alpha)',
-    description:
-      'UI to initialize servers like Context7 and Solana MCP. Server catalog and status surfaced.',
-    status: 'completed',
-    progress: 100,
-    category: 'MCP',
-    quarter: 'Q3 2025',
-    estimatedDate: 'Completed',
-    details: [
-      'Server initialization UI',
-      'Context7 integration',
-      'Solana MCP support',
-      'Server health monitoring',
-    ],
-    icon: Settings2,
-  },
-  {
-    id: 'referral',
-    title: 'Referral Program',
-    description:
-      'Pro+ gated referrals with tiered commissions and instant wallet payouts.',
-    status: 'completed',
-    progress: 100,
-    category: 'Referral',
-    quarter: 'Q3 2025',
-    estimatedDate: 'Completed',
-    details: [
-      'Tiered commission structure',
-      'Instant SOL payouts',
-      'Referral tracking dashboard',
-      'Pro+ exclusive access',
-    ],
-    links: [{ label: 'Referral details', href: '/referral-info' }],
-    icon: Users,
-  },
-  {
-    id: 'landing-polish',
-    title: 'Landing & A11y Polish',
-    description:
-      'Unified typography, gradients, and improved accessibility across public pages.',
-    status: 'completed',
-    progress: 100,
-    category: 'UI',
-    quarter: 'Q3 2025',
-    estimatedDate: 'Completed',
-    details: [
-      'Consistent design system',
-      'WCAG 2.1 AA compliance',
-      'Performance optimizations',
-      'Mobile responsiveness',
-    ],
-    icon: Sparkles,
-  },
-  // Q4 2025 - NEXT
-  {
-    id: 'mcp-beta',
-    title: 'MCP Beta',
-    description:
-      'Permission prompts, connection health checks, and curated server gallery.',
-    status: 'in-progress',
-    progress: 35,
-    category: 'MCP',
-    quarter: 'Q4 2025',
-    estimatedDate: 'October 2025',
-    details: [
-      'Granular permission system',
-      'Real-time health monitoring',
-      'Server marketplace',
-      'Auto-reconnection logic',
-    ],
-    icon: Settings2,
-  },
-  {
-    id: 'memories-alpha',
-    title: 'Memories (Alpha)',
-    description:
-      'Document uploads, embedding, and retrieval for context-aware chats.',
-    status: 'in-progress',
-    progress: 20,
-    category: 'Memories',
-    quarter: 'Q4 2025',
-    estimatedDate: 'November 2025',
-    details: [
-      'File upload interface',
-      'Vector embeddings',
-      'Semantic search',
-      'Context injection',
-    ],
-    icon: Upload,
-  },
-  {
-    id: 'workflows-alpha',
-    title: 'Workflows (Alpha)',
-    description: 'Trigger/action nodes, schedules, run logs, and retry policy.',
-    status: 'upcoming',
-    progress: 0,
-    category: 'Workflows',
-    quarter: 'Q4 2025',
-    estimatedDate: 'December 2025',
-    details: [
-      'Visual workflow builder',
-      'Cron scheduling',
-      'Execution logs',
-      'Error handling & retries',
-    ],
-    icon: Compass,
-  },
-  // 2026 - LATER
-  {
-    id: 'workflows-stable',
-    title: 'Workflows (Beta → Stable)',
-    description:
-      'Branching, approvals, variables/secrets, templates, hosted runners.',
-    status: 'upcoming',
-    progress: 0,
-    category: 'Workflows',
-    quarter: '2026',
-    estimatedDate: 'Q1 2026',
-    details: [
-      'Conditional branching',
-      'Manual approval steps',
-      'Secret management',
-      'Template library',
-      'Dedicated runners',
-    ],
-    icon: Compass,
-  },
-  {
-    id: 'memories-stable',
-    title: 'Memories (Beta → Stable)',
-    description:
-      'Analytics, redaction tools, organization policies, cross-agent sharing with guardrails.',
-    status: 'upcoming',
-    progress: 0,
-    category: 'Memories',
-    quarter: '2026',
-    estimatedDate: 'Q2 2026',
-    details: [
-      'Usage analytics',
-      'PII redaction',
-      'Team policies',
-      'Agent memory sharing',
-      'Compliance tools',
-    ],
-    icon: Upload,
-  },
-  {
-    id: 'mcp-marketplace',
-    title: 'MCP Marketplace',
-    description:
-      'Quality bar, community submissions, usage insights and versioning.',
-    status: 'upcoming',
-    progress: 0,
-    category: 'MCP',
-    quarter: '2026',
-    estimatedDate: 'Q3 2026',
-    details: [
-      'Community contributions',
-      'Quality standards',
-      'Usage metrics',
-      'Version management',
-      'Revenue sharing',
-    ],
-    icon: Sparkles,
-  },
-];
-
-const categoryColors: Record<string, string> = {
-  MCP: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-  Memories:
-    'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-  Workflows:
-    'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
-  Auth: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
-  UI: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20',
-  Referral:
-    'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20',
-};
-
-const statusConfig = {
-  completed: {
-    icon: CheckCircle2,
-    color: 'text-green-600 dark:text-green-400',
-    bgColor: 'bg-green-500/10',
-    label: 'Completed',
-  },
-  'in-progress': {
-    icon: Clock,
-    color: 'text-yellow-600 dark:text-yellow-400',
-    bgColor: 'bg-yellow-500/10',
-    label: 'In Progress',
-  },
-  upcoming: {
-    icon: Calendar,
-    color: 'text-gray-500 dark:text-gray-400',
-    bgColor: 'bg-gray-500/10',
-    label: 'Upcoming',
-  },
-};
 
 function FeatureCard({
   feature,
@@ -290,69 +55,58 @@ function FeatureCard({
 
   return (
     <Card
-      aria-expanded={expanded}
-      aria-label={`${feature.title} - ${feature.status} - Click to ${expanded ? 'collapse' : 'expand'} details`}
       className={cn(
-        'transform-gpu cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg',
+        'transform-gpu transition-all duration-300',
         expanded && 'shadow-xl ring-2 ring-primary'
       )}
-      onClick={onToggle}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onToggle();
-        }
-      }}
-      tabIndex={0}
     >
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            <div
-              className={cn(
-                'rounded-lg p-2',
-                statusConfig[feature.status].bgColor
-              )}
-            >
-              <FeatureIcon className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                {feature.title}
-                <StatusIcon
-                  className={cn('h-4 w-4', statusConfig[feature.status].color)}
-                />
-              </CardTitle>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Badge
-                  className={cn('border', categoryColors[feature.category])}
-                >
-                  {feature.category}
-                </Badge>
-                <Badge variant="outline">{feature.quarter}</Badge>
-                {feature.estimatedDate && (
-                  <Badge variant="secondary">{feature.estimatedDate}</Badge>
+        <button
+          aria-expanded={expanded}
+          aria-label={`${feature.title} - ${feature.status} - Click to ${expanded ? 'collapse' : 'expand'} details`}
+          className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg"
+          onClick={onToggle}
+          type="button"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3">
+              <div
+                className={cn(
+                  'rounded-lg p-2',
+                  statusConfig[feature.status].bgColor
+                )}
+              >
+                <FeatureIcon className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  {feature.title}
+                  <StatusIcon
+                    className={cn('h-4 w-4', statusConfig[feature.status].color)}
+                  />
+                </CardTitle>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Badge
+                    className={cn('border', categoryColors[feature.category])}
+                  >
+                    {feature.category}
+                  </Badge>
+                  <Badge variant="outline">{feature.quarter}</Badge>
+                  {feature.estimatedDate && (
+                    <Badge variant="secondary">{feature.estimatedDate}</Badge>
+                  )}
+                </div>
+              </div>
+              <div className="h-6 w-6 flex items-center justify-center">
+                {expanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
                 )}
               </div>
             </div>
-            <Button
-              aria-label={expanded ? 'Collapse details' : 'Expand details'}
-              className="h-6 w-6 p-0 hover:bg-muted"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggle();
-              }}
-              size="sm"
-              variant="ghost"
-            >
-              {expanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </Button>
           </div>
-        </div>
+        </button>
       </CardHeader>
       <CardContent>
         <p className="text-muted-foreground text-sm">{feature.description}</p>
