@@ -139,7 +139,7 @@ export function AgentCapabilitySelector({
                     'transition-all hover:shadow-md',
                     isDisabled && 'cursor-not-allowed opacity-50'
                   )}
-                  disabled={isDisabled}
+                  disabled={!!isDisabled}
                   onClick={() => !isDisabled && toggleCapability(capability.id)}
                   variant={isSelected ? 'default' : 'outline'}
                 >

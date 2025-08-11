@@ -53,15 +53,17 @@ export async function GET(request: NextRequest) {
     return withAuth(req, async (authReq: AuthenticatedRequest) => {
       try {
         const { walletAddress, publicKey } = authReq.user;
-        const user = await fetchQuery(api.users.getUserByWallet, { walletAddress });
+        const user = await fetchQuery(api.users.getUserByWallet, {
+          walletAddress,
+        });
         let userProfile: UserProfile;
 
         if (user) {
           userProfile = {
-            walletAddress: user.walletAddress,
-            publicKey: user.publicKey,
-            displayName: user.displayName,
-            avatar: user.avatar,
+            walletAddress: user.walletAddress ?? walletAddress,
+            publicKey: user.publicKey ?? publicKey,
+            displayName: user.displayName ?? undefined,
+            avatar: user.avatar ?? undefined,
             preferences: {
               theme:
                 user.preferences?.theme === 'light' ? Theme.LIGHT : Theme.DARK,
@@ -81,9 +83,9 @@ export async function GET(request: NextRequest) {
                 SubscriptionFeature.BASIC_CHAT,
               ],
             },
-            createdAt: user.createdAt,
-            lastActiveAt: user.lastActiveAt,
-            isActive: user.isActive,
+            createdAt: user.createdAt ?? Date.now(),
+            lastActiveAt: user.lastActiveAt ?? Date.now(),
+            isActive: user.isActive ?? true,
           };
         } else {
           userProfile = {
@@ -165,7 +167,6 @@ export async function PUT(request: NextRequest) {
         let updatedUser = null as any;
         if (updates.displayName !== undefined || updates.avatar !== undefined) {
           updatedUser = await fetchMutation(api.users.updateProfile, {
-            walletAddress,
             displayName: updates.displayName,
             avatar: updates.avatar,
           });
@@ -173,7 +174,6 @@ export async function PUT(request: NextRequest) {
 
         if (updates.preferences) {
           updatedUser = await fetchMutation(api.users.updatePreferences, {
-            walletAddress,
             preferences: {
               theme:
                 updates.preferences.theme === Theme.LIGHT ? 'light' : 'dark',
@@ -193,10 +193,10 @@ export async function PUT(request: NextRequest) {
           updatedUser ||
           (await fetchQuery(api.users.getUserByWallet, { walletAddress }));
         const updatedProfile: UserProfile = {
-          walletAddress: user.walletAddress,
-          publicKey: user.publicKey,
-          displayName: user.displayName,
-          avatar: user.avatar,
+          walletAddress: user.walletAddress ?? walletAddress,
+          publicKey: user.publicKey ?? authReq.user.publicKey,
+          displayName: user.displayName ?? undefined,
+          avatar: user.avatar ?? undefined,
           preferences: {
             theme:
               user.preferences?.theme === 'light' ? Theme.LIGHT : Theme.DARK,
@@ -216,9 +216,9 @@ export async function PUT(request: NextRequest) {
               SubscriptionFeature.BASIC_CHAT,
             ],
           },
-          createdAt: user.createdAt,
-          lastActiveAt: user.lastActiveAt,
-          isActive: user.isActive,
+          createdAt: user.createdAt ?? Date.now(),
+          lastActiveAt: user.lastActiveAt ?? Date.now(),
+          isActive: user.isActive ?? true,
         };
 
         log.info('Profile updated for user', { walletAddress });

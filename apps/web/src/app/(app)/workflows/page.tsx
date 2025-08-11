@@ -317,134 +317,146 @@ function WorkflowsContent() {
       </div>
 
       {/* Workflows Display */}
-      {isLoading ? (
-        <div className="flex items-center justify-center p-12">
-          <p className="text-muted-foreground">Loading workflows...</p>
-        </div>
-      ) : workflows.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Workflow className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h3 className="mb-2 font-semibold text-lg">No workflows yet</h3>
-          <p className="mb-4 text-muted-foreground">
-            {subscription.tier === 'pro_plus'
-              ? 'Create your first AI-powered workflow to automate complex processes'
-              : 'AI Workflow Builder is available with Pro+ subscription'}
-          </p>
-          <Button
-            className="gap-2"
-            disabled={subscription.tier !== 'pro_plus'}
-            onClick={() => {
-              if (canCreateWorkflows) {
-                setNewWorkflowDialog(true);
-              } else {
-                setShowUpgradePrompt(true);
-              }
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            {subscription.tier === 'pro_plus'
-              ? 'Create Your First Workflow'
-              : 'Upgrade to Pro+'}
-          </Button>
-        </Card>
-      ) : viewMode === 'grid' ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {workflows.map((workflow) => (
-            <Card className="p-6" key={workflow._id}>
-              <div className="mb-4 flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold text-lg">{workflow.name}</h3>
-                  <p className="text-muted-foreground text-sm">
-                    {workflow.description || 'No description'}
-                  </p>
-                </div>
-                <Workflow className="h-5 w-5 text-primary" />
-              </div>
-              <div className="mb-3 text-muted-foreground text-xs">
-                <div>
-                  {workflow.nodeCount || 0} nodes, {workflow.edgeCount || 0}{' '}
-                  connections
-                </div>
-                <div>
-                  Updated: {new Date(workflow.updatedAt).toLocaleDateString()}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  className="gap-1"
-                  onClick={() => handleExecuteWorkflow(workflow)}
-                  size="sm"
-                  variant="outline"
-                >
-                  <Play className="h-3 w-3" />
-                  Run
-                </Button>
-                <Button
-                  className="gap-1"
-                  onClick={() => handleEditWorkflow(workflow)}
-                  size="sm"
-                  variant="outline"
-                >
-                  <Edit className="h-3 w-3" />
-                  Edit
-                </Button>
-                <Button
-                  className="gap-1 text-destructive"
-                  onClick={() => handleDeleteWorkflow(workflow._id)}
-                  size="sm"
-                  variant="outline"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  Delete
-                </Button>
-              </div>
+      {(() => {
+        if (isLoading) {
+          return (
+            <div className="flex items-center justify-center p-12">
+              <p className="text-muted-foreground">Loading workflows...</p>
+            </div>
+          );
+        }
+        if (workflows.length === 0) {
+          return (
+            <Card className="p-12 text-center">
+              <Workflow className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+              <h3 className="mb-2 font-semibold text-lg">No workflows yet</h3>
+              <p className="mb-4 text-muted-foreground">
+                {subscription.tier === 'pro_plus'
+                  ? 'Create your first AI-powered workflow to automate complex processes'
+                  : 'AI Workflow Builder is available with Pro+ subscription'}
+              </p>
+              <Button
+                className="gap-2"
+                disabled={subscription.tier !== 'pro_plus'}
+                onClick={() => {
+                  if (canCreateWorkflows) {
+                    setNewWorkflowDialog(true);
+                  } else {
+                    setShowUpgradePrompt(true);
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                {subscription.tier === 'pro_plus'
+                  ? 'Create Your First Workflow'
+                  : 'Upgrade to Pro+'}
+              </Button>
             </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {workflows.map((workflow) => (
-            <Card className="p-4" key={workflow._id}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Workflow className="h-5 w-5 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">{workflow.name}</h3>
-                    <p className="text-muted-foreground text-sm">
-                      {workflow.description || 'No description'} •{' '}
-                      {workflow.nodeCount || 0} nodes • Updated:{' '}
+          );
+        }
+        if (viewMode === 'grid') {
+          return (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {workflows.map((workflow) => (
+                <Card className="p-6" key={workflow._id}>
+                  <div className="mb-4 flex items-start justify-between">
+                    <div>
+                      <h3 className="font-semibold text-lg">{workflow.name}</h3>
+                      <p className="text-muted-foreground text-sm">
+                        {workflow.description || 'No description'}
+                      </p>
+                    </div>
+                    <Workflow className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="mb-3 text-muted-foreground text-xs">
+                    <div>
+                      {workflow.nodeCount || 0} nodes, {workflow.edgeCount || 0}{' '}
+                      connections
+                    </div>
+                    <div>
+                      Updated:{' '}
                       {new Date(workflow.updatedAt).toLocaleDateString()}
-                    </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      className="gap-1"
+                      onClick={() => handleExecuteWorkflow(workflow)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Play className="h-3 w-3" />
+                      Run
+                    </Button>
+                    <Button
+                      className="gap-1"
+                      onClick={() => handleEditWorkflow(workflow)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Edit className="h-3 w-3" />
+                      Edit
+                    </Button>
+                    <Button
+                      className="gap-1 text-destructive"
+                      onClick={() => handleDeleteWorkflow(workflow._id)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Delete
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-2">
+            {workflows.map((workflow) => (
+              <Card className="p-4" key={workflow._id}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <Workflow className="h-5 w-5 text-primary" />
+                    <div>
+                      <h3 className="font-semibold">{workflow.name}</h3>
+                      <p className="text-muted-foreground text-sm">
+                        {workflow.description || 'No description'} •{' '}
+                        {workflow.nodeCount || 0} nodes • Updated:{' '}
+                        {new Date(workflow.updatedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => handleExecuteWorkflow(workflow)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Play className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={() => handleEditWorkflow(workflow)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteWorkflow(workflow._id)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => handleExecuteWorkflow(workflow)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Play className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={() => handleEditWorkflow(workflow)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={() => handleDeleteWorkflow(workflow._id)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
+              </Card>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* New Workflow Dialog */}
       <Dialog onOpenChange={setNewWorkflowDialog} open={newWorkflowDialog}>

@@ -9,7 +9,6 @@ import {
   DollarSign,
   MessageCircle,
   Send,
-  Share2,
   Star,
   TrendingUp,
   Trophy,
@@ -121,7 +120,8 @@ export default function ReferralsPage() {
     } catch (error) {
       toast({
         title: 'Error',
-        description: (error as Error).message || 'Failed to create referral code',
+        description:
+          (error as Error).message || 'Failed to create referral code',
         variant: 'destructive',
       });
     }
@@ -289,7 +289,7 @@ export default function ReferralsPage() {
                     <ReferralCodeDisplay
                       onCopy={copyToClipboard}
                       referralCode={userReferralCode}
-                      stats={userReferralStats}
+                      stats={userReferralStats ?? undefined}
                     />
                   ) : (
                     <CreateReferralCode
@@ -393,7 +393,9 @@ export default function ReferralsPage() {
                   <CardContent>
                     {leaderboardData?.leaderboard ? (
                       <LeaderboardDisplay
-                        leaderboard={leaderboardData.leaderboard as any[]}
+                        leaderboard={
+                          leaderboardData.leaderboard as unknown as LeaderboardEntry[]
+                        }
                       />
                     ) : (
                       <div className="py-8 text-center text-muted-foreground">
@@ -413,13 +415,28 @@ export default function ReferralsPage() {
 }
 
 // Component for displaying existing referral code and stats
+type ReferralStats = {
+  currentCommissionRate?: number;
+  totalReferrals?: number;
+  tierInfo?: {
+    currentTier: number;
+    referralsToNext: number;
+    currentRate: number;
+    nextRate: number;
+    isMaxTier: boolean;
+  };
+  totalEarnings?: number;
+};
+
+type ReferralCodeData = { code: string };
+
 function ReferralCodeDisplay({
   referralCode,
   stats,
   onCopy,
 }: {
-  referralCode: any;
-  stats: any;
+  referralCode: ReferralCodeData;
+  stats: ReferralStats | undefined;
   onCopy: (text: string) => void;
 }) {
   const { toast } = useToast();
@@ -484,7 +501,10 @@ function ReferralCodeDisplay({
             <span>Tier {stats.tierInfo.currentTier + 1} Progress</span>
             <span>{stats.tierInfo.referralsToNext} to next tier</span>
           </div>
-          <Progress className="h-1.5" value={(stats.totalReferrals % 5) * 20} />
+          <Progress
+            className="h-1.5"
+            value={((stats?.totalReferrals ?? 0) % 5) * 20}
+          />
           <div className="flex justify-between text-[11px] text-muted-foreground">
             <span>{(stats.tierInfo.currentRate * 100).toFixed(1)}%</span>
             <span>
@@ -547,10 +567,13 @@ function ReferralCodeDisplay({
             variant="outline"
           >
             <svg
+              aria-labelledby="x-logo-title"
               className="h-3.5 w-3.5"
               fill="currentColor"
+              role="img"
               viewBox="0 0 24 24"
             >
+              <title id="x-logo-title">Share to X</title>
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
             <span className="hidden sm:inline">X</span>
@@ -679,7 +702,21 @@ function ReferralUpgradePrompt({
 }
 
 // Component for leaderboard display
-function LeaderboardDisplay({ leaderboard }: { leaderboard: any[] }) {
+type LeaderboardEntry = {
+  referralCode: string;
+  rank: number;
+  displayName: string;
+  avatar?: string;
+  totalReferrals: number;
+  currentCommissionRate: number;
+  lifetimePayouts: number;
+};
+
+function LeaderboardDisplay({
+  leaderboard,
+}: {
+  leaderboard: LeaderboardEntry[];
+}) {
   return (
     <div className="space-y-3">
       {leaderboard.map((referrer, index) => (
@@ -776,7 +813,8 @@ function CompactTierDisplay({ currentTier }: { currentTier?: number }) {
       {/* Tier Grid - Responsive */}
       <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-6">
         {tiers.map((tier, index) => (
-          <div
+          <button
+            aria-label={`Tier ${index + 1}: ${tier.label} referrals, ${tier.rate}% commission`}
             className={cn(
               'relative cursor-pointer rounded-md border p-1.5 text-center transition-all sm:p-2',
               currentTier === index
@@ -784,9 +822,12 @@ function CompactTierDisplay({ currentTier }: { currentTier?: number }) {
                 : 'border-border bg-background hover:bg-muted',
               hoveredTier === index && 'ring-2 ring-primary/50'
             )}
-            key={index}
+            key={`${tier.label}-${tier.rate}`}
+            onBlur={() => setHoveredTier(null)}
+            onFocus={() => setHoveredTier(index)}
             onMouseEnter={() => setHoveredTier(index)}
             onMouseLeave={() => setHoveredTier(null)}
+            type="button"
           >
             <div className="font-bold text-[11px] sm:text-xs">{tier.rate}%</div>
             <div className="text-[9px] opacity-80 sm:text-[10px]">
@@ -796,7 +837,6 @@ function CompactTierDisplay({ currentTier }: { currentTier?: number }) {
               <Crown className="mx-auto mt-0.5 h-2.5 w-2.5 text-yellow-500 sm:mt-1 sm:h-3 sm:w-3" />
             )}
 
-            {/* Tooltip on hover */}
             {hoveredTier === index && (
               <div className="-translate-x-1/2 absolute bottom-full left-1/2 z-10 mb-2 transform whitespace-nowrap rounded-md border bg-popover px-2 py-1 text-popover-foreground shadow-lg">
                 <div className="text-xs">
@@ -811,7 +851,7 @@ function CompactTierDisplay({ currentTier }: { currentTier?: number }) {
                 </div>
               </div>
             )}
-          </div>
+          </button>
         ))}
       </div>
 

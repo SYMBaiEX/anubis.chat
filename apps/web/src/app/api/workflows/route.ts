@@ -364,7 +364,17 @@ export async function POST(request: NextRequest) {
             triggerId: nanoid(),
             type: trigger.type,
             condition: trigger.condition,
-            parameters: trigger.parameters || {},
+            parameters: Object.fromEntries(
+              Object.entries(trigger.parameters || {}).map(([k, v]) => [
+                k,
+                typeof v === 'string' ||
+                typeof v === 'number' ||
+                typeof v === 'boolean' ||
+                v === null
+                  ? (v as string | number | boolean | null)
+                  : String(v),
+              ])
+            ),
             isActive: true,
           }));
 
@@ -447,7 +457,17 @@ export async function POST(request: NextRequest) {
           triggerId: nanoid(),
           type: trigger.type,
           condition: trigger.condition,
-          parameters: trigger.parameters || {},
+          parameters: Object.fromEntries(
+            Object.entries(trigger.parameters || {}).map(([k, v]) => [
+              k,
+              typeof v === 'string' ||
+              typeof v === 'number' ||
+              typeof v === 'boolean' ||
+              v === null
+                ? (v as string | number | boolean | null)
+                : String(v),
+            ])
+          ),
           isActive: true,
         }));
 
@@ -618,12 +638,29 @@ export async function PUT(request: NextRequest) {
           }
         } else {
           // Create workflow execution in Convex
+          const safeVariables: Record<
+            string,
+            string | number | boolean | null
+          > = input
+            ? Object.fromEntries(
+                Object.entries(input).map(([k, v]) => [
+                  k,
+                  typeof v === 'string' ||
+                  typeof v === 'number' ||
+                  typeof v === 'boolean' ||
+                  v === null
+                    ? (v as string | number | boolean | null)
+                    : String(v),
+                ])
+              )
+            : {};
+
           const execution = await convex.mutation(
             api.workflows.createExecution,
             {
               workflowId: workflowId as Id<'workflows'>,
               walletAddress,
-              variables: input || {},
+              variables: safeVariables,
             }
           );
 

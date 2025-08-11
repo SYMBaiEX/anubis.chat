@@ -19,7 +19,6 @@ export default function SettingsPage() {
   const { user, isLoading: authLoading } = useAuthContext();
   const {
     subscription,
-    limits,
     upgradePrompt,
     isLoading: subscriptionLoading,
     error,

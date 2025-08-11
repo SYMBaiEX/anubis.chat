@@ -14,6 +14,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "framer-motion": "12.23.12",
     "@ai-sdk/anthropic": "^2.0.1",
     "@ai-sdk/google": "^2.0.2",
     "@ai-sdk/openai": "^2.0.2",

@@ -1,17 +1,17 @@
 'use client';
 
+import { Menu } from 'lucide-react';
 import Link from 'next/link';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
-import { LogoWithText } from '@/components/ui/logo';
-import { Menu } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { LogoWithText } from '@/components/ui/logo';
 
 export default function LandingHeader() {
   const { isAuthenticated } = useAuthContext();
@@ -27,20 +27,32 @@ export default function LandingHeader() {
         />
 
         {/* Centered Primary Nav (desktop) */}
-        <nav aria-label="Primary" className="pointer-events-none absolute left-1/2 hidden -translate-x-1/2 md:block">
+        <nav
+          aria-label="Primary"
+          className="-translate-x-1/2 pointer-events-none absolute left-1/2 hidden md:block"
+        >
           <ul className="pointer-events-auto flex items-center gap-6">
             <li>
-              <Link className="text-sm font-medium text-foreground/80 transition-colors hover:text-foreground" href="/">
+              <Link
+                className="font-medium text-foreground/80 text-sm transition-colors hover:text-foreground"
+                href="/"
+              >
                 Home
               </Link>
             </li>
             <li>
-              <Link className="text-sm font-medium text-foreground/80 transition-colors hover:text-foreground" href="/referral-info">
+              <Link
+                className="font-medium text-foreground/80 text-sm transition-colors hover:text-foreground"
+                href="/referral-info"
+              >
                 Referral Info
               </Link>
             </li>
             <li>
-              <Link className="text-sm font-medium text-foreground/80 transition-colors hover:text-foreground" href="/roadmap">
+              <Link
+                className="font-medium text-foreground/80 text-sm transition-colors hover:text-foreground"
+                href="/roadmap"
+              >
                 Roadmap
               </Link>
             </li>
@@ -51,7 +63,7 @@ export default function LandingHeader() {
         <div className="flex items-center gap-2">
           {/* Mobile menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="md:hidden" asChild>
+            <DropdownMenuTrigger asChild className="md:hidden">
               <Button size="icon" type="button" variant="outline">
                 <Menu className="h-4 w-4" />
                 <span className="sr-only">Open menu</span>

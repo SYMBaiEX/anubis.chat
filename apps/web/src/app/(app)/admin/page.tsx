@@ -36,6 +36,217 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+type OverviewCardsProps = {
+  subscriptionAnalytics?: {
+    totalUsers?: number;
+    totalRevenue?: number;
+    activeUsers?: number;
+  } | null;
+  systemUsage?: { totalMessages?: number; totalChats?: number } | null;
+};
+
+function OverviewCards({
+  subscriptionAnalytics,
+  systemUsage,
+}: OverviewCardsProps) {
+  if (!(subscriptionAnalytics && systemUsage)) {
+    return null;
+  }
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Card className="p-6">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-sm">Total Users</span>
+        </div>
+        <div className="mt-2">
+          <div className="font-bold text-2xl">
+            {subscriptionAnalytics?.totalUsers || 0}
+          </div>
+          <p className="text-muted-foreground text-xs">
+            {subscriptionAnalytics?.activeUsers || 0} active
+          </p>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center gap-2">
+          <CreditCard className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-sm">Revenue</span>
+        </div>
+        <div className="mt-2">
+          <div className="font-bold text-2xl">
+            {subscriptionAnalytics?.totalRevenue || 0} SOL
+          </div>
+          <p className="text-muted-foreground text-xs">Monthly recurring</p>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center gap-2">
+          <Activity className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-sm">Messages</span>
+        </div>
+        <div className="mt-2">
+          <div className="font-bold text-2xl">
+            {systemUsage?.totalMessages || 0}
+          </div>
+          <p className="text-muted-foreground text-xs">Total sent</p>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center gap-2">
+          <Settings className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-sm">Chats</span>
+        </div>
+        <div className="mt-2">
+          <div className="font-bold text-2xl">
+            {systemUsage?.totalChats || 0}
+          </div>
+          <p className="text-muted-foreground text-xs">Conversations</p>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+type ListedUser = {
+  _id: string;
+  displayName?: string;
+  walletAddress?: string;
+  isActive: boolean;
+  subscription?: {
+    tier: 'free' | 'pro' | 'pro_plus';
+    messagesUsed?: number;
+    messagesLimit?: number;
+    premiumMessagesUsed?: number;
+    premiumMessagesLimit?: number;
+  };
+};
+
+function UserRow({
+  listedUser,
+  onUpdate,
+}: {
+  listedUser: ListedUser;
+  onUpdate: (wallet: string, tier: 'free' | 'pro' | 'pro_plus') => void;
+}) {
+  const tierLabel = (() => {
+    const tier = listedUser.subscription?.tier;
+    if (tier === 'pro_plus') {
+      return 'Pro+';
+    }
+    if (tier === 'pro') {
+      return 'Pro';
+    }
+    return 'Free';
+  })();
+  return (
+    <TableRow key={listedUser._id}>
+      <TableCell>
+        <div>
+          <div className="font-medium">
+            {listedUser.displayName || 'Anonymous'}
+          </div>
+          {listedUser.walletAddress && (
+            <div className="text-muted-foreground text-sm">
+              {listedUser.walletAddress.slice(0, 8)}...
+              {listedUser.walletAddress.slice(-4)}
+            </div>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        {listedUser.subscription && (
+          <Badge
+            variant={
+              listedUser.subscription.tier === 'free' ? 'secondary' : 'default'
+            }
+          >
+            {tierLabel}
+          </Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        {listedUser.subscription && (
+          <div className="text-sm">
+            <div>
+              {listedUser.subscription.messagesUsed || 0}/
+              {listedUser.subscription.messagesLimit || 0} messages
+            </div>
+            <div className="text-muted-foreground">
+              {listedUser.subscription.premiumMessagesUsed || 0}/
+              {listedUser.subscription.premiumMessagesLimit || 0} premium
+            </div>
+          </div>
+        )}
+      </TableCell>
+      <TableCell>
+        <Badge variant={listedUser.isActive ? 'default' : 'secondary'}>
+          {listedUser.isActive ? 'Active' : 'Inactive'}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        {listedUser.walletAddress && listedUser.subscription && (
+          <div className="flex gap-2">
+            <Select
+              onValueChange={(v) =>
+                onUpdate(
+                  listedUser.walletAddress as string,
+                  v as 'free' | 'pro' | 'pro_plus'
+                )
+              }
+              value={listedUser.subscription.tier}
+            >
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="free">Free</SelectItem>
+                <SelectItem value="pro">Pro</SelectItem>
+                <SelectItem value="pro_plus">Pro+</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function UsersTable({
+  users,
+  onUpdate,
+}: {
+  users?: ListedUser[] | null;
+  onUpdate: (wallet: string, tier: 'free' | 'pro' | 'pro_plus') => void;
+}) {
+  if (!users) {
+    return null;
+  }
+  return (
+    <Card>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>User</TableHead>
+            <TableHead>Subscription</TableHead>
+            <TableHead>Usage</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {users.map((u) => (
+            <UserRow key={u._id} listedUser={u} onUpdate={onUpdate} />
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+}
+
 function AdminDashboardContent() {
   const { user } = useAuthContext();
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,6 +294,114 @@ function AdminDashboardContent() {
     }
   };
 
+  // Note: OverviewCards component is defined at top-level and used below
+
+  const UsersTableSection = () => {
+    if (!allUsers) return null;
+    return (
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>Subscription</TableHead>
+              <TableHead>Usage</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {allUsers.map((listedUser) => (
+              <TableRow key={listedUser._id}>
+                <TableCell>
+                  <div>
+                    <div className="font-medium">
+                      {listedUser.displayName || 'Anonymous'}
+                    </div>
+                    {listedUser.walletAddress && (
+                      <div className="text-muted-foreground text-sm">
+                        {listedUser.walletAddress.slice(0, 8)}...
+                        {listedUser.walletAddress.slice(-4)}
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {listedUser.subscription && (
+                    <Badge
+                      variant={
+                        listedUser.subscription.tier === 'free'
+                          ? 'secondary'
+                          : 'default'
+                      }
+                    >
+                      {(() => {
+                        const tier = listedUser.subscription?.tier;
+                        if (tier === 'pro_plus') {
+                          return 'Pro+';
+                        }
+                        if (tier === 'pro') {
+                          return 'Pro';
+                        }
+                        return 'Free';
+                      })()}
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {listedUser.subscription && (
+                    <div className="text-sm">
+                      <div>
+                        {listedUser.subscription.messagesUsed || 0}/
+                        {listedUser.subscription.messagesLimit || 0} messages
+                      </div>
+                      <div className="text-muted-foreground">
+                        {listedUser.subscription.premiumMessagesUsed || 0}/
+                        {listedUser.subscription.premiumMessagesLimit || 0}{' '}
+                        premium
+                      </div>
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={listedUser.isActive ? 'default' : 'secondary'}
+                  >
+                    {listedUser.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {listedUser.walletAddress && listedUser.subscription && (
+                    <div className="flex gap-2">
+                      <Select
+                        onValueChange={(v) =>
+                          handleUpdateSubscription(
+                            listedUser.walletAddress as string,
+                            v as 'free' | 'pro' | 'pro_plus'
+                          )
+                        }
+                        value={listedUser.subscription.tier}
+                      >
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="free">Free</SelectItem>
+                          <SelectItem value="pro">Pro</SelectItem>
+                          <SelectItem value="pro_plus">Pro+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -103,63 +422,10 @@ function AdminDashboardContent() {
       </div>
 
       {/* Overview Cards */}
-      {subscriptionAnalytics && systemUsage && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="p-6">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Total Users</span>
-            </div>
-            <div className="mt-2">
-              <div className="font-bold text-2xl">
-                {subscriptionAnalytics?.totalUsers || 0}
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {subscriptionAnalytics?.activeUsers || 0} active
-              </p>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Revenue</span>
-            </div>
-            <div className="mt-2">
-              <div className="font-bold text-2xl">
-                {subscriptionAnalytics?.totalRevenue || 0} SOL
-              </div>
-              <p className="text-muted-foreground text-xs">Monthly recurring</p>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Messages</span>
-            </div>
-            <div className="mt-2">
-              <div className="font-bold text-2xl">
-                {systemUsage?.totalMessages || 0}
-              </div>
-              <p className="text-muted-foreground text-xs">Total sent</p>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Chats</span>
-            </div>
-            <div className="mt-2">
-              <div className="font-bold text-2xl">
-                {systemUsage?.totalChats || 0}
-              </div>
-              <p className="text-muted-foreground text-xs">Conversations</p>
-            </div>
-          </Card>
-        </div>
-      )}
+      <OverviewCards
+        subscriptionAnalytics={subscriptionAnalytics as any}
+        systemUsage={systemUsage as any}
+      />
 
       {/* Main Content */}
       <Tabs className="space-y-4" defaultValue="users">
@@ -201,114 +467,7 @@ function AdminDashboardContent() {
             </Select>
           </div>
 
-          {allUsers && (
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Subscription</TableHead>
-                    <TableHead>Usage</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allUsers.map((listedUser) => (
-                    <TableRow key={listedUser._id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {listedUser.displayName || 'Anonymous'}
-                          </div>
-                          {listedUser.walletAddress && (
-                            <div className="text-muted-foreground text-sm">
-                              {listedUser.walletAddress.slice(0, 8)}...
-                              {listedUser.walletAddress.slice(-4)}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {listedUser.subscription && (
-                          <Badge
-                            variant={
-                              listedUser.subscription.tier === 'free'
-                                ? 'secondary'
-                                : 'default'
-                            }
-                          >
-                            {(() => {
-                              const tier = listedUser.subscription?.tier;
-                              if (tier === 'pro_plus') {
-                                return 'Pro+';
-                              }
-                              if (tier === 'pro') {
-                                return 'Pro';
-                              }
-                              return 'Free';
-                            })()}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {listedUser.subscription && (
-                          <div className="text-sm">
-                            <div>
-                              {listedUser.subscription.messagesUsed || 0}/
-                              {listedUser.subscription.messagesLimit || 0}{' '}
-                              messages
-                            </div>
-                            <div className="text-muted-foreground">
-                              {listedUser.subscription.premiumMessagesUsed || 0}
-                              /
-                              {listedUser.subscription.premiumMessagesLimit ||
-                                0}{' '}
-                              premium
-                            </div>
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            listedUser.isActive ? 'default' : 'secondary'
-                          }
-                        >
-                          {listedUser.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {listedUser.walletAddress &&
-                          listedUser.subscription && (
-                            <div className="flex gap-2">
-                              <Select
-                                onValueChange={(v) =>
-                                  handleUpdateSubscription(
-                                    listedUser.walletAddress as string,
-                                    v as 'free' | 'pro' | 'pro_plus'
-                                  )
-                                }
-                                value={listedUser.subscription.tier}
-                              >
-                                <SelectTrigger className="w-24">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="free">Free</SelectItem>
-                                  <SelectItem value="pro">Pro</SelectItem>
-                                  <SelectItem value="pro_plus">Pro+</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          )}
+          <UsersTableSection />
         </TabsContent>
 
         {/* Agents Tab */}

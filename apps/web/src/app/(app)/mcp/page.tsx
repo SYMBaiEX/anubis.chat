@@ -11,7 +11,7 @@ import {
   Sparkles,
   Wallet,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,7 @@ export default function MCPServersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchServerStatus = async () => {
+  const fetchServerStatus = useCallback(async () => {
     try {
       const res = await fetch('/api/mcp/servers', { method: 'GET' });
       if (res.ok) {
@@ -71,7 +71,7 @@ export default function MCPServersPage() {
     } catch (_error) {
       toast.error('Failed to fetch server status');
     }
-  };
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -84,9 +84,7 @@ export default function MCPServersPage() {
     load().catch(() => {
       setIsLoading(false);
     });
-    // fetchServerStatus is stable here; ignore exhaustive-deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchServerStatus]);
 
   const handleInitContext7 = async () => {
     setIsRefreshing(true);

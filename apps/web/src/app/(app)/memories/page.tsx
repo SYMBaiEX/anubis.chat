@@ -2,7 +2,14 @@
 
 import { api } from '@convex/_generated/api';
 import { useQuery } from 'convex/react';
-import { Brain, Filter, Search, Settings, SortAsc, SortDesc } from 'lucide-react';
+import {
+  Brain,
+  Filter,
+  Search,
+  Settings,
+  SortAsc,
+  SortDesc,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { AdminGuard } from '@/components/auth/admin-guard';
 import { EmptyState } from '@/components/data/empty-states';

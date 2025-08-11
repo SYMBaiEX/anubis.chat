@@ -172,7 +172,7 @@ class WorkflowOrchestrator {
         id: step.agentId as Id<'agents'>,
       });
 
-      if (!agent || agent.walletAddress !== this.walletAddress) {
+      if (!agent || agent.createdBy !== this.walletAddress) {
         log.warn('Agent not found or access denied', {
           stepId: step.id,
           agentId: step.agentId,
@@ -517,6 +517,21 @@ export async function POST(request: NextRequest, context: RouteContext) {
         }
 
         const executeData = validation.data;
+        // Coerce input to the allowed variables shape for Convex (string|number|boolean|null)
+        const safeVariables: Record<string, string | number | boolean | null> =
+          executeData.input
+            ? Object.fromEntries(
+                Object.entries(executeData.input).map(([k, v]) => [
+                  k,
+                  typeof v === 'string' ||
+                  typeof v === 'number' ||
+                  typeof v === 'boolean' ||
+                  v === null
+                    ? (v as string | number | boolean | null)
+                    : String(v),
+                ])
+              )
+            : {};
 
         // Create workflow execution record in Convex
         const executionData = await fetchMutation(
@@ -524,7 +539,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           {
             workflowId: workflowId as Id<'workflows'>,
             walletAddress,
-            variables: executeData.input || {},
+            variables: safeVariables,
           }
         );
 
@@ -653,12 +668,34 @@ export async function POST(request: NextRequest, context: RouteContext) {
         const result = await orchestrator.executeWorkflow();
 
         // Update execution status in Convex
+        // Normalize error details to Convex schema types
+        const normalizedError = result.error
+          ? {
+              stepId: result.error.stepId,
+              code: result.error.code,
+              message: result.error.message,
+              details: result.error.details
+                ? Object.fromEntries(
+                    Object.entries(result.error.details).map(([k, v]) => [
+                      k,
+                      typeof v === 'string' ||
+                      typeof v === 'number' ||
+                      typeof v === 'boolean' ||
+                      v === null
+                        ? (v as string | number | boolean | null)
+                        : String(v),
+                    ])
+                  )
+                : undefined,
+            }
+          : undefined;
+
         await fetchMutation(api.workflows.updateExecution, {
           id: execution.id as Id<'workflowExecutions'>,
           walletAddress,
           status: result.status,
           currentStep: result.currentStep || '',
-          error: result.error,
+          error: normalizedError,
         });
 
         log.info('Workflow execution completed', {

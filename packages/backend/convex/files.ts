@@ -65,9 +65,9 @@ export const list = query({
 
     // Get next cursor without using Array.at for broader lib compatibility
     const nextCursor = hasMore
-      ? (returnItems.length > 0
-          ? returnItems[returnItems.length - 1]?._id
-          : undefined)
+      ? returnItems.length > 0
+        ? returnItems[returnItems.length - 1]?._id
+        : undefined
       : undefined;
 
     return {

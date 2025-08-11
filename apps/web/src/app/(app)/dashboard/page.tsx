@@ -35,6 +35,32 @@ export default function DashboardPage() {
   const [localDisplayName, setLocalDisplayName] = useState<string | null>(null);
   const { mutate: updateProfile } = useUpdateUserProfile();
 
+  const getTierBg = (tier: string): string => {
+    switch (tier) {
+      case 'free':
+        return 'bg-slate-100 dark:bg-slate-800';
+      case 'pro':
+        return 'bg-blue-100 dark:bg-blue-900';
+      case 'pro_plus':
+        return 'bg-purple-100 dark:bg-purple-900';
+      default:
+        return 'bg-slate-100 dark:bg-slate-800';
+    }
+  };
+
+  const getTierColor = (tier: string): string => {
+    switch (tier) {
+      case 'free':
+        return 'text-slate-600 dark:text-slate-400';
+      case 'pro':
+        return 'text-blue-600 dark:text-blue-400';
+      case 'pro_plus':
+        return 'text-purple-600 dark:text-purple-400';
+      default:
+        return 'text-slate-600 dark:text-slate-400';
+    }
+  };
+
   useEffect(() => {
     setPendingName(user?.displayName ?? '');
     setLocalDisplayName(user?.displayName ?? null);
@@ -97,14 +123,15 @@ export default function DashboardPage() {
       {/* Constrained content container */}
       <div className="mx-auto w-full max-w-6xl space-y-4 p-3 sm:space-y-5 sm:p-4 md:space-y-6 md:p-6 lg:space-y-6">
         <div className="flex items-center gap-2">
-          {localDisplayName && !isEditingName ? (
+          {localDisplayName && !isEditingName && (
             <p className="text-muted-foreground text-sm sm:text-base">
               Welcome,{' '}
               <span className="font-medium text-foreground">
                 {localDisplayName}
               </span>
             </p>
-          ) : isEditingName ? (
+          )}
+          {isEditingName && (
             <form
               className="flex w-full max-w-sm items-center gap-2"
               onSubmit={async (e) => {
@@ -161,7 +188,8 @@ export default function DashboardPage() {
                 Cancel
               </Button>
             </form>
-          ) : (
+          )}
+          {!(localDisplayName || isEditingName) && (
             <div className="flex items-center gap-2">
               <p className="text-muted-foreground text-sm sm:text-base">
                 Welcome
@@ -184,21 +212,13 @@ export default function DashboardPage() {
                 <div
                   className={cn(
                     'rounded-md p-1.5 sm:p-2',
-                    subscription.tier === 'free'
-                      ? 'bg-slate-100 dark:bg-slate-800'
-                      : subscription.tier === 'pro'
-                        ? 'bg-blue-100 dark:bg-blue-900'
-                        : 'bg-purple-100 dark:bg-purple-900'
+                    getTierBg(subscription.tier)
                   )}
                 >
                   <Crown
                     className={cn(
                       'h-4 w-4 sm:h-5 sm:w-5',
-                      subscription.tier === 'free'
-                        ? 'text-slate-600 dark:text-slate-400'
-                        : subscription.tier === 'pro'
-                          ? 'text-blue-600 dark:text-blue-400'
-                          : 'text-purple-600 dark:text-purple-400'
+                      getTierColor(subscription.tier)
                     )}
                   />
                 </div>

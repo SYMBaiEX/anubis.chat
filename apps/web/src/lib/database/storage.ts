@@ -15,11 +15,18 @@ class EphemeralAuthStorage {
   private noncesByPublicKey: Map<string, NonceRecord> = new Map();
   private blacklistedTokens: Map<string, number> = new Map(); // jti -> expiresAt
 
-  async storeNonce(publicKey: string, nonce: string, expiresAt: number): Promise<void> {
+  async storeNonce(
+    publicKey: string,
+    nonce: string,
+    expiresAt: number
+  ): Promise<void> {
     this.noncesByPublicKey.set(publicKey, { nonce, expiresAt });
   }
 
-  async validateAndRemoveNonce(publicKey: string, nonce: string): Promise<boolean> {
+  async validateAndRemoveNonce(
+    publicKey: string,
+    nonce: string
+  ): Promise<boolean> {
     const record = this.noncesByPublicKey.get(publicKey);
     if (!record) return false;
 
@@ -72,5 +79,3 @@ setInterval(() => singleton.cleanupExpired(), 10 * 60 * 1000).unref?.();
 export function getStorage() {
   return singleton;
 }
-
-

@@ -112,7 +112,7 @@ export default function SubscriptionPage() {
     subscription.tier === 'admin'
       ? 'pro_plus'
       : (subscription.tier as 'free' | 'pro' | 'pro_plus');
-  const models = getModelsForTier(tierForModels);
+  const _models = getModelsForTier(tierForModels);
 
   const formatTierLabel = (tier: string): string => {
     switch (tier) {

@@ -554,9 +554,12 @@ export function AgentBuilder({
                     <CardContent>
                       <AgentToolBuilder
                         onChange={(tools) =>
-                          setAgentData((prev) => ({ ...prev, tools }))
+                          setAgentData((prev) => ({
+                            ...prev,
+                            tools: tools as unknown as Agent['tools'],
+                          }))
                         }
-                        tools={agentData.tools}
+                        tools={agentData.tools as unknown as any[]}
                       />
                     </CardContent>
                   </Card>
@@ -574,9 +577,13 @@ export function AgentBuilder({
                     <CardContent>
                       <AgentPersonalityEditor
                         onChange={(personality) =>
-                          setAgentData((prev) => ({ ...prev, personality }))
+                          setAgentData((prev) => ({
+                            ...prev,
+                            personality:
+                              personality as unknown as Agent['personality'],
+                          }))
                         }
-                        personality={agentData.personality}
+                        personality={agentData.personality as unknown as any}
                       />
                     </CardContent>
                   </Card>

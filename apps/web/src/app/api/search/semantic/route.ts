@@ -27,8 +27,15 @@ const log = createModuleLogger('api/search/semantic');
 // Request Validation Schemas
 // =============================================================================
 
-const allowedDocTypes = ['text', 'markdown', 'pdf', 'url', 'json', 'csv'] as const;
-type DocType = typeof allowedDocTypes[number];
+const allowedDocTypes = [
+  'text',
+  'markdown',
+  'pdf',
+  'url',
+  'json',
+  'csv',
+] as const;
+type DocType = (typeof allowedDocTypes)[number];
 
 const semanticSearchSchema = z.object({
   query: z
