@@ -2,10 +2,9 @@
 
 import { Rocket, Wallet } from 'lucide-react';
 import Link from 'next/link';
-import React, { memo } from 'react';
+import React from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 
 function CTA() {
   return (
@@ -63,4 +62,4 @@ function CTA() {
   );
 }
 
-export default memo(CTA);
+export default CTA;

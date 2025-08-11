@@ -13,7 +13,7 @@ export const ensureCompleteSubscriptions = mutation({
         // Check if subscription is missing any required fields
         const sub = user.subscription;
         let needsUpdate = false;
-        const updates: any = { ...sub };
+        const updates: Record<string, unknown> = { ...sub };
 
         // Ensure all required fields exist with proper defaults
         if (sub.tier === undefined) {

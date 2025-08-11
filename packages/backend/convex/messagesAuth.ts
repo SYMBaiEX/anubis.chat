@@ -111,40 +111,35 @@ export const createMyMessage = mutation({
 
     // For user messages, check subscription limits
     if (args.role === 'user' && user.subscription) {
-      // Check if user has reached message limits
-      if (
-        (user.subscription.messagesUsed ?? 0) >=
-        (user.subscription.messagesLimit ?? 0)
-      ) {
+      const { subscription } = user;
+      const overLimit =
+        (subscription.messagesUsed ?? 0) >=
+        (subscription.messagesLimit ?? 0);
+      if (overLimit) {
         throw new Error(
           'Message limit reached. Please upgrade your subscription.'
         );
       }
 
-      // Check premium model limits if using a premium model
       const model = args.metadata?.model || chat.model;
       const premiumModels = ['gpt-4o', 'claude-3.5-sonnet', 'gemini-1.5-pro'];
-
-      if (
-        premiumModels.includes(model) &&
-        (user.subscription.premiumMessagesUsed ?? 0) >=
-          (user.subscription.premiumMessagesLimit ?? 0)
-      ) {
+      const isPremium = premiumModels.includes(model);
+      const overPremium =
+        (subscription.premiumMessagesUsed ?? 0) >=
+        (subscription.premiumMessagesLimit ?? 0);
+      if (isPremium && overPremium) {
         throw new Error(
           'Premium message limit reached. Please upgrade to Pro Plus.'
         );
       }
 
-      // Update usage counts
       const updates: Record<string, unknown> = {
-        'subscription.messagesUsed': (user.subscription.messagesUsed ?? 0) + 1,
+        'subscription.messagesUsed': (subscription.messagesUsed ?? 0) + 1,
       };
-
-      if (premiumModels.includes(model)) {
+      if (isPremium) {
         updates['subscription.premiumMessagesUsed'] =
-          (user.subscription.premiumMessagesUsed ?? 0) + 1;
+          (subscription.premiumMessagesUsed ?? 0) + 1;
       }
-
       await ctx.db.patch(user._id, updates);
     }
 

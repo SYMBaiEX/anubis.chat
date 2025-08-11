@@ -1,7 +1,7 @@
 'use client';
 
 import { Brain, Database, Globe, Network, Shield, Zap } from 'lucide-react';
-import React, { memo } from 'react';
+import React from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 
 const featureList = [
@@ -73,7 +73,7 @@ function Features() {
           </p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {featureList.map((f, i) => {
+          {featureList.map((f, _i) => {
             const Icon = f.icon;
             return (
               <div
@@ -104,4 +104,4 @@ function Features() {
   );
 }
 
-export default memo(Features);
+export default Features;

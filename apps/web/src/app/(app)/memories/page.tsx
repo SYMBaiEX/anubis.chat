@@ -398,7 +398,7 @@ function FilterBar({
   onSelectType,
   onSortChange,
   onClear,
-  memoryTypeConfigs,
+  memoryTypeConfigs: typeConfigs,
 }: FilterBarProps) {
   return (
     <Card>
@@ -424,7 +424,7 @@ function FilterBar({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              {Object.entries(memoryTypeConfigs).map(([key, config]) => (
+              {Object.entries(typeConfigs).map(([key, config]) => (
                 <SelectItem key={key} value={key}>
                   <div className="flex items-center gap-2">
                     <span>{config.icon}</span>
@@ -472,8 +472,8 @@ function FilterBar({
             <span className="text-muted-foreground text-sm">Filters:</span>
             {selectedType !== 'all' && (
               <Badge className="gap-1" variant="secondary">
-                {memoryTypeConfigs[selectedType].icon}
-                {memoryTypeConfigs[selectedType].label}
+                {typeConfigs[selectedType].icon}
+                {typeConfigs[selectedType].label}
               </Badge>
             )}
             {searchTerm && (

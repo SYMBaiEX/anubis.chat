@@ -38,9 +38,11 @@ export const generateEmbedding = action({
       throw new Error('Text cannot be empty');
     }
 
-    let lastError: Error | null = null;
-
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    async function tryOnce(attempt: number): Promise<{
+      embedding: number[];
+      model: string;
+      dimensions: number;
+    }> {
       try {
         const response = await fetch('https://api.openai.com/v1/embeddings', {
           method: 'POST',
@@ -54,44 +56,30 @@ export const generateEmbedding = action({
             dimensions: EMBEDDING_DIMENSIONS,
           }),
         });
-
         if (!response.ok) {
           const error = await response.json();
           throw new Error(
             `OpenAI API error: ${error.error?.message || response.statusText}`
           );
         }
-
         const data = await response.json();
         const embedding: number[] = data.data[0].embedding;
-
         if (!embedding || embedding.length !== EMBEDDING_DIMENSIONS) {
           throw new Error(
             `Invalid embedding dimensions: expected ${EMBEDDING_DIMENSIONS}, got ${embedding?.length}`
           );
         }
-
-        return {
-          embedding,
-          model: EMBEDDING_MODEL,
-          dimensions: EMBEDDING_DIMENSIONS,
-        };
-      } catch (error) {
-        lastError = error as Error;
-
-        // Rate limiting - wait longer
-        const shouldBackoff =
-          error instanceof Error && error.message.includes('429');
-        if (shouldBackoff || attempt < MAX_RETRIES - 1) {
-          const delay = shouldBackoff
-            ? RETRY_DELAY * 2 ** attempt
-            : RETRY_DELAY;
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
+        return { embedding, model: EMBEDDING_MODEL, dimensions: EMBEDDING_DIMENSIONS };
+      } catch (err) {
+        if (attempt >= MAX_RETRIES - 1) throw err;
+        const isRateLimited = err instanceof Error && err.message.includes('429');
+        const delay = isRateLimited ? RETRY_DELAY * 2 ** attempt : RETRY_DELAY;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return tryOnce(attempt + 1);
       }
     }
 
-    throw lastError || new Error('Failed to generate embedding after retries');
+    return tryOnce(0);
   },
 });
 
@@ -125,67 +113,57 @@ export const generateBatchEmbeddings = action({
       dimensions: number;
     }> = [];
 
-    // Process texts in batches concurrently within each batch to avoid await-in-loop
-    const batchPromises: Promise<void>[] = [];
+    async function processBatch(
+      cleaned: string[],
+      startIndex: number,
+      attempt: number
+    ): Promise<void> {
+      try {
+        const response = await fetch('https://api.openai.com/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: EMBEDDING_MODEL,
+            input: cleaned,
+            dimensions: EMBEDDING_DIMENSIONS,
+          }),
+        });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(
+            `OpenAI API error: ${error.error?.message || response.statusText}`
+          );
+        }
+        const data = await response.json();
+        for (let j = 0; j < data.data.length; j++) {
+          const item = data.data[j];
+          results[startIndex + j] = {
+            embedding: item.embedding as number[],
+            model: EMBEDDING_MODEL,
+            dimensions: EMBEDDING_DIMENSIONS,
+          };
+        }
+      } catch (err) {
+        if (attempt >= MAX_RETRIES - 1) throw err;
+        const isRateLimited = err instanceof Error && err.message.includes('429');
+        const delay = isRateLimited ? RETRY_DELAY * 2 ** attempt : RETRY_DELAY;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        await processBatch(cleaned, startIndex, attempt + 1);
+      }
+    }
+
+    const tasks: Promise<void>[] = [];
     for (let i = 0; i < args.texts.length; i += MAX_BATCH_SIZE) {
       const start = i;
-      const batch = args.texts.slice(start, start + MAX_BATCH_SIZE);
-      const task = (async () => {
-        const cleanedBatch = batch.map((text) => text.trim().slice(0, 8192));
-        let lastError: Error | null = null;
-        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-          try {
-            const response = await fetch(
-              'https://api.openai.com/v1/embeddings',
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${apiKey}`,
-                },
-                body: JSON.stringify({
-                  model: EMBEDDING_MODEL,
-                  input: cleanedBatch,
-                  dimensions: EMBEDDING_DIMENSIONS,
-                }),
-              }
-            );
-            if (!response.ok) {
-              const error = await response.json();
-              throw new Error(
-                `OpenAI API error: ${error.error?.message || response.statusText}`
-              );
-            }
-            const data = await response.json();
-            for (let j = 0; j < data.data.length; j++) {
-              const item = data.data[j];
-              // Maintain original order by pushing in-place
-              results[start + j] = {
-                embedding: item.embedding as number[],
-                model: EMBEDDING_MODEL,
-                dimensions: EMBEDDING_DIMENSIONS,
-              };
-            }
-            return; // success
-          } catch (error) {
-            lastError = error as Error;
-            const shouldBackoff =
-              error instanceof Error && error.message.includes('429');
-            if (attempt < MAX_RETRIES - 1) {
-              const delay = shouldBackoff
-                ? RETRY_DELAY * 2 ** attempt
-                : RETRY_DELAY;
-              await new Promise((resolve) => setTimeout(resolve, delay));
-            }
-          }
-        }
-        if (lastError) {
-          throw lastError;
-        }
-      })();
-      batchPromises.push(task);
+      const batch = args.texts
+        .slice(start, start + MAX_BATCH_SIZE)
+        .map((t) => t.trim().slice(0, 8192));
+      tasks.push(processBatch(batch, start, 0));
     }
-    await Promise.all(batchPromises);
+    await Promise.all(tasks);
 
     return results;
   },
@@ -331,7 +309,7 @@ export const generateDocumentChunkEmbeddings = action({
     }> = await ctx.runAction(api.embeddings.generateBatchEmbeddings, { texts });
 
     // Store chunks with embeddings without awaiting in a loop
-    const whitespaceRegex = /\s+/g;
+    const WHITESPACE_REGEX = /\s+/g;
     await Promise.all(
       args.chunks.map((chunk, i) =>
         ctx.runMutation(api.embeddings.insertDocumentChunk, {
@@ -342,7 +320,7 @@ export const generateDocumentChunkEmbeddings = action({
           metadata: {
             startOffset: 0, // Would be calculated based on actual document
             endOffset: chunk.content.length,
-            wordCount: (chunk.content.match(whitespaceRegex)?.length ?? 0) + 1,
+            wordCount: (chunk.content.match(WHITESPACE_REGEX)?.length ?? 0) + 1,
           },
           createdAt: Date.now(),
         })

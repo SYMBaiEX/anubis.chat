@@ -33,7 +33,9 @@ export const getUserMemories = query({
       .withIndex('by_user', (q) => q.eq('userId', args.userId));
 
     if (args.type) {
-      memoriesQuery = memoriesQuery.filter((q) => q.eq(q.field('type'), args.type));
+      memoriesQuery = memoriesQuery.filter((q) =>
+        q.eq(q.field('type'), args.type)
+      );
     }
 
     return await memoriesQuery.order('desc').collect();

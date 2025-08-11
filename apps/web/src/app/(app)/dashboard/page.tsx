@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 // UsageIndicator is only used inside cards below
-import { UsageIndicator } from '@/components/chat/usage-indicator';
 import { SubscriptionCard } from '@/components/dashboard/subscription-card';
 import {
   useAuthContext,
@@ -17,7 +16,6 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useUpdateUserProfile } from '@/hooks/convex/useUsers';
-import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const { user } = useAuthContext();

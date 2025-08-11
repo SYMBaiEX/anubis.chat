@@ -80,8 +80,8 @@ export const runFullMigration = internalMutation({
       totalErrors += result.errors;
       hasMore = result.hasMore;
 
-      // Add a small delay to avoid overwhelming the database
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Small delay to avoid overwhelming the database
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
     return {

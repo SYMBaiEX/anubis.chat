@@ -374,24 +374,19 @@ export const batchDelete = mutation({
     const fileCounts = { ...vectorStore.fileCounts };
     let deletedCount = 0;
 
-    for (const fileId of fileIds) {
-      // Find the file
-      const vectorStoreFile = await ctx.db
-        .query('vectorStoreFiles')
-        .withIndex('by_vector_store', (q) =>
-          q.eq('vectorStoreId', vectorStoreId)
-        )
-        .filter((q) => q.eq(q.field('fileId'), fileId))
-        .first();
-
-      if (vectorStoreFile) {
-        // Delete the file entry
+    const deletions = await Promise.all(
+      fileIds.map(async (fileId) => {
+        const vectorStoreFile = await ctx.db
+          .query('vectorStoreFiles')
+          .withIndex('by_vector_store', (q) =>
+            q.eq('vectorStoreId', vectorStoreId)
+          )
+          .filter((q) => q.eq(q.field('fileId'), fileId))
+          .first();
+        if (!vectorStoreFile) return false;
         await ctx.db.delete(vectorStoreFile._id);
-        deletedCount++;
-
         // Update counts based on status
         fileCounts.total = Math.max(0, fileCounts.total - 1);
-
         if (vectorStoreFile.status === 'in_progress') {
           fileCounts.inProgress = Math.max(0, fileCounts.inProgress - 1);
         } else if (vectorStoreFile.status === 'completed') {
@@ -401,8 +396,10 @@ export const batchDelete = mutation({
         } else if (vectorStoreFile.status === 'cancelled') {
           fileCounts.cancelled = Math.max(0, fileCounts.cancelled - 1);
         }
-      }
-    }
+        return true;
+      })
+    );
+    deletedCount = deletions.filter(Boolean).length;
 
     // Update vector store file counts
     if (deletedCount > 0) {

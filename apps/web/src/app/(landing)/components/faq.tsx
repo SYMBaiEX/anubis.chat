@@ -1,8 +1,7 @@
 'use client';
 
-import React, { memo } from 'react';
+import React from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
-import { Card } from '@/components/ui/card';
 
 const faqs = [
   {
@@ -64,4 +63,4 @@ function FAQ() {
   );
 }
 
-export default memo(FAQ);
+export default FAQ;

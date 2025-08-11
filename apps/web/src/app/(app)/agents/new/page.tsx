@@ -157,7 +157,9 @@ export default function NewAgentPage() {
     } as CreateAgentFormData,
     onSubmit: async ({ value }) => {
       const validation = validateForm(value);
-      if (!validation.ok) return;
+      if (!validation.ok) {
+        return;
+      }
       if (!user?.walletAddress) {
         toast.error('Please connect your wallet first');
         return;
@@ -619,10 +621,18 @@ function buildAgentData(data: CreateAgentFormData, createdBy: string) {
     | 'nft'
     | 'dao'
     | 'portfolio' => {
-    if (t === 'custom') return 'custom';
-    if (t === 'blockchain') return 'trading';
-    if (t === 'analysis') return 'portfolio';
-    if (t === 'research') return 'general';
+    if (t === 'custom') {
+      return 'custom';
+    }
+    if (t === 'blockchain') {
+      return 'trading';
+    }
+    if (t === 'analysis') {
+      return 'portfolio';
+    }
+    if (t === 'research') {
+      return 'general';
+    }
     return 'general';
   };
 

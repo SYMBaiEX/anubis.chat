@@ -317,8 +317,8 @@ function AdminDashboardContent() {
 
       {/* Overview Cards */}
       <OverviewCards
-        subscriptionAnalytics={subscriptionAnalytics as any}
-        systemUsage={systemUsage as any}
+        subscriptionAnalytics={subscriptionAnalytics}
+        systemUsage={systemUsage}
       />
 
       {/* Main Content */}

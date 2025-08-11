@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, MessagesSquare, Rocket, Upload, Wallet } from 'lucide-react';
-import React, { memo } from 'react';
+import React from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 import { Card } from '@/components/ui/card';
 
