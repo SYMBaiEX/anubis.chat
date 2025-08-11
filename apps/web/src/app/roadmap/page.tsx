@@ -189,12 +189,12 @@ function TimelineView({
 
   // Calculate statistics for the progress card
   const stats = {
-    completed: roadmapData.filter((f) => f.status === 'completed').length,
-    inProgress: roadmapData.filter((f) => f.status === 'in-progress').length,
-    upcoming: roadmapData.filter((f) => f.status === 'upcoming').length,
+    completed: features.filter((f) => f.status === 'completed').length,
+    inProgress: features.filter((f) => f.status === 'in-progress').length,
+    upcoming: features.filter((f) => f.status === 'upcoming').length,
     totalProgress: Math.round(
-      (roadmapData.filter((f) => f.status === 'completed').length /
-        roadmapData.length) *
+      (features.filter((f) => f.status === 'completed').length /
+        features.length) *
         100
     ),
   };
