@@ -1,6 +1,12 @@
 'use client';
 
 import {
+  Root as Accordion,
+  Content as AccordionContent,
+  Item as AccordionItem,
+  Trigger as AccordionTrigger,
+} from '@radix-ui/react-accordion';
+import {
   Check,
   Code,
   Copy,
@@ -24,12 +30,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { useState } from 'react';
-import {
-  Root as Accordion,
-  Content as AccordionContent,
-  Item as AccordionItem,
-  Trigger as AccordionTrigger,
-} from '@radix-ui/react-accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

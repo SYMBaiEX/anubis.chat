@@ -115,33 +115,33 @@ function renderFolderTree(args: {
                   style={{ paddingLeft: `${8 + level * 16}px` }}
                 >
                   <button
-                    type="button"
                     className="flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left hover:bg-accent hover:text-accent-foreground"
                     onClick={() => {
                       onToggleFolder(folder._id);
                       onSelectFolder(folder._id);
                     }}
+                    type="button"
                   >
-                  <div className="flex items-center gap-1">
-                    {folder.children &&
-                      folder.children.length > 0 &&
-                      (isExpanded ? (
-                        <ChevronDown className="h-4 w-4 opacity-70" />
+                    <div className="flex items-center gap-1">
+                      {folder.children &&
+                        folder.children.length > 0 &&
+                        (isExpanded ? (
+                          <ChevronDown className="h-4 w-4 opacity-70" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 opacity-70" />
+                        ))}
+                      {isExpanded ? (
+                        <FolderOpen className="h-4 w-4 text-blue-500" />
                       ) : (
-                        <ChevronRight className="h-4 w-4 opacity-70" />
-                      ))}
-                    {isExpanded ? (
-                      <FolderOpen className="h-4 w-4 text-blue-500" />
-                    ) : (
-                      <Folder className="h-4 w-4 text-blue-500" />
+                        <Folder className="h-4 w-4 text-blue-500" />
+                      )}
+                    </div>
+                    <span className="flex-1 truncate">{folder.name}</span>
+                    {folderPrompts.length > 0 && (
+                      <span className="text-muted-foreground text-xs">
+                        {folderPrompts.length}
+                      </span>
                     )}
-                  </div>
-                  <span className="flex-1 truncate">{folder.name}</span>
-                  {folderPrompts.length > 0 && (
-                    <span className="text-muted-foreground text-xs">
-                      {folderPrompts.length}
-                    </span>
-                  )}
                   </button>
                 </div>
               </ContextMenuTrigger>
@@ -184,10 +184,10 @@ function renderFolderTree(args: {
                 <ContextMenu key={prompt._id}>
                   <ContextMenuTrigger>
                     <button
-                      type="button"
                       className="group flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1 text-left hover:bg-accent hover:text-accent-foreground"
                       onClick={() => onSelectPromptForEdit(prompt)}
                       style={{ paddingLeft: `${24 + (level + 1) * 16}px` }}
+                      type="button"
                     >
                       <File className="h-4 w-4 flex-shrink-0 text-amber-500" />
                       <span className="flex-1 truncate">{prompt.title}</span>
@@ -247,10 +247,10 @@ function renderFolderTree(args: {
             <ContextMenu key={prompt._id}>
               <ContextMenuTrigger>
                 <button
-                  type="button"
                   className="group flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1 text-left hover:bg-accent hover:text-accent-foreground"
                   onClick={() => onSelectPromptForEdit(prompt)}
                   style={{ paddingLeft: '8px' }}
+                  type="button"
                 >
                   <File className="h-4 w-4 flex-shrink-0 text-amber-500" />
                   <span className="flex-1 truncate">{prompt.title}</span>
@@ -368,7 +368,8 @@ export default function BookOfTheDeadPage() {
       await deleteFolder({ id });
       toast.success('Folder deleted');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete folder';
+      const message =
+        error instanceof Error ? error.message : 'Failed to delete folder';
       toast.error(message);
     }
   };

@@ -1,5 +1,11 @@
 'use client';
 
+import {
+  Root as Accordion,
+  Content as AccordionContent,
+  Item as AccordionItem,
+  Trigger as AccordionTrigger,
+} from '@radix-ui/react-accordion';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Brain,
@@ -15,12 +21,6 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import {
-  Root as Accordion,
-  Content as AccordionContent,
-  Item as AccordionItem,
-  Trigger as AccordionTrigger,
-} from '@radix-ui/react-accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
