@@ -106,12 +106,15 @@ const AnimationComponent: React.FC<{
   per: 'line' | 'word' | 'char';
   segmentWrapperClassName?: string;
 }> = React.memo(({ segment, variants, per, segmentWrapperClassName }) => {
-  const content =
-    per === 'line' ? (
+  let content: React.ReactNode;
+  if (per === 'line') {
+    content = (
       <motion.span className="block" variants={variants}>
         {segment}
       </motion.span>
-    ) : per === 'word' ? (
+    );
+  } else if (per === 'word') {
+    content = (
       <motion.span
         aria-hidden="true"
         className="inline-block whitespace-pre"
@@ -119,13 +122,15 @@ const AnimationComponent: React.FC<{
       >
         {segment}
       </motion.span>
-    ) : (
+    );
+  } else {
+    content = (
       <motion.span className="inline-block whitespace-pre">
-        {segment.split('').map((char, charIndex) => (
+        {segment.split('').map((char) => (
           <motion.span
             aria-hidden="true"
             className="inline-block whitespace-pre"
-            key={`char-${charIndex}`}
+            key={`${segment}-${char}`}
             variants={variants}
           >
             {char}
@@ -133,6 +138,7 @@ const AnimationComponent: React.FC<{
         ))}
       </motion.span>
     );
+  }
 
   if (!segmentWrapperClassName) {
     return content;
@@ -163,15 +169,18 @@ export function TextEffect({
 }: TextEffectProps) {
   let segments: string[];
 
+  const WORD_SPLIT_REGEX = /(\s+)/g;
   if (per === 'line') {
     segments = children.split('\n');
   } else if (per === 'word') {
-    segments = children.split(/(\s+)/);
+    segments = children.split(WORD_SPLIT_REGEX);
   } else {
     segments = children.split('');
   }
 
-  const MotionTag = motion[as as keyof typeof motion] as typeof motion.div;
+  const MotionTag = motion[
+    as as keyof typeof motion
+  ] as unknown as typeof motion.div;
   const selectedVariants = preset
     ? presetVariants[preset]
     : { container: defaultContainerVariants, item: defaultItemVariants };

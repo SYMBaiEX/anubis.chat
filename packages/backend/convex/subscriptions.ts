@@ -702,9 +702,11 @@ export const processVerifiedPayment = internalMutation({
       updatedAt: now,
     });
 
-    // Process referral payout - check BOTH explicit referral code AND permanent referrer relationship
-    // This ensures referrals earn on EVERY payment (monthly renewals, upgrades, additional purchases)
+    // Process referral payout. Referrers earn commission on payments, but we only
+    // increment the referrer's totalReferrals on the first-ever subscription conversion
+    // for the referred user, not on upgrades/renewals.
     let referralProcessed = false;
+    let isFirstConversionForUser = false;
 
     // First check if user has a permanent referrer (from claimReferral or initial attribution)
     if (user.referredBy && user.referredByCode) {
@@ -720,6 +722,15 @@ export const processVerifiedPayment = internalMutation({
           // Calculate commission amount
           const commissionRate = referralCodeRecord.currentCommissionRate;
           const commissionAmount = args.amountSol * commissionRate;
+
+          // Determine if this is the user's first confirmed subscription payment
+          // If there are no prior confirmed subscriptionPayments, treat as first conversion
+          const priorPayments = await ctx.db
+            .query('subscriptionPayments')
+            .withIndex('by_user', (q) => q.eq('userId', user._id))
+            .filter((q) => q.eq(q.field('status'), 'confirmed'))
+            .collect();
+          isFirstConversionForUser = priorPayments.length === 0;
 
           // Get referrer wallet address
           const referrer = await ctx.db.get(user.referredBy);
@@ -746,6 +757,8 @@ export const processVerifiedPayment = internalMutation({
               referrerId: user.referredBy,
               referralCode: referredByCode,
               commissionAmount,
+              referredUserId: user._id,
+              isFirstConversion: isFirstConversionForUser,
             });
 
             referralProcessed = true;
@@ -780,6 +793,14 @@ export const processVerifiedPayment = internalMutation({
             const commissionRate = referralCodeRecord.currentCommissionRate;
             const commissionAmount = args.amountSol * commissionRate;
 
+            // Determine if this is the user's first confirmed subscription payment
+            const priorPayments = await ctx.db
+              .query('subscriptionPayments')
+              .withIndex('by_user', (q) => q.eq('userId', user._id))
+              .filter((q) => q.eq(q.field('status'), 'confirmed'))
+              .collect();
+            isFirstConversionForUser = priorPayments.length === 0;
+
             // Get referrer wallet address
             const referrer = await ctx.db.get(referralCodeRecord.userId);
 
@@ -805,6 +826,8 @@ export const processVerifiedPayment = internalMutation({
                 referrerId: referralCodeRecord.userId,
                 referralCode,
                 commissionAmount,
+                referredUserId: user._id,
+                isFirstConversion: isFirstConversionForUser,
               });
 
               // Mark attribution as converted

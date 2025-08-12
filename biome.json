@@ -24,6 +24,9 @@
   "extends": ["ultracite"],
   "linter": {
     "rules": {
+      "nursery": {
+        "noUnknownAtRule": "error"
+      },
       "style": {
         "useFilenamingConvention": {
           "level": "error",

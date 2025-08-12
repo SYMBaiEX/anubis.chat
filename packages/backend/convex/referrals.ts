@@ -823,6 +823,8 @@ export const updateReferrerStats = internalMutation({
     referrerId: v.id('users'),
     referralCode: v.string(),
     commissionAmount: v.number(),
+    referredUserId: v.id('users'),
+    isFirstConversion: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     // Update referral code stats
@@ -835,7 +837,9 @@ export const updateReferrerStats = internalMutation({
       throw new Error('Referral code not found');
     }
 
-    const newTotalReferrals = referralCode.totalReferrals + 1;
+    // Only increment totalReferrals on the first successful conversion for this referred user
+    const shouldIncrement = Boolean(args.isFirstConversion);
+    const newTotalReferrals = referralCode.totalReferrals + (shouldIncrement ? 1 : 0);
     const tierInfo = getTierInfo(newTotalReferrals);
 
     // Update referral code record

@@ -1,6 +1,7 @@
 'use client';
 
 import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import {
   ChevronDown,
@@ -11,7 +12,6 @@ import {
   FolderOpen,
   FolderPlus,
   Lock,
-  Plus,
   Search,
   Star,
   Trash2,
@@ -27,7 +27,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 // Removed tabs; everything is handled in the file explorer panel
 import { cn } from '@/lib/utils';
-import type { Id } from '@convex/_generated/dataModel';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -51,6 +50,130 @@ export type PromptNode = {
   createdAt: number;
   updatedAt: number;
 };
+
+// Helper UI components and utilities to reduce complexity
+function buildHeaderLabel(args: {
+  debouncedQuery: string;
+  visibleLength: number;
+  selectedFolderId?: Id<'promptFolders'>;
+  folderHierarchy?: FolderNode[] | null;
+}): JSX.Element {
+  const { debouncedQuery, visibleLength, selectedFolderId, folderHierarchy } =
+    args;
+  if (debouncedQuery) {
+    return <span>Search Results ({visibleLength})</span>;
+  }
+  if (selectedFolderId) {
+    const name = folderHierarchy?.find((f) => f._id === selectedFolderId)?.name;
+    return <span>Folder: {name || 'Unknown'}</span>;
+  }
+  return <span>All Prompts ({visibleLength})</span>;
+}
+
+type PromptListItemProps = {
+  prompt: PromptNode;
+  onSelect: (prompt: PromptNode) => void;
+  onCopy: (content: string, id: Id<'prompts'>) => void;
+  onDelete: (id: Id<'prompts'>) => void;
+};
+
+function PromptListItem({ prompt, onSelect, onCopy, onDelete }: PromptListItemProps) {
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger>
+        <button
+          className="group grid grid-cols-[1fr_auto] items-start gap-3 p-3 text-left hover:bg-accent/50"
+          onClick={() => onSelect(prompt)}
+          type="button"
+        >
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-2">
+              <File className="h-4 w-4 flex-shrink-0 text-amber-500" />
+              <span className="truncate font-medium">{prompt.title}</span>
+              {prompt.usageCount > 0 && (
+                <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                  <Star className="h-3 w-3" /> {prompt.usageCount}
+                </span>
+              )}
+            </div>
+            <div className="line-clamp-3 text-muted-foreground text-sm">
+              {prompt.content}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+            <Button
+              className="h-8 w-8 p-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopy(prompt.content, prompt._id);
+              }}
+              size="sm"
+              variant="ghost"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(prompt._id);
+              }}
+              size="sm"
+              variant="ghost"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </button>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onClick={() => onDelete(prompt._id)}>
+          <Trash2 className="mr-2 h-4 w-4" /> Delete Prompt
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => onSelect(prompt)}>
+          Edit Prompt
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
+function TopPromptButton({
+  title,
+  content,
+  usageCount,
+  id,
+  onCopy,
+}: {
+  title: string;
+  content: string;
+  usageCount: number;
+  id: Id<'prompts'>;
+  onCopy: (content: string, id: Id<'prompts'>) => void;
+}) {
+  return (
+    <button
+      className="group grid grid-cols-[1fr_auto] items-center gap-2 rounded-sm border bg-card/50 px-2 py-1 text-left hover:bg-accent/50"
+      onClick={() => onCopy(content, id)}
+      type="button"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-medium text-xs">{title}</div>
+        <div className="line-clamp-1 text-[11px] text-muted-foreground">
+          {content}
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
+          {usageCount}
+        </span>
+        <Button className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100" size="sm" variant="ghost">
+          <Copy className="h-3 w-3" />
+        </Button>
+      </div>
+    </button>
+  );
+}
 
 // Helper to render the recursive folder tree
 function renderFolderTree(args: {
@@ -102,17 +225,6 @@ function renderFolderTree(args: {
                     'flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent hover:text-accent-foreground',
                     isSelected && 'bg-accent text-accent-foreground'
                   )}
-                  onClick={() => {
-                    onToggleFolder(folder._id);
-                    onSelectFolder(folder._id);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onToggleFolder(folder._id);
-                      onSelectFolder(folder._id);
-                    }
-                  }}
                   style={{ paddingLeft: `${8 + level * 16}px` }}
                 >
                   <button
@@ -316,7 +428,7 @@ export default function BookOfTheDeadPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [editingPromptId, setEditingPromptId] = useState<Id<'prompts'> | null>(
-    null,
+    null
   );
   const [formTitle, setFormTitle] = useState('');
   const [formContent, setFormContent] = useState('');
@@ -346,7 +458,7 @@ export default function BookOfTheDeadPage() {
       await navigator.clipboard.writeText(content);
       await recordUsage({ id });
       toast.success('Prompt copied to clipboard!');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to copy prompt');
     }
   };
@@ -361,7 +473,7 @@ export default function BookOfTheDeadPage() {
     try {
       await deletePrompt({ id });
       toast.success('Prompt deleted');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to delete prompt');
     }
   };
@@ -379,7 +491,7 @@ export default function BookOfTheDeadPage() {
 
   const handleRenameFolder = async (
     id: Id<'promptFolders'>,
-    currentName: string,
+    currentName: string
   ) => {
     const name = window.prompt('Rename folder', currentName)?.trim();
     if (!name || name === currentName) {
@@ -388,7 +500,7 @@ export default function BookOfTheDeadPage() {
     try {
       await updateFolder({ id, name });
       toast.success('Folder renamed');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to rename folder');
     }
   };
@@ -404,7 +516,7 @@ export default function BookOfTheDeadPage() {
       });
       setNewFolderName('');
       toast.success('Folder created');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to create folder');
     }
   };
@@ -433,7 +545,7 @@ export default function BookOfTheDeadPage() {
       setEditingPromptId(null);
       setFormTitle('');
       setFormContent('');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to save prompt');
     }
   };
@@ -441,11 +553,15 @@ export default function BookOfTheDeadPage() {
   const handleEditPrompt = async (id: Id<'prompts'>) => {
     const prompt = (allPrompts || []).find((p: PromptNode) => p._id === id);
     const newTitle = window.prompt('Edit title', prompt?.title ?? '')?.trim();
-    if (!newTitle) return;
+    if (!newTitle) {
+      return;
+    }
     const newContent = window
       .prompt('Edit content', prompt?.content ?? '')
       ?.trim();
-    if (newContent === undefined) return;
+    if (newContent === undefined) {
+      return;
+    }
     try {
       await updatePrompt({
         id,
@@ -453,7 +569,7 @@ export default function BookOfTheDeadPage() {
         content: newContent,
       });
       toast.success('Prompt updated');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to update prompt');
     }
   };
@@ -465,7 +581,7 @@ export default function BookOfTheDeadPage() {
         targetFolderId: selectedFolderId,
       });
       toast.success('Prompt moved');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to move prompt');
     }
   };
@@ -474,7 +590,7 @@ export default function BookOfTheDeadPage() {
     try {
       await movePrompt({ promptId: id });
       toast.success('Prompt moved to root');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to move prompt');
     }
   };
@@ -525,7 +641,9 @@ export default function BookOfTheDeadPage() {
                       className="h-7 w-24 text-xs"
                       onChange={(e) => setNewFolderName(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleCreateFolder();
+                        if (e.key === 'Enter') {
+                          handleCreateFolder();
+                        }
                       }}
                       placeholder="New folder"
                       value={newFolderName}
@@ -561,13 +679,14 @@ export default function BookOfTheDeadPage() {
                     <div className="space-y-3">
                       <div className="space-y-1">
                         {/* "All Prompts" Root Option */}
-                        <div
+                        <button
                           className={cn(
                             'flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1 text-sm hover:bg-accent hover:text-accent-foreground',
                             !selectedFolderId &&
-                            'bg-accent text-accent-foreground'
+                              'bg-accent text-accent-foreground'
                           )}
                           onClick={() => setSelectedFolderId(undefined)}
+                          type="button"
                         >
                           <Folder className="h-4 w-4 text-blue-500" />
                           <span className="flex-1">All Prompts</span>
@@ -575,7 +694,7 @@ export default function BookOfTheDeadPage() {
                             {visiblePrompts?.filter((p) => !p.folderId)
                               .length || 0}
                           </span>
-                        </div>
+                        </button>
 
                         {folderHierarchy &&
                           renderFolderTree({
@@ -600,18 +719,12 @@ export default function BookOfTheDeadPage() {
                       {/* Prompts in selected context */}
                       <div className="border-t pt-2">
                         <div className="mb-2 font-medium text-sm">
-                          {debouncedQuery ? (
-                            <>Search Results ({visiblePrompts?.length || 0})</>
-                          ) : selectedFolderId ? (
-                            <>
-                              Folder:{' '}
-                              {folderHierarchy?.find(
-                                (f) => f._id === selectedFolderId
-                              )?.name || 'Unknown'}
-                            </>
-                          ) : (
-                            <>All Prompts ({visiblePrompts?.length || 0})</>
-                          )}
+                          {buildHeaderLabel({
+                            debouncedQuery,
+                            folderHierarchy: folderHierarchy as FolderNode[] | null,
+                            selectedFolderId,
+                            visibleLength: visiblePrompts?.length || 0,
+                          })}
                         </div>
                         <div className="divide-y">
                           {!visiblePrompts || visiblePrompts.length === 0 ? (
@@ -621,89 +734,22 @@ export default function BookOfTheDeadPage() {
                                 : 'No prompts yet. Use the form to create one.'}
                             </div>
                           ) : (
-                            <>
-                              {visiblePrompts
-                                .filter(
-                                  (p) =>
-                                    debouncedQuery ||
-                                    !selectedFolderId ||
-                                    p.folderId === selectedFolderId
-                                )
-                                .map((prompt) => (
-                                  <ContextMenu key={prompt._id}>
-                                    <ContextMenuTrigger>
-                                      <div
-                                        className="group grid cursor-pointer grid-cols-[1fr_auto] items-start gap-3 p-3 hover:bg-accent/50"
-                                        onClick={() =>
-                                          handleSelectPromptForEdit(prompt)
-                                        }
-                                      >
-                                        <div className="min-w-0 space-y-1">
-                                          <div className="flex items-center gap-2">
-                                            <File className="h-4 w-4 flex-shrink-0 text-amber-500" />
-                                            <span className="truncate font-medium">
-                                              {prompt.title}
-                                            </span>
-                                            {prompt.usageCount > 0 && (
-                                              <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                                                <Star className="h-3 w-3" />{' '}
-                                                {prompt.usageCount}
-                                              </span>
-                                            )}
-                                          </div>
-                                          <div className="line-clamp-3 text-muted-foreground text-sm">
-                                            {prompt.content}
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                                          <Button
-                                            className="h-8 w-8 p-0"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleCopyPrompt(
-                                                prompt.content,
-                                                prompt._id
-                                              );
-                                            }}
-                                            size="sm"
-                                            variant="ghost"
-                                          >
-                                            <Copy className="h-4 w-4" />
-                                          </Button>
-                                          <Button
-                                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleDeletePrompt(prompt._id);
-                                            }}
-                                            size="sm"
-                                            variant="ghost"
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </ContextMenuTrigger>
-                                    <ContextMenuContent>
-                                      <ContextMenuItem
-                                        onClick={() =>
-                                          handleDeletePrompt(prompt._id)
-                                        }
-                                      >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Prompt
-                                      </ContextMenuItem>
-                                      <ContextMenuItem
-                                        onClick={() =>
-                                          handleSelectPromptForEdit(prompt)
-                                        }
-                                      >
-                                        Edit Prompt
-                                      </ContextMenuItem>
-                                    </ContextMenuContent>
-                                  </ContextMenu>
-                                ))}
-                            </>
+                            visiblePrompts
+                              .filter(
+                                (p) =>
+                                  debouncedQuery ||
+                                  !selectedFolderId ||
+                                  p.folderId === selectedFolderId
+                              )
+                              .map((prompt) => (
+                                <PromptListItem
+                                  key={prompt._id}
+                                  onCopy={handleCopyPrompt}
+                                  onDelete={handleDeletePrompt}
+                                  onSelect={handleSelectPromptForEdit}
+                                  prompt={prompt}
+                                />
+                              ))
                           )}
                         </div>
                       </div>
@@ -720,38 +766,15 @@ export default function BookOfTheDeadPage() {
                           </div>
                         ) : (
                           <div className="grid grid-cols-1 gap-1">
-                            {topPrompts.map((prompt) => (
-                              <div
-                                className="group grid cursor-pointer grid-cols-[1fr_auto] items-center gap-2 rounded-sm border bg-card/50 px-2 py-1 hover:bg-accent/50"
-                                key={prompt._id}
-                                onClick={() =>
-                                  handleCopyPrompt(
-                                    prompt.content as string,
-                                    prompt._id as any
-                                  )
-                                }
-                              >
-                                <div className="min-w-0 flex-1">
-                                  <div className="truncate font-medium text-xs">
-                                    {prompt.title}
-                                  </div>
-                                  <div className="line-clamp-1 text-[11px] text-muted-foreground">
-                                    {prompt.content}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
-                                    {prompt.usageCount}
-                                  </span>
-                                  <Button
-                                    className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
-                                    size="sm"
-                                    variant="ghost"
-                                  >
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </div>
+                            {topPrompts.map((p) => (
+                              <TopPromptButton
+                                content={p.content as string}
+                                id={p._id as Id<'prompts'>}
+                                key={p._id}
+                                onCopy={handleCopyPrompt}
+                                title={p.title as string}
+                                usageCount={p.usageCount as number}
+                              />
                             ))}
                           </div>
                         )}

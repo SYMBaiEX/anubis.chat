@@ -48,7 +48,7 @@ export function WalletButton({
           )}
         </div>
         <Button
-          className={`${className} border-destructive/20 bg-destructive/10 text-destructive transition-all duration-300 hover:border-destructive/40 hover:bg-destructive/20`}
+          className={`${className ?? ''} border-destructive/20 bg-destructive/10 text-destructive transition-all duration-300 hover:border-destructive/40 hover:bg-destructive/20`}
           onClick={handleClick}
           size={size}
           variant={variant}
@@ -61,7 +61,7 @@ export function WalletButton({
 
   return (
     <Button
-      className={`${className} border-primary/30 bg-primary/10 font-medium text-primary transition-all duration-300 hover:border-primary/50 hover:bg-primary/20`}
+      className={`${className ?? ''} border-primary/30 bg-primary/10 font-medium text-primary transition-all duration-300 hover:border-primary/50 hover:bg-primary/20`}
       disabled={isConnecting}
       onClick={handleClick}
       size={size}

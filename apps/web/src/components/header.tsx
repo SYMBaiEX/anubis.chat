@@ -7,11 +7,11 @@ import { getHeaderNav } from '@/constants/navigation';
 import { ModeToggle } from './mode-toggle';
 import { WalletConnectButton } from './wallet/wallet-connect-button';
 
-export default function Header() {
+export default function Header(): React.ReactElement {
   const pathname = usePathname();
-  const { isAuthenticated, isAdmin } = useAuthContext();
+  const { isAuthenticated } = useAuthContext();
   const isDev = process.env.NODE_ENV === 'development';
-  const navItems = getHeaderNav(isAuthenticated, isDev, isAdmin);
+  const navItems = getHeaderNav(isAuthenticated, isDev);
 
   return (
     <div className="relative overflow-hidden border-border/50 border-b bg-card/80 backdrop-blur-sm transition-all duration-300">
