@@ -68,7 +68,6 @@ export default function ActivityFooter() {
       className={cn(
         'fixed inset-x-0 bottom-0 z-40 border-t bg-gradient-to-r from-primary/10 via-card/80 to-primary/10 backdrop-blur supports-[backdrop-filter]:bg-card/70'
       )}
-      role="contentinfo"
     >
       <TooltipProvider>
         <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-1 text-sm md:px-4">
@@ -109,7 +108,7 @@ export function StatItem({
     <div className="flex items-center gap-2 text-muted-foreground text-xs">
       <div className="flex items-center gap-1">
         {icon}
-        <span aria-label={label}>{label}</span>
+        <span>{label}</span>
       </div>
       <span aria-live="polite" className="font-medium text-foreground">
         {value}

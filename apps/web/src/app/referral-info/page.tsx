@@ -29,7 +29,7 @@ export default function ReferralInfoPage() {
   const subscriptionStatus = useQuery(api.subscriptions.getSubscriptionStatus);
   const canCreateReferral = subscriptionStatus?.tier === 'pro_plus';
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [_mounted, setMounted] = useState(false);
 
   // Fetch real referral statistics
   const leaderboardData = useQuery(api.referrals.getEnhancedLeaderboard, {

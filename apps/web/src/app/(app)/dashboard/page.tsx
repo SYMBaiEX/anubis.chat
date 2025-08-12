@@ -1,5 +1,7 @@
 'use client';
 
+import { api } from '@convex/_generated/api';
+import { useQuery } from 'convex/react';
 import { Bot, Calendar, MessageSquare, TrendingUp, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -25,6 +27,10 @@ export default function DashboardPage() {
   const [savingName, setSavingName] = useState(false);
   const [localDisplayName, setLocalDisplayName] = useState<string | null>(null);
   const { mutate: updateProfile } = useUpdateUserProfile();
+  const purchases = useQuery(
+    api.subscriptions.getMessageCreditPurchases,
+    user ? { limit: 5 } : 'skip'
+  );
 
   // Tier helpers moved into SubscriptionCard
 
@@ -274,6 +280,48 @@ export default function DashboardPage() {
             </div>
           </Card>
         </div>
+
+        {/* Recent Credit Purchases */}
+        {purchases && purchases.length > 0 && (
+          <Card className="p-4 ring-1 ring-primary/10">
+            <h3 className="mb-3 font-semibold text-base">
+              Recent Credit Purchases
+            </h3>
+            <div className="space-y-2">
+              {purchases.map((purchase) => (
+                <div
+                  className="flex items-center justify-between border-b pb-2 text-sm last:border-b-0 last:pb-0"
+                  key={purchase.id}
+                >
+                  <div>
+                    <div className="font-medium">
+                      {purchase.standardCredits + purchase.premiumCredits}{' '}
+                      credits
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      {new Date(purchase.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">{purchase.priceSOL} SOL</div>
+                    <Badge
+                      size="sm"
+                      variant={
+                        purchase.status === 'confirmed'
+                          ? 'default'
+                          : purchase.status === 'pending'
+                            ? 'secondary'
+                            : 'destructive'
+                      }
+                    >
+                      {purchase.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );

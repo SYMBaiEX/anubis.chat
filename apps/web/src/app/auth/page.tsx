@@ -5,7 +5,6 @@ import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { Authenticated, AuthLoading, Unauthenticated } from 'convex/react';
 import {
   AlertCircle,
-  ArrowLeft,
   Bot,
   CheckCircle,
   Coins,
@@ -17,7 +16,6 @@ import {
   Wallet,
   Zap,
 } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { EmptyState } from '@/components/data/empty-states';
@@ -35,7 +33,7 @@ const log = createModuleLogger('auth-page');
 export default function AuthPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signIn } = useAuthActions();
+  useAuthActions();
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
 

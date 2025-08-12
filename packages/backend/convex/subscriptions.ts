@@ -1046,9 +1046,11 @@ export const getSubscriptionStatusByWallet = query({
       tier: sub.tier,
       messagesUsed: sub.messagesUsed,
       messagesLimit: sub.messagesLimit,
+      messageCredits: sub.messageCredits,
       messagesRemaining: Math.max(0, sub.messagesLimit - sub.messagesUsed),
       premiumMessagesUsed: sub.premiumMessagesUsed,
       premiumMessagesLimit: sub.premiumMessagesLimit,
+      premiumMessageCredits: sub.premiumMessageCredits,
       premiumMessagesRemaining: Math.max(
         0,
         sub.premiumMessagesLimit - sub.premiumMessagesUsed
@@ -1127,9 +1129,11 @@ export const getSubscriptionStatus = query({
       tier: sub.tier,
       messagesUsed: sub.messagesUsed,
       messagesLimit: sub.messagesLimit,
+      messageCredits: sub.messageCredits,
       messagesRemaining: Math.max(0, sub.messagesLimit - sub.messagesUsed),
       premiumMessagesUsed: sub.premiumMessagesUsed,
       premiumMessagesLimit: sub.premiumMessagesLimit,
+      premiumMessageCredits: sub.premiumMessageCredits,
       premiumMessagesRemaining: Math.max(
         0,
         sub.premiumMessagesLimit - sub.premiumMessagesUsed
@@ -1466,6 +1470,9 @@ export const processVerifiedMessageCreditPurchase = internalMutation({
     }),
     referralCode: v.optional(v.string()),
     referralPayoutTx: v.optional(v.string()),
+    // Optional extras to allow fallback record creation when client didn't pre-create purchase
+    packType: v.optional(v.literal('standard')),
+    numberOfPacks: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Find the user by wallet address
@@ -1479,13 +1486,33 @@ export const processVerifiedMessageCreditPurchase = internalMutation({
     }
 
     // Check if purchase already exists
-    const purchase = await ctx.db
+    let purchase = await ctx.db
       .query('messageCreditPurchases')
       .withIndex('by_signature', (q) => q.eq('txSignature', args.txSignature))
       .first();
 
+    // Fallback: if there is no pre-created purchase record (direct wallet flow), create one now
     if (!purchase) {
-      throw new Error('Purchase record not found');
+      const packConfig = MESSAGE_CREDIT_PACK[args.packType ?? 'standard'];
+      const numberOfPacks =
+        args.numberOfPacks ??
+        Math.max(1, Math.round(args.amountSol / packConfig.priceSOL));
+      const now = Date.now();
+      const createdId = await ctx.db.insert('messageCreditPurchases', {
+        userId: user._id,
+        packType: (args.packType ?? 'standard') as 'standard',
+        standardCredits: packConfig.standardCredits * numberOfPacks,
+        premiumCredits: packConfig.premiumCredits * numberOfPacks,
+        priceSOL: args.amountSol,
+        txSignature: args.txSignature,
+        status: 'pending',
+        createdAt: now,
+        updatedAt: now,
+      });
+      purchase = await ctx.db.get(createdId);
+      if (!purchase) {
+        throw new Error('Failed to create message credit purchase record');
+      }
     }
 
     if (purchase.status === 'confirmed') {
@@ -1615,6 +1642,41 @@ export const getMessageCreditPurchases = query({
       txSignature: purchase.txSignature,
       createdAt: purchase.createdAt,
     }));
+  },
+});
+
+// Summarize total purchased vs remaining message credits for progress tracking
+export const getMessageCreditsSummary = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return null;
+    }
+
+    // Aggregate confirmed purchases (bounded take to a reasonable max)
+    const purchases = await ctx.db
+      .query('messageCreditPurchases')
+      .withIndex('by_user', (q) => q.eq('userId', user._id))
+      .order('desc')
+      .take(1000);
+
+    let totalStandardPurchased = 0;
+    let totalPremiumPurchased = 0;
+    for (const purchase of purchases) {
+      if (purchase.status === 'confirmed') {
+        totalStandardPurchased += purchase.standardCredits;
+        totalPremiumPurchased += purchase.premiumCredits;
+      }
+    }
+
+    const sub = getSafeSubscription(user);
+    return {
+      totalStandardPurchased,
+      totalPremiumPurchased,
+      standardRemaining: sub.messageCredits,
+      premiumRemaining: sub.premiumMessageCredits,
+    };
   },
 });
 

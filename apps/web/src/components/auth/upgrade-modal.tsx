@@ -53,6 +53,7 @@ export interface UpgradeModalProps {
   onClose: () => void;
   suggestedTier?: 'pro' | 'pro_plus';
   trigger?: import('@/hooks/use-upgrade-modal').UpgradeTrigger;
+  initialTab?: 'subscription' | 'credits';
 }
 
 // Message credit pack configuration
@@ -113,9 +114,19 @@ export function UpgradeModal({
   onClose,
   suggestedTier = 'pro',
   trigger = 'manual',
+  initialTab = 'subscription',
 }: UpgradeModalProps) {
   // Tab management
-  const [activeTab, setActiveTab] = useState('subscription');
+  const [activeTab, setActiveTab] = useState<'subscription' | 'credits'>(
+    'subscription'
+  );
+
+  // Apply requested initial tab each time the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   // Subscription upgrade state
   const [selectedTier, setSelectedTier] = useState<'pro' | 'pro_plus'>(
@@ -1452,19 +1463,12 @@ export function UpgradeModal({
                   Current Credits
                 </h3>
                 <p className="text-muted-foreground text-xs leading-snug sm:text-sm">
-                  {subscription.messageCredits || 0} Standard • {subscription.premiumMessageCredits || 0} Premium
+                  {subscription.messageCredits || 0} Standard •{' '}
+                  {subscription.premiumMessageCredits || 0} Premium
                 </p>
               </div>
             </div>
-            <Button
-              className="bg-gradient-to-r from-green-500 to-green-600"
-              onClick={handleCreditsPurchase}
-              disabled={isProcessingCredits}
-              size="sm"
-            >
-              {isProcessingCredits && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-              Buy More Credits
-            </Button>
+            {/* Removed redundant Buy More Credits button. Purchase action is available at bottom. */}
           </div>
         </Card>
       )}
@@ -1479,20 +1483,25 @@ export function UpgradeModal({
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:grid-cols-3">
             {/* Pack details */}
             <div>
-              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border p-4 transition-all border-green-200 bg-gradient-to-br from-green-50/50 to-transparent ring-1 ring-green-200/40">
+              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border border-green-200 bg-gradient-to-br from-green-50/50 to-transparent p-4 ring-1 ring-green-200/40 transition-all">
                 <div className="flex h-full flex-col justify-between gap-2">
                   <div>
                     <div className="flex items-center justify-between">
-                      <div className="font-semibold tracking-tight">Credits</div>
+                      <div className="font-semibold tracking-tight">
+                        Credits
+                      </div>
                     </div>
                     <div className="font-semibold text-foreground text-sm">
-                      {MESSAGE_CREDIT_PACK.standardCredits + MESSAGE_CREDIT_PACK.premiumCredits} total
+                      {MESSAGE_CREDIT_PACK.standardCredits +
+                        MESSAGE_CREDIT_PACK.premiumCredits}{' '}
+                      total
                     </div>
                     <div className="text-[11px] text-muted-foreground">
-                      {MESSAGE_CREDIT_PACK.standardCredits} standard + {MESSAGE_CREDIT_PACK.premiumCredits} premium
+                      {MESSAGE_CREDIT_PACK.standardCredits} standard +{' '}
+                      {MESSAGE_CREDIT_PACK.premiumCredits} premium
                     </div>
                   </div>
                 </div>
@@ -1501,7 +1510,7 @@ export function UpgradeModal({
 
             {/* Pricing */}
             <div>
-              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border p-4 transition-all border-green-200 bg-gradient-to-br from-green-50/50 to-transparent ring-1 ring-green-200/40">
+              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border border-green-200 bg-gradient-to-br from-green-50/50 to-transparent p-4 ring-1 ring-green-200/40 transition-all">
                 <div className="flex h-full flex-col justify-between gap-2">
                   <div>
                     <div className="flex items-center justify-between">
@@ -1520,21 +1529,21 @@ export function UpgradeModal({
 
             {/* Quantity selector */}
             <div>
-              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border p-4 transition-all border-green-200 bg-gradient-to-br from-green-50/50 to-transparent ring-1 ring-green-200/40">
+              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border border-green-200 bg-gradient-to-br from-green-50/50 to-transparent p-4 ring-1 ring-green-200/40 transition-all">
                 <div className="flex h-full flex-col justify-between gap-2">
                   <div>
                     <div className="flex items-center justify-between">
                       <div className="font-semibold tracking-tight">Packs</div>
                     </div>
-                    <div className="flex items-center space-x-2 mt-1">
+                    <div className="mt-1 flex items-center space-x-2">
                       <Button
+                        className="h-6 w-6 p-0"
                         disabled={numberOfPacks <= 1}
                         onClick={() =>
                           setNumberOfPacks(Math.max(1, numberOfPacks - 1))
                         }
                         size="sm"
                         variant="outline"
-                        className="h-6 w-6 p-0"
                       >
                         -
                       </Button>
@@ -1542,13 +1551,13 @@ export function UpgradeModal({
                         {numberOfPacks}
                       </span>
                       <Button
+                        className="h-6 w-6 p-0"
                         disabled={numberOfPacks >= 10}
                         onClick={() =>
                           setNumberOfPacks(Math.min(10, numberOfPacks + 1))
                         }
                         size="sm"
                         variant="outline"
-                        className="h-6 w-6 p-0"
                       >
                         +
                       </Button>
@@ -1564,9 +1573,7 @@ export function UpgradeModal({
 
           {/* Purchase summary */}
           <div>
-            <h4 className="mb-2 font-medium">
-              Purchase Summary
-            </h4>
+            <h4 className="mb-2 font-medium">Purchase Summary</h4>
             <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:text-xs">
               <div className="rounded-xl border p-2">
                 <div className="text-muted-foreground">Total Credits</div>
@@ -1576,9 +1583,7 @@ export function UpgradeModal({
               </div>
               <div className="rounded-xl border p-2">
                 <div className="text-muted-foreground">Total Cost</div>
-                <div className="font-medium">
-                  {totalCreditsCost} SOL
-                </div>
+                <div className="font-medium">{totalCreditsCost} SOL</div>
               </div>
               <div className="rounded-xl border p-2">
                 <div className="text-muted-foreground">Standard</div>
@@ -1887,7 +1892,7 @@ export function UpgradeModal({
         <div className="mt-6">
           <Tabs
             className="w-full"
-            onValueChange={setActiveTab}
+            onValueChange={(v) => setActiveTab(v as 'subscription' | 'credits')}
             value={activeTab}
           >
             <TabsList className="grid w-full grid-cols-2">

@@ -268,49 +268,46 @@ export const updatePreferenceCategory = mutation({
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
 
-    const validatedPreferences: Record<string, unknown> = {};
+    const CATEGORY_KEYS = {
+      interface: [
+        'theme',
+        'language',
+        'soundEnabled',
+        'autoScroll',
+        'fontSize',
+        'reducedMotion',
+        'highContrast',
+      ],
+      behavior: [
+        'streamResponses',
+        'saveHistory',
+        'enableMemory',
+        'responseFormat',
+        'contextWindow',
+      ],
+      model: [
+        'defaultModel',
+        'defaultTemperature',
+        'defaultMaxTokens',
+        'defaultTopP',
+        'defaultFrequencyPenalty',
+        'defaultPresencePenalty',
+      ],
+      privacy: [
+        'emailNotifications',
+        'pushNotifications',
+        'dataCollection',
+        'analytics',
+      ],
+    } as const;
 
-    const p = args.preferences as Record<string, unknown>;
-    if (args.category === 'interface') {
-      if (p.theme !== undefined) validatedPreferences.theme = p.theme;
-      if (p.language !== undefined) validatedPreferences.language = p.language;
-      if (p.soundEnabled !== undefined)
-        validatedPreferences.soundEnabled = p.soundEnabled;
-      if (p.autoScroll !== undefined) validatedPreferences.autoScroll = p.autoScroll;
-      if (p.fontSize !== undefined) validatedPreferences.fontSize = p.fontSize;
-      if (p.reducedMotion !== undefined)
-        validatedPreferences.reducedMotion = p.reducedMotion;
-      if (p.highContrast !== undefined)
-        validatedPreferences.highContrast = p.highContrast;
-    } else if (args.category === 'behavior') {
-      if (p.streamResponses !== undefined)
-        validatedPreferences.streamResponses = p.streamResponses;
-      if (p.saveHistory !== undefined) validatedPreferences.saveHistory = p.saveHistory;
-      if (p.enableMemory !== undefined) validatedPreferences.enableMemory = p.enableMemory;
-      if (p.responseFormat !== undefined)
-        validatedPreferences.responseFormat = p.responseFormat;
-      if (p.contextWindow !== undefined)
-        validatedPreferences.contextWindow = p.contextWindow;
-    } else if (args.category === 'model') {
-      if (p.defaultModel !== undefined) validatedPreferences.defaultModel = p.defaultModel;
-      if (p.defaultTemperature !== undefined)
-        validatedPreferences.defaultTemperature = p.defaultTemperature;
-      if (p.defaultMaxTokens !== undefined)
-        validatedPreferences.defaultMaxTokens = p.defaultMaxTokens;
-      if (p.defaultTopP !== undefined) validatedPreferences.defaultTopP = p.defaultTopP;
-      if (p.defaultFrequencyPenalty !== undefined)
-        validatedPreferences.defaultFrequencyPenalty = p.defaultFrequencyPenalty;
-      if (p.defaultPresencePenalty !== undefined)
-        validatedPreferences.defaultPresencePenalty = p.defaultPresencePenalty;
-    } else if (args.category === 'privacy') {
-      if (p.emailNotifications !== undefined)
-        validatedPreferences.emailNotifications = p.emailNotifications;
-      if (p.pushNotifications !== undefined)
-        validatedPreferences.pushNotifications = p.pushNotifications;
-      if (p.dataCollection !== undefined)
-        validatedPreferences.dataCollection = p.dataCollection;
-      if (p.analytics !== undefined) validatedPreferences.analytics = p.analytics;
-    }
+    const allowedKeys = CATEGORY_KEYS[args.category];
+    const input = args.preferences as Record<string, unknown>;
+    const validatedPreferences = Object.fromEntries(
+      allowedKeys
+        .filter((key) => input[key] !== undefined)
+        .map((key) => [key, input[key]])
+    );
 
     if (Object.keys(validatedPreferences).length === 0) {
       throw new Error(
@@ -318,7 +315,6 @@ export const updatePreferenceCategory = mutation({
       );
     }
 
-    // Use internal call instead of api reference
     const existingPreferences = await ctx.db
       .query('userPreferences')
       .withIndex('by_user', (q) => q.eq('userId', user._id))

@@ -31,7 +31,7 @@ interface VerificationResult {
 interface PaymentVerificationRequest {
   txSignature: string;
   expectedAmount: number;
-  tier: 'pro' | 'pro_plus';
+  tier?: 'pro' | 'pro_plus';
   walletAddress: string;
   isProrated?: boolean;
   isUpgrade?: boolean;
@@ -40,6 +40,9 @@ interface PaymentVerificationRequest {
   referralPayoutTx?: string; // Optional referral payout transaction signature
   referrerWalletAddress?: string; // Optional referrer wallet if client executed split
   commissionRate?: number; // Optional rate used for client-executed split
+  paymentType?: 'subscription' | 'message_credits';
+  packType?: 'standard';
+  numberOfPacks?: number;
 }
 
 // Initialize Solana connection with proper configuration
@@ -343,6 +346,7 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
   let txSignature: string | undefined;
   let walletAddress: string | undefined;
   let tier: string | undefined;
+  let paymentType: 'subscription' | 'message_credits' = 'subscription';
 
   try {
     // Parse request body with error handling
@@ -379,7 +383,7 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       referrerWalletAddress,
       commissionRate,
     } = body;
-    ({ txSignature, tier, walletAddress } = body);
+    ({ txSignature, tier, walletAddress, paymentType = 'subscription' } = body);
 
     // Log verification start
     await logPaymentEvent(
@@ -446,7 +450,11 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       );
     }
 
-    if (!(tier && ['pro', 'pro_plus'].includes(tier))) {
+    // For subscription payments, a valid tier is required. For message credits, tier is not required.
+    if (
+      paymentType === 'subscription' &&
+      !(tier && ['pro', 'pro_plus'].includes(tier))
+    ) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -487,29 +495,30 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       );
     }
 
-    // Check tier pricing matches configuration
-    const tierPricing =
-      tier === 'pro'
-        ? subscriptionConfig.pricing.pro
-        : subscriptionConfig.pricing.proPlus;
+    // Validate pricing: for subscription payments, ensure amount matches configured tier price
+    if (paymentType === 'subscription') {
+      const tierPricing =
+        (tier as string) === 'pro'
+          ? subscriptionConfig.pricing.pro
+          : subscriptionConfig.pricing.proPlus;
 
-    // Calculate expected amount based on whether it's a prorated upgrade
-    let expectedTierAmount = tierPricing.priceSOL;
-    if (isProrated && tier === 'pro_plus') {
-      // For prorated Pro+ upgrade, only pay the difference
-      expectedTierAmount =
-        subscriptionConfig.pricing.proPlus.priceSOL -
-        subscriptionConfig.pricing.pro.priceSOL;
-    }
+      // Calculate expected amount based on whether it's a prorated upgrade
+      let expectedTierAmount = tierPricing.priceSOL;
+      if (isProrated && tier === 'pro_plus') {
+        expectedTierAmount =
+          subscriptionConfig.pricing.proPlus.priceSOL -
+          subscriptionConfig.pricing.pro.priceSOL;
+      }
 
-    if (Math.abs(expectedAmount - expectedTierAmount) > 0.001) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Payment amount doesn't match ${isUpgrade ? 'upgrade' : 'tier'} pricing: expected ${expectedTierAmount} SOL`,
-        }),
-        { status: 400, headers }
-      );
+      if (Math.abs(expectedAmount - expectedTierAmount) > 0.001) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Payment amount doesn't match ${isUpgrade ? 'upgrade' : 'tier'} pricing: expected ${expectedTierAmount} SOL`,
+          }),
+          { status: 400, headers }
+        );
+      }
     }
 
     // Add timeout wrapper for blockchain verification
@@ -562,30 +571,38 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       // Calculate expected referral payout
       const rateToUse =
         commissionRate || referralCodeRecord.currentCommissionRate || 0.03;
-      // Determine gross tier amount and split into main/referral expected values
-      const tierPricing =
-        (tier as string) === 'pro'
-          ? subscriptionConfig.pricing.pro
-          : subscriptionConfig.pricing.proPlus;
-      const grossTierAmount =
-        isProrated && tier === 'pro_plus'
-          ? subscriptionConfig.pricing.proPlus.priceSOL -
-            subscriptionConfig.pricing.pro.priceSOL
-          : tierPricing.priceSOL;
+      // Determine gross payment amount based on payment type
+      // - For subscriptions: use configured tier pricing (with prorate rules)
+      // - For message credits: use the provided expectedAmount (credits total)
+      let grossPaymentAmount: number;
+      if (paymentType === 'message_credits') {
+        grossPaymentAmount = expectedAmount;
+      } else {
+        const tierPricing =
+          (tier as string) === 'pro'
+            ? subscriptionConfig.pricing.pro
+            : subscriptionConfig.pricing.proPlus;
+        grossPaymentAmount =
+          isProrated && tier === 'pro_plus'
+            ? subscriptionConfig.pricing.proPlus.priceSOL -
+              subscriptionConfig.pricing.pro.priceSOL
+            : tierPricing.priceSOL;
+      }
+
       const expectedReferralAmount = calculateReferralPayout(
-        grossTierAmount,
+        grossPaymentAmount,
         rateToUse
       );
       const expectedMainAmount = Math.max(
         0,
-        grossTierAmount - expectedReferralAmount
+        grossPaymentAmount - expectedReferralAmount
       );
 
       // Validate payout parameters
       const validation = validatePayoutParams(
         referrer.walletAddress,
         expectedReferralAmount,
-        grossTierAmount,
+        grossPaymentAmount,
         rateToUse
       );
 
@@ -747,8 +764,8 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       }
 
       // Override expectedAmount semantics: for processing, use gross amount to compute commissions
-      // Later mutation will receive the full tier amount so commissions are based on gross
-      (body as any).expectedAmount = grossTierAmount;
+      // Later mutation will receive the full amount so commissions are based on gross
+      (body as any).expectedAmount = grossPaymentAmount;
     } else {
       // Single payment verification (original flow)
       verificationResult = await Promise.race([
@@ -804,13 +821,51 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       'info'
     );
 
-    // Process the payment through Convex mutation with error handling
+    // Process the payment or credit purchase through Convex mutation with error handling
     try {
       // Determine amount to record in Convex (gross for split, otherwise provided expectedAmount)
       const amountForProcessing =
         referralCode && (referralPayoutTx || referrerWalletAddress)
           ? (body.expectedAmount as number)
           : expectedAmount;
+
+      if (paymentType === 'message_credits') {
+        const result = await ctx.runMutation(
+          internal.subscriptions.processVerifiedMessageCreditPurchase,
+          {
+            txSignature,
+            amountSol: amountForProcessing,
+            walletAddress,
+            verificationDetails: (verificationResult as any)
+              .transactionDetails || {
+              signature: txSignature,
+              recipient: solanaConfig.paymentAddress,
+              sender: walletAddress,
+              amount: amountForProcessing,
+              timestamp: Date.now(),
+              slot: 0,
+              confirmationStatus: 'finalized',
+            },
+            referralCode: referralCode || undefined,
+            referralPayoutTx:
+              referralCode && (referralPayoutTx || referrerWalletAddress)
+                ? txSignature
+                : referralPayoutTx || undefined,
+            // forward pack info for fallback record creation
+            packType: (body.packType as 'standard') || 'standard',
+            numberOfPacks: body.numberOfPacks || 1,
+          } as any
+        );
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            paymentId: result.purchaseId,
+            transactionDetails: (verificationResult as any).transactionDetails,
+          }),
+          { status: 200, headers }
+        );
+      }
 
       const result = await ctx.runMutation(
         internal.subscriptions.processVerifiedPayment,

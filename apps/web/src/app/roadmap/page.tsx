@@ -6,17 +6,12 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
-  Compass,
   Filter,
   Grid3x3,
   List,
   Rocket,
   Search,
-  Settings2,
   Sparkles,
-  Trophy,
-  Upload,
-  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactElement } from 'react';

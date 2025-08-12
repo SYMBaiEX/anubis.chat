@@ -4,6 +4,7 @@ import { CreditCard, Crown, Plus } from 'lucide-react';
 import { useState } from 'react';
 import MessageCreditsModal from '@/components/auth/message-credits-modal';
 import { UpgradeModal } from '@/components/auth/upgrade-modal';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -40,6 +41,9 @@ export function SubscriptionTabs({
   preview,
 }: SubscriptionTabsProps) {
   const [activeTab, setActiveTab] = useState('subscriptions');
+  const [upgradeInitialTab, setUpgradeInitialTab] = useState<
+    'subscription' | 'credits'
+  >('subscription');
   const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
   const { isOpen, openModal, closeModal, suggestedTier } = useUpgradeModal();
 
@@ -131,7 +135,7 @@ export function SubscriptionTabs({
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:grid-cols-3">
             {/* Free Plan */}
             <div>
               <input
@@ -303,146 +307,150 @@ export function SubscriptionTabs({
   const renderCreditsTab = () => (
     <div className="space-y-6">
       {/* Current credits balance */}
-      <Card className="p-4">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="font-semibold text-base sm:text-lg">
-            Current Credit Balance
-          </h3>
+      <Card className="p-4 ring-1 ring-primary/10 transition hover:ring-primary/20">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-green-100 p-2 dark:bg-green-900">
+              <CreditCard className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-base sm:text-lg">
+                Current Credits
+              </h3>
+              <p className="text-muted-foreground text-xs leading-snug sm:text-sm">
+                {subscription.messageCredits || 0} Standard •{' '}
+                {subscription.premiumMessageCredits || 0} Premium
+              </p>
+            </div>
+          </div>
           <Button
-            className="bg-gradient-to-r from-green-500 to-green-600 w-full sm:w-auto"
-            onClick={() => setIsCreditsModalOpen(true)}
+            className="bg-gradient-to-r from-green-500 to-green-600"
+            onClick={() => {
+              // Open the Upgrade modal directly on the credits tab
+              setUpgradeInitialTab('credits');
+              openModal({
+                tier: subscription.tier === 'free' ? 'pro' : 'pro_plus',
+                trigger: 'manual',
+              });
+            }}
             size="sm"
           >
             <Plus className="mr-2 h-4 w-4" />
             Buy Credits
           </Button>
         </div>
-
-        <div className="grid grid-cols-1 gap-4 xs:grid-cols-2">
-          <div className="rounded-lg border p-4 text-center">
-            <div className="font-bold text-2xl text-green-600">
-              {subscription.messageCredits || 0}
-            </div>
-            <div className="text-muted-foreground text-sm">
-              Standard Credits
-            </div>
-            <div className="mt-1 text-muted-foreground text-xs">
-              Used after plan messages
-            </div>
-          </div>
-          <div className="rounded-lg border p-4 text-center">
-            <div className="font-bold text-2xl text-green-600">
-              {subscription.premiumMessageCredits || 0}
-            </div>
-            <div className="text-muted-foreground text-sm">Premium Credits</div>
-            <div className="mt-1 text-muted-foreground text-xs">
-              Used after plan premium messages
-            </div>
-          </div>
-        </div>
       </Card>
 
-      {/* Message credit pack info */}
-      <Card className="p-4 sm:p-6">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="rounded-lg bg-gradient-to-r from-green-500 to-green-600 p-2 flex-shrink-0">
-              <CreditCard className="h-5 w-5 text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-lg">Message Credit Pack</h3>
-              <p className="text-muted-foreground text-sm">
-                Get additional messages without upgrading
-              </p>
-            </div>
-          </div>
-          <div className="rounded-full bg-green-100 px-3 py-1 font-medium text-green-800 text-xs self-start">
-            Best Value
-          </div>
+      {/* Credit pack selection */}
+      <Card className="p-4 ring-1 ring-border/50 transition hover:ring-primary/20 sm:p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-semibold text-base sm:text-lg">
+            Message Credit Pack
+          </h3>
+          <Badge className="bg-green-100 text-green-800">Best Value</Badge>
         </div>
 
-        <div className="mb-4 grid grid-cols-1 gap-4 xs:grid-cols-2">
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center dark:border-green-800 dark:bg-green-900/20">
-            <div className="font-bold text-2xl text-green-700 dark:text-green-300">
-              {MESSAGE_CREDIT_PACK.standardCredits}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:grid-cols-3">
+            {/* Pack details */}
+            <div>
+              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border border-green-200 bg-gradient-to-br from-green-50/50 to-transparent p-4 ring-1 ring-green-200/40 transition-all">
+                <div className="flex h-full flex-col justify-between gap-2">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold tracking-tight">
+                        Credits
+                      </div>
+                    </div>
+                    <div className="font-semibold text-foreground text-sm">
+                      {MESSAGE_CREDIT_PACK.standardCredits +
+                        MESSAGE_CREDIT_PACK.premiumCredits}{' '}
+                      total
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {MESSAGE_CREDIT_PACK.standardCredits} standard +{' '}
+                      {MESSAGE_CREDIT_PACK.premiumCredits} premium
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="text-green-600 text-sm dark:text-green-400">
-              Standard Messages
-            </div>
-          </div>
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center dark:border-green-800 dark:bg-green-900/20">
-            <div className="font-bold text-2xl text-green-700 dark:text-green-300">
-              {MESSAGE_CREDIT_PACK.premiumCredits}
-            </div>
-            <div className="text-green-600 text-sm dark:text-green-400">
-              Premium Messages
-            </div>
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800/50">
+            {/* Pricing */}
+            <div>
+              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border border-green-200 bg-gradient-to-br from-green-50/50 to-transparent p-4 ring-1 ring-green-200/40 transition-all">
+                <div className="flex h-full flex-col justify-between gap-2">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold tracking-tight">Price</div>
+                    </div>
+                    <div className="font-semibold text-foreground text-sm">
+                      {MESSAGE_CREDIT_PACK.priceSOL} SOL
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      ≈ ${MESSAGE_CREDIT_PACK.priceUSD} USD
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Benefits */}
+            <div>
+              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border border-green-200 bg-gradient-to-br from-green-50/50 to-transparent p-4 ring-1 ring-green-200/40 transition-all">
+                <div className="flex h-full flex-col justify-between gap-2">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold tracking-tight">
+                        Benefits
+                      </div>
+                    </div>
+                    <div className="font-semibold text-foreground text-sm">
+                      Never expire
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Stack with plan
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Features & How it works */}
           <div>
-            <div className="font-semibold">Price per pack</div>
-            <div className="text-muted-foreground text-sm">
-              No subscription required
-            </div>
-          </div>
-          <div className="text-left sm:text-right">
-            <div className="font-bold text-xl">
-              {MESSAGE_CREDIT_PACK.priceSOL} SOL
-            </div>
-            <div className="text-muted-foreground text-sm">
-              ≈ ${MESSAGE_CREDIT_PACK.priceUSD} USD
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 space-y-3">
-          <div className="text-muted-foreground text-sm">
-            ✓ Credits never expire
-            <br />✓ Stack with your plan messages
-            <br />✓ Used after plan messages are consumed
-            <br />✓ Support referral commissions
-          </div>
-
-          <Button
-            className="w-full bg-gradient-to-r from-green-500 to-green-600"
-            onClick={() => setIsCreditsModalOpen(true)}
-            size="lg"
-          >
-            <Plus className="mr-2 h-5 w-5" />
-            Purchase Message Credits
-          </Button>
-        </div>
-      </Card>
-
-      {/* How it works */}
-      <Card className="p-4">
-        <h4 className="mb-3 font-medium">How Message Consumption Works</h4>
-        <div className="space-y-2 text-muted-foreground text-sm">
-          <div className="flex items-start space-x-2">
-            <div className="min-w-[20px] font-bold text-blue-600">1.</div>
-            <div>
-              Your <strong>plan messages</strong> are used first (50 for Free,
-              500 for Pro, 1000 for Pro+)
-            </div>
-          </div>
-          <div className="flex items-start space-x-2">
-            <div className="min-w-[20px] font-bold text-green-600">2.</div>
-            <div>
-              When plan messages run out, <strong>purchased credits</strong> are
-              used automatically
-            </div>
-          </div>
-          <div className="flex items-start space-x-2">
-            <div className="min-w-[20px] font-bold text-purple-600">3.</div>
-            <div>
-              Premium messages follow the same pattern: plan premium first, then
-              premium credits
+            <h4 className="mb-2 font-medium">How Message Consumption Works</h4>
+            <div className="mt-3 grid grid-cols-1 gap-2 text-[11px] sm:text-xs">
+              <div className="rounded-xl border p-2">
+                <div className="text-muted-foreground">
+                  1. Plan messages first
+                </div>
+                <div className="font-medium">
+                  50 Free • 500 Pro • 1,000 Pro+
+                </div>
+              </div>
+              <div className="rounded-xl border p-2">
+                <div className="text-muted-foreground">
+                  2. Credits when needed
+                </div>
+                <div className="font-medium">Auto-used after plan</div>
+              </div>
+              <div className="rounded-xl border p-2">
+                <div className="text-muted-foreground">
+                  3. Premium same pattern
+                </div>
+                <div className="font-medium">Plan premium → credits</div>
+              </div>
+              <div className="rounded-xl border p-2">
+                <div className="text-muted-foreground">4. Referral support</div>
+                <div className="font-medium">Earn commissions</div>
+              </div>
             </div>
           </div>
         </div>
       </Card>
+
+      {/* Removed redundant bottom purchase button per design update */}
     </div>
   );
 
@@ -458,7 +466,10 @@ export function SubscriptionTabs({
             <span className="hidden sm:inline">Subscription Plans</span>
             <span className="sm:hidden">Plans</span>
           </TabsTrigger>
-          <TabsTrigger className="flex items-center space-x-1 sm:space-x-2" value="credits">
+          <TabsTrigger
+            className="flex items-center space-x-1 sm:space-x-2"
+            value="credits"
+          >
             <CreditCard className="h-4 w-4 flex-shrink-0" />
             <span className="hidden sm:inline">Message Credits</span>
             <span className="sm:hidden">Credits</span>
@@ -476,6 +487,7 @@ export function SubscriptionTabs({
 
       {/* Modals */}
       <UpgradeModal
+        initialTab={upgradeInitialTab}
         isOpen={isOpen}
         onClose={closeModal}
         suggestedTier={suggestedTier}

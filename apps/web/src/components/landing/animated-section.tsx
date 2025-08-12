@@ -136,10 +136,21 @@ export default function AnimatedSection({
   }, []);
 
   const motionEnabled = active;
-  const effectiveParallaxStyle =
-    motionEnabled && parallaxY ? { y: translateY } : undefined;
+  const effectiveParallaxStyle = getParallaxStyle(
+    motionEnabled,
+    parallaxY,
+    translateY
+  );
   const useInViewReveal = motionEnabled && revealStrategy === 'inview';
   const useScrollReveal = motionEnabled && revealStrategy === 'scroll';
+  const shouldShowAurora = decideAuroraVisibility({
+    forceAurora,
+    motionEnabled,
+    auroraVariant,
+    hasScrolled,
+    useInViewReveal,
+    useScrollReveal,
+  });
 
   return (
     <motion.section
@@ -151,23 +162,11 @@ export default function AnimatedSection({
       {/* Background layers (non-interactive) */}
       <div
         className="pointer-events-none absolute inset-0"
-        style={
-          edgeMask
-            ? {
-              WebkitMaskImage:
-                'radial-gradient(circle at 50% 50%, transparent 0 55%, white 75%)',
-              maskImage:
-                'radial-gradient(circle at 50% 50%, transparent 0 55%, white 75%)',
-            }
-            : undefined
-        }
+        style={getEdgeMaskStyle(edgeMask)}
       >
         {includeTomb && <TombBackground showAccentGlow={false} />}
       </div>
-      {(forceAurora ||
-        (motionEnabled &&
-          auroraVariant !== undefined &&
-          (hasScrolled || useInViewReveal || useScrollReveal))) &&
+      {shouldShowAurora &&
         (auroraVariant ? (
           <AnubisAurora position={auroraPosition} variant={auroraVariant} />
         ) : (
@@ -214,4 +213,41 @@ export default function AnimatedSection({
       </motion.div>
     </motion.section>
   );
+}
+
+function getParallaxStyle(
+  motionEnabled: boolean,
+  parallaxY: number,
+  translateY: ReturnType<typeof useTransform>
+) {
+  return motionEnabled && parallaxY ? { y: translateY } : undefined;
+}
+
+function getEdgeMaskStyle(edgeMask: boolean): React.CSSProperties | undefined {
+  if (!edgeMask) return;
+  const mask =
+    'radial-gradient(circle at 50% 50%, transparent 0 55%, white 75%)';
+  return { WebkitMaskImage: mask, maskImage: mask };
+}
+
+function decideAuroraVisibility(args: {
+  forceAurora: boolean;
+  motionEnabled: boolean;
+  auroraVariant?: 'primary' | 'gold';
+  hasScrolled: boolean;
+  useInViewReveal: boolean;
+  useScrollReveal: boolean;
+}) {
+  const {
+    forceAurora,
+    motionEnabled,
+    auroraVariant,
+    hasScrolled,
+    useInViewReveal,
+    useScrollReveal,
+  } = args;
+  if (forceAurora) return true;
+  if (!motionEnabled) return false;
+  if (auroraVariant === undefined) return false;
+  return hasScrolled || useInViewReveal || useScrollReveal;
 }

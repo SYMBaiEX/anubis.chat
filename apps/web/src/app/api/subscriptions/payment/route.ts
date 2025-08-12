@@ -34,14 +34,16 @@ const paymentSchema = z.object({
 // Solana Connection
 // =============================================================================
 
-const SOLANA_RPC_URL = solanaConfig.rpcHost;
-const TREASURY_WALLET = solanaConfig.paymentAddress;
-
-if (!TREASURY_WALLET) {
-  throw new Error(
-    'NEXT_PUBLIC_SOLANA_PAYMENT_ADDRESS environment variable is required'
-  );
-}
+const SOLANA_RPC_URL = solanaConfig.rpcUrl;
+const TREASURY_WALLET: string = (() => {
+  const address = solanaConfig.paymentAddress;
+  if (!address) {
+    throw new Error(
+      'NEXT_PUBLIC_SOLANA_PAYMENT_ADDRESS environment variable is required'
+    );
+  }
+  return address;
+})();
 
 const connection = new Connection(SOLANA_RPC_URL, solanaConfig.commitment);
 
@@ -49,53 +51,88 @@ const connection = new Connection(SOLANA_RPC_URL, solanaConfig.commitment);
 // Transaction Verification
 // =============================================================================
 
+type VerificationResult = {
+  verified: boolean;
+  confirmations?: number;
+  error?: string;
+};
+
+function fetchTransaction(signature: string) {
+  return connection.getTransaction(signature, {
+    commitment: 'confirmed',
+    maxSupportedTransactionVersion: 0,
+  });
+}
+
+function getAllAccountKeys(
+  tx: NonNullable<Awaited<ReturnType<typeof fetchTransaction>>>
+) {
+  const message = tx.transaction.message;
+  const messageKeys = message.getAccountKeys({
+    accountKeysFromLookups: tx.meta?.loadedAddresses,
+  });
+  return [
+    ...messageKeys.staticAccountKeys,
+    ...(messageKeys.accountKeysFromLookups?.writable ?? []),
+    ...(messageKeys.accountKeysFromLookups?.readonly ?? []),
+  ];
+}
+
+function findAccountIndices(
+  keys: ReturnType<typeof getAllAccountKeys>,
+  sender: string,
+  treasury: string
+) {
+  let senderIndex = -1;
+  let treasuryIndex = -1;
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i].toBase58();
+    if (key === sender) {
+      senderIndex = i;
+    }
+    if (key === treasury) {
+      treasuryIndex = i;
+    }
+  }
+  return { senderIndex, treasuryIndex };
+}
+
+function computeTransferredSol(
+  tx: NonNullable<Awaited<ReturnType<typeof fetchTransaction>>>,
+  senderIndex: number
+): number {
+  const pre = tx.meta?.preBalances?.[senderIndex] ?? 0;
+  const post = tx.meta?.postBalances?.[senderIndex] ?? 0;
+  const fee = tx.meta?.fee ?? 0;
+  const lamports = pre - post - fee;
+  return lamports / 1e9;
+}
+
+async function getConfirmationCount(signature: string): Promise<number> {
+  const statuses = await connection.getSignatureStatuses([signature]);
+  return statuses.value[0]?.confirmations || 0;
+}
+
 async function verifyPayment(
   signature: string,
   expectedAmount: number,
   senderAddress: string
-): Promise<{ verified: boolean; confirmations?: number; error?: string }> {
+): Promise<VerificationResult> {
   try {
-    // Get transaction details
-    const transaction = await connection.getTransaction(signature, {
-      commitment: 'confirmed',
-      maxSupportedTransactionVersion: 0,
-    });
-
+    const transaction = await fetchTransaction(signature);
     if (!transaction) {
       return { verified: false, error: 'Transaction not found' };
     }
-
     if (transaction.meta?.err) {
       return { verified: false, error: 'Transaction failed on blockchain' };
     }
 
-    // Verify transaction details
-    const preBalances = transaction.meta?.preBalances || [];
-    const postBalances = transaction.meta?.postBalances || [];
-    const message = transaction.transaction.message;
-    const messageKeys = message.getAccountKeys({
-      accountKeysFromLookups: transaction.meta?.loadedAddresses,
-    });
-    const allAccountKeys = [
-      ...messageKeys.staticAccountKeys,
-      ...(messageKeys.accountKeysFromLookups?.writable ?? []),
-      ...(messageKeys.accountKeysFromLookups?.readonly ?? []),
-    ];
-
-    // Find sender and treasury accounts
-    let senderIndex = -1;
-    let treasuryIndex = -1;
-
-    for (let i = 0; i < allAccountKeys.length; i++) {
-      const key = allAccountKeys[i].toBase58();
-      if (key === senderAddress) {
-        senderIndex = i;
-      }
-      if (key === TREASURY_WALLET) {
-        treasuryIndex = i;
-      }
-    }
-
+    const keys = getAllAccountKeys(transaction);
+    const { senderIndex, treasuryIndex } = findAccountIndices(
+      keys,
+      senderAddress,
+      TREASURY_WALLET
+    );
     if (senderIndex === -1 || treasuryIndex === -1) {
       return {
         verified: false,
@@ -103,15 +140,8 @@ async function verifyPayment(
       };
     }
 
-    // Calculate transferred amount in SOL
-    const lamportsTransferred =
-      preBalances[senderIndex] -
-      postBalances[senderIndex] -
-      (transaction.meta?.fee || 0);
-    const solTransferred = lamportsTransferred / 1e9; // Convert lamports to SOL
-
-    // Verify amount (allow small tolerance for fees)
-    const tolerance = 0.001; // 0.001 SOL tolerance
+    const solTransferred = computeTransferredSol(transaction, senderIndex);
+    const tolerance = 0.001;
     if (Math.abs(solTransferred - expectedAmount) > tolerance) {
       return {
         verified: false,
@@ -119,11 +149,8 @@ async function verifyPayment(
       };
     }
 
-    // Get confirmation count
-    const confirmations = await connection.getSignatureStatuses([signature]);
-    const confirmationCount = confirmations.value[0]?.confirmations || 0;
-
-    return { verified: true, confirmations: confirmationCount };
+    const confirmations = await getConfirmationCount(signature);
+    return { verified: true, confirmations };
   } catch (error) {
     log.error('Payment verification error', {
       signature,
@@ -137,65 +164,95 @@ async function verifyPayment(
 // Route Handlers
 // =============================================================================
 
-export async function POST(request: NextRequest) {
-  return authRateLimit(request, async (req) => {
+function ensureConvexClient(): ConvexHttpClient {
+  const convexUrl = convexConfig.publicUrl;
+  if (!convexUrl) {
+    throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is required');
+  }
+  return new ConvexHttpClient(convexUrl);
+}
+
+async function getAuthenticatedUser(
+  req: NextRequest,
+  client: ConvexHttpClient
+) {
+  const authToken = req.headers.get('authorization')?.replace('Bearer ', '');
+  if (!authToken) {
+    return { error: validationErrorResponse('Authentication required') };
+  }
+  client.setAuth(authToken);
+  const currentUser = await client.query(api.users.getCurrentUserProfile);
+  if (!currentUser) {
+    return {
+      error: validationErrorResponse('User not authenticated or not found'),
+    };
+  }
+  return { currentUser } as const;
+}
+
+async function parsePaymentRequest(req: NextRequest) {
+  const body = await req.json();
+  const validation = paymentSchema.safeParse(body);
+  if (!validation.success) {
+    return {
+      error: validationErrorResponse(
+        'Invalid payment data',
+        validation.error.flatten().fieldErrors
+      ),
+    } as const;
+  }
+  return { data: validation.data } as const;
+}
+
+async function processPaymentWithConvex(
+  client: ConvexHttpClient,
+  args: { tier: 'pro' | 'pro_plus'; txSignature: string; amountSol: number },
+  confirmations: number
+) {
+  const paymentResult = await client.mutation(
+    api.subscriptions.processPayment,
+    args
+  );
+  await client.mutation(api.subscriptions.confirmPayment, {
+    txSignature: args.txSignature,
+    confirmations,
+  });
+  return paymentResult;
+}
+
+export function POST(request: NextRequest) {
+  return authRateLimit(request, async (req): Promise<Response> => {
     try {
-      // Initialize Convex client for auth
-      const convexUrl = convexConfig.publicUrl;
-      if (!convexUrl) {
-        throw new Error(
-          'NEXT_PUBLIC_CONVEX_URL environment variable is required'
-        );
+      const convexClient = ensureConvexClient();
+
+      const userResult = await getAuthenticatedUser(req, convexClient);
+      if ('error' in userResult) {
+        return addSecurityHeaders(userResult.error as NextResponse);
       }
-      const convexClient = new ConvexHttpClient(convexUrl);
+      const { currentUser } = userResult;
 
-      // Get authenticated user
-      const authToken = req.headers
-        .get('authorization')
-        ?.replace('Bearer ', '');
-      if (!authToken) {
-        return validationErrorResponse('Authentication required');
+      const parseResult = await parsePaymentRequest(req);
+      if ('error' in parseResult) {
+        return addSecurityHeaders(parseResult.error as NextResponse);
       }
-
-      // Set auth token on client
-      convexClient.setAuth(authToken);
-
-      // Get current user from Convex Auth
-      const currentUser = await convexClient.query(
-        api.users.getCurrentUserProfile
-      );
-      if (!currentUser) {
-        return validationErrorResponse('User not authenticated or not found');
-      }
-
-      // Parse and validate request body
-      const body = await req.json();
-      const validation = paymentSchema.safeParse(body);
-
-      if (!validation.success) {
-        return validationErrorResponse(
-          'Invalid payment data',
-          validation.error.flatten().fieldErrors
-        );
-      }
-
-      const { txSignature, tier, amountSol } = validation.data;
+      const { txSignature, tier, amountSol } = parseResult.data;
       const walletAddress = currentUser.walletAddress;
 
-      if (!walletAddress) {
+      if (typeof walletAddress !== 'string' || walletAddress.length === 0) {
         return validationErrorResponse('User wallet address is required');
       }
+      const senderWalletAddress: string = walletAddress;
 
       // Verify payment on Solana blockchain
       const verification = await verifyPayment(
         txSignature,
         amountSol,
-        walletAddress
+        senderWalletAddress
       );
 
       if (!verification.verified) {
         log.warn('Payment verification failed', {
-          walletAddress,
+          walletAddress: senderWalletAddress,
           txSignature,
           error: verification.error,
         });
@@ -204,25 +261,15 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Process payment in Convex using authenticated user ID
-      const paymentResult = await convexClient.mutation(
-        api.subscriptions.processPayment,
-        {
-          tier,
-          txSignature,
-          amountSol,
-        }
+      const paymentResult = await processPaymentWithConvex(
+        convexClient,
+        { tier, txSignature, amountSol },
+        verification.confirmations || 0
       );
-
-      // Confirm payment with blockchain data
-      await convexClient.mutation(api.subscriptions.confirmPayment, {
-        txSignature,
-        confirmations: verification.confirmations || 0,
-      });
 
       log.info('Payment processed successfully', {
         userId: currentUser._id,
-        walletAddress,
+        walletAddress: senderWalletAddress,
         tier,
         txSignature,
         amountSol,
@@ -257,7 +304,7 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-export async function OPTIONS(_request: NextRequest) {
+export function OPTIONS(_request: NextRequest) {
   const response = new NextResponse(null, { status: 200 });
   return addSecurityHeaders(response);
 }

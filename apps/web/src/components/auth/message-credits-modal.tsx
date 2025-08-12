@@ -446,7 +446,7 @@ export function MessageCreditsModal({
             <Badge className="bg-green-100 text-green-800">Best Value</Badge>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 xs:grid-cols-2">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
             <div className="rounded-lg border p-4 text-center">
               <div className="font-bold text-2xl">
                 {CREDIT_PACK.standardCredits}
@@ -514,7 +514,7 @@ export function MessageCreditsModal({
               <h5 className="font-medium text-green-800 dark:text-green-200">
                 Total Purchase:
               </h5>
-              <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:justify-between text-sm">
+              <div className="mt-2 flex flex-col gap-3 text-sm sm:flex-row sm:justify-between">
                 <div className="space-y-1">
                   <div className="font-bold text-green-800 dark:text-green-200">
                     {totalStandardCredits} Standard
@@ -541,7 +541,7 @@ export function MessageCreditsModal({
       {subscription && (
         <Card className="p-4">
           <h5 className="mb-3 font-medium">Current Credit Balance</h5>
-          <div className="grid grid-cols-1 gap-4 xs:grid-cols-2 text-sm">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-4 text-sm">
             <div className="rounded border p-3 text-center">
               <div className="font-bold text-lg">
                 {subscription.messageCredits || 0}
@@ -594,11 +594,15 @@ export function MessageCreditsModal({
       )}
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <Button className="w-full sm:w-auto" onClick={handleClose} variant="outline">
+        <Button
+          className="w-full sm:w-auto"
+          onClick={handleClose}
+          variant="outline"
+        >
           Cancel
         </Button>
         <Button
-          className="bg-gradient-to-r from-green-500 to-green-600 w-full sm:w-auto"
+          className="w-full bg-gradient-to-r from-green-500 to-green-600 sm:w-auto"
           disabled={isProcessing}
           onClick={handlePurchase}
         >
@@ -873,7 +877,7 @@ export function MessageCreditsModal({
 
   return (
     <Dialog onOpenChange={handleClose} open={isOpen}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto w-[95vw] sm:w-full">
+      <DialogContent className="max-h-[90vh] w-[95vw] max-w-4xl overflow-y-auto sm:w-full">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Plus className="h-5 w-5" />
