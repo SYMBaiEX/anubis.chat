@@ -1,7 +1,7 @@
 'use client';
 
 import { Shield } from 'lucide-react';
-import { AdminGuard } from '@/components/auth/admin-guard';
+import { AdminGuard } from '@/components/auth/adminGuard';
 
 export default function AdminLayout({
   children,

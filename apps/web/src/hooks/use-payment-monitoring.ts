@@ -101,7 +101,7 @@ export function usePaymentMonitoring() {
         return 'Loading...';
       }
 
-      const { successRate, avgProcessingTime, metrics: data } = metrics;
+      const { successRate, avgProcessingTime, ...data } = metrics.metrics;
       return `Success Rate: ${successRate}% | Avg Time: ${avgProcessingTime}ms | Total: ${data.totalEvents}`;
     },
     []

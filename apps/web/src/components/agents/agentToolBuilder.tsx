@@ -62,7 +62,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type { AgentTool } from './types';
 
-interface Tool extends AgentTool {
+export interface Tool extends AgentTool {
   type: 'api' | 'webhook' | 'script' | 'blockchain' | 'database' | 'custom';
   method?: string;
   headers?: Record<string, string>;

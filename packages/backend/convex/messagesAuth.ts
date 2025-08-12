@@ -55,6 +55,21 @@ export const createMyMessage = mutation({
       v.literal('system')
     ),
     content: v.string(),
+    attachments: v.optional(
+      v.array(
+        v.object({
+          fileId: v.string(),
+          url: v.optional(v.string()),
+          mimeType: v.string(),
+          size: v.number(),
+          type: v.union(
+            v.literal('image'),
+            v.literal('file'),
+            v.literal('video')
+          ),
+        })
+      )
+    ),
     tokenCount: v.optional(v.number()),
     embedding: v.optional(v.array(v.number())),
     metadata: v.optional(
@@ -157,7 +172,16 @@ export const createMyMessage = mutation({
       content: args.content,
       tokenCount: args.tokenCount ?? 0,
       embedding: args.embedding,
-      metadata: args.metadata,
+      metadata: {
+        ...(args.metadata || {}),
+        attachments: (args.attachments || []).map((a) => ({
+          fileId: a.fileId,
+          url: a.url,
+          mimeType: a.mimeType,
+          size: a.size,
+          type: a.type,
+        })),
+      },
       status: args.status ?? 'sent',
       parentMessageId: args.parentMessageId,
       createdAt: now,

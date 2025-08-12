@@ -65,6 +65,14 @@ function WorkflowCanvasContent({
   const [history, setHistory] = useState<WorkflowHistory[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
+  // Save state to history for undo/redo
+  const saveToHistory = useCallback(() => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push({ nodes: [...nodes], edges: [...edges] });
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, [nodes, edges, history, historyIndex]);
+
   // Handle new connections
   const onConnect = useCallback(
     (params: Connection) => {
@@ -78,14 +86,6 @@ function WorkflowCanvasContent({
     },
     [setEdges, saveToHistory]
   );
-
-  // Save state to history for undo/redo
-  const saveToHistory = useCallback(() => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push({ nodes: [...nodes], edges: [...edges] });
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  }, [nodes, edges, history, historyIndex]);
 
   // Undo action
   const handleUndo = useCallback(() => {

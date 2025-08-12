@@ -303,7 +303,7 @@ export class MemoryStore {
     // Generate next cursor (ID of last conversation in current page)
     const nextCursor =
       paginatedConversations.length > 0
-        ? paginatedConversations.at(-1).id
+        ? paginatedConversations.at(-1)?.id
         : undefined;
 
     return {

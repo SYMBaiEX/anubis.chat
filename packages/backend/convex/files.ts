@@ -5,7 +5,8 @@
 
 import { ConvexError, v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
-import { mutation, query } from './_generated/server';
+import { httpAction, mutation, query } from './_generated/server';
+import { api } from './_generated/api';
 
 // =============================================================================
 // Queries
@@ -120,12 +121,18 @@ export const getContent = query({
       throw new ConvexError('File not found or access denied');
     }
 
+    // Prefer streaming from storage via URL; fall back to base64
+    const url = file.storageId
+      ? await ctx.storage.getUrl(file.storageId as Id<'_storage'>)
+      : undefined;
+
     return {
       fileId: file.fileId,
       fileName: file.fileName,
       mimeType: file.mimeType,
-      data: file.data, // Base64 encoded
-    };
+      data: file.data,
+      url: url ?? file.url,
+    } as const;
   },
 });
 
@@ -144,7 +151,9 @@ export const upload = mutation({
     mimeType: v.string(),
     size: v.number(),
     hash: v.string(),
-    data: v.string(), // Base64 encoded
+    // Prefer storage-first uploads; allow either storageId or legacy base64 data
+    storageId: v.optional(v.string()),
+    data: v.optional(v.string()), // Base64 encoded (legacy)
     purpose: v.union(
       v.literal('assistants'),
       v.literal('vision'),
@@ -170,6 +179,19 @@ export const upload = mutation({
       return existingFile;
     }
 
+    // Resolve a public URL if storageId provided
+    let resolvedUrl: string | undefined;
+    if (args.storageId) {
+      try {
+        const url = await ctx.storage.getUrl(args.storageId as Id<'_storage'>);
+        if (url) {
+          resolvedUrl = url;
+        }
+      } catch (_err) {
+        // ignore url resolution failure
+      }
+    }
+
     // Create file record
     const fileDoc = await ctx.db.insert('files', {
       walletAddress: args.walletAddress,
@@ -179,6 +201,8 @@ export const upload = mutation({
       size: args.size,
       hash: args.hash,
       data: args.data,
+      storageId: args.storageId,
+      url: resolvedUrl,
       purpose: args.purpose,
       description: args.description,
       tags: args.tags,
@@ -208,6 +232,7 @@ export const updateMetadata = mutation({
         v.literal('fine-tune')
       )
     ),
+    storageId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { fileId, walletAddress, ...updates } = args;
@@ -223,11 +248,22 @@ export const updateMetadata = mutation({
       throw new ConvexError('File not found or access denied');
     }
 
-    // Update file
-    await ctx.db.patch(file._id, {
+    // If storageId is provided, attempt URL resolution
+    const patch: Record<string, unknown> = {
       ...updates,
       updatedAt: Date.now(),
-    });
+    };
+    if (updates.storageId) {
+      try {
+        const url = await ctx.storage.getUrl(
+          updates.storageId as Id<'_storage'>
+        );
+        if (url) patch.url = url;
+      } catch (_e) {}
+    }
+
+    // Update file
+    await ctx.db.patch(file._id, patch);
   },
 });
 
@@ -316,4 +352,134 @@ export const getStats = query({
         })),
     };
   },
+});
+
+// =============================================================================
+// HTTP actions for storage-first uploads/serving (routed in http.ts)
+// =============================================================================
+
+export const generateUploadUrl = httpAction(async (ctx) => {
+  const url = await ctx.storage.generateUploadUrl();
+  return new Response(JSON.stringify({ url }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+});
+
+/**
+ * Internal mutation to create file record from uploaded storage
+ */
+export const createFileFromStorage = mutation({
+  args: {
+    walletAddress: v.string(),
+    storageId: v.string(),
+    fileName: v.string(),
+    mimeType: v.string(),
+    purpose: v.union(
+      v.literal('assistants'),
+      v.literal('vision'),
+      v.literal('batch'),
+      v.literal('fine-tune')
+    ),
+    description: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    size: v.number(),
+    hash: v.string(),
+    url: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const fileId = crypto.randomUUID();
+
+    const fileDocId = await ctx.db.insert('files', {
+      walletAddress: args.walletAddress,
+      fileId,
+      fileName: args.fileName,
+      mimeType: args.mimeType,
+      size: args.size,
+      hash: args.hash,
+      storageId: args.storageId,
+      url: args.url,
+      purpose: args.purpose,
+      description: args.description,
+      tags: args.tags ?? [],
+      status: 'processed',
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return await ctx.db.get(fileDocId);
+  },
+});
+
+// Serve a storage file by storageId with content-type passthrough
+export const serveStorage = httpAction(async (ctx, request) => {
+  const { searchParams } = new URL(request.url);
+  const storageId = searchParams.get('id');
+  if (!storageId) {
+    return new Response('Missing id', { status: 400 });
+  }
+  const blob = await ctx.storage.get(storageId as Id<'_storage'>);
+  if (!blob) return new Response('Not found', { status: 404 });
+  // Best-effort: let browser sniff if contentType unknown
+  return new Response(blob);
+});
+
+// Register an uploaded storage object as a file row with metadata and URL
+export const registerUpload = httpAction(async (ctx, request) => {
+  try {
+    const body = (await request.json()) as {
+      walletAddress: string;
+      storageId: string;
+      fileName: string;
+      mimeType: string;
+      purpose: 'assistants' | 'vision' | 'batch' | 'fine-tune';
+      description?: string;
+      tags?: string[];
+    };
+
+    const meta = await ctx.storage.getMetadata(
+      body.storageId as Id<'_storage'>
+    );
+    if (!meta) {
+      return new Response(JSON.stringify({ error: 'Invalid storageId' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const url = await ctx.storage.getUrl(body.storageId as Id<'_storage'>);
+
+    // Use the mutation to create the file record
+    const file = await ctx.runMutation(api.files.createFileFromStorage, {
+      walletAddress: body.walletAddress,
+      storageId: body.storageId,
+      fileName: body.fileName,
+      mimeType: body.mimeType,
+      purpose: body.purpose,
+      description: body.description,
+      tags: body.tags,
+      size: meta.size,
+      hash: meta.sha256,
+      url: url ?? undefined,
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        file: {
+          fileId: file?.fileId,
+          url: file?.url,
+          mimeType: file?.mimeType,
+          size: file?.size,
+          storageId: file?.storageId,
+        },
+      }),
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (e) {
+    return new Response(
+      JSON.stringify({ success: false, error: (e as Error).message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 });

@@ -396,7 +396,17 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   // Global Command Palette handles shortcuts now; local integration removed.
 
-  const handleSendMessage = async (content: string, useReasoning?: boolean) => {
+  const handleSendMessage = async (
+    content: string,
+    useReasoning?: boolean,
+    attachments?: Array<{
+      fileId: string;
+      url?: string;
+      mimeType: string;
+      size: number;
+      type: 'image' | 'file' | 'video';
+    }>
+  ) => {
     if (!(selectedChatId && user && userWalletAddress)) {
       return;
     }
@@ -413,7 +423,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         content,
         userWalletAddress,
         selectedModel,
-        useReasoning
+        useReasoning,
+        attachments
       );
     } catch (error: unknown) {
       const errorMessage =

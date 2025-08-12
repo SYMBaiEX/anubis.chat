@@ -9,7 +9,6 @@ export default defineConfig({
     setupFiles: ['./src/testSetup.ts'],
     globals: true,
     silent: false,
-    logLevel: 'warn',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

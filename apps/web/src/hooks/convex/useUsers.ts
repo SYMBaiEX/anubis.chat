@@ -30,8 +30,8 @@ export function useUser(walletAddress: string) {
 /**
  * Get user usage statistics with real-time updates
  */
-export function useUserUsage(walletAddress: string) {
-  return useConvexQuery(api.users.getUsage, { walletAddress });
+export function useUserUsage() {
+  return useConvexQuery(api.users.getUsage, {});
 }
 
 // =============================================================================
@@ -40,18 +40,19 @@ export function useUserUsage(walletAddress: string) {
 
 /**
  * Create or update user profile with optimistic updates
+ * Note: Backend 'upsert' function not implemented - use updateProfile instead
  */
-export function useUpsertUser() {
-  return useOptimisticMutation(api.users.upsert, {
-    rollbackOnError: true,
-    onOptimisticSuccess: (user: any) => {
-      log.info('User profile updated successfully', { userId: user?._id });
-    },
-    onRollbackError: (error: Error) => {
-      log.error('Failed to update user profile', { error: error.message });
-    },
-  });
-}
+// export function useUpsertUser() {
+//   return useOptimisticMutation(api.users.upsert, {
+//     rollbackOnError: true,
+//     onOptimisticSuccess: (user: any) => {
+//       log.info('User profile updated successfully', { userId: user?._id });
+//     },
+//     onRollbackError: (error: Error) => {
+//       log.error('Failed to update user profile', { error: error.message });
+//     },
+//   });
+// }
 
 /**
  * Update user preferences with optimistic updates
@@ -108,7 +109,7 @@ export function useTrackUsage() {
  * Deactivate user account
  */
 export function useDeactivateUser() {
-  return useConvexMutation(api.users.deactivate);
+  return useConvexMutation(api.users.deactivateAccount);
 }
 
 // =============================================================================
@@ -117,58 +118,59 @@ export function useDeactivateUser() {
 
 /**
  * Complete user setup flow (create user + set preferences)
+ * Note: Disabled as useUpsertUser is not available - use individual functions instead
  */
-export function useUserSetup() {
-  const { mutate: upsertUser } = useUpsertUser();
-  const { mutate: updatePreferences } = useUpdateUserPreferences();
+// export function useUserSetup() {
+//   const { mutate: upsertUser } = useUpsertUser();
+//   const { mutate: updatePreferences } = useUpdateUserPreferences();
 
-  return useCallback(
-    async (userData: {
-      walletAddress: string;
-      publicKey: string;
-      displayName?: string;
-      avatar?: string;
-      preferences?: {
-        theme: 'light' | 'dark';
-        aiModel: string;
-        notifications: boolean;
-      };
-    }): Promise<Result<any, Error>> => {
-      // Step 1: Create/update user
-      const userResult = await upsertUser({
-        walletAddress: userData.walletAddress,
-        publicKey: userData.publicKey,
-        displayName: userData.displayName,
-        avatar: userData.avatar,
-        preferences: userData.preferences,
-      });
+//   return useCallback(
+//     async (userData: {
+//       walletAddress: string;
+//       publicKey: string;
+//       displayName?: string;
+//       avatar?: string;
+//       preferences?: {
+//         theme: 'light' | 'dark';
+//         aiModel: string;
+//         notifications: boolean;
+//       };
+//     }): Promise<Result<any, Error>> => {
+//       // Step 1: Create/update user
+//       const userResult = await upsertUser({
+//         walletAddress: userData.walletAddress,
+//         publicKey: userData.publicKey,
+//         displayName: userData.displayName,
+//         avatar: userData.avatar,
+//         preferences: userData.preferences,
+//       });
 
-      if (!userResult.success) {
-        return userResult;
-      }
+//       if (!userResult.success) {
+//         return userResult;
+//       }
 
-      // Step 2: Update preferences if provided and different from defaults
-      if (userData.preferences) {
-        const preferencesResult = await updatePreferences({
-          walletAddress: userData.walletAddress,
-          preferences: userData.preferences,
-        });
+//       // Step 2: Update preferences if provided and different from defaults
+//       if (userData.preferences) {
+//         const preferencesResult = await updatePreferences({
+//           walletAddress: userData.walletAddress,
+//           preferences: userData.preferences,
+//         });
 
-        if (!preferencesResult.success) {
-          return preferencesResult;
-        }
+//         if (!preferencesResult.success) {
+//           return preferencesResult;
+//         }
 
-        return success({
-          user: userResult.data,
-          preferences: preferencesResult.data,
-        });
-      }
+//         return success({
+//           user: userResult.data,
+//           preferences: preferencesResult.data,
+//         });
+//       }
 
-      return success({ user: userResult.data });
-    },
-    [upsertUser, updatePreferences]
-  );
-}
+//       return success({ user: userResult.data });
+//     },
+//     [upsertUser, updatePreferences]
+//   );
+// }
 
 /**
  * Batch update user profile and preferences
@@ -235,7 +237,7 @@ export function useBatchUserUpdate() {
  */
 export function useUserState(walletAddress: string) {
   const userQuery = useUser(walletAddress);
-  const usageQuery = useUserUsage(walletAddress);
+  const usageQuery = useUserUsage();
 
   return {
     user: userQuery,

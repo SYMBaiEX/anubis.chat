@@ -78,8 +78,8 @@ export function useWorkflows(walletAddress: string) {
         tags: metadata?.tags,
         isTemplate: metadata?.isTemplate,
         isPublic: metadata?.isPublic,
-        nodes,
-        edges,
+        nodes: nodes as any,
+        edges: edges as any,
       });
     },
     [saveVisualWorkflow, walletAddress]
@@ -111,7 +111,9 @@ export function useWorkflows(walletAddress: string) {
       return await createExecution({
         workflowId,
         walletAddress,
-        variables,
+        variables: variables as
+          | Record<string, string | number | boolean | null>
+          | undefined,
       });
     },
     [createExecution, walletAddress]

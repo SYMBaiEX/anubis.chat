@@ -7,7 +7,7 @@ import { Lock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { AdminGuard } from '@/components/auth/admin-guard';
+import { AdminGuard } from '@/components/auth/adminGuard';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

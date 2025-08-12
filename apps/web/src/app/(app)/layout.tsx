@@ -1,7 +1,7 @@
 'use client';
 
-import ActivityFooter from '@/components/activity-footer';
-import { AuthGuard } from '@/components/auth/auth-guard';
+import ActivityFooter from '@/components/activityFooter';
+import { AuthGuard } from '@/components/auth/authGuard';
 import Sidebar from '@/components/sidebar';
 import { useReferralTracking } from '@/hooks/use-referral-tracking';
 

@@ -173,6 +173,7 @@ export class WorkflowEngine {
   private executions: Map<string, WorkflowContext> = new Map();
   private agents: Map<string, Agent> = new Map();
   private nodeExecutors: Map<NodeType, NodeExecutor> = new Map();
+  private executionQueue: PQueue;
 
   constructor() {
     this.executionQueue = new PQueue({ concurrency: 10 });
@@ -429,7 +430,7 @@ class TaskNodeExecutor extends NodeExecutor {
     const result = await agent.execute(config.task);
 
     if (result.success) {
-      context.results.set(node.id, result.output);
+      context.results.set(node.id, result.output as WorkflowValue);
     } else {
       throw new Error(result.error || 'Task execution failed');
     }
@@ -516,7 +517,21 @@ class ParallelNodeExecutor extends NodeExecutor {
       }
     }
 
-    context.results.set(node.id, results);
+    // Extract results in a format compatible with WorkflowValue
+    const processedResults = results.map((result) => {
+      if (result.status === 'fulfilled') {
+        return result.value as WorkflowValue;
+      }
+      return {
+        error:
+          result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason),
+        status: 'rejected',
+      } as WorkflowValue;
+    });
+
+    context.results.set(node.id, processedResults);
   }
 }
 
@@ -534,7 +549,7 @@ class LoopNodeExecutor extends NodeExecutor {
 
     let iterations = 0;
     const maxIterations = config.maxIterations || 1000;
-    const results: unknown[] = [];
+    const results: WorkflowValue[] = [];
 
     while (iterations < maxIterations && config.condition(context)) {
       // Execute loop body
@@ -561,7 +576,7 @@ class SubworkflowNodeExecutor extends NodeExecutor {
     // For subworkflow nodes, config should contain workflowId and inputs
     const config = node.config as {
       workflowId?: string;
-      inputs?: Record<string, unknown>;
+      inputs?: WorkflowVariables;
     };
     const subworkflowId = config?.workflowId;
     if (!subworkflowId) {
@@ -571,7 +586,7 @@ class SubworkflowNodeExecutor extends NodeExecutor {
     const inputs = config?.inputs || context.variables;
     const result = await this.engine.executeWorkflow(subworkflowId, inputs);
 
-    context.results.set(node.id, result);
+    context.results.set(node.id, result as unknown as WorkflowValue);
   }
 }
 

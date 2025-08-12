@@ -178,7 +178,7 @@ class ConvexCache {
       this.cacheQuery(key, result, ttl);
       log.debug(`Background refresh completed for ${key}`);
     } catch (error) {
-      log.error(`Background refresh failed for ${key}`, error);
+      log.error(`Background refresh failed for ${key}`, { error });
     }
   }
 

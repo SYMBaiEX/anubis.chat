@@ -1,6 +1,11 @@
 import { httpRouter } from 'convex/server';
 import { httpAction } from './_generated/server';
 import { auth } from './auth';
+import {
+  generateUploadUrl as files_generateUploadUrl,
+  registerUpload as files_registerUpload,
+  serveStorage as files_serveStorage,
+} from './files';
 import { verifyPaymentTransaction } from './paymentVerification';
 import { streamChat } from './streaming';
 
@@ -36,6 +41,37 @@ http.route({
   path: '/stream-chat',
   method: 'POST',
   handler: streamChat,
+});
+
+// File upload URL generation
+http.route({
+  path: '/generateUploadUrl',
+  method: 'OPTIONS',
+  handler: corsHandler,
+});
+http.route({
+  path: '/generateUploadUrl',
+  method: 'POST',
+  handler: files_generateUploadUrl,
+});
+
+// Serve storage
+http.route({
+  path: '/serveStorage',
+  method: 'GET',
+  handler: files_serveStorage,
+});
+
+// Register uploaded file metadata
+http.route({
+  path: '/registerUpload',
+  method: 'OPTIONS',
+  handler: corsHandler,
+});
+http.route({
+  path: '/registerUpload',
+  method: 'POST',
+  handler: files_registerUpload,
 });
 
 // Payment verification endpoint with CORS support

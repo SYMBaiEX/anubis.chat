@@ -66,26 +66,20 @@ async function getSubscriptionStatus(walletAddress: string) {
 
     const subscription = await convexClient.query(
       api.subscriptions.getSubscriptionStatus,
-      {
-        walletAddress,
-      }
+      {}
     );
 
     if (!subscription) {
       // Create default free subscription if none exists
       await convexClient.mutation(
         api.subscriptions.initializeUserSubscription,
-        {
-          walletAddress,
-        }
+        {}
       );
 
       // Retry getting the subscription
       const newSubscription = await convexClient.query(
         api.subscriptions.getSubscriptionStatus,
-        {
-          walletAddress,
-        }
+        {}
       );
 
       return newSubscription;
@@ -280,9 +274,11 @@ export async function requireMessagesRemaining<T extends NextRequest>(
         APIErrorCode.QUOTA_EXCEEDED,
         'Message limit reached for current subscription tier',
         {
-          messagesRemaining: req.user.limits.messagesRemaining,
-          tier: req.user.subscription.tier,
-          nextReset: req.user.subscription.currentPeriodEnd,
+          details: {
+            messagesRemaining: req.user.limits.messagesRemaining,
+            tier: req.user.subscription.tier,
+            nextReset: req.user.subscription.currentPeriodEnd,
+          },
         }
       );
     }
@@ -302,12 +298,14 @@ export async function requirePremiumAccess<T extends NextRequest>(
 
     if (!(isAdmin || req.user.limits.canUsePremiumModel)) {
       return createErrorResponse(
-        APIErrorCode.FEATURE_RESTRICTED,
+        APIErrorCode.FORBIDDEN,
         'Premium model access requires Pro or Pro+ subscription',
         {
-          currentTier: req.user.subscription.tier,
-          premiumMessagesRemaining: req.user.limits.premiumMessagesRemaining,
-          requiredTier: 'pro',
+          details: {
+            currentTier: req.user.subscription.tier,
+            premiumMessagesRemaining: req.user.limits.premiumMessagesRemaining,
+            requiredTier: 'pro',
+          },
         }
       );
     }
@@ -335,12 +333,14 @@ export async function requireProPlusAccess<T extends NextRequest>(
       };
 
       return createErrorResponse(
-        APIErrorCode.FEATURE_RESTRICTED,
+        APIErrorCode.FORBIDDEN,
         `${featureNames[feature]} requires Pro+ subscription`,
         {
-          currentTier: req.user.subscription.tier,
-          requiredTier: 'pro_plus',
-          feature,
+          details: {
+            currentTier: req.user.subscription.tier,
+            requiredTier: 'pro_plus',
+            feature,
+          },
         }
       );
     }
@@ -375,7 +375,7 @@ export async function trackMessageUsage<T extends NextRequest>(
       // Check premium model access
       if (isPremiumModel && !req.user.limits.canUsePremiumModel) {
         return createErrorResponse(
-          APIErrorCode.FEATURE_RESTRICTED,
+          APIErrorCode.FORBIDDEN,
           'Premium model access not available for current tier'
         );
       }
@@ -395,7 +395,6 @@ export async function trackMessageUsage<T extends NextRequest>(
           // Fire and forget - don't await to avoid blocking response
           convexClient
             .mutation(api.subscriptions.trackMessageUsage, {
-              walletAddress: req.user.walletAddress,
               isPremiumModel,
             })
             .catch((error) => {

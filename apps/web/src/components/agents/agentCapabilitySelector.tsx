@@ -11,13 +11,6 @@ import { cn } from '@/lib/utils';
 import { capabilities, categories } from './constants';
 import type { AgentCapability } from './types';
 
-interface Capability extends Omit<AgentCapability, 'enabled'> {
-  premium?: boolean;
-  beta?: boolean;
-  dependencies?: string[];
-  incompatible?: string[];
-}
-
 interface AgentCapabilitySelectorProps {
   selected: string[];
   onChange: (selected: string[]) => void;

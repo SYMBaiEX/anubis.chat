@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
   },
   // PWA and static assets
   headers() {
-    return [
+    return Promise.resolve([
       {
         source: '/favicon/:path*',
         headers: [
@@ -35,7 +35,7 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-    ];
+    ]);
   },
 };
 

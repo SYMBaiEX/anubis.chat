@@ -1,8 +1,8 @@
 'use client';
 
 import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import Loader from '@/components/loader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -131,7 +131,7 @@ export function WalletModal({ open, onClose }: WalletModalProps) {
                   </div>
 
                   {selectedWallet === wallet.name && isConnecting ? (
-                    <Loader className="h-4 w-4" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Button
                       className="border-amber-600/30 text-amber-200 hover:bg-amber-600/10"

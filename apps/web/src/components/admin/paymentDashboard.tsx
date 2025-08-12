@@ -8,7 +8,6 @@ import {
   DollarSign,
   ExternalLink,
   RefreshCw,
-  Users,
   XCircle,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -27,7 +26,7 @@ import { usePaymentAdminMonitoring } from '@/hooks/use-payment-monitoring';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
 
-const _log = createModuleLogger('payment-dashboard');
+const _log = createModuleLogger('paymentDashboard');
 
 interface PaymentDashboardProps {
   className?: string;
@@ -39,7 +38,6 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
     health,
     alerts,
     performance,
-    isHealthy,
     hasRecentErrors,
     successRate,
     overallStatus,
@@ -173,10 +171,10 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
 
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {metricsData.map((metric, index) => {
+        {metricsData.map((metric, metricIndex) => {
           const Icon = metric.icon;
           return (
-            <Card key={index}>
+            <Card key={`${metric.title}-${metricIndex}`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="font-medium text-sm">
                   {metric.title}
@@ -225,7 +223,7 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {alerts.slice(0, 5).map((alert, index) => {
+            {alerts.slice(0, 5).map((alert, alertIndex) => {
               const severityConfig = {
                 critical: 'bg-red-100 text-red-800 border-red-200',
                 error: 'bg-red-50 text-red-700 border-red-100',
@@ -239,7 +237,7 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
                       alert.severity as keyof typeof severityConfig
                     ]
                   }
-                  key={index}
+                  key={`${alert.timestamp}-${alertIndex}`}
                 >
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
@@ -295,16 +293,27 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {data.map((hour, index) => {
-              const successRate = hour.successRate;
+            {data.map((hour, hourIndex) => {
+              const hourlySuccessRate = hour.successRate;
               const total = hour.successful + hour.failed;
               const time = new Date(`${hour.hour}:00`).toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
               });
 
+              // Helper function to get success rate color
+              const getSuccessRateColor = (rate: number): string => {
+                if (rate >= 95) {
+                  return 'text-green-600';
+                }
+                if (rate >= 80) {
+                  return 'text-yellow-600';
+                }
+                return 'text-red-600';
+              };
+
               return (
-                <div className="space-y-2" key={index}>
+                <div className="space-y-2" key={`${hour.hour}-${hourIndex}`}>
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">{time}</span>
                     <div className="flex items-center space-x-4">
@@ -314,21 +323,17 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
                       <span
                         className={cn(
                           'font-medium',
-                          successRate >= 95
-                            ? 'text-green-600'
-                            : successRate >= 80
-                              ? 'text-yellow-600'
-                              : 'text-red-600'
+                          getSuccessRateColor(hourlySuccessRate)
                         )}
                       >
-                        {successRate.toFixed(1)}%
+                        {hourlySuccessRate.toFixed(1)}%
                       </span>
                       <span className="text-muted-foreground text-xs">
                         {hour.avgProcessingTime}ms
                       </span>
                     </div>
                   </div>
-                  <Progress className="h-2" value={successRate} />
+                  <Progress className="h-2" value={hourlySuccessRate} />
                 </div>
               );
             })}

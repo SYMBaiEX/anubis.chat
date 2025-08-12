@@ -360,10 +360,12 @@ export const processPaymentTransaction = async (
     while (Date.now() - startTime < confirmationTimeout) {
       try {
         // Use our enhanced status checker with blockhash info if available
+        // Re-get metadata in case it's available (type-safe approach)
+        const currentMeta = transactionMetaMap.get(transaction);
         const statusResult = await checkTransactionStatus(
           sentSignature,
-          meta?.blockhash,
-          meta?.lastValidBlockHeight
+          currentMeta?.blockhash,
+          currentMeta?.lastValidBlockHeight
         );
 
         if (statusResult.confirmed) {

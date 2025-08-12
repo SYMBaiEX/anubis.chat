@@ -3,7 +3,7 @@
  * Cross-platform DOMPurify wrapper for safe HTML rendering
  */
 
-import DOMPurify from 'dompurify';
+import DOMPurify, { type Config } from 'dompurify';
 
 /**
  * Create isomorphic DOMPurify instance that works in both browser and Node.js
@@ -27,7 +27,7 @@ if (typeof window !== 'undefined') {
   // For server-side, we'll create a simple fallback that just escapes HTML
   // The actual DOMPurify instance will be created on demand
   isomorphicDOMPurify = {
-    sanitize: (dirty: string, _config?: DOMPurify.Config) => {
+    sanitize: (dirty: string, _config?: Config) => {
       // Simple HTML escaping as fallback for SSR
       // This is safe but doesn't preserve any formatting
       return dirty
@@ -44,7 +44,7 @@ if (typeof window !== 'undefined') {
 /**
  * Default sanitization options for code highlighting
  */
-const DEFAULT_CODE_SANITIZE_OPTIONS: DOMPurify.Config = {
+const DEFAULT_CODE_SANITIZE_OPTIONS: Config = {
   ALLOWED_TAGS: ['span', 'br'],
   ALLOWED_ATTR: ['class', 'style'],
   KEEP_CONTENT: true,
@@ -57,7 +57,7 @@ const DEFAULT_CODE_SANITIZE_OPTIONS: DOMPurify.Config = {
 /**
  * Strict sanitization options for user content
  */
-const STRICT_SANITIZE_OPTIONS: DOMPurify.Config = {
+const STRICT_SANITIZE_OPTIONS: Config = {
   ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'u', 'br', 'p', 'a'],
   ALLOWED_ATTR: ['href', 'target', 'rel'],
   KEEP_CONTENT: true,

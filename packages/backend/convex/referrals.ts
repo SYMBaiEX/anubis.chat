@@ -337,6 +337,9 @@ export const getReferrerPayoutInfo = query({
       referralCode: referredByCode,
       commissionRate: referralCodeRecord.currentCommissionRate,
       referrerWalletAddress: referrer.walletAddress,
+      // Extra context for UI display
+      referrerDisplayName: referrer.displayName || 'Anonymous Referrer',
+      referrerAvatar: referrer.avatar,
     } as const;
   },
 });
@@ -600,6 +603,10 @@ export const attributeReferralToUser = mutation({
       throw new Error('Invalid referral code');
     }
 
+    if (!referralCode.isActive) {
+      throw new Error('This referral code is no longer active');
+    }
+
     // Prevent self-referrals
     if (referralCode.userId === user._id) {
       await ctx.db.insert('referralFraudAlerts', {
@@ -632,11 +639,47 @@ export const attributeReferralToUser = mutation({
         referredWalletAddress: args.walletAddress,
         status: 'attributed',
       });
-
-      return { success: true, attributed: true };
     }
 
-    return { success: true, attributed: false };
+    // If within 72-hour grace period and user has no referrer yet, set it now
+    const alreadyHasReferrer = Boolean(user.referredBy && user.referredByCode);
+    const accountAgeMs = Date.now() - (user.createdAt || Date.now());
+    const withinGracePeriod = accountAgeMs <= 72 * 60 * 60 * 1000; // 72 hours
+
+    if (!alreadyHasReferrer && withinGracePeriod) {
+      await ctx.db.patch(user._id, {
+        referredBy: referralCode.userId,
+        referredByCode: normalizedCode,
+        referredAt: Date.now(),
+      });
+
+      // If we didn't find a pending attribution earlier, create an attributed record for consistency
+      if (!attribution) {
+        await ctx.db.insert('referralAttributions', {
+          referralCode: normalizedCode,
+          referrerId: referralCode.userId,
+          referredUserId: user._id,
+          referredWalletAddress: args.walletAddress,
+          status: 'attributed',
+          source: 'auto_attribute_on_signup',
+          expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000, // keep for 1 year
+          createdAt: Date.now(),
+        });
+      }
+
+      return { success: true, attributed: true, assigned: true } as const;
+    }
+
+    return {
+      success: true,
+      attributed: Boolean(attribution),
+      assigned: false,
+      reason: alreadyHasReferrer
+        ? 'already_has_referrer'
+        : withinGracePeriod
+          ? 'unknown'
+          : 'grace_period_expired',
+    } as const;
   },
 });
 

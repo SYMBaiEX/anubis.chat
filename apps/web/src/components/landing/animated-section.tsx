@@ -22,7 +22,16 @@ export type AnimationIntensity = 'low' | 'medium' | 'high';
  * - Decorative layers can be toggled via props for tomb background
  */
 interface AnimatedSectionProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, 'children' | 'className'> {
+  extends Omit<
+    React.HTMLAttributes<HTMLElement>,
+    | 'children'
+    | 'className'
+    | 'onDrag'
+    | 'onDragEnd'
+    | 'onDragStart'
+    | 'onAnimationStart'
+    | 'onAnimationEnd'
+  > {
   children: React.ReactNode;
   className?: string;
   /** Whether to apply the themed surface background (papyrus/basalt). Defaults to true */
@@ -218,7 +227,7 @@ export default function AnimatedSection({
 function getParallaxStyle(
   motionEnabled: boolean,
   parallaxY: number,
-  translateY: ReturnType<typeof useTransform>
+  translateY: import('framer-motion').MotionValue<number>
 ) {
   return motionEnabled && parallaxY ? { y: translateY } : undefined;
 }

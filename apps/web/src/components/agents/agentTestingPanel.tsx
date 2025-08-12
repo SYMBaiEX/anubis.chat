@@ -158,7 +158,7 @@ export function AgentTestingPanel({ agent }: AgentTestingPanelProps) {
   });
   const [testResults, setTestResults] = useState<Record<string, boolean>>({});
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!inputMessage.trim()) {
       return;
     }
@@ -213,37 +213,51 @@ export function AgentTestingPanel({ agent }: AgentTestingPanelProps) {
     setMessages([]);
     setIsRunning(true);
 
-    // Simulate running through the scenario
+    // Process all messages and collect delays for parallel processing
+    const delays: Promise<void>[] = [];
+    let accumulatedDelay = 0;
+
     for (const message of scenario.messages) {
-      const testMessage: TestMessage = {
-        id: `msg_${Date.now()}_${message.role}`,
-        role: message.role === 'user' ? 'user' : 'agent',
-        content: message.content,
-        timestamp: new Date(),
-      };
+      const currentDelay = accumulatedDelay;
+      delays.push(
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            const testMessage: TestMessage = {
+              id: `msg_${Date.now()}_${message.role}`,
+              role: message.role === 'user' ? 'user' : 'agent',
+              content: message.content,
+              timestamp: new Date(),
+            };
 
-      setMessages((prev) => [...prev, testMessage]);
+            setMessages((prev) => [...prev, testMessage]);
 
-      if (message.role === 'user') {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Simulate agent response
-        const agentResponse: TestMessage = {
-          id: `msg_${Date.now()}_agent`,
-          role: 'agent',
-          content: `[Test Response] Processing: "${message.content}"`,
-          timestamp: new Date(),
-          metadata: {
-            tokensUsed: Math.floor(Math.random() * 100) + 50,
-            responseTime: Math.floor(Math.random() * 2000) + 500,
-          },
-        };
-
-        setMessages((prev) => [...prev, agentResponse]);
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
+            if (message.role === 'user') {
+              // Add agent response after user message
+              setTimeout(() => {
+                const agentResponse: TestMessage = {
+                  id: `msg_${Date.now()}_agent`,
+                  role: 'agent',
+                  content: `[Test Response] Processing: "${message.content}"`,
+                  timestamp: new Date(),
+                  metadata: {
+                    tokensUsed: Math.floor(Math.random() * 100) + 50,
+                    responseTime: Math.floor(Math.random() * 2000) + 500,
+                  },
+                };
+                setMessages((prev) => [...prev, agentResponse]);
+              }, 1000);
+            }
+            resolve();
+          }, currentDelay);
+        })
+      );
+      accumulatedDelay += message.role === 'user' ? 1500 : 500; // 1000ms + 500ms for user messages, 500ms for others
     }
+
+    // Wait for all messages to be processed
+    await Promise.all(delays);
+    // Add final delay before finishing
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     setIsRunning(false);
     setTestResults((prev) => ({ ...prev, [scenario.id]: true }));

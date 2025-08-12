@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { AgentManagement } from '@/components/admin/agent-management';
-import { PaymentDashboard } from '@/components/admin/payment-dashboard';
+import { AgentManagement } from '@/components/admin/agentManagement';
+import { PaymentDashboard } from '@/components/admin/paymentDashboard';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
 // removed unused Button import

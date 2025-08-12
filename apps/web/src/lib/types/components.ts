@@ -118,7 +118,17 @@ export interface MessageProps extends BaseComponentProps {
 }
 
 export interface MessageInputProps extends BaseComponentProps {
-  onSend: (content: string, useReasoning?: boolean) => void;
+  onSend: (
+    content: string,
+    useReasoning?: boolean,
+    attachments?: Array<{
+      fileId: string;
+      url?: string;
+      mimeType: string;
+      size: number;
+      type: 'image' | 'file' | 'video';
+    }>
+  ) => void;
   disabled?: boolean;
   placeholder?: string;
   maxLength?: number;

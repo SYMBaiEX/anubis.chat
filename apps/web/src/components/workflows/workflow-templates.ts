@@ -1,13 +1,6 @@
-import type { Edge, Node } from '@xyflow/react';
+import type { WorkflowTemplate as WorkflowTemplateType } from './workflow-types';
 
-export interface WorkflowTemplate {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  nodes: Node[];
-  edges: Edge[];
-}
+export type WorkflowTemplate = WorkflowTemplateType;
 
 export const workflowTemplates: WorkflowTemplate[] = [
   {

@@ -136,9 +136,13 @@ export function useFeatureGate() {
       };
 
       const requiredTier = featureRequirements[feature] || 'pro_plus';
-      const tierLevel = { free: 0, pro: 1, pro_plus: 2 };
+      const tierLevel: Record<string, number> = {
+        free: 0,
+        pro: 1,
+        pro_plus: 2,
+      };
 
-      return tierLevel[tier] >= tierLevel[requiredTier];
+      return (tierLevel[tier] || 0) >= (tierLevel[requiredTier] || 0);
     },
     [subscription?.tier]
   );

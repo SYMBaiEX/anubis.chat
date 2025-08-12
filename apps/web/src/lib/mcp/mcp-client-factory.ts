@@ -136,7 +136,7 @@ export class MCPClientFactory {
       'resolve-library-id': tool({
         description:
           'Resolve a library name to a Context7-compatible library ID',
-        parameters: z.object({
+        inputSchema: z.object({
           libraryName: z.string().describe('Library name to search for'),
         }),
         execute: async ({ libraryName }) => {
@@ -150,10 +150,10 @@ export class MCPClientFactory {
               "Try searching directly at https://www.npmjs.com/ or the library's official documentation",
           };
         },
-      }),
+      }) as Tool,
       'get-library-docs': tool({
         description: 'Get documentation for a library using its Context7 ID',
-        parameters: z.object({
+        inputSchema: z.object({
           context7CompatibleLibraryID: z
             .string()
             .describe('Context7-compatible library ID in format /org/project'),
@@ -176,7 +176,7 @@ export class MCPClientFactory {
               "Visit the library's official documentation or GitHub repository",
           };
         },
-      }),
+      }) as Tool,
     };
 
     return {
@@ -243,7 +243,7 @@ export class MCPClientFactory {
       Solana_Expert__Ask_For_Help: tool({
         description:
           'Ask the Solana expert for help with any Solana-related question (how-to, concepts, APIs, SDKs, errors)',
-        parameters: z.object({
+        inputSchema: z.object({
           question: z
             .string()
             .describe(
@@ -260,11 +260,11 @@ export class MCPClientFactory {
               'You can visit https://solana.com/docs for documentation',
           };
         },
-      }),
+      }) as Tool,
       Solana_Documentation_Search: tool({
         description:
           'Search the Solana documentation corpus for relevant information',
-        parameters: z.object({
+        inputSchema: z.object({
           query: z.string().describe('Search query for Solana documentation'),
         }),
         execute: async ({ query }) => {
@@ -276,11 +276,11 @@ export class MCPClientFactory {
             suggestion: 'You can search at https://solana.com/docs',
           };
         },
-      }),
+      }) as Tool,
       Ask_Solana_Anchor_Framework_Expert: tool({
         description:
           'Ask questions specific to the Anchor Framework, including its APIs, SDKs, and error handling',
-        parameters: z.object({
+        inputSchema: z.object({
           question: z.string().describe('Question about the Anchor Framework'),
         }),
         execute: async ({ question }) => {
@@ -293,7 +293,7 @@ export class MCPClientFactory {
               'You can visit https://www.anchor-lang.com/ for Anchor documentation',
           };
         },
-      }),
+      }) as Tool,
     };
 
     return {
@@ -355,13 +355,13 @@ export class MCPClientFactory {
       if (!client.client && client.tools[cleanToolName]) {
         const tool = client.tools[cleanToolName];
         if ('execute' in tool && typeof tool.execute === 'function') {
-          return await tool.execute(parameters);
+          return await tool.execute(parameters, {} as any);
         }
       }
 
       // Otherwise, execute the tool using the MCP client
       if (client.client) {
-        const result = await client.client.request({
+        const result = await (client.client as any).request({
           method: 'tools/call',
           params: {
             name: cleanToolName,

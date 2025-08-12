@@ -92,7 +92,7 @@ export const ensureCompleteSubscriptions = mutation({
 
           if (needsUpdate) {
             await ctx.db.patch(user._id, {
-              subscription: updates,
+              subscription: updates as any, // Type assertion needed for complex migration logic
             });
             updatedCount++;
           }

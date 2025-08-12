@@ -18,6 +18,53 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useUpdateUserProfile } from '@/hooks/convex/useUsers';
+import type { SubscriptionStatus } from '@/hooks/use-subscription';
+
+// Helper function to determine badge variant for status
+const getStatusBadgeVariant = (
+  status: 'pending' | 'confirmed' | 'failed' | 'refunded'
+): 'default' | 'secondary' | 'destructive' => {
+  if (status === 'confirmed') {
+    return 'default';
+  }
+  if (status === 'pending') {
+    return 'secondary';
+  }
+  return 'destructive';
+};
+
+// Helper function to handle username form submission
+const handleUsernameSubmit = async (
+  e: React.FormEvent<HTMLFormElement>,
+  pendingName: string,
+  setSavingName: (saving: boolean) => void,
+  updateProfile: (data: {
+    displayName: string;
+  }) => Promise<{ success?: boolean; error?: { message: string } }>,
+  setLocalDisplayName: (name: string) => void,
+  setIsEditingName: (editing: boolean) => void
+) => {
+  e.preventDefault();
+  if (!pendingName.trim()) {
+    return;
+  }
+
+  try {
+    setSavingName(true);
+    const result = await updateProfile({
+      displayName: pendingName.trim(),
+    });
+    if (result?.success === false) {
+      toast.error(result.error?.message || 'Failed to update username');
+      return;
+    }
+    setLocalDisplayName(pendingName.trim());
+    setIsEditingName(false);
+    toast.success('Username updated');
+  } finally {
+    setSavingName(false);
+  }
+};
 
 export default function DashboardPage() {
   const { user } = useAuthContext();
@@ -108,6 +155,54 @@ export default function DashboardPage() {
     }
   };
 
+  // Helper function to render subscription badge
+  const renderSubscriptionBadge = (
+    currentSubscription: SubscriptionStatus | null
+  ) => {
+    if (!currentSubscription) {
+      return null;
+    }
+    return (
+      <Badge className="hidden sm:inline-flex" variant="outline">
+        {formatTierLabel(currentSubscription.tier)}
+      </Badge>
+    );
+  };
+
+  // Helper function to render welcome section
+  const renderWelcomeSection = (
+    currentDisplayName: string | null,
+    currentEditingState: boolean
+  ) => {
+    if (currentDisplayName && !currentEditingState) {
+      return (
+        <p className="text-muted-foreground text-sm sm:text-base">
+          Welcome,{' '}
+          <span className="font-medium text-foreground">
+            {currentDisplayName}
+          </span>
+        </p>
+      );
+    }
+
+    if (!(currentDisplayName || currentEditingState)) {
+      return (
+        <div className="flex items-center gap-2">
+          <p className="text-muted-foreground text-sm sm:text-base">Welcome</p>
+          <Button
+            className="h-7 px-2 text-xs"
+            onClick={() => setIsEditingName(true)}
+            variant="secondary"
+          >
+            Set Username
+          </Button>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="w-full bg-gradient-to-b from-primary/5 dark:from-primary/10">
       {/* Full-width Header Strip */}
@@ -119,11 +214,7 @@ export default function DashboardPage() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            {subscription && (
-              <Badge className="hidden sm:inline-flex" variant="outline">
-                {formatTierLabel(subscription.tier)}
-              </Badge>
-            )}
+            {renderSubscriptionBadge(subscription)}
             <Button asChild className="flex-1 sm:flex-initial" size="sm">
               <Link href="/chat">
                 <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
@@ -150,40 +241,20 @@ export default function DashboardPage() {
       {/* Constrained content container */}
       <div className="mx-auto w-full max-w-6xl space-y-4 p-3 sm:space-y-5 sm:p-4 md:space-y-6 md:p-6 lg:space-y-6">
         <div className="flex items-center gap-2">
-          {localDisplayName && !isEditingName && (
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Welcome,{' '}
-              <span className="font-medium text-foreground">
-                {localDisplayName}
-              </span>
-            </p>
-          )}
+          {renderWelcomeSection(localDisplayName, isEditingName)}
           {isEditingName && (
             <form
               className="flex w-full max-w-sm items-center gap-2"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!pendingName.trim()) {
-                  return;
-                }
-                try {
-                  setSavingName(true);
-                  const result = await updateProfile({
-                    displayName: pendingName.trim(),
-                  });
-                  if (result?.success === false) {
-                    toast.error(
-                      result.error?.message || 'Failed to update username'
-                    );
-                    return;
-                  }
-                  setLocalDisplayName(pendingName.trim());
-                  setIsEditingName(false);
-                  toast.success('Username updated');
-                } finally {
-                  setSavingName(false);
-                }
-              }}
+              onSubmit={(e) =>
+                handleUsernameSubmit(
+                  e,
+                  pendingName,
+                  setSavingName,
+                  updateProfile,
+                  setLocalDisplayName,
+                  setIsEditingName
+                )
+              }
             >
               <Input
                 aria-label="Username"
@@ -215,20 +286,6 @@ export default function DashboardPage() {
                 Cancel
               </Button>
             </form>
-          )}
-          {!(localDisplayName || isEditingName) && (
-            <div className="flex items-center gap-2">
-              <p className="text-muted-foreground text-sm sm:text-base">
-                Welcome
-              </p>
-              <Button
-                className="h-7 px-2 text-xs"
-                onClick={() => setIsEditingName(true)}
-                variant="secondary"
-              >
-                Set Username
-              </Button>
-            </div>
           )}
         </div>
         {/* Subscription Status Card */}
@@ -416,13 +473,7 @@ export default function DashboardPage() {
                     <div className="font-medium">{item.amountSol} SOL</div>
                     <Badge
                       size="sm"
-                      variant={
-                        item.status === 'confirmed'
-                          ? 'default'
-                          : item.status === 'pending'
-                            ? 'secondary'
-                            : 'destructive'
-                      }
+                      variant={getStatusBadgeVariant(item.status)}
                     >
                       {item.status}
                     </Badge>

@@ -178,9 +178,30 @@ export function useReferralAttribution() {
     [attributeReferral, getStoredReferralCode, clearStoredReferralCode]
   );
 
+  // Auto-attempt attribution immediately for eligible users right after sign-in
+  // Consumers can call this with walletAddress to ensure auto-claim within 72h
+  const autoAssignIfEligible = useCallback(
+    async (walletAddress: string) => {
+      const referralCode = getStoredReferralCode();
+      if (!referralCode) return { success: false } as const;
+      try {
+        const res = await attributeReferral({ referralCode, walletAddress });
+        if (res?.success && (res.attributed || res.assigned)) {
+          clearStoredReferralCode();
+          return { success: true } as const;
+        }
+        return { success: false } as const;
+      } catch (_e) {
+        return { success: false } as const;
+      }
+    },
+    [attributeReferral, getStoredReferralCode, clearStoredReferralCode]
+  );
+
   return {
     attributeStoredReferral,
     getStoredReferralCode,
     clearStoredReferralCode,
+    autoAssignIfEligible,
   };
 }

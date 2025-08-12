@@ -99,8 +99,11 @@ export const useAuth = (): UseAuthReturn => {
 
       // Return session data (token will be available via useAuthToken)
       return {
+        walletAddress: publicKey.toString(),
+        publicKey: publicKey.toString(),
         user: currentUser as User,
         token: token || '',
+        refreshToken: '', // Not implemented yet
         expiresAt: Date.now() + 3_600_000, // 1 hour
       };
     } catch (error) {
@@ -184,7 +187,7 @@ export const useAuth = (): UseAuthReturn => {
   return {
     isAuthenticated,
     isLoading,
-    user: currentUser || null,
+    user: currentUser as User | null,
     token,
     error,
     login,

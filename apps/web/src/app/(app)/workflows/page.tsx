@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { AdminGuard } from '@/components/auth/admin-guard';
+import { AdminGuard } from '@/components/auth/adminGuard';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
 import { useSubscriptionStatus } from '@/components/providers/auth-provider';
 import { Alert, AlertDescription } from '@/components/ui/alert';

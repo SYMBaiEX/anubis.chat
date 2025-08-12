@@ -51,6 +51,18 @@ export function MessageInput({
   reasoningEnabled = true,
 }: MessageInputProps & { onTyping?: () => void; fontSize?: FontSize }) {
   const [message, setMessage] = useState('');
+  const [attachments, setAttachments] = useState<
+    Array<{
+      id: string;
+      name: string;
+      size: number;
+      type: string;
+      preview?: string;
+      storageId?: string;
+      url?: string;
+      kind: 'image' | 'file' | 'video';
+    }>
+  >([]);
   const [isActive, setIsActive] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [useReasoning, setUseReasoning] = useState(false);
@@ -111,10 +123,21 @@ export function MessageInput({
       return;
     }
 
-    onSend(trimmedMessage, useReasoning);
+    onSend(
+      trimmedMessage,
+      useReasoning,
+      attachments.map((a) => ({
+        fileId: a.storageId || a.id,
+        url: a.url,
+        mimeType: a.type,
+        size: a.size,
+        type: a.kind,
+      }))
+    );
     setMessage('');
     setShowEmojiPicker(false);
     setUseReasoning(false); // Reset reasoning toggle after sending
+    setAttachments([]);
   };
 
   const handleEmojiClick = (emojiData: any) => {
@@ -156,27 +179,103 @@ export function MessageInput({
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      // TODO: Implement file upload logic
-      log.info('Files selected for upload', {
-        operation: 'file_upload_selection',
-        fileCount: files.length,
-      });
+      const selected = Array.from(files);
+      // Upload each file to Convex storage via http route
+      const uploaded: typeof attachments = [];
+      for (const file of selected) {
+        try {
+          // Request presigned upload URL
+          const convexSite = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(
+            'wss://',
+            'https://'
+          ).replace('.convex.cloud', '.convex.site');
+          if (!convexSite) throw new Error('Convex URL not configured');
+
+          const presign = await fetch(`${convexSite}/generateUploadUrl`, {
+            method: 'POST',
+          });
+          const { url } = (await presign.json()) as { url: string };
+
+          // Upload binary directly to Convex
+          const put = await fetch(url, {
+            method: 'POST',
+            body: file,
+          });
+          if (!put.ok) throw new Error('Upload failed');
+          const { storageId } = (await put.json()) as { storageId: string };
+
+          uploaded.push({
+            id: crypto.randomUUID(),
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            storageId,
+            // Let server resolve public URL later; preview only for images via object URL
+            preview: file.type.startsWith('image/')
+              ? URL.createObjectURL(file)
+              : undefined,
+            url: undefined,
+            kind: 'file',
+          });
+        } catch (error) {
+          log.error('File upload failed', { error });
+        }
+      }
+
+      setAttachments((prev) => [...prev, ...uploaded]);
       // Reset input
       event.target.value = '';
     }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      // TODO: Implement image upload logic
-      log.info('Images selected for upload', {
-        operation: 'image_upload_selection',
-        imageCount: files.length,
-      });
+      const selected = Array.from(files);
+      const uploaded: typeof attachments = [];
+      for (const file of selected) {
+        try {
+          const convexSite = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(
+            'wss://',
+            'https://'
+          ).replace('.convex.cloud', '.convex.site');
+          if (!convexSite) throw new Error('Convex URL not configured');
+
+          const presign = await fetch(`${convexSite}/generateUploadUrl`, {
+            method: 'POST',
+          });
+          const { url } = (await presign.json()) as { url: string };
+
+          const put = await fetch(url, {
+            method: 'POST',
+            body: file,
+          });
+          if (!put.ok) throw new Error('Upload failed');
+          const { storageId } = (await put.json()) as { storageId: string };
+
+          uploaded.push({
+            id: crypto.randomUUID(),
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            storageId,
+            preview: URL.createObjectURL(file),
+            url: undefined,
+            kind: 'image',
+          });
+        } catch (error) {
+          log.error('Image upload failed', { error });
+        }
+      }
+
+      setAttachments((prev) => [...prev, ...uploaded]);
       // Reset input
       event.target.value = '';
     }
@@ -268,6 +367,41 @@ export function MessageInput({
               ref={textareaRef}
               value={message}
             />
+            {/* Attached files preview (compact badges) */}
+            {attachments.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {attachments.map((a) => (
+                  <div
+                    className="group inline-flex items-center gap-2 rounded-md border bg-muted px-2 py-1 text-xs"
+                    key={a.id}
+                  >
+                    {a.preview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        alt={a.name}
+                        className="h-6 w-6 rounded object-cover"
+                        src={a.preview}
+                      />
+                    ) : (
+                      <span className="inline-block h-6 w-6 rounded bg-muted-foreground/20" />
+                    )}
+                    <span className="max-w-[120px] truncate">{a.name}</span>
+                    <button
+                      aria-label={`Remove ${a.name}`}
+                      className="rounded p-1 hover:bg-muted-foreground/10"
+                      onClick={() =>
+                        setAttachments((prev) =>
+                          prev.filter((x) => x.id !== a.id)
+                        )
+                      }
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Centered overlay placeholder to match project styling */}
             {!isActive && message.trim().length === 0 && (

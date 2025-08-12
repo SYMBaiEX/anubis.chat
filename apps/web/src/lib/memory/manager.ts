@@ -78,6 +78,7 @@ export interface MemorySearchOptions {
 // Context Window Manager
 export class ContextWindowManager {
   private maxTokens: number;
+  private compressionRatio: number;
 
   constructor(maxTokens = 128_000, compressionRatio = 0.3) {
     this.maxTokens = maxTokens;

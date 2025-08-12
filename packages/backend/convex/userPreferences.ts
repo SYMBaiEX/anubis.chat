@@ -10,7 +10,7 @@ import { getCurrentUser, requireAuth } from './authHelpers';
 // Get user preferences by explicit userId (for server-to-server or http actions)
 export const getByUserId = query({
   args: {
-    userId: v.id('users'),
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     const preferences = await ctx.db

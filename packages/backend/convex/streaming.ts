@@ -34,6 +34,13 @@ export const streamChat = httpAction(async (ctx, request) => {
     temperature?: number;
     maxTokens?: number;
     useReasoning?: boolean;
+    attachments?: Array<{
+      fileId: string;
+      url?: string;
+      mimeType: string;
+      size: number;
+      type: 'image' | 'file' | 'video';
+    }>;
   };
 
   const {
@@ -44,6 +51,7 @@ export const streamChat = httpAction(async (ctx, request) => {
     temperature,
     maxTokens,
     useReasoning,
+    attachments,
   } = body;
 
   // Get the user by wallet address first
@@ -162,6 +170,7 @@ export const streamChat = httpAction(async (ctx, request) => {
     walletAddress, // Still need wallet address for legacy compatibility
     role: 'user',
     content,
+    attachments,
   });
 
   // Try to kick off memory extraction for this user message
@@ -238,11 +247,50 @@ export const streamChat = httpAction(async (ctx, request) => {
     limit: 20,
   });
 
-  // Convert messages to AI SDK format
-  const conversationHistory = messages.map((msg) => ({
-    role: msg.role as 'user' | 'assistant' | 'system',
-    content: msg.content,
-  }));
+  // Convert messages to AI SDK format, appending attachment references
+  const conversationHistory = [] as Array<{
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+  }>;
+  for (const msg of messages) {
+    let contentWithAttachments = msg.content;
+    const metas: any = (msg as any).metadata;
+    const att:
+      | Array<{
+          fileId: string;
+          url?: string;
+          mimeType?: string;
+          size?: number;
+          type?: string;
+        }>
+      | undefined = metas?.attachments;
+    if (att && att.length > 0) {
+      const resolved: string[] = [];
+      for (const a of att) {
+        let url = a.url;
+        if (!url && a.fileId) {
+          try {
+            const u = await ctx.storage.getUrl(
+              a.fileId as unknown as Id<'_storage'>
+            );
+            if (u) url = u;
+          } catch (_e) {}
+        }
+        const label =
+          a.type === 'image' ? 'Image' : a.type === 'video' ? 'Video' : 'File';
+        if (url) {
+          resolved.push(`${label}: ${url}`);
+        }
+      }
+      if (resolved.length > 0) {
+        contentWithAttachments += `\n\n[Attachments]\n${resolved.map((r) => `- ${r}`).join('\n')}`;
+      }
+    }
+    conversationHistory.push({
+      role: msg.role as 'user' | 'assistant' | 'system',
+      content: contentWithAttachments,
+    });
+  }
 
   // Prepare AI model
   let aiModel;

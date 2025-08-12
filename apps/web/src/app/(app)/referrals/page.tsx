@@ -65,6 +65,7 @@ export default function ReferralsPage() {
   });
   const claimStatus = useQuery(api.referrals.getReferralClaimStatus);
   const referredUsers = useQuery(api.referrals.getReferredUsers, { limit: 10 });
+  const referrerInfo = useQuery(api.referrals.getReferrerPayoutInfo, {});
 
   // Mutations
   const createReferralCode = useMutation(api.referrals.createReferralCode);
@@ -235,6 +236,38 @@ export default function ReferralsPage() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
           {/* Left Column - Referral Code Management - Responsive */}
           <div className="order-1 space-y-4 lg:order-1 lg:col-span-1">
+            {/* Your Referrer (if any) */}
+            {referrerInfo?.hasReferrer && (
+              <Card className="h-fit">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <UserPlus className="h-4 w-4" />
+                    Your Referrer
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center gap-3">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage
+                      alt={referrerInfo.referrerDisplayName}
+                      src={referrerInfo.referrerAvatar}
+                    />
+                    <AvatarFallback>
+                      {(referrerInfo.referrerDisplayName || 'R')
+                        .charAt(0)
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <div className="truncate font-medium text-sm">
+                      {referrerInfo.referrerDisplayName}
+                    </div>
+                    <div className="truncate font-mono text-muted-foreground text-xs">
+                      {referrerInfo.referralCode}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             {/* Add Your Referrer - Above Your Referral Code */}
             {claimStatus?.canClaim && claimStatus.timeRemaining && (
               <Card className="h-fit">

@@ -441,6 +441,21 @@ export default defineSchema({
         ),
         reasoning: v.optional(v.string()),
         citations: v.optional(v.array(v.string())), // Document IDs for RAG
+        attachments: v.optional(
+          v.array(
+            v.object({
+              fileId: v.string(),
+              url: v.optional(v.string()),
+              mimeType: v.string(),
+              size: v.number(),
+              type: v.union(
+                v.literal('image'),
+                v.literal('file'),
+                v.literal('video')
+              ),
+            })
+          )
+        ),
       })
     ),
     status: v.optional(v.string()),
@@ -2302,7 +2317,10 @@ export default defineSchema({
     mimeType: v.string(),
     size: v.number(),
     hash: v.string(),
-    data: v.string(), // Base64 encoded file data
+    // Prefer Convex storage for file bytes. Keep base64 `data` optional for legacy uploads.
+    data: v.optional(v.string()), // Base64 encoded file data (legacy)
+    storageId: v.optional(v.string()), // Convex storage ID
+    url: v.optional(v.string()), // Public URL from storage.getUrl
     purpose: v.union(
       v.literal('assistants'),
       v.literal('vision'),

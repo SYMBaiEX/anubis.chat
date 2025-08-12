@@ -195,7 +195,7 @@ class AuthCache {
 
       return true;
     } catch (error) {
-      log.error('Token validation failed', error);
+      log.error('Token validation failed', { error });
       return false;
     }
   }
@@ -242,7 +242,7 @@ class AuthCache {
       }
       return JSON.parse(data);
     } catch (error) {
-      log.error('Failed to parse session cache', error);
+      log.error('Failed to parse session cache', { error });
       return null;
     }
   }
@@ -272,7 +272,7 @@ class AuthCache {
 
       return parsed;
     } catch (error) {
-      log.error('Failed to parse local cache', error);
+      log.error('Failed to parse local cache', { error });
       return null;
     }
   }
@@ -286,7 +286,7 @@ class AuthCache {
       const toStore = encrypt ? this.encrypt(data) : JSON.stringify(data);
       sessionStorage.setItem(this.CACHE_KEY, toStore);
     } catch (error) {
-      log.error('Failed to set session cache', error);
+      log.error('Failed to set session cache', { error });
     }
   }
 
@@ -308,7 +308,7 @@ class AuthCache {
         : JSON.stringify(safeData);
       localStorage.setItem(this.CACHE_KEY, toStore);
     } catch (error) {
-      log.error('Failed to set local cache', error);
+      log.error('Failed to set local cache', { error });
     }
   }
 
@@ -372,7 +372,7 @@ export const cacheUtils = {
           const fresh = await refreshFn();
           authCache.set(fresh);
         } catch (error) {
-          log.error('Auto-refresh failed', error);
+          log.error('Auto-refresh failed', { error });
         }
       }
     };

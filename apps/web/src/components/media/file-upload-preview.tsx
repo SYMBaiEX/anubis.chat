@@ -126,6 +126,37 @@ export function FileUploadPreview({
     setIsDragging(false);
   }, []);
 
+  const handleFiles = useCallback(
+    (newFiles: File[]) => {
+      // Validate file count
+      if (files.length + newFiles.length > maxFiles) {
+        toast.error(`Maximum ${maxFiles} files allowed`);
+        return;
+      }
+
+      // Validate file size and type
+      const validFiles = newFiles.filter((file) => {
+        if (file.size > maxSize * 1024 * 1024) {
+          toast.error(`${file.name} exceeds ${maxSize}MB limit`);
+          return false;
+        }
+        if (
+          acceptedTypes &&
+          !acceptedTypes.some((type) => file.type.match(type))
+        ) {
+          toast.error(`${file.name} is not an accepted file type`);
+          return false;
+        }
+        return true;
+      });
+
+      if (validFiles.length > 0 && onUpload) {
+        onUpload(validFiles);
+      }
+    },
+    [files.length, maxFiles, maxSize, acceptedTypes, onUpload]
+  );
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -136,34 +167,6 @@ export function FileUploadPreview({
     },
     [handleFiles]
   );
-
-  const handleFiles = (newFiles: File[]) => {
-    // Validate file count
-    if (files.length + newFiles.length > maxFiles) {
-      toast.error(`Maximum ${maxFiles} files allowed`);
-      return;
-    }
-
-    // Validate file size and type
-    const validFiles = newFiles.filter((file) => {
-      if (file.size > maxSize * 1024 * 1024) {
-        toast.error(`${file.name} exceeds ${maxSize}MB limit`);
-        return false;
-      }
-      if (
-        acceptedTypes &&
-        !acceptedTypes.some((type) => file.type.match(type))
-      ) {
-        toast.error(`${file.name} is not an accepted file type`);
-        return false;
-      }
-      return true;
-    });
-
-    if (validFiles.length > 0 && onUpload) {
-      onUpload(validFiles);
-    }
-  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {

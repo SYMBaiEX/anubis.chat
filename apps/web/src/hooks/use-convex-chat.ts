@@ -30,7 +30,14 @@ export function useConvexChat(chatId: string | undefined) {
       content: string,
       walletAddress: string,
       model?: string,
-      useReasoning?: boolean
+      useReasoning?: boolean,
+      attachments?: Array<{
+        fileId: string;
+        url?: string;
+        mimeType: string;
+        size: number;
+        type: 'image' | 'file' | 'video';
+      }>
     ) => {
       if (!chatId) {
         return;
@@ -63,6 +70,7 @@ export function useConvexChat(chatId: string | undefined) {
             content,
             model, // Pass the selected model to the backend
             useReasoning,
+            attachments,
           }),
         });
 

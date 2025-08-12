@@ -49,6 +49,21 @@ export const create = mutation({
       v.literal('system')
     ),
     content: v.string(),
+    attachments: v.optional(
+      v.array(
+        v.object({
+          fileId: v.string(),
+          url: v.optional(v.string()),
+          mimeType: v.string(),
+          size: v.number(),
+          type: v.union(
+            v.literal('image'),
+            v.literal('file'),
+            v.literal('video')
+          ),
+        })
+      )
+    ),
     tokenCount: v.optional(v.number()),
     embedding: v.optional(v.array(v.number())),
     metadata: v.optional(
@@ -111,9 +126,19 @@ export const create = mutation({
       walletAddress: args.walletAddress,
       role: args.role,
       content: args.content,
+      // Store attachment reference IDs only in metadata to avoid large payloads
+      metadata: {
+        ...(args.metadata || {}),
+        attachments: (args.attachments || []).map((a) => ({
+          fileId: a.fileId,
+          url: a.url,
+          mimeType: a.mimeType,
+          size: a.size,
+          type: a.type,
+        })),
+      },
       tokenCount: args.tokenCount,
       embedding: args.embedding,
-      metadata: args.metadata,
       status: args.status,
       parentMessageId: args.parentMessageId,
       createdAt: now,

@@ -52,12 +52,98 @@ import { Textarea } from '@/components/ui/textarea';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { err, ok, type Result } from '@/lib/types/result';
 import { cn } from '@/lib/utils';
-import { AgentCapabilitySelector } from './agent-capability-selector';
-import { AgentPersonalityEditor } from './agent-personality-editor';
-import { AgentTemplateGallery } from './agent-template-gallery';
-import { AgentTestingPanel } from './agent-testing-panel';
-import { AgentToolBuilder } from './agent-tool-builder';
-import type { Agent, AgentTemplate } from './types';
+import { AgentCapabilitySelector } from './agentCapabilitySelector';
+import { AgentPersonalityEditor } from './agentPersonalityEditor';
+import { AgentTemplateGallery } from './agentTemplateGallery';
+import { AgentTestingPanel } from './agentTestingPanel';
+import { AgentToolBuilder, type Tool } from './agentToolBuilder';
+import type { Agent, AgentPersonality, AgentTemplate } from './types';
+
+// Type for the extended personality interface used by AgentPersonalityEditor
+interface Personality extends AgentPersonality {
+  customPrompt?: string;
+  examples?: Array<{
+    input: string;
+    output: string;
+  }>;
+  creativity: number;
+  formality: number;
+  verbosity: number;
+  humor: number;
+  empathy: number;
+}
+
+// Helper function to get agent types
+const getAgentTypes = () => [
+  {
+    value: 'general',
+    label: 'General Assistant',
+    icon: Bot,
+    color: 'bg-gray-500',
+  },
+  {
+    value: 'trading',
+    label: 'Trading Agent',
+    icon: TrendingUp,
+    color: 'bg-green-500',
+  },
+  {
+    value: 'defi',
+    label: 'DeFi Specialist',
+    icon: Coins,
+    color: 'bg-blue-500',
+  },
+  { value: 'nft', label: 'NFT Expert', icon: Image, color: 'bg-purple-500' },
+  { value: 'dao', label: 'DAO Manager', icon: Vote, color: 'bg-orange-500' },
+  {
+    value: 'portfolio',
+    label: 'Portfolio Analyst',
+    icon: BarChart3,
+    color: 'bg-indigo-500',
+  },
+  {
+    value: 'developer',
+    label: 'Code Assistant',
+    icon: Code,
+    color: 'bg-pink-500',
+  },
+  {
+    value: 'research',
+    label: 'Research Agent',
+    icon: Database,
+    color: 'bg-teal-500',
+  },
+];
+
+// Helper functions to convert between AgentPersonality and Personality
+const agentPersonalityToPersonality = (
+  agentPersonality: AgentPersonality
+): Personality => ({
+  ...agentPersonality,
+  creativity: 0.7,
+  formality: 0.5,
+  verbosity: 0.6,
+  humor: 0.3,
+  empathy: 0.8,
+  customPrompt: agentPersonality.customPrompts?.[0] || '',
+  examples: [],
+});
+
+const personalityToAgentPersonality = (
+  personality: Personality
+): AgentPersonality => ({
+  tone: personality.tone,
+  style: personality.style,
+  traits: personality.traits,
+  customPrompts: personality.customPrompt
+    ? [
+        personality.customPrompt,
+        ...(personality.customPrompts || []).filter(
+          (p) => p !== personality.customPrompt
+        ),
+      ]
+    : personality.customPrompts,
+});
 
 interface AgentBuilderProps {
   onSave?: (agent: Agent) => void;
@@ -65,87 +151,52 @@ interface AgentBuilderProps {
   initialAgent?: Partial<Agent>;
 }
 
+// Helper function to create initial agent data
+const createInitialAgentData = (initialAgent?: Partial<Agent>): Agent => ({
+  name: initialAgent?.name || '',
+  description: initialAgent?.description || '',
+  avatar: initialAgent?.avatar || '',
+  type: initialAgent?.type || 'general',
+  personality: initialAgent?.personality || {
+    tone: 'professional',
+    style: 'concise',
+    traits: [],
+    customPrompts: [],
+  },
+  capabilities: initialAgent?.capabilities || [],
+  tools: initialAgent?.tools || [],
+  knowledge: initialAgent?.knowledge || [],
+  settings: initialAgent?.settings || {
+    temperature: 0.7,
+    maxTokens: 2000,
+    streamResponses: true,
+    memoryEnabled: true,
+    contextWindow: 10,
+  },
+  permissions: initialAgent?.permissions || {
+    canExecuteTrades: false,
+    maxTransactionValue: 100,
+    requiresApproval: true,
+    allowedChains: ['solana'],
+  },
+});
+
 export function AgentBuilder({
   onSave,
   onCancel,
   initialAgent,
 }: AgentBuilderProps) {
   const [activeTab, setActiveTab] = useState('basics');
-  const [agentData, setAgentData] = useState<Agent>({
-    name: initialAgent?.name || '',
-    description: initialAgent?.description || '',
-    avatar: initialAgent?.avatar || '',
-    type: initialAgent?.type || 'general',
-    personality: initialAgent?.personality || {
-      tone: 'professional',
-      style: 'concise',
-      traits: [],
-      customPrompts: [],
-    },
-    capabilities: initialAgent?.capabilities || [],
-    tools: initialAgent?.tools || [],
-    knowledge: initialAgent?.knowledge || [],
-    settings: initialAgent?.settings || {
-      temperature: 0.7,
-      maxTokens: 2000,
-      streamResponses: true,
-      memoryEnabled: true,
-      contextWindow: 10,
-    },
-    permissions: initialAgent?.permissions || {
-      canExecuteTrades: false,
-      maxTransactionValue: 100,
-      requiresApproval: true,
-      allowedChains: ['solana'],
-    },
-  });
-
+  const [agentData, setAgentData] = useState<Agent>(
+    createInitialAgentData(initialAgent)
+  );
   const [previewMode, setPreviewMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const agentTypes = [
-    {
-      value: 'general',
-      label: 'General Assistant',
-      icon: Bot,
-      color: 'bg-gray-500',
-    },
-    {
-      value: 'trading',
-      label: 'Trading Agent',
-      icon: TrendingUp,
-      color: 'bg-green-500',
-    },
-    {
-      value: 'defi',
-      label: 'DeFi Specialist',
-      icon: Coins,
-      color: 'bg-blue-500',
-    },
-    { value: 'nft', label: 'NFT Expert', icon: Image, color: 'bg-purple-500' },
-    { value: 'dao', label: 'DAO Manager', icon: Vote, color: 'bg-orange-500' },
-    {
-      value: 'portfolio',
-      label: 'Portfolio Analyst',
-      icon: BarChart3,
-      color: 'bg-indigo-500',
-    },
-    {
-      value: 'developer',
-      label: 'Code Assistant',
-      icon: Code,
-      color: 'bg-pink-500',
-    },
-    {
-      value: 'research',
-      label: 'Research Agent',
-      icon: Database,
-      color: 'bg-teal-500',
-    },
-  ];
+  const agentTypes = getAgentTypes();
 
-  const validateAgent = () => {
+  const validateAgent = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!agentData.name) {
       newErrors.name = 'Agent name is required';
@@ -160,6 +211,31 @@ export function AgentBuilder({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Helper function to simulate save operation
+  const simulateSaveOperation = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        // Simulate potential failure (5% chance)
+        if (Math.random() < 0.05) {
+          reject(new Error('Failed to save agent. Please try again.'));
+        } else {
+          resolve();
+        }
+      }, 1000);
+    });
+  };
+
+  // Helper function to handle errors with proper typing
+  const handleSaveError = (error: unknown): Error => {
+    if (error instanceof Error) {
+      return error;
+    }
+    if (typeof error === 'string') {
+      return new Error(error);
+    }
+    return new Error('An unexpected error occurred while saving the agent.');
+  };
+
   const handleSave = async (): Promise<Result<Agent, Error>> => {
     if (!validateAgent()) {
       return err(
@@ -171,16 +247,7 @@ export function AgentBuilder({
 
     try {
       // Simulate save operation (replace with actual API call)
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Simulate potential failure (5% chance)
-          if (Math.random() < 0.05) {
-            reject(new Error('Failed to save agent. Please try again.'));
-          } else {
-            resolve(true);
-          }
-        }, 1000);
-      });
+      await simulateSaveOperation();
 
       // Call the onSave callback if provided
       onSave?.(agentData);
@@ -191,17 +258,7 @@ export function AgentBuilder({
       return ok(agentData);
     } catch (error) {
       setIsSaving(false);
-
-      // Handle different error types
-      if (error instanceof Error) {
-        return err(error);
-      }
-      if (typeof error === 'string') {
-        return err(new Error(error));
-      }
-      return err(
-        new Error('An unexpected error occurred while saving the agent.')
-      );
+      return err(handleSaveError(error));
     }
   };
 
@@ -209,6 +266,27 @@ export function AgentBuilder({
     const agentType = agentTypes.find((t) => t.value === type);
     const IconComponent = agentType?.icon || Bot;
     return <IconComponent className="h-4 w-4" />;
+  };
+
+  // Header handlers
+  const handlePreviewToggle = () => setPreviewMode(!previewMode);
+  const handleTemplateClick = () => {
+    /* Template logic */
+  };
+  const handleShareClick = () => {
+    /* Share logic */
+  };
+
+  // Data update handlers
+  const updateAgentData = (updates: Partial<Agent>) => {
+    setAgentData((prev) => ({ ...prev, ...updates }));
+  };
+
+  const handleSaveClick = async () => {
+    const result = await handleSave();
+    if (!result.ok) {
+      // Error handling is done in handleSave
+    }
   };
 
   return (
@@ -241,44 +319,20 @@ export function AgentBuilder({
             </div>
 
             <div className="flex items-center space-x-2">
-              <Button
-                onClick={() => setPreviewMode(!previewMode)}
-                size="icon"
-                variant="ghost"
-              >
+              <Button onClick={handlePreviewToggle} size="icon" variant="ghost">
                 <Eye className="h-4 w-4" />
               </Button>
-              <Button
-                onClick={() => {
-                  /* Template logic */
-                }}
-                size="icon"
-                variant="ghost"
-              >
+              <Button onClick={handleTemplateClick} size="icon" variant="ghost">
                 <Download className="h-4 w-4" />
               </Button>
-              <Button
-                onClick={() => {
-                  /* Share logic */
-                }}
-                size="icon"
-                variant="ghost"
-              >
+              <Button onClick={handleShareClick} size="icon" variant="ghost">
                 <Share2 className="h-4 w-4" />
               </Button>
               <Separator className="h-6" orientation="vertical" />
               <Button onClick={onCancel} variant="outline">
                 Cancel
               </Button>
-              <Button
-                disabled={isSaving}
-                onClick={async () => {
-                  const result = await handleSave();
-                  if (!result.ok) {
-                    // Error handling is done in handleSave
-                  }
-                }}
-              >
+              <Button disabled={isSaving} onClick={handleSaveClick}>
                 {isSaving ? (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -381,10 +435,7 @@ export function AgentBuilder({
                             className={errors.name ? 'border-destructive' : ''}
                             id="name"
                             onChange={(e) =>
-                              setAgentData((prev) => ({
-                                ...prev,
-                                name: e.target.value,
-                              }))
+                              updateAgentData({ name: e.target.value })
                             }
                             placeholder="e.g., Trading Pro, DeFi Helper"
                             value={agentData.name}
@@ -400,7 +451,7 @@ export function AgentBuilder({
                           <Label htmlFor="type">Agent Type</Label>
                           <Select
                             onValueChange={(value) =>
-                              setAgentData((prev) => ({ ...prev, type: value }))
+                              updateAgentData({ type: value })
                             }
                             value={agentData.type}
                           >
@@ -436,10 +487,7 @@ export function AgentBuilder({
                           )}
                           id="description"
                           onChange={(e) =>
-                            setAgentData((prev) => ({
-                              ...prev,
-                              description: e.target.value,
-                            }))
+                            updateAgentData({ description: e.target.value })
                           }
                           placeholder="Describe what your agent does and its key capabilities..."
                           value={agentData.description}
@@ -457,10 +505,7 @@ export function AgentBuilder({
                           <Input
                             id="avatar"
                             onChange={(e) =>
-                              setAgentData((prev) => ({
-                                ...prev,
-                                avatar: e.target.value,
-                              }))
+                              updateAgentData({ avatar: e.target.value })
                             }
                             placeholder="https://example.com/avatar.png"
                             value={agentData.avatar}
@@ -478,10 +523,7 @@ export function AgentBuilder({
                         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                           <AgentTemplateGallery
                             onSelectTemplate={(template: AgentTemplate) => {
-                              setAgentData((prev) => ({
-                                ...prev,
-                                ...template.config,
-                              }));
+                              updateAgentData(template.config);
                             }}
                           />
                         </div>
@@ -502,7 +544,7 @@ export function AgentBuilder({
                     <CardContent>
                       <AgentCapabilitySelector
                         onChange={(capabilities) =>
-                          setAgentData((prev) => ({ ...prev, capabilities }))
+                          updateAgentData({ capabilities })
                         }
                         selected={agentData.capabilities}
                       />
@@ -527,12 +569,9 @@ export function AgentBuilder({
                     <CardContent>
                       <AgentToolBuilder
                         onChange={(tools) =>
-                          setAgentData((prev) => ({
-                            ...prev,
-                            tools: tools as unknown as Agent['tools'],
-                          }))
+                          updateAgentData({ tools: tools as Agent['tools'] })
                         }
-                        tools={agentData.tools as unknown as any[]}
+                        tools={agentData.tools as Tool[]}
                       />
                     </CardContent>
                   </Card>
@@ -550,13 +589,14 @@ export function AgentBuilder({
                     <CardContent>
                       <AgentPersonalityEditor
                         onChange={(personality) =>
-                          setAgentData((prev) => ({
-                            ...prev,
+                          updateAgentData({
                             personality:
-                              personality as unknown as Agent['personality'],
-                          }))
+                              personalityToAgentPersonality(personality),
+                          })
                         }
-                        personality={agentData.personality as unknown as any}
+                        personality={agentPersonalityToPersonality(
+                          agentData.personality
+                        )}
                       />
                     </CardContent>
                   </Card>
@@ -610,13 +650,12 @@ export function AgentBuilder({
                           <Switch
                             checked={agentData.permissions.canExecuteTrades}
                             onCheckedChange={(checked) =>
-                              setAgentData((prev) => ({
-                                ...prev,
+                              updateAgentData({
                                 permissions: {
-                                  ...prev.permissions,
+                                  ...agentData.permissions,
                                   canExecuteTrades: checked,
                                 },
-                              }))
+                              })
                             }
                           />
                         </div>
@@ -631,13 +670,12 @@ export function AgentBuilder({
                           <Switch
                             checked={agentData.permissions.requiresApproval}
                             onCheckedChange={(checked) =>
-                              setAgentData((prev) => ({
-                                ...prev,
+                              updateAgentData({
                                 permissions: {
-                                  ...prev.permissions,
+                                  ...agentData.permissions,
                                   requiresApproval: checked,
                                 },
-                              }))
+                              })
                             }
                           />
                         </div>
@@ -649,13 +687,12 @@ export function AgentBuilder({
                               className="flex-1"
                               max={1000}
                               onValueChange={([value]) =>
-                                setAgentData((prev) => ({
-                                  ...prev,
+                                updateAgentData({
                                   permissions: {
-                                    ...prev.permissions,
+                                    ...agentData.permissions,
                                     maxTransactionValue: value,
                                   },
-                                }))
+                                })
                               }
                               step={10}
                               value={[

@@ -9,7 +9,7 @@ export function useTypingIndicator(
   chatId: string | undefined,
   walletAddress: string | undefined
 ) {
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Convex mutations and queries
   const setTyping = useMutation(api.typing.setTyping);
