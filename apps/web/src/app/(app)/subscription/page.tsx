@@ -8,6 +8,7 @@ import {
   useSubscriptionLimits,
   useSubscriptionStatus,
 } from '@/components/providers/auth-provider';
+import SubscriptionTabs from '@/components/subscription/subscription-tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -152,24 +153,6 @@ export default function SubscriptionPage() {
           usagePercent={usagePercent}
         />
 
-        <CurrentSubscriptionCard
-          currentPeriodEnd={subscription.currentPeriodEnd}
-          daysRemaining={
-            subscription.daysRemaining ?? limits?.daysUntilReset ?? 0
-          }
-          onManage={() =>
-            openModal({
-              tier: subscription.tier === 'pro' ? 'pro_plus' : 'pro',
-              trigger: 'manual',
-            })
-          }
-          planPriceSol={
-            subscription.tier !== 'free' ? subscription.planPriceSol : undefined
-          }
-          tier={subscription.tier}
-          tierLabel={formatTierLabel(subscription.tier)}
-        />
-
         <UsageOverview
           messagesLeft={limits?.messagesRemaining ?? 0}
           messagesUsed={subscription.messagesUsed}
@@ -177,20 +160,12 @@ export default function SubscriptionPage() {
           usagePercent={usagePercent}
         />
 
-        <PlansGrid
-          onSelectPlan={setSelectedPlan}
-          onUpgrade={() => openModal({ tier: 'pro_plus', trigger: 'manual' })}
-          preview={preview}
+        <SubscriptionTabs
+          subscription={subscription}
+          limits={limits}
           selectedPlan={selectedPlan}
-          subscriptionTier={subscription.tier}
-        />
-
-        {/* Upgrade Modal */}
-        <UpgradeModal
-          isOpen={isOpen}
-          onClose={closeModal}
-          suggestedTier={suggestedTier}
-          trigger="manual"
+          onSelectPlan={setSelectedPlan}
+          preview={preview}
         />
       </div>
     </div>
@@ -241,96 +216,6 @@ function Alerts({
         </Alert>
       )}
     </div>
-  );
-}
-
-type CurrentSubscriptionCardProps = {
-  tier: 'free' | 'pro' | 'pro_plus' | 'admin';
-  tierLabel: string;
-  planPriceSol?: number;
-  daysRemaining: number;
-  currentPeriodEnd: number;
-  onManage: () => void;
-};
-
-function CurrentSubscriptionCard({
-  tier,
-  tierLabel,
-  planPriceSol,
-  daysRemaining,
-  currentPeriodEnd,
-  onManage,
-}: CurrentSubscriptionCardProps) {
-  const getTierColor = (t: string) => {
-    if (t === 'pro_plus') {
-      return 'text-purple-600 dark:text-purple-400';
-    }
-    if (t === 'pro') {
-      return 'text-blue-600 dark:text-blue-400';
-    }
-    return 'text-slate-600 dark:text-slate-400';
-  };
-  const getTierBg = (t: string) => {
-    if (t === 'pro_plus') {
-      return 'bg-purple-100 dark:bg-purple-900';
-    }
-    if (t === 'pro') {
-      return 'bg-blue-100 dark:bg-blue-900';
-    }
-    return 'bg-slate-100 dark:bg-slate-800';
-  };
-  const formatDate = (timestamp: number) =>
-    new Date(timestamp).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  return (
-    <Card className="p-4 ring-1 ring-primary/10 transition hover:ring-primary/20">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`rounded-lg p-2 ${getTierBg(tier)}`}>
-            <Crown className={`h-5 w-5 ${getTierColor(tier)}`} />
-          </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-semibold text-base leading-tight sm:text-lg">
-                {tierLabel} Plan
-              </h2>
-              {planPriceSol !== undefined && (
-                <Badge size="sm" variant="outline">
-                  {planPriceSol} SOL/mo
-                </Badge>
-              )}
-            </div>
-            <p className="text-muted-foreground text-xs leading-snug sm:text-sm">
-              {tier === 'free' && 'Basic features with limited access'}
-              {tier === 'pro' && 'Enhanced features with premium models'}
-              {tier === 'pro_plus' && 'Full access including premium models'}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 text-muted-foreground text-xs sm:text-sm">
-          {tier !== 'free' && (
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span>
-                Renews {formatDate(currentPeriodEnd)} • {daysRemaining}d left
-              </span>
-            </div>
-          )}
-          <Button
-            onClick={onManage}
-            size="sm"
-            variant={tier === 'pro_plus' ? 'outline' : 'default'}
-          >
-            {tier === 'free' && 'Upgrade'}
-            {tier === 'pro' && 'Upgrade to Pro+'}
-            {tier === 'pro_plus' && 'Manage Billing'}
-          </Button>
-        </div>
-      </div>
-    </Card>
   );
 }
 
