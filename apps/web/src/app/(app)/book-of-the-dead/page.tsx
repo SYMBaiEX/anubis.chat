@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 // Removed tabs; everything is handled in the file explorer panel
 import { cn } from '@/lib/utils';
+import type { Id } from '@convex/_generated/dataModel';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -35,17 +36,17 @@ import {
 } from '../../../components/ui/context-menu';
 // Local types to keep everything in this file
 export type FolderNode = {
-  _id: string;
+  _id: Id<'promptFolders'>;
   name: string;
-  parentId?: string | null;
+  parentId?: Id<'promptFolders'> | null;
   children?: FolderNode[];
 };
 
 export type PromptNode = {
-  _id: string;
+  _id: Id<'prompts'>;
   title: string;
   content: string;
-  folderId?: string | null;
+  folderId?: Id<'promptFolders'> | null;
   usageCount: number;
   createdAt: number;
   updatedAt: number;
@@ -56,16 +57,16 @@ function renderFolderTree(args: {
   folders: FolderNode[];
   prompts: PromptNode[];
   expanded: Record<string, boolean>;
-  selectedFolderId?: string;
-  onToggleFolder: (folderId: string) => void;
-  onSelectFolder: (folderId: string | undefined) => void;
+  selectedFolderId?: Id<'promptFolders'>;
+  onToggleFolder: (folderId: Id<'promptFolders'>) => void;
+  onSelectFolder: (folderId: Id<'promptFolders'> | undefined) => void;
   onSelectPromptForEdit: (prompt: PromptNode) => void;
-  onDeletePrompt: (id: string) => void;
-  onDeleteFolder: (id: string) => void;
-  onRenameFolder?: (id: string, currentName: string) => void;
-  onEditPrompt?: (id: string) => void;
-  onMovePromptToFolder?: (promptId: string) => void;
-  onMovePromptToRoot?: (promptId: string) => void;
+  onDeletePrompt: (id: Id<'prompts'>) => void;
+  onDeleteFolder: (id: Id<'promptFolders'>) => void;
+  onRenameFolder?: (id: Id<'promptFolders'>, currentName: string) => void;
+  onEditPrompt?: (id: Id<'prompts'>) => void;
+  onMovePromptToFolder?: (promptId: Id<'prompts'>) => void;
+  onMovePromptToRoot?: (promptId: Id<'prompts'>) => void;
   level?: number;
 }) {
   const {
@@ -310,11 +311,13 @@ export default function BookOfTheDeadPage() {
   // UI State
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [selectedFolderId, setSelectedFolderId] = useState<
-    string | undefined
+    Id<'promptFolders'> | undefined
   >();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
+  const [editingPromptId, setEditingPromptId] = useState<Id<'prompts'> | null>(
+    null,
+  );
   const [formTitle, setFormTitle] = useState('');
   const [formContent, setFormContent] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
@@ -334,11 +337,11 @@ export default function BookOfTheDeadPage() {
     return debouncedQuery ? searchedPrompts || [] : allPrompts || [];
   }, [debouncedQuery, searchedPrompts, allPrompts]);
 
-  const handleToggleFolder = (folderId: string) => {
+  const handleToggleFolder = (folderId: Id<'promptFolders'>) => {
     setExpanded((prev) => ({ ...prev, [folderId]: !prev[folderId] }));
   };
 
-  const handleCopyPrompt = async (content: string, id: string) => {
+  const handleCopyPrompt = async (content: string, id: Id<'prompts'>) => {
     try {
       await navigator.clipboard.writeText(content);
       await recordUsage({ id });
@@ -354,7 +357,7 @@ export default function BookOfTheDeadPage() {
     setFormContent(prompt.content);
   };
 
-  const handleDeletePrompt = async (id: string) => {
+  const handleDeletePrompt = async (id: Id<'prompts'>) => {
     try {
       await deletePrompt({ id });
       toast.success('Prompt deleted');
@@ -363,7 +366,7 @@ export default function BookOfTheDeadPage() {
     }
   };
 
-  const handleDeleteFolder = async (id: string) => {
+  const handleDeleteFolder = async (id: Id<'promptFolders'>) => {
     try {
       await deleteFolder({ id });
       toast.success('Folder deleted');
@@ -374,7 +377,10 @@ export default function BookOfTheDeadPage() {
     }
   };
 
-  const handleRenameFolder = async (id: string, currentName: string) => {
+  const handleRenameFolder = async (
+    id: Id<'promptFolders'>,
+    currentName: string,
+  ) => {
     const name = window.prompt('Rename folder', currentName)?.trim();
     if (!name || name === currentName) {
       return;
@@ -411,7 +417,7 @@ export default function BookOfTheDeadPage() {
     try {
       if (editingPromptId) {
         await updatePrompt({
-          id: editingPromptId,
+          id: editingPromptId as Id<'prompts'>,
           title: formTitle,
           content: formContent,
         });
@@ -432,7 +438,7 @@ export default function BookOfTheDeadPage() {
     }
   };
 
-  const handleEditPrompt = async (id: string) => {
+  const handleEditPrompt = async (id: Id<'prompts'>) => {
     const prompt = (allPrompts || []).find((p: PromptNode) => p._id === id);
     const newTitle = window.prompt('Edit title', prompt?.title ?? '')?.trim();
     if (!newTitle) return;
@@ -452,7 +458,7 @@ export default function BookOfTheDeadPage() {
     }
   };
 
-  const handleMovePromptToFolder = async (id: string) => {
+  const handleMovePromptToFolder = async (id: Id<'prompts'>) => {
     try {
       await movePrompt({
         promptId: id,
@@ -464,7 +470,7 @@ export default function BookOfTheDeadPage() {
     }
   };
 
-  const handleMovePromptToRoot = async (id: string) => {
+  const handleMovePromptToRoot = async (id: Id<'prompts'>) => {
     try {
       await movePrompt({ promptId: id });
       toast.success('Prompt moved to root');
@@ -559,7 +565,7 @@ export default function BookOfTheDeadPage() {
                           className={cn(
                             'flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1 text-sm hover:bg-accent hover:text-accent-foreground',
                             !selectedFolderId &&
-                              'bg-accent text-accent-foreground'
+                            'bg-accent text-accent-foreground'
                           )}
                           onClick={() => setSelectedFolderId(undefined)}
                         >
