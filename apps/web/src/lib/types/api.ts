@@ -209,12 +209,21 @@ export enum MessageStatus {
   DELETED = 'deleted',
 }
 
+export interface MessageAttachment {
+  fileId: string;
+  url?: string;
+  mimeType: string;
+  size: number;
+  type: 'image' | 'file' | 'video';
+}
+
 export interface ChatMessage {
   _id: string;
   chatId: string;
   walletAddress: string;
   role: MessageRole;
   content: string;
+  attachments?: MessageAttachment[];
   tokenCount?: number;
   embedding?: number[];
   metadata?: MessageMetadata;

@@ -13,9 +13,15 @@ const _isTest = process.env.NODE_ENV === 'test';
 const isBrowser = typeof window !== 'undefined';
 
 // Pino configuration
+const getLogLevel = (): string => {
+  if (isDevelopment) return 'debug';
+  if (isProduction) return 'info';
+  return 'warn';
+};
+
 const pinoConfig: pino.LoggerOptions = {
   name: 'anubis-chat',
-  level: isDevelopment ? 'debug' : isProduction ? 'info' : 'warn',
+  level: getLogLevel(),
   base: {
     service: 'anubis-chat',
     environment: process.env.NODE_ENV || 'development',
@@ -67,20 +73,44 @@ const pinoConfig: pino.LoggerOptions = {
     serialize: true,
     write: isDevelopment
       ? {
-          debug: (_o: any) => {},
-          info: (_o: any) => {},
-          warn: (_o: any) => {},
-          error: (_o: any) => {},
-          fatal: (_o: any) => {},
-          trace: (_o: any) => {},
+          debug: (_o: object) => {
+            // Silent in development
+          },
+          info: (_o: object) => {
+            // Silent in development
+          },
+          warn: (_o: object) => {
+            // Silent in development
+          },
+          error: (_o: object) => {
+            // Silent in development
+          },
+          fatal: (_o: object) => {
+            // Silent in development
+          },
+          trace: (_o: object) => {
+            // Silent in development
+          },
         }
       : {
-          debug: () => {},
-          info: () => {},
-          warn: (_o: any) => {},
-          error: (_o: any) => {},
-          fatal: (_o: any) => {},
-          trace: () => {},
+          debug: () => {
+            // Silent in production
+          },
+          info: () => {
+            // Silent in production
+          },
+          warn: (_o: object) => {
+            // Silent in production
+          },
+          error: (_o: object) => {
+            // Silent in production
+          },
+          fatal: (_o: object) => {
+            // Silent in production
+          },
+          trace: () => {
+            // Silent in production
+          },
         },
   },
 };

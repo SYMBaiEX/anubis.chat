@@ -1,4 +1,8 @@
-import * as matchers from '@testing-library/jest-dom/matchers';
+import {
+  toBeDisabled,
+  toBeVisible,
+  toHaveTextContent,
+} from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeAll, expect, vi } from 'vitest';
 import {
@@ -7,7 +11,7 @@ import {
   setupWindowMock,
 } from './test-utils/mocks';
 
-expect.extend(matchers);
+expect.extend({ toBeDisabled, toBeVisible, toHaveTextContent });
 
 // Setup environment variables before all tests
 beforeAll(() => {

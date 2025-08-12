@@ -7,9 +7,14 @@ import {
   Check,
   Clock,
   Copy,
+  Download,
   Edit,
+  FileText,
+  FileVideo,
+  Image,
   Link as LinkIcon,
   MoreVertical,
+  Paperclip,
   RotateCcw,
   ThumbsDown,
   ThumbsUp,
@@ -34,6 +39,15 @@ import { MarkdownRenderer } from './markdown-renderer';
 
 // Initialize logger
 const log = createModuleLogger('message-bubble');
+
+// Helper function to format file sizes
+const formatFileSize = (bytes: number): string => {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
+};
 
 /**
  * MessageBubble component - Individual message display
@@ -205,6 +219,75 @@ export function MessageBubble({
               isUser ? 'bg-primary text-primary-foreground' : 'border bg-muted'
             )}
           >
+            {/* Attachments Display */}
+            {message.attachments && message.attachments.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {message.attachments.map((attachment, index) => {
+                  const isImage = attachment.type === 'image';
+                  const isVideo = attachment.type === 'video';
+                  const isPdf = attachment.mimeType === 'application/pdf';
+
+                  return (
+                    <div
+                      className="group relative overflow-hidden rounded-lg border bg-background/50"
+                      key={`${attachment.fileId}-${index}`}
+                    >
+                      {isImage && attachment.url ? (
+                        <a
+                          className="block"
+                          href={attachment.url}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          <img
+                            alt="Attachment"
+                            className="h-32 w-auto max-w-xs object-cover transition-transform hover:scale-105"
+                            src={attachment.url}
+                          />
+                        </a>
+                      ) : (
+                        <div className="flex h-20 w-48 items-center gap-3 px-3">
+                          {/* File icon */}
+                          <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
+                            {isImage ? (
+                              <Image className="h-5 w-5 text-muted-foreground" />
+                            ) : isVideo ? (
+                              <FileVideo className="h-5 w-5 text-muted-foreground" />
+                            ) : isPdf ? (
+                              <FileText className="h-5 w-5 text-muted-foreground" />
+                            ) : (
+                              <Paperclip className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+
+                          {/* File info */}
+                          <div className="flex-1 overflow-hidden">
+                            <p className="truncate font-medium text-sm">
+                              {attachment.fileId.split('/').pop() || 'File'}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {formatFileSize(attachment.size)}
+                            </p>
+                          </div>
+
+                          {/* Download button */}
+                          {attachment.url && (
+                            <a
+                              className="rounded p-1.5 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                              download
+                              href={attachment.url}
+                            >
+                              <Download className="h-4 w-4" />
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Message Content */}
             <div
               className={cn(

@@ -3,12 +3,15 @@
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import {
   Brain,
+  FileText,
+  FileVideo,
   Image,
   Mic,
   MicOff,
   Paperclip,
   Send,
   Smile,
+  X,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from 'react';
@@ -34,6 +37,15 @@ import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('message-input');
+
+// Helper function to format file sizes
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
+};
 
 /**
  * MessageInput component - Advanced message input with voice, files, etc.
@@ -205,9 +217,15 @@ export function MessageInput({
           const put = await fetch(url, {
             method: 'POST',
             body: file,
+            headers: {
+              'Content-Type': file.type || 'application/octet-stream',
+            },
           });
           if (!put.ok) throw new Error('Upload failed');
           const { storageId } = (await put.json()) as { storageId: string };
+
+          // Get the public URL for the uploaded file
+          const publicUrl = `${convexSite}/serveStorage?id=${storageId}`;
 
           uploaded.push({
             id: crypto.randomUUID(),
@@ -215,15 +233,28 @@ export function MessageInput({
             size: file.size,
             type: file.type,
             storageId,
-            // Let server resolve public URL later; preview only for images via object URL
-            preview: file.type.startsWith('image/')
-              ? URL.createObjectURL(file)
-              : undefined,
-            url: undefined,
-            kind: 'file',
+            // Create preview for documents and images
+            preview:
+              file.type.startsWith('image/') || file.type === 'application/pdf'
+                ? URL.createObjectURL(file)
+                : undefined,
+            url: publicUrl,
+            kind: file.type.startsWith('image/')
+              ? 'image'
+              : file.type.startsWith('video/')
+                ? 'video'
+                : 'file',
+          });
+
+          log.debug('File uploaded successfully', {
+            fileName: file.name,
+            storageId,
+            url: publicUrl,
           });
         } catch (error) {
-          log.error('File upload failed', { error });
+          log.error('File upload failed', { error, fileName: file.name });
+          // Optionally show a toast notification
+          // toast.error(`Failed to upload ${file.name}`);
         }
       }
 
@@ -256,9 +287,15 @@ export function MessageInput({
           const put = await fetch(url, {
             method: 'POST',
             body: file,
+            headers: {
+              'Content-Type': file.type || 'image/jpeg',
+            },
           });
           if (!put.ok) throw new Error('Upload failed');
           const { storageId } = (await put.json()) as { storageId: string };
+
+          // Get the public URL for the uploaded image
+          const publicUrl = `${convexSite}/serveStorage?id=${storageId}`;
 
           uploaded.push({
             id: crypto.randomUUID(),
@@ -267,11 +304,19 @@ export function MessageInput({
             type: file.type,
             storageId,
             preview: URL.createObjectURL(file),
-            url: undefined,
+            url: publicUrl,
             kind: 'image',
           });
+
+          log.debug('Image uploaded successfully', {
+            fileName: file.name,
+            storageId,
+            url: publicUrl,
+          });
         } catch (error) {
-          log.error('Image upload failed', { error });
+          log.error('Image upload failed', { error, fileName: file.name });
+          // Optionally show a toast notification
+          // toast.error(`Failed to upload ${file.name}`);
         }
       }
 
@@ -367,39 +412,71 @@ export function MessageInput({
               ref={textareaRef}
               value={message}
             />
-            {/* Attached files preview (compact badges) */}
+            {/* Attached files preview with proper thumbnails */}
             {attachments.length > 0 && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {attachments.map((a) => (
-                  <div
-                    className="group inline-flex items-center gap-2 rounded-md border bg-muted px-2 py-1 text-xs"
-                    key={a.id}
-                  >
-                    {a.preview ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        alt={a.name}
-                        className="h-6 w-6 rounded object-cover"
-                        src={a.preview}
-                      />
-                    ) : (
-                      <span className="inline-block h-6 w-6 rounded bg-muted-foreground/20" />
-                    )}
-                    <span className="max-w-[120px] truncate">{a.name}</span>
-                    <button
-                      aria-label={`Remove ${a.name}`}
-                      className="rounded p-1 hover:bg-muted-foreground/10"
-                      onClick={() =>
-                        setAttachments((prev) =>
-                          prev.filter((x) => x.id !== a.id)
-                        )
-                      }
-                      type="button"
+              <div className="mb-2 flex flex-wrap items-center gap-2 px-2">
+                {attachments.map((a) => {
+                  const isImage = a.kind === 'image';
+                  const isPdf = a.type === 'application/pdf';
+                  const fileIcon = isImage ? (
+                    <Image className="h-3.5 w-3.5" />
+                  ) : a.kind === 'video' ? (
+                    <FileVideo className="h-3.5 w-3.5" />
+                  ) : isPdf ? (
+                    <FileText className="h-3.5 w-3.5" />
+                  ) : (
+                    <Paperclip className="h-3.5 w-3.5" />
+                  );
+
+                  return (
+                    <div
+                      className="group relative inline-flex items-center gap-2 rounded-lg border bg-muted/50 px-2.5 py-1.5 text-xs transition-colors hover:bg-muted"
+                      key={a.id}
                     >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                      {/* Thumbnail or icon */}
+                      {a.preview && isImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          alt={a.name}
+                          className="h-8 w-8 rounded object-cover"
+                          src={a.preview}
+                        />
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded bg-muted-foreground/10">
+                          {fileIcon}
+                        </div>
+                      )}
+
+                      {/* File info */}
+                      <div className="flex flex-col">
+                        <span className="max-w-[120px] truncate font-medium">
+                          {a.name}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {formatFileSize(a.size)}
+                        </span>
+                      </div>
+
+                      {/* Remove button */}
+                      <button
+                        aria-label={`Remove ${a.name}`}
+                        className="ml-1 rounded-md p-1 transition-colors hover:bg-destructive/20"
+                        onClick={() => {
+                          // Clean up object URLs to prevent memory leaks
+                          if (a.preview && a.preview.startsWith('blob:')) {
+                            URL.revokeObjectURL(a.preview);
+                          }
+                          setAttachments((prev) =>
+                            prev.filter((x) => x.id !== a.id)
+                          );
+                        }}
+                        type="button"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -611,7 +688,7 @@ export function MessageInput({
 
         {/* File Inputs (Hidden) */}
         <input
-          accept=".pdf,.doc,.docx,.txt,.md"
+          accept=".pdf,.doc,.docx,.txt,.md,.json,.csv,.xml"
           className="hidden"
           multiple
           onChange={handleFileUpload}

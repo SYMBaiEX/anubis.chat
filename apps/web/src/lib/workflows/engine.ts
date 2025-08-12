@@ -173,10 +173,8 @@ export class WorkflowEngine {
   private executions: Map<string, WorkflowContext> = new Map();
   private agents: Map<string, Agent> = new Map();
   private nodeExecutors: Map<NodeType, NodeExecutor> = new Map();
-  private executionQueue: PQueue;
 
   constructor() {
-    this.executionQueue = new PQueue({ concurrency: 10 });
     this.initializeNodeExecutors();
   }
 
@@ -501,10 +499,10 @@ class ParallelNodeExecutor extends NodeExecutor {
 
     const results = await Promise.allSettled(
       config.branches.map((branchId) =>
-        queue.add(async () => {
+        queue.add(() => {
           // Execute branch logic
           // This would need to execute the branch nodes
-          return { branchId, result: 'branch result' };
+          return Promise.resolve({ branchId, result: 'branch result' });
         })
       )
     );
@@ -537,7 +535,7 @@ class ParallelNodeExecutor extends NodeExecutor {
 
 // Loop Node Executor
 class LoopNodeExecutor extends NodeExecutor {
-  async execute(
+  execute(
     node: WorkflowNode,
     context: WorkflowContext,
     _agents: Map<string, Agent>
@@ -559,13 +557,17 @@ class LoopNodeExecutor extends NodeExecutor {
     }
 
     context.results.set(node.id, results);
+    return Promise.resolve();
   }
 }
 
 // Subworkflow Node Executor
 class SubworkflowNodeExecutor extends NodeExecutor {
-  constructor(private engine: WorkflowEngine) {
+  private engine: WorkflowEngine;
+
+  constructor(engine: WorkflowEngine) {
     super();
+    this.engine = engine;
   }
 
   async execute(
