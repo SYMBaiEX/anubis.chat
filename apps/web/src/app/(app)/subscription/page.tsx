@@ -65,8 +65,8 @@ export default function SubscriptionPage() {
   const usagePercent =
     subscription.messagesLimit > 0
       ? Math.round(
-          (subscription.messagesUsed / subscription.messagesLimit) * 100
-        )
+        (subscription.messagesUsed / subscription.messagesLimit) * 100
+      )
       : 0;
 
   const _getTierColor = (tier: string) => {
@@ -506,10 +506,10 @@ function PlansGrid({
                       </div>
                       {(subscriptionTier === 'pro_plus' ||
                         subscriptionTier === 'admin') && (
-                        <Badge size="sm" variant="outline">
-                          Current
-                        </Badge>
-                      )}
+                          <Badge size="sm" variant="outline">
+                            Current
+                          </Badge>
+                        )}
                     </div>
                     <div className="font-semibold text-foreground text-sm">
                       0.1 SOL
@@ -565,8 +565,8 @@ function PlansGrid({
               <div className="text-muted-foreground">Messages/month</div>
               <div className="font-medium">
                 {selectedPlan === 'free' && '50'}
-                {selectedPlan === 'pro' && '1,500'}
-                {selectedPlan === 'pro_plus' && '3,000'}
+                {selectedPlan === 'pro' && '500'}
+                {selectedPlan === 'pro_plus' && '1,000'}
               </div>
             </div>
             <div className="rounded-xl border p-2">

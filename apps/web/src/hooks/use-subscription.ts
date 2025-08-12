@@ -10,6 +10,8 @@ export interface SubscriptionStatus {
   messagesLimit: number;
   premiumMessagesUsed: number;
   premiumMessagesLimit: number;
+  messageCredits?: number;
+  premiumMessageCredits?: number;
   currentPeriodStart: number;
   currentPeriodEnd: number;
   autoRenew: boolean;
@@ -68,12 +70,19 @@ export function useSubscription() {
         ? (maybeSubscription.daysRemaining as number)
         : undefined;
 
+    const maybeSubscriptionWithCredits = subscription as Record<string, unknown> & {
+      messageCredits?: number;
+      premiumMessageCredits?: number;
+    };
+
     return {
       tier,
       messagesUsed: subscription.messagesUsed ?? 0,
       messagesLimit: subscription.messagesLimit ?? 0,
       premiumMessagesUsed: subscription.premiumMessagesUsed ?? 0,
       premiumMessagesLimit: subscription.premiumMessagesLimit ?? 0,
+      messageCredits: maybeSubscriptionWithCredits.messageCredits ?? 0,
+      premiumMessageCredits: maybeSubscriptionWithCredits.premiumMessageCredits ?? 0,
       currentPeriodStart: subscription.currentPeriodStart ?? Date.now(),
       currentPeriodEnd: subscription.currentPeriodEnd ?? Date.now(),
       autoRenew: Boolean(subscription.autoRenew),

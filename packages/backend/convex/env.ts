@@ -75,11 +75,11 @@ const convexEnvSchema = z.object({
     .transform((val) => Number.parseInt(val, 10)),
   SUBSCRIPTION_PRO_MESSAGE_LIMIT: z
     .string()
-    .default('1500')
+    .default('500')
     .transform((val) => Number.parseInt(val, 10)),
   SUBSCRIPTION_PRO_PLUS_MESSAGE_LIMIT: z
     .string()
-    .default('3000')
+    .default('1000')
     .transform((val) => Number.parseInt(val, 10)),
   SUBSCRIPTION_PRO_PREMIUM_LIMIT: z
     .string()

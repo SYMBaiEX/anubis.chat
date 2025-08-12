@@ -116,22 +116,18 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Prevent flash of wrong theme - must run before React hydration */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                var theme = localStorage.getItem('theme');
-                var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                var resolvedTheme = theme === 'system' || !theme ? systemTheme : theme;
-                if (resolvedTheme === 'dark') {
-                  document.documentElement.classList.add('dark');
-                } else {
-                  document.documentElement.classList.remove('dark');
-                }
-              } catch (e) {}
-            `,
-          }}
-        />
+        <script id="theme-init" suppressHydrationWarning>{`
+          try {
+            var theme = localStorage.getItem('theme');
+            var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            var resolvedTheme = theme === 'system' || !theme ? systemTheme : theme;
+            if (resolvedTheme === 'dark') {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+          } catch (e) {}
+        `}</script>
         {/* Load Satoshi font stylesheet without client event handlers */}
         <link
           crossOrigin="anonymous"

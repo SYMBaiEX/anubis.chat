@@ -31,7 +31,7 @@ const tiers = [
     period: 'per month',
     originalPrice: '0.1 SOL',
     features: [
-      '1,500 messages / month',
+      '500 messages / month',
       '100 premium model messages',
       'Premium models: GPT-5, GPT-5 Mini, Gemini 2.5 Pro, o4-mini',
       'All free models included',
@@ -50,7 +50,7 @@ const tiers = [
     period: 'per month',
     originalPrice: '0.2 SOL',
     features: [
-      '3,000 messages / month',
+      '1,000 messages / month',
       '300 premium model messages',
       'All models: GPT-5, GPT-5 Mini, Gemini 2.5 Pro, o4-mini + free models',
       'Advanced features',
@@ -138,7 +138,7 @@ function Pricing() {
                 className={cn(
                   'group relative flex h-full flex-col overflow-hidden border-primary/10 bg-gradient-to-br from-background to-background/50 backdrop-blur-sm transition-all hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl',
                   t.highlighted &&
-                    'border-primary/40 shadow-2xl shadow-primary/20'
+                  'border-primary/40 shadow-2xl shadow-primary/20'
                 )}
               >
                 <motion.div

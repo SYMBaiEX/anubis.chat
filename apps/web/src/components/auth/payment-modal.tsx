@@ -35,7 +35,7 @@ const TIER_CONFIG = {
     price: 0.05,
     originalPrice: 0.1,
     features: [
-      '1,500 messages / month',
+      '500 messages / month',
       '100 premium messages (GPT-4o, Claude)',
       'All standard models unlimited',
       'Document uploads',
@@ -48,7 +48,7 @@ const TIER_CONFIG = {
     price: 0.1,
     originalPrice: 0.2,
     features: [
-      '3,000 messages / month',
+      '1,000 messages / month',
       '300 premium messages',
       'All models unlimited',
       'Large file uploads (100MB)',

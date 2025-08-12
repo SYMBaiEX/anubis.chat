@@ -23,7 +23,7 @@ const SUBSCRIPTION_TIERS = {
     ],
   },
   pro: {
-    messagesLimit: 1500,
+    messagesLimit: 500,
     premiumMessagesLimit: 100,
     priceSol: 0.05,
     features: [
@@ -49,7 +49,7 @@ const SUBSCRIPTION_TIERS = {
     ],
   },
   pro_plus: {
-    messagesLimit: 3000,
+    messagesLimit: 1000,
     premiumMessagesLimit: 300,
     priceSol: 0.1,
     features: [
@@ -117,11 +117,14 @@ type SubscriptionShape = {
   messagesLimit: number;
   premiumMessagesUsed: number;
   premiumMessagesLimit: number;
+  messageCredits: number;
+  premiumMessageCredits: number;
   currentPeriodStart: number;
   currentPeriodEnd: number;
   autoRenew: boolean;
   planPriceSol: number;
   features: string[];
+  subscriptionTxSignature: string;
 };
 
 function getSafeSubscription(user: {
@@ -139,12 +142,15 @@ function getSafeSubscription(user: {
     premiumMessagesUsed: candidate?.premiumMessagesUsed ?? 0,
     premiumMessagesLimit:
       candidate?.premiumMessagesLimit ?? tierDefaults.premiumMessagesLimit,
+    messageCredits: candidate?.messageCredits ?? 0,
+    premiumMessageCredits: candidate?.premiumMessageCredits ?? 0,
     currentPeriodStart: candidate?.currentPeriodStart ?? now,
     currentPeriodEnd:
       candidate?.currentPeriodEnd ?? now + 30 * 24 * 60 * 60 * 1000,
     autoRenew: Boolean(candidate?.autoRenew),
     planPriceSol: candidate?.planPriceSol ?? tierDefaults.priceSol,
     features: candidate?.features ?? tierDefaults.features,
+    subscriptionTxSignature: (candidate as any)?.subscriptionTxSignature ?? '',
   };
 }
 
@@ -183,36 +189,43 @@ export const canUseModel = query({
       };
     }
 
-    // Check message limits
-    if (
-      modelConfig?.category === 'premium' &&
-      sub.premiumMessagesUsed >= sub.premiumMessagesLimit
-    ) {
+    // Calculate total available messages (plan + credits)
+    const totalStandardAvailable = (sub.messagesLimit - sub.messagesUsed) + sub.messageCredits;
+    const totalPremiumAvailable = (sub.premiumMessagesLimit - sub.premiumMessagesUsed) + sub.premiumMessageCredits;
+
+    // Check premium message availability (for premium models)
+    if (modelConfig?.category === 'premium' && totalPremiumAvailable <= 0) {
       return {
         allowed: false,
         reason: 'Premium message limit reached',
-        remaining: 0,
-        suggestedAction: 'upgrade',
+        remaining: totalStandardAvailable,
+        premiumRemaining: 0,
+        suggestedAction: totalStandardAvailable <= 0 ? 'upgrade' : 'buy_credits',
       };
     }
 
-    // Check total message limit
-    if (sub.messagesUsed >= sub.messagesLimit) {
+    // Check total standard message availability
+    if (totalStandardAvailable <= 0) {
       return {
         allowed: false,
-        reason: 'Monthly message limit reached',
+        reason: 'Message limit reached',
         remaining: 0,
-        suggestedAction: 'upgrade',
+        premiumRemaining: modelConfig?.category === 'premium' ? totalPremiumAvailable : undefined,
+        suggestedAction: 'buy_credits',
       };
     }
 
     return {
       allowed: true,
-      remaining: sub.messagesLimit - sub.messagesUsed,
+      remaining: totalStandardAvailable,
       premiumRemaining:
         modelConfig?.category === 'premium'
-          ? sub.premiumMessagesLimit - sub.premiumMessagesUsed
+          ? totalPremiumAvailable
           : undefined,
+      planMessagesRemaining: sub.messagesLimit - sub.messagesUsed,
+      planPremiumRemaining: sub.premiumMessagesLimit - sub.premiumMessagesUsed,
+      creditMessagesRemaining: sub.messageCredits,
+      creditPremiumRemaining: sub.premiumMessageCredits,
     };
   },
 });
@@ -347,24 +360,62 @@ export const trackDetailedMessageUsage = mutation({
     const modelConfig = MODEL_COSTS[args.model as keyof typeof MODEL_COSTS];
     const isPremium = modelConfig?.category === 'premium';
 
+    // Update user's message counts using consumption hierarchy
     const sub = getSafeSubscription(user);
-    const currentMessagesUsed = sub.messagesUsed;
-    const currentPremiumMessagesUsed = sub.premiumMessagesUsed;
-    const messagesLimit = sub.messagesLimit;
-    const premiumMessagesLimit = sub.premiumMessagesLimit;
-
-    // Update user's message counts
-    const updates = {
-      subscription: {
-        ...sub,
-        messagesUsed: currentMessagesUsed + 1,
-        messagesLimit,
-        premiumMessagesLimit,
-        premiumMessagesUsed: isPremium
-          ? currentPremiumMessagesUsed + 1
-          : currentPremiumMessagesUsed,
-      },
-    } as const;
+    
+    // Calculate plan messages available (not used yet)
+    const planMessagesAvailable = Math.max(0, sub.messagesLimit - sub.messagesUsed);
+    const planPremiumAvailable = Math.max(0, sub.premiumMessagesLimit - sub.premiumMessagesUsed);
+    
+    let updates: {
+      subscription: SubscriptionShape;
+    };
+    
+    if (isPremium) {
+      // For premium models, consume from plan premium messages first, then premium credits
+      if (planPremiumAvailable > 0) {
+        // Use plan premium messages first
+        updates = {
+          subscription: {
+            ...sub,
+            messagesUsed: sub.messagesUsed + 1,
+            premiumMessagesUsed: sub.premiumMessagesUsed + 1,
+          },
+        };
+      } else if (sub.premiumMessageCredits > 0) {
+        // Fall back to premium credits
+        updates = {
+          subscription: {
+            ...sub,
+            messagesUsed: sub.messagesUsed + 1,
+            premiumMessageCredits: sub.premiumMessageCredits - 1,
+          },
+        };
+      } else {
+        throw new Error('No premium messages or credits available');
+      }
+    } else {
+      // For standard models, consume from plan messages first, then standard credits
+      if (planMessagesAvailable > 0) {
+        // Use plan messages first
+        updates = {
+          subscription: {
+            ...sub,
+            messagesUsed: sub.messagesUsed + 1,
+          },
+        };
+      } else if (sub.messageCredits > 0) {
+        // Fall back to message credits
+        updates = {
+          subscription: {
+            ...sub,
+            messageCredits: sub.messageCredits - 1,
+          },
+        };
+      } else {
+        throw new Error('No standard messages or credits available');
+      }
+    }
 
     await ctx.db.patch(user._id, {
       ...updates,
@@ -407,13 +458,19 @@ export const trackDetailedMessageUsage = mutation({
       });
     }
 
+    // Calculate remaining messages based on updated subscription
+    const totalStandardRemaining = Math.max(0, updates.subscription.messagesLimit - updates.subscription.messagesUsed) + updates.subscription.messageCredits;
+    const totalPremiumRemaining = Math.max(0, updates.subscription.premiumMessagesLimit - updates.subscription.premiumMessagesUsed) + updates.subscription.premiumMessageCredits;
+
     return {
       messagesUsed: updates.subscription.messagesUsed,
-      messagesRemaining: sub.messagesLimit - updates.subscription.messagesUsed,
+      messagesRemaining: totalStandardRemaining,
       premiumMessagesUsed: updates.subscription.premiumMessagesUsed,
-      premiumMessagesRemaining: isPremium
-        ? sub.premiumMessagesLimit - updates.subscription.premiumMessagesUsed
-        : undefined,
+      premiumMessagesRemaining: isPremium ? totalPremiumRemaining : undefined,
+      planMessagesRemaining: Math.max(0, updates.subscription.messagesLimit - updates.subscription.messagesUsed),
+      planPremiumRemaining: Math.max(0, updates.subscription.premiumMessagesLimit - updates.subscription.premiumMessagesUsed),
+      creditMessagesRemaining: updates.subscription.messageCredits,
+      creditPremiumRemaining: updates.subscription.premiumMessageCredits,
     };
   },
 });
@@ -625,10 +682,7 @@ export const processVerifiedPayment = internalMutation({
       // Payment already processed - return success to avoid double processing
       // But ensure user subscription is up to date
       const sub = getSafeSubscription(user);
-      if (
-        sub.tier !== args.tier ||
-        sub.subscriptionTxSignature !== args.txSignature
-      ) {
+      if (sub.tier !== args.tier) {
         // Subscription might be out of sync - update it
         const tierConfig = SUBSCRIPTION_TIERS[args.tier];
         await ctx.db.patch(user._id, {
@@ -1283,5 +1337,288 @@ export const initializeModelQuotas = mutation({
     }
 
     return { success: true, quotasCreated: quotas.length };
+  },
+});
+
+// =============================================================================
+// Message Credits System
+// =============================================================================
+
+// Message credit pack configuration
+const MESSAGE_CREDIT_PACK = {
+  standard: {
+    standardCredits: 150,
+    premiumCredits: 25,
+    priceSOL: 0.025,
+  },
+};
+
+// Process message credit purchase (creates pending purchase for verification)
+export const purchaseMessageCredits = mutation({
+  args: {
+    packType: v.literal('standard'),
+    txSignature: v.string(),
+    amountSol: v.number(),
+    numberOfPacks: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const { user } = await requireAuth(ctx);
+
+    if (!user.isActive) {
+      throw new Error('User account is inactive');
+    }
+
+    const packConfig = MESSAGE_CREDIT_PACK[args.packType];
+    const numberOfPacks = args.numberOfPacks || 1;
+    const expectedAmount = packConfig.priceSOL * numberOfPacks;
+
+    // Verify payment amount
+    if (Math.abs(args.amountSol - expectedAmount) > 0.001) {
+      throw new Error(
+        `Invalid payment amount. Expected: ${expectedAmount} SOL, received: ${args.amountSol} SOL`
+      );
+    }
+
+    // Check if transaction signature already exists
+    const existingPurchase = await ctx.db
+      .query('messageCreditPurchases')
+      .withIndex('by_signature', (q) => q.eq('txSignature', args.txSignature))
+      .first();
+
+    if (existingPurchase) {
+      if (existingPurchase.status === 'confirmed') {
+        throw new Error('Transaction has already been processed');
+      }
+      if (existingPurchase.status === 'pending') {
+        throw new Error('Transaction is already being verified');
+      }
+    }
+
+    const now = Date.now();
+
+    // Create pending purchase record
+    const purchaseId = await ctx.db.insert('messageCreditPurchases', {
+      userId: user._id,
+      packType: args.packType,
+      standardCredits: packConfig.standardCredits * numberOfPacks,
+      premiumCredits: packConfig.premiumCredits * numberOfPacks,
+      priceSOL: args.amountSol,
+      txSignature: args.txSignature,
+      status: 'pending', // Pending verification
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      success: true,
+      purchaseId,
+      packType: args.packType,
+      standardCredits: packConfig.standardCredits * numberOfPacks,
+      premiumCredits: packConfig.premiumCredits * numberOfPacks,
+      status: 'pending',
+      message: 'Purchase submitted for verification',
+    };
+  },
+});
+
+// Internal mutation to process verified message credit purchase
+export const processVerifiedMessageCreditPurchase = internalMutation({
+  args: {
+    txSignature: v.string(),
+    amountSol: v.number(),
+    walletAddress: v.string(),
+    verificationDetails: v.object({
+      signature: v.string(),
+      recipient: v.string(),
+      sender: v.string(),
+      amount: v.number(),
+      timestamp: v.number(),
+      slot: v.number(),
+      confirmationStatus: v.string(),
+    }),
+    referralCode: v.optional(v.string()),
+    referralPayoutTx: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Find the user by wallet address
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
+      .first();
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Check if purchase already exists
+    let purchase = await ctx.db
+      .query('messageCreditPurchases')
+      .withIndex('by_signature', (q) => q.eq('txSignature', args.txSignature))
+      .first();
+
+    if (!purchase) {
+      throw new Error('Purchase record not found');
+    }
+
+    if (purchase.status === 'confirmed') {
+      return {
+        success: true,
+        purchaseId: purchase._id,
+        status: 'already_processed',
+        message: 'Purchase has already been processed and credits added',
+      };
+    }
+
+    if (purchase.status !== 'pending') {
+      throw new Error(`Purchase is in invalid status: ${purchase.status}`);
+    }
+
+    const now = Date.now();
+
+    // Update purchase status to confirmed
+    await ctx.db.patch(purchase._id, {
+      status: 'confirmed',
+      verificationDetails: args.verificationDetails,
+      updatedAt: now,
+    });
+
+    // Add message credits to user's subscription
+    const sub = getSafeSubscription(user);
+    await ctx.db.patch(user._id, {
+      subscription: {
+        ...sub,
+        messageCredits: sub.messageCredits + purchase.standardCredits,
+        premiumMessageCredits: sub.premiumMessageCredits + purchase.premiumCredits,
+      },
+      updatedAt: now,
+    });
+
+    // Process referral payout for message credit purchases
+    let referralProcessed = false;
+
+    // Check if user has a permanent referrer (from claimReferral or initial attribution)
+    if (user.referredBy && user.referredByCode) {
+      const referredByCode: string = user.referredByCode;
+      try {
+        // Get referral code record to get current commission rate
+        const referralCodeRecord = await ctx.db
+          .query('referralCodes')
+          .withIndex('by_code', (q) => q.eq('code', referredByCode))
+          .first();
+
+        if (referralCodeRecord?.isActive) {
+          // Calculate commission amount
+          const commissionRate = referralCodeRecord.currentCommissionRate;
+          const commissionAmount = args.amountSol * commissionRate;
+
+          // Get referrer wallet address
+          const referrer = await ctx.db.get(user.referredBy);
+
+          if (referrer?.walletAddress) {
+            // Create referral payout record for message credit purchase
+            // Note: Using purchase ID string representation since paymentId expects subscriptionPayments ID
+            await ctx.db.insert('referralPayouts', {
+              paymentId: purchase._id as any, // Using purchase ID for message credit referrals
+              referralCode: referredByCode,
+              referrerId: user.referredBy,
+              referrerWalletAddress: referrer.walletAddress,
+              referredUserId: user._id,
+              paymentAmount: args.amountSol,
+              commissionRate,
+              commissionAmount,
+              payoutTxSignature: args.referralPayoutTx || 'PENDING_CREDITS',
+              status: args.referralPayoutTx ? 'paid' : 'pending',
+              paidAt: args.referralPayoutTx ? now : undefined,
+              createdAt: now,
+            });
+
+            // Update referrer stats using internal mutation (no increment on referral count for credits)
+            await ctx.runMutation(internal.referrals.updateReferrerStats, {
+              referrerId: user.referredBy,
+              referralCode: referredByCode,
+              commissionAmount,
+              referredUserId: user._id,
+              isFirstConversion: false, // Message credits don't count as new conversions
+            });
+
+            referralProcessed = true;
+          }
+        }
+      } catch (_referralError) {}
+    }
+
+    return {
+      success: true,
+      purchaseId: purchase._id,
+      standardCreditsAdded: purchase.standardCredits,
+      premiumCreditsAdded: purchase.premiumCredits,
+      referralProcessed,
+    };
+  },
+});
+
+// Get user's message credit purchase history
+export const getMessageCreditPurchases = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return null;
+    }
+
+    const limit = args.limit || 20;
+
+    const purchases = await ctx.db
+      .query('messageCreditPurchases')
+      .withIndex('by_user', (q) => q.eq('userId', user._id))
+      .order('desc')
+      .take(limit);
+
+    return purchases.map((purchase) => ({
+      id: purchase._id,
+      packType: purchase.packType,
+      standardCredits: purchase.standardCredits,
+      premiumCredits: purchase.premiumCredits,
+      priceSOL: purchase.priceSOL,
+      status: purchase.status,
+      txSignature: purchase.txSignature,
+      createdAt: purchase.createdAt,
+    }));
+  },
+});
+
+// Check message credit purchase status
+export const checkMessageCreditPurchaseStatus = query({
+  args: {
+    txSignature: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { user } = await requireAuth(ctx);
+
+    const purchase = await ctx.db
+      .query('messageCreditPurchases')
+      .withIndex('by_signature', (q) => q.eq('txSignature', args.txSignature))
+      .first();
+
+    if (!purchase) {
+      return { status: 'not_found' };
+    }
+
+    // Ensure the purchase belongs to the authenticated user
+    if (purchase.userId !== user._id) {
+      throw new Error('Purchase access denied');
+    }
+
+    return {
+      status: purchase.status,
+      packType: purchase.packType,
+      standardCredits: purchase.standardCredits,
+      premiumCredits: purchase.premiumCredits,
+      priceSOL: purchase.priceSOL,
+      createdAt: purchase.createdAt,
+      verificationDetails: purchase.verificationDetails || null,
+    };
   },
 });

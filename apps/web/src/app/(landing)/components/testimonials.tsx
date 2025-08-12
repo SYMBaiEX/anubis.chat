@@ -5,7 +5,7 @@ import { Star } from 'lucide-react';
 import Script from 'next/script';
 import { memo } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 const testimonials = [
   {
@@ -60,13 +60,9 @@ function Testimonials() {
 
   return (
     <>
-      <Script
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(reviewSchema),
-        }}
-        id="testimonials-schema"
-        type="application/ld+json"
-      />
+      <Script id="testimonials-schema" type="application/ld+json">
+        {JSON.stringify(reviewSchema)}
+      </Script>
       <AnimatedSection
         allowOverlap
         className="py-20 md:py-28 lg:py-32"

@@ -27,11 +27,11 @@ const log = createModuleLogger('api/mcp/servers');
 /**
  * DELETE /api/mcp/servers/[name] - Close an MCP server connection
  */
-export async function DELETE(
+export function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ name: string }> }
 ) {
-  return aiRateLimit(request, async (req) => {
+  return aiRateLimit(request, (req) => {
     return withAuth(req, async (_authReq: AuthenticatedRequest) => {
       const { name: serverName } = await params;
 

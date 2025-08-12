@@ -5,7 +5,6 @@ import { Check, MessagesSquare, Rocket, Upload, Wallet } from 'lucide-react';
 import { memo } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 
 const steps = [
   {
@@ -88,11 +87,11 @@ function HowItWorks() {
           viewport={{ once: true, margin: '-50px' }}
           whileInView={{ opacity: 1, y: 0 }}
         >
-          {steps.map((_, index) => (
+          {steps.map((step, index) => (
             <motion.div
               className="flex h-3 w-3 items-center justify-center rounded-full border-2 border-primary bg-primary"
               initial={{ scale: 0, opacity: 0 }}
-              key={index}
+              key={`progress-dot-${step.title}`}
               transition={{
                 duration: 0.4,
                 delay: 0.8 + index * 0.1,

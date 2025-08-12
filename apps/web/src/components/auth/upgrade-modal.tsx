@@ -57,14 +57,14 @@ const TIER_CONFIG = {
     name: 'Pro',
     priceSOL: paymentConfig.subscription.pro.priceSOL,
     priceUSD: paymentConfig.subscription.pro.priceUSD,
-    messages: 1500,
+    messages: 500,
     premiumMessages: 100,
     color: 'from-blue-500 to-blue-600',
     icon: Zap,
     popular: true,
     features: [
       'Standard Models Access',
-      '1,500 messages per month',
+      '500 messages per month',
       '100 premium model messages',
       'GPT-4o & Claude 3.5 Sonnet',
       'Document upload & processing',
@@ -77,14 +77,14 @@ const TIER_CONFIG = {
     name: 'Pro+',
     priceSOL: paymentConfig.subscription.proPLus.priceSOL,
     priceUSD: paymentConfig.subscription.proPLus.priceUSD,
-    messages: 3000,
+    messages: 1000,
     premiumMessages: 300,
     color: 'from-purple-500 to-purple-600',
     icon: Shield,
     popular: false,
     features: [
       'Everything in Pro',
-      '3,000 messages per month',
+      '1,000 messages per month',
       '300 premium model messages',
       'All AI models available',
       'Large document uploads (50MB+)',
@@ -783,8 +783,8 @@ export function UpgradeModal({
                 </span>
                 <span className="text-muted-foreground text-sm">
                   {proratedUpgrade?.isProrated &&
-                  selectedTier === 'pro_plus' &&
-                  subscription?.tier === 'pro'
+                    selectedTier === 'pro_plus' &&
+                    subscription?.tier === 'pro'
                     ? 'Prorated upgrade'
                     : `≈ $${selectedConfig.priceUSD} USD`}
                 </span>

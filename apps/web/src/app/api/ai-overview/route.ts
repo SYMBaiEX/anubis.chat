@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-static';
 
-export async function GET() {
+export function GET() {
   const payload = {
     name: 'ANUBIS AI Chat',
     website: 'https://anubis.chat',

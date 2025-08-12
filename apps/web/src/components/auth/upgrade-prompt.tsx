@@ -32,7 +32,7 @@ const TIER_DETAILS = {
     bgColor: 'bg-blue-50 dark:bg-blue-950/20',
     borderColor: 'border-blue-200 dark:border-blue-800',
     features: [
-      '1,500 messages / month',
+      '500 messages / month',
       '100 premium messages',
       'Document uploads',
       'Chat history',
@@ -46,7 +46,7 @@ const TIER_DETAILS = {
     bgColor: 'bg-purple-50 dark:bg-purple-950/20',
     borderColor: 'border-purple-200 dark:border-purple-800',
     features: [
-      '3,000 messages / month',
+      '1,000 messages / month',
       '300 premium messages',
       'Large file uploads',
       'API access',

@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import Script from 'next/script';
 import { useState } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
@@ -53,13 +53,9 @@ function FAQ() {
 
   return (
     <>
-      <Script
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqSchema),
-        }}
-        id="faq-schema"
-        type="application/ld+json"
-      />
+      <Script id="faq-schema" type="application/ld+json">
+        {JSON.stringify(faqSchema)}
+      </Script>
       <AnimatedSection
         allowOverlap
         className="py-20 md:py-28 lg:py-32"

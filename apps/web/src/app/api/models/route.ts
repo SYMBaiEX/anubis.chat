@@ -24,6 +24,6 @@ const MODELS = [
   'kimi-k2',
 ];
 
-export async function GET() {
+export function GET() {
   return NextResponse.json(MODELS, { status: 200 });
 }

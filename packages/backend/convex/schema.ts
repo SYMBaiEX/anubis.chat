@@ -293,11 +293,14 @@ export default defineSchema({
           v.literal('pro'),
           v.literal('pro_plus')
         ),
-        // Message-based limits instead of tokens
+        // Plan message limits (from subscription tiers)
         messagesUsed: v.optional(v.number()),
         messagesLimit: v.optional(v.number()),
         premiumMessagesUsed: v.optional(v.number()), // GPT-4o, Claude usage
         premiumMessagesLimit: v.optional(v.number()),
+        // Purchased message credits (stacking, not subscription-based)
+        messageCredits: v.optional(v.number()), // Standard message credits purchased
+        premiumMessageCredits: v.optional(v.number()), // Premium message credits purchased
         // Billing information
         currentPeriodStart: v.optional(v.number()),
         currentPeriodEnd: v.optional(v.number()),
@@ -621,6 +624,40 @@ export default defineSchema({
     .index('by_user_date', ['userId', 'date'])
     .index('by_user_model', ['userId', 'model', 'date'])
     .index('by_category', ['userId', 'modelCategory', 'date']),
+
+  // Message credit purchases tracking
+  messageCreditPurchases: defineTable({
+    userId: v.string(), // walletAddress
+    packType: v.literal('standard'), // Only one type for now: 150 standard + 25 premium
+    standardCredits: v.number(), // Number of standard message credits in pack
+    premiumCredits: v.number(), // Number of premium message credits in pack
+    priceSOL: v.number(), // Price paid in SOL
+    txSignature: v.string(), // Solana transaction signature
+    status: v.union(
+      v.literal('pending'),
+      v.literal('confirmed'),
+      v.literal('failed'),
+      v.literal('refunded')
+    ),
+    confirmations: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    verificationDetails: v.optional(
+      v.object({
+        signature: v.string(),
+        recipient: v.string(),
+        sender: v.string(),
+        amount: v.number(),
+        timestamp: v.number(),
+        slot: v.number(),
+        confirmationStatus: v.string(),
+      })
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId', 'createdAt'])
+    .index('by_signature', ['txSignature'])
+    .index('by_status', ['status', 'createdAt']),
 
   // Model access quotas per tier
   modelQuotas: defineTable({

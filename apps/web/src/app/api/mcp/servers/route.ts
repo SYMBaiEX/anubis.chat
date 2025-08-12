@@ -105,8 +105,8 @@ const initServerSchema = z.object({
 /**
  * GET /api/mcp/servers - Get MCP server status and available tools
  */
-export async function GET(request: NextRequest) {
-  return aiRateLimit(request, async (req) => {
+export function GET(request: NextRequest) {
+  return aiRateLimit(request, (req) => {
     return withAuth(req, async (_authReq: AuthenticatedRequest) => {
       try {
         // Ensure MCP servers are initialized
@@ -149,8 +149,8 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/mcp/servers - Initialize a new MCP server
  */
-export async function POST(request: NextRequest) {
-  return aiRateLimit(request, async (req) => {
+export function POST(request: NextRequest) {
+  return aiRateLimit(request, (req) => {
     return withAuth(req, async (_authReq: AuthenticatedRequest) => {
       try {
         const body = await req.json();
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
 
         // Initialize the server (toolSchemas need to be omitted as they're JSON Schema format)
         // The MCP client expects Zod schemas, but API receives JSON schemas
-        const { toolSchemas, ...configForClient } = serverConfig;
+        const { toolSchemas: _toolSchemas, ...configForClient } = serverConfig;
         await mcpManager.initializeClient(configForClient);
 
         // Get the tools from the newly initialized server
