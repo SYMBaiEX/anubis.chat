@@ -138,7 +138,7 @@ function Pricing() {
                 className={cn(
                   'group relative flex h-full flex-col overflow-hidden border-primary/10 bg-gradient-to-br from-background to-background/50 backdrop-blur-sm transition-all hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl',
                   t.highlighted &&
-                  'border-primary/40 shadow-2xl shadow-primary/20'
+                    'border-primary/40 shadow-2xl shadow-primary/20'
                 )}
               >
                 <motion.div

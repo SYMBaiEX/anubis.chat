@@ -3,7 +3,7 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import AnubisAurora from '@/components/AnubisAurora';
+import AnubisAurora from '@/components/anubisAurora';
 import { TombBackground } from '@/components/landing/tomb-background';
 
 export type AnimationIntensity = 'low' | 'medium' | 'high';
@@ -154,11 +154,11 @@ export default function AnimatedSection({
         style={
           edgeMask
             ? {
-                WebkitMaskImage:
-                  'radial-gradient(circle at 50% 50%, transparent 0 55%, white 75%)',
-                maskImage:
-                  'radial-gradient(circle at 50% 50%, transparent 0 55%, white 75%)',
-              }
+              WebkitMaskImage:
+                'radial-gradient(circle at 50% 50%, transparent 0 55%, white 75%)',
+              maskImage:
+                'radial-gradient(circle at 50% 50%, transparent 0 55%, white 75%)',
+            }
             : undefined
         }
       >

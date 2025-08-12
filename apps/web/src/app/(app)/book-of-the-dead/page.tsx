@@ -77,7 +77,12 @@ type PromptListItemProps = {
   onDelete: (id: Id<'prompts'>) => void;
 };
 
-function PromptListItem({ prompt, onSelect, onCopy, onDelete }: PromptListItemProps) {
+function PromptListItem({
+  prompt,
+  onSelect,
+  onCopy,
+  onDelete,
+}: PromptListItemProps) {
   return (
     <ContextMenu>
       <ContextMenuTrigger>
@@ -167,7 +172,11 @@ function TopPromptButton({
         <span className="rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
           {usageCount}
         </span>
-        <Button className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100" size="sm" variant="ghost">
+        <Button
+          className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
+          size="sm"
+          variant="ghost"
+        >
           <Copy className="h-3 w-3" />
         </Button>
       </div>
@@ -721,7 +730,9 @@ export default function BookOfTheDeadPage() {
                         <div className="mb-2 font-medium text-sm">
                           {buildHeaderLabel({
                             debouncedQuery,
-                            folderHierarchy: folderHierarchy as FolderNode[] | null,
+                            folderHierarchy: folderHierarchy as
+                              | FolderNode[]
+                              | null,
                             selectedFolderId,
                             visibleLength: visiblePrompts?.length || 0,
                           })}

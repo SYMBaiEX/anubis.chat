@@ -14,7 +14,7 @@ export const setTyping = mutation({
     walletAddress: v.string(),
     isTyping: v.boolean(),
   },
-  handler: async (_ctx, args) => {
+  handler: (_ctx, args) => {
     const key = `${args.chatId}:${args.walletAddress}`;
 
     if (args.isTyping) {
@@ -30,9 +30,9 @@ export const setTyping = mutation({
 
     // Clean up old typing indicators (older than 5 seconds)
     const now = Date.now();
-    for (const [k, v] of typingUsers.entries()) {
-      if (now - v.timestamp > 5000) {
-        typingUsers.delete(k);
+    for (const [entryKey, val] of typingUsers.entries()) {
+      if (now - val.timestamp > 5000) {
+        typingUsers.delete(entryKey);
       }
     }
 
@@ -46,7 +46,7 @@ export const getTypingUsers = query({
     chatId: v.id('chats'),
     excludeWallet: v.optional(v.string()),
   },
-  handler: async (_ctx, args) => {
+  handler: (_ctx, args) => {
     const typingInChat: string[] = [];
     const now = Date.now();
 

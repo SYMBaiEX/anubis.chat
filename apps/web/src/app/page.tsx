@@ -10,8 +10,8 @@ import HowItWorks from './(landing)/components/howItWorks';
 import Models from './(landing)/components/models';
 import Pricing from './(landing)/components/pricing';
 import ReferralProgram from './(landing)/components/referralProgram';
-import SiteLinksSection from './(landing)/components/SiteLinksSection';
 import Security from './(landing)/components/security';
+import SiteLinksSection from './(landing)/components/siteLinksSection';
 import Testimonials from './(landing)/components/testimonials';
 
 export default function LandingPage() {

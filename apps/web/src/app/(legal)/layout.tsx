@@ -3,7 +3,7 @@
 import AnimatedSection from '@/components/landing/animated-section';
 import LandingFooter from '@/components/landing/landing-footer';
 import LandingHeader from '@/components/landing/landing-header';
-import SiteLinksSection from '../(landing)/components/SiteLinksSection';
+import SiteLinksSection from '../(landing)/components/siteLinksSection';
 
 export default function LegalLayout({
   children,

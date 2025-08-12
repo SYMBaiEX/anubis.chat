@@ -190,8 +190,12 @@ export const canUseModel = query({
     }
 
     // Calculate total available messages (plan + credits)
-    const totalStandardAvailable = (sub.messagesLimit - sub.messagesUsed) + sub.messageCredits;
-    const totalPremiumAvailable = (sub.premiumMessagesLimit - sub.premiumMessagesUsed) + sub.premiumMessageCredits;
+    const totalStandardAvailable =
+      sub.messagesLimit - sub.messagesUsed + sub.messageCredits;
+    const totalPremiumAvailable =
+      sub.premiumMessagesLimit -
+      sub.premiumMessagesUsed +
+      sub.premiumMessageCredits;
 
     // Check premium message availability (for premium models)
     if (modelConfig?.category === 'premium' && totalPremiumAvailable <= 0) {
@@ -200,7 +204,8 @@ export const canUseModel = query({
         reason: 'Premium message limit reached',
         remaining: totalStandardAvailable,
         premiumRemaining: 0,
-        suggestedAction: totalStandardAvailable <= 0 ? 'upgrade' : 'buy_credits',
+        suggestedAction:
+          totalStandardAvailable <= 0 ? 'upgrade' : 'buy_credits',
       };
     }
 
@@ -210,7 +215,10 @@ export const canUseModel = query({
         allowed: false,
         reason: 'Message limit reached',
         remaining: 0,
-        premiumRemaining: modelConfig?.category === 'premium' ? totalPremiumAvailable : undefined,
+        premiumRemaining:
+          modelConfig?.category === 'premium'
+            ? totalPremiumAvailable
+            : undefined,
         suggestedAction: 'buy_credits',
       };
     }
@@ -219,9 +227,7 @@ export const canUseModel = query({
       allowed: true,
       remaining: totalStandardAvailable,
       premiumRemaining:
-        modelConfig?.category === 'premium'
-          ? totalPremiumAvailable
-          : undefined,
+        modelConfig?.category === 'premium' ? totalPremiumAvailable : undefined,
       planMessagesRemaining: sub.messagesLimit - sub.messagesUsed,
       planPremiumRemaining: sub.premiumMessagesLimit - sub.premiumMessagesUsed,
       creditMessagesRemaining: sub.messageCredits,
@@ -362,15 +368,21 @@ export const trackDetailedMessageUsage = mutation({
 
     // Update user's message counts using consumption hierarchy
     const sub = getSafeSubscription(user);
-    
+
     // Calculate plan messages available (not used yet)
-    const planMessagesAvailable = Math.max(0, sub.messagesLimit - sub.messagesUsed);
-    const planPremiumAvailable = Math.max(0, sub.premiumMessagesLimit - sub.premiumMessagesUsed);
-    
+    const planMessagesAvailable = Math.max(
+      0,
+      sub.messagesLimit - sub.messagesUsed
+    );
+    const planPremiumAvailable = Math.max(
+      0,
+      sub.premiumMessagesLimit - sub.premiumMessagesUsed
+    );
+
     let updates: {
       subscription: SubscriptionShape;
     };
-    
+
     if (isPremium) {
       // For premium models, consume from plan premium messages first, then premium credits
       if (planPremiumAvailable > 0) {
@@ -459,16 +471,32 @@ export const trackDetailedMessageUsage = mutation({
     }
 
     // Calculate remaining messages based on updated subscription
-    const totalStandardRemaining = Math.max(0, updates.subscription.messagesLimit - updates.subscription.messagesUsed) + updates.subscription.messageCredits;
-    const totalPremiumRemaining = Math.max(0, updates.subscription.premiumMessagesLimit - updates.subscription.premiumMessagesUsed) + updates.subscription.premiumMessageCredits;
+    const totalStandardRemaining =
+      Math.max(
+        0,
+        updates.subscription.messagesLimit - updates.subscription.messagesUsed
+      ) + updates.subscription.messageCredits;
+    const totalPremiumRemaining =
+      Math.max(
+        0,
+        updates.subscription.premiumMessagesLimit -
+          updates.subscription.premiumMessagesUsed
+      ) + updates.subscription.premiumMessageCredits;
 
     return {
       messagesUsed: updates.subscription.messagesUsed,
       messagesRemaining: totalStandardRemaining,
       premiumMessagesUsed: updates.subscription.premiumMessagesUsed,
       premiumMessagesRemaining: isPremium ? totalPremiumRemaining : undefined,
-      planMessagesRemaining: Math.max(0, updates.subscription.messagesLimit - updates.subscription.messagesUsed),
-      planPremiumRemaining: Math.max(0, updates.subscription.premiumMessagesLimit - updates.subscription.premiumMessagesUsed),
+      planMessagesRemaining: Math.max(
+        0,
+        updates.subscription.messagesLimit - updates.subscription.messagesUsed
+      ),
+      planPremiumRemaining: Math.max(
+        0,
+        updates.subscription.premiumMessagesLimit -
+          updates.subscription.premiumMessagesUsed
+      ),
       creditMessagesRemaining: updates.subscription.messageCredits,
       creditPremiumRemaining: updates.subscription.premiumMessageCredits,
     };
@@ -1451,7 +1479,7 @@ export const processVerifiedMessageCreditPurchase = internalMutation({
     }
 
     // Check if purchase already exists
-    let purchase = await ctx.db
+    const purchase = await ctx.db
       .query('messageCreditPurchases')
       .withIndex('by_signature', (q) => q.eq('txSignature', args.txSignature))
       .first();
@@ -1488,7 +1516,8 @@ export const processVerifiedMessageCreditPurchase = internalMutation({
       subscription: {
         ...sub,
         messageCredits: sub.messageCredits + purchase.standardCredits,
-        premiumMessageCredits: sub.premiumMessageCredits + purchase.premiumCredits,
+        premiumMessageCredits:
+          sub.premiumMessageCredits + purchase.premiumCredits,
       },
       updatedAt: now,
     });

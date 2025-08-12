@@ -13,8 +13,11 @@ import { useMutation, useQuery } from 'convex/react';
 import {
   AlertCircle,
   Check,
+  CreditCard,
+  Crown,
   ExternalLink,
   Loader,
+  Plus,
   Shield,
   Wallet,
   Zap,
@@ -31,6 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // useCurrentUser replacement - using useSubscription hook instead
 import { useSubscription } from '@/hooks/use-subscription';
 import { paymentConfig, solanaConfig } from '@/lib/env';
@@ -50,6 +54,14 @@ export interface UpgradeModalProps {
   suggestedTier?: 'pro' | 'pro_plus';
   trigger?: import('@/hooks/use-upgrade-modal').UpgradeTrigger;
 }
+
+// Message credit pack configuration
+const MESSAGE_CREDIT_PACK = {
+  standardCredits: 150,
+  premiumCredits: 25,
+  priceSOL: 0.025,
+  priceUSD: 3.5,
+};
 
 // Subscription tier configurations
 const TIER_CONFIG = {
@@ -102,6 +114,10 @@ export function UpgradeModal({
   suggestedTier = 'pro',
   trigger = 'manual',
 }: UpgradeModalProps) {
+  // Tab management
+  const [activeTab, setActiveTab] = useState('subscription');
+
+  // Subscription upgrade state
   const [selectedTier, setSelectedTier] = useState<'pro' | 'pro_plus'>(
     suggestedTier
   );
@@ -111,6 +127,19 @@ export function UpgradeModal({
   >('select');
   const [error, setError] = useState<string | null>(null);
   const [paymentDetails, setPaymentDetails] = useState<{
+    walletAddress?: string;
+    txSignature?: string;
+    amount?: number;
+  }>({});
+
+  // Message credits state
+  const [numberOfPacks, setNumberOfPacks] = useState(1);
+  const [isProcessingCredits, setIsProcessingCredits] = useState(false);
+  const [creditsPaymentStep, setCreditsPaymentStep] = useState<
+    'select' | 'payment' | 'processing' | 'success' | 'error'
+  >('select');
+  const [creditsError, setCreditsError] = useState<string | null>(null);
+  const [creditsPaymentDetails, setCreditsPaymentDetails] = useState<{
     walletAddress?: string;
     txSignature?: string;
     amount?: number;
@@ -129,6 +158,18 @@ export function UpgradeModal({
     api.subscriptions.calculateProratedUpgrade,
     selectedTier ? { targetTier: selectedTier } : 'skip'
   );
+
+  // Message credits queries and mutations
+  const purchaseMessageCredits = useMutation(
+    api.subscriptions.purchaseMessageCredits
+  );
+  const checkCreditsPurchaseStatus = useQuery(
+    api.subscriptions.checkMessageCreditPurchaseStatus,
+    creditsPaymentDetails.txSignature
+      ? { txSignature: creditsPaymentDetails.txSignature }
+      : 'skip'
+  );
+
   // Referral payout info (if user has a referrer)
   const referrerInfo = useQuery(convexApi.referrals.getReferrerPayoutInfo, {});
 
@@ -141,16 +182,24 @@ export function UpgradeModal({
 
   const selectedConfig = TIER_CONFIG[selectedTier];
   const isSendingRef = useRef(false);
+  const isSendingCreditsRef = useRef(false);
   const currentTier = subscription?.tier;
   const isCurrentTierSelected = currentTier === selectedTier;
   const isDowngradeSelected =
     currentTier === 'pro_plus' && selectedTier === 'pro';
   const canUpgrade = !(isCurrentTierSelected || isDowngradeSelected);
 
+  // Message credits computed values
+  const totalCreditsCost = MESSAGE_CREDIT_PACK.priceSOL * numberOfPacks;
+  const totalStandardCredits =
+    MESSAGE_CREDIT_PACK.standardCredits * numberOfPacks;
+  const totalPremiumCredits =
+    MESSAGE_CREDIT_PACK.premiumCredits * numberOfPacks;
+
   // Initialize Solana connection
   const connection = new Connection(
-    solanaConfig.rpcUrl || 'https://api.devnet.solana.com',
-    'confirmed'
+    solanaConfig.rpcUrl,
+    solanaConfig.commitment
   );
 
   // Poll payment status when in processing state
@@ -191,6 +240,50 @@ export function UpgradeModal({
       };
     }
   }, [paymentStep, paymentDetails.txSignature, checkPaymentStatus]);
+
+  // Poll credits payment status when processing
+  useEffect(() => {
+    if (
+      creditsPaymentStep === 'processing' &&
+      creditsPaymentDetails.txSignature &&
+      checkCreditsPurchaseStatus
+    ) {
+      const pollStatus = () => {
+        if (checkCreditsPurchaseStatus.status === 'confirmed') {
+          setCreditsPaymentStep('success');
+          log.info('Message credits purchase confirmed', {
+            txSignature: creditsPaymentDetails.txSignature,
+          });
+        } else if (checkCreditsPurchaseStatus.status === 'failed') {
+          setCreditsPaymentStep('error');
+          setCreditsError('Purchase verification failed');
+          log.error('Credits purchase failed via polling', {
+            txSignature: creditsPaymentDetails.txSignature,
+          });
+        }
+      };
+
+      const interval = setInterval(pollStatus, 3000);
+      const timeout = setTimeout(() => {
+        clearInterval(interval);
+        if (creditsPaymentStep === 'processing') {
+          setCreditsPaymentStep('error');
+          setCreditsError(
+            'Purchase verification timeout - please contact support'
+          );
+        }
+      }, 300_000); // 5 minute timeout
+
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeout);
+      };
+    }
+  }, [
+    creditsPaymentStep,
+    creditsPaymentDetails.txSignature,
+    checkCreditsPurchaseStatus,
+  ]);
 
   const handleUpgrade = async () => {
     if (!canUpgrade) {
@@ -570,11 +663,16 @@ export function UpgradeModal({
   };
 
   const handleClose = () => {
-    if (paymentStep !== 'processing') {
+    if (paymentStep !== 'processing' && creditsPaymentStep !== 'processing') {
       onClose();
       setPaymentStep('select');
+      setCreditsPaymentStep('select');
       setError(null);
+      setCreditsError(null);
       setPaymentDetails({});
+      setCreditsPaymentDetails({});
+      setNumberOfPacks(1);
+      setActiveTab('subscription');
     }
   };
 
@@ -783,8 +881,8 @@ export function UpgradeModal({
                 </span>
                 <span className="text-muted-foreground text-sm">
                   {proratedUpgrade?.isProrated &&
-                    selectedTier === 'pro_plus' &&
-                    subscription?.tier === 'pro'
+                  selectedTier === 'pro_plus' &&
+                  subscription?.tier === 'pro'
                     ? 'Prorated upgrade'
                     : `≈ $${selectedConfig.priceUSD} USD`}
                 </span>
@@ -1065,49 +1163,796 @@ export function UpgradeModal({
     );
   };
 
+  // Message Credits Purchase Functions
+  const handleCreditsPurchase = async () => {
+    if (!user) {
+      setCreditsError('Please sign in first');
+      return;
+    }
+
+    if (!(connected && publicKey)) {
+      setCreditsError('Please connect your wallet first');
+      return;
+    }
+
+    if (!solanaConfig.paymentAddress) {
+      setCreditsError('Payment system not configured - please contact support');
+      return;
+    }
+
+    try {
+      setIsProcessingCredits(true);
+      setCreditsPaymentStep('payment');
+
+      setCreditsPaymentDetails({
+        walletAddress: publicKey.toString(),
+        amount: totalCreditsCost,
+      });
+
+      log.info('Message credits purchase initiated', {
+        numberOfPacks,
+        totalCreditsCost,
+        user: user._id,
+        walletAddress: publicKey.toString(),
+      });
+    } catch (err) {
+      log.error('Credits purchase initiation failed', { error: err });
+      setCreditsError(
+        err instanceof Error ? err.message : 'An unexpected error occurred'
+      );
+      setCreditsPaymentStep('error');
+    } finally {
+      setIsProcessingCredits(false);
+    }
+  };
+
+  const handleCreditsPaymentComplete = async (retryAttempt = 0) => {
+    const MAX_RETRIES = 3;
+
+    if (!(connected && publicKey && signTransaction)) {
+      setCreditsError('Please connect your wallet first');
+      return;
+    }
+
+    if (!solanaConfig.paymentAddress) {
+      setCreditsError(
+        'Payment address not configured - please contact support'
+      );
+      return;
+    }
+
+    try {
+      setIsProcessingCredits(true);
+      setCreditsPaymentStep('processing');
+      setCreditsError(null);
+
+      let txSignatureToVerify = creditsPaymentDetails.txSignature;
+
+      // Only create and send a new transaction if we don't have a prior signature
+      if (!txSignatureToVerify) {
+        if (isSendingCreditsRef.current) {
+          throw new Error('Payment already in progress');
+        }
+
+        isSendingCreditsRef.current = true;
+
+        // Check wallet balance first
+        const balance = await connection.getBalance(publicKey);
+        const balanceSol = balance / 1_000_000_000;
+        if (balanceSol < totalCreditsCost) {
+          throw new Error(
+            `Insufficient balance. Required: ${totalCreditsCost} SOL, Available: ${balanceSol.toFixed(4)} SOL`
+          );
+        }
+
+        // Build transaction with referral payout if applicable
+        const recipientPublicKey = new PublicKey(solanaConfig.paymentAddress);
+        let tx = new Transaction();
+        let mainAmount = totalCreditsCost;
+        let referralAmount = 0;
+        let referralWallet: string | undefined;
+
+        if (referrerInfo?.hasReferrer) {
+          referralAmount =
+            Math.round(
+              totalCreditsCost * (referrerInfo.commissionRate ?? 0) * 1_000_000
+            ) / 1_000_000;
+          mainAmount = Math.max(0, totalCreditsCost - referralAmount);
+          referralWallet = referrerInfo.referrerWalletAddress;
+        }
+
+        // Create transfer to treasury
+        const mainTx = await createPaymentTransaction(
+          publicKey,
+          recipientPublicKey,
+          mainAmount
+        );
+        tx = mainTx;
+
+        // Add referral payout transfer if applicable
+        if (referralWallet && referralAmount > 0) {
+          const referralIx = SystemProgram.transfer({
+            fromPubkey: publicKey,
+            toPubkey: new PublicKey(referralWallet),
+            lamports: Math.floor(referralAmount * 1_000_000_000),
+          });
+          tx.add(referralIx);
+        }
+
+        log.info('Message credits transaction created', {
+          numberOfPacks,
+          amount: totalCreditsCost,
+          recipient: solanaConfig.paymentAddress,
+          sender: publicKey.toString(),
+          attempt: retryAttempt + 1,
+        });
+
+        // Send transaction
+        const sentSignature = await processPaymentTransaction(
+          tx,
+          signTransaction,
+          {
+            maxRetries: 0,
+            skipPreflight: false,
+          }
+        );
+
+        if (
+          !sentSignature ||
+          typeof sentSignature !== 'string' ||
+          sentSignature.length < 64
+        ) {
+          throw new Error(`Invalid transaction signature: "${sentSignature}"`);
+        }
+
+        txSignatureToVerify = sentSignature;
+        setCreditsPaymentDetails((prev) => ({
+          ...prev,
+          txSignature: sentSignature,
+        }));
+
+        log.info('Message credits transaction sent', {
+          txSignature: sentSignature,
+          attempt: retryAttempt + 1,
+        });
+      }
+
+      // Submit to backend for verification
+      let verificationResult;
+      let lastError;
+
+      for (let i = 0; i < 3; i++) {
+        try {
+          const verificationResponse = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              txSignature: txSignatureToVerify,
+              expectedAmount: totalCreditsCost,
+              paymentType: 'message_credits',
+              packType: 'standard',
+              numberOfPacks,
+              walletAddress: publicKey.toString(),
+              referralCode: referrerInfo?.hasReferrer
+                ? referrerInfo.referralCode
+                : undefined,
+              referralPayoutTx: referrerInfo?.hasReferrer
+                ? txSignatureToVerify
+                : undefined,
+              referrerWalletAddress: referrerInfo?.referrerWalletAddress,
+              commissionRate: referrerInfo?.commissionRate,
+            }),
+          });
+
+          if (!verificationResponse.ok) {
+            const errorText = await verificationResponse.text();
+            throw new Error(
+              `HTTP ${verificationResponse.status}: ${errorText}`
+            );
+          }
+
+          verificationResult = await verificationResponse.json();
+          break;
+        } catch (fetchError) {
+          lastError = fetchError;
+          if (i < 2) {
+            await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** i));
+          }
+        }
+      }
+
+      if (!verificationResult) {
+        throw new Error(
+          `Verification failed after 3 attempts: ${lastError instanceof Error ? lastError.message : 'Unknown error'}`
+        );
+      }
+
+      if (verificationResult.success) {
+        setCreditsPaymentStep('success');
+
+        log.info('Message credits purchase verified', {
+          txSignature: txSignatureToVerify,
+          purchaseId: verificationResult.purchaseId,
+          standardCredits: totalStandardCredits,
+          premiumCredits: totalPremiumCredits,
+        });
+
+        // Refresh the page to update credits
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
+      } else {
+        throw new Error(
+          verificationResult.error || 'Purchase verification failed'
+        );
+      }
+    } catch (err) {
+      log.error('Message credits purchase failed', {
+        error: err,
+        attempt: retryAttempt + 1,
+      });
+
+      let errorMessage = 'Purchase processing failed';
+      let isRetryable = false;
+
+      if (err instanceof Error) {
+        if (
+          err.message.includes('DUPLICATE_TRANSACTION') ||
+          err.message.includes('already been processed') ||
+          err.message.includes('ALREADY_PROCESSED')
+        ) {
+          errorMessage =
+            'This purchase has already been processed. Please refresh the page to check your credits.';
+          setCreditsPaymentStep('success');
+          return;
+        }
+
+        // Handle other error types similar to subscription upgrade
+        errorMessage = err.message;
+        isRetryable =
+          err.message.includes('Network') ||
+          err.message.includes('timeout') ||
+          err.message.includes('SIMULATION_FAILED');
+      }
+
+      if (isRetryable && retryAttempt < MAX_RETRIES) {
+        const delay = 2000 * 2 ** retryAttempt;
+        setTimeout(() => {
+          handleCreditsPaymentComplete(retryAttempt + 1);
+        }, delay);
+
+        setCreditsError(
+          `${errorMessage} - Retrying in ${delay / 1000} seconds... (Attempt ${retryAttempt + 1}/${MAX_RETRIES})`
+        );
+        return;
+      }
+
+      setCreditsError(errorMessage);
+      setCreditsPaymentStep('error');
+    } finally {
+      isSendingCreditsRef.current = false;
+      setIsProcessingCredits(false);
+    }
+  };
+
+  const renderCreditsPackSelector = () => (
+    <div className="space-y-6">
+      {/* Current balance display */}
+      {subscription && (
+        <Card className="p-4 ring-1 ring-primary/10 transition hover:ring-primary/20">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-green-100 p-2 dark:bg-green-900">
+                <CreditCard className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-base sm:text-lg">
+                  Current Credits
+                </h3>
+                <p className="text-muted-foreground text-xs leading-snug sm:text-sm">
+                  {subscription.messageCredits || 0} Standard • {subscription.premiumMessageCredits || 0} Premium
+                </p>
+              </div>
+            </div>
+            <Button
+              className="bg-gradient-to-r from-green-500 to-green-600"
+              onClick={handleCreditsPurchase}
+              disabled={isProcessingCredits}
+              size="sm"
+            >
+              {isProcessingCredits && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+              Buy More Credits
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Credit pack selection */}
+      <Card className="p-4 ring-1 ring-border/50 transition hover:ring-primary/20 sm:p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-semibold text-base sm:text-lg">
+            Message Credit Pack
+          </h3>
+          <Badge className="bg-green-100 text-green-800">Best Value</Badge>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 sm:grid-cols-3">
+            {/* Pack details */}
+            <div>
+              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border p-4 transition-all border-green-200 bg-gradient-to-br from-green-50/50 to-transparent ring-1 ring-green-200/40">
+                <div className="flex h-full flex-col justify-between gap-2">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold tracking-tight">Credits</div>
+                    </div>
+                    <div className="font-semibold text-foreground text-sm">
+                      {MESSAGE_CREDIT_PACK.standardCredits + MESSAGE_CREDIT_PACK.premiumCredits} total
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {MESSAGE_CREDIT_PACK.standardCredits} standard + {MESSAGE_CREDIT_PACK.premiumCredits} premium
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pricing */}
+            <div>
+              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border p-4 transition-all border-green-200 bg-gradient-to-br from-green-50/50 to-transparent ring-1 ring-green-200/40">
+                <div className="flex h-full flex-col justify-between gap-2">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold tracking-tight">Price</div>
+                    </div>
+                    <div className="font-semibold text-foreground text-sm">
+                      {MESSAGE_CREDIT_PACK.priceSOL} SOL
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      ≈ ${MESSAGE_CREDIT_PACK.priceUSD} USD
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quantity selector */}
+            <div>
+              <div className="group block h-full min-h-[8rem] cursor-default rounded-xl border p-4 transition-all border-green-200 bg-gradient-to-br from-green-50/50 to-transparent ring-1 ring-green-200/40">
+                <div className="flex h-full flex-col justify-between gap-2">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold tracking-tight">Packs</div>
+                    </div>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Button
+                        disabled={numberOfPacks <= 1}
+                        onClick={() =>
+                          setNumberOfPacks(Math.max(1, numberOfPacks - 1))
+                        }
+                        size="sm"
+                        variant="outline"
+                        className="h-6 w-6 p-0"
+                      >
+                        -
+                      </Button>
+                      <span className="w-8 text-center font-bold text-sm">
+                        {numberOfPacks}
+                      </span>
+                      <Button
+                        disabled={numberOfPacks >= 10}
+                        onClick={() =>
+                          setNumberOfPacks(Math.min(10, numberOfPacks + 1))
+                        }
+                        size="sm"
+                        variant="outline"
+                        className="h-6 w-6 p-0"
+                      >
+                        +
+                      </Button>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Max 10 packs
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Purchase summary */}
+          <div>
+            <h4 className="mb-2 font-medium">
+              Purchase Summary
+            </h4>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:text-xs">
+              <div className="rounded-xl border p-2">
+                <div className="text-muted-foreground">Total Credits</div>
+                <div className="font-medium">
+                  {totalStandardCredits + totalPremiumCredits}
+                </div>
+              </div>
+              <div className="rounded-xl border p-2">
+                <div className="text-muted-foreground">Total Cost</div>
+                <div className="font-medium">
+                  {totalCreditsCost} SOL
+                </div>
+              </div>
+              <div className="rounded-xl border p-2">
+                <div className="text-muted-foreground">Standard</div>
+                <div className="font-medium">{totalStandardCredits}</div>
+              </div>
+              <div className="rounded-xl border p-2">
+                <div className="text-muted-foreground">Premium</div>
+                <div className="font-medium">{totalPremiumCredits}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex justify-end space-x-3">
+        <Button onClick={handleClose} variant="outline">
+          Maybe Later
+        </Button>
+        <Button
+          className="bg-gradient-to-r from-green-500 to-green-600"
+          disabled={isProcessingCredits}
+          onClick={handleCreditsPurchase}
+        >
+          {isProcessingCredits && (
+            <Loader className="mr-2 h-4 w-4 animate-spin" />
+          )}
+          Purchase Credits • {totalCreditsCost} SOL
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderCreditsPaymentInstructions = () => (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className="mb-4 inline-flex rounded-full bg-gradient-to-r from-green-500 to-green-600 p-4">
+          <Wallet className="h-8 w-8 text-white" />
+        </div>
+        <h3 className="mb-2 font-semibold text-xl">Send Payment</h3>
+        <p className="text-muted-foreground">
+          {connected
+            ? 'Click "Send Payment" to create and sign the transaction'
+            : 'Connect your wallet to proceed with the payment'}
+        </p>
+      </div>
+
+      <Card className="bg-gray-50 p-6 dark:bg-gray-800/50">
+        <div className="space-y-4">
+          <div>
+            <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
+              Purchase Summary
+            </label>
+            <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Packs:</span>
+                  <span className="font-medium">{numberOfPacks}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Standard Credits:</span>
+                  <span className="font-medium">{totalStandardCredits}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Premium Credits:</span>
+                  <span className="font-medium">{totalPremiumCredits}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="font-medium">Total:</span>
+                  <span className="font-bold">{totalCreditsCost} SOL</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
+              Your Wallet
+            </label>
+            <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
+              <div className="flex items-center justify-between">
+                {connected && publicKey ? (
+                  <span className="break-all font-mono text-sm">
+                    {publicKey.toString()}
+                  </span>
+                ) : (
+                  <span className="text-gray-500 text-sm">
+                    Wallet not connected
+                  </span>
+                )}
+                {connected && (
+                  <Badge className="ml-2" variant="secondary">
+                    Connected
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
+              Payment Address
+            </label>
+            <div className="mt-1 rounded-lg border bg-white p-3 font-mono text-sm dark:bg-gray-900">
+              <div className="flex items-center justify-between">
+                <span className="break-all">
+                  {solanaConfig.paymentAddress ||
+                    'Payment address not configured'}
+                </span>
+                <Button
+                  disabled={!solanaConfig.paymentAddress}
+                  onClick={() =>
+                    navigator.clipboard.writeText(
+                      solanaConfig.paymentAddress || ''
+                    )
+                  }
+                  size="sm"
+                  variant="ghost"
+                >
+                  Copy
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
+        <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+        <AlertDescription className="text-green-800 dark:text-green-200">
+          <div className="space-y-2">
+            <p>
+              <strong>Important:</strong> Send exactly {totalCreditsCost} SOL to
+              avoid processing delays.
+            </p>
+            <p>
+              Your message credits will be added automatically once payment is
+              confirmed.
+            </p>
+          </div>
+        </AlertDescription>
+      </Alert>
+
+      <div className="flex flex-col space-y-3">
+        {!connected && (
+          <Button
+            className="w-full"
+            onClick={() => setVisible(true)}
+            variant="outline"
+          >
+            <Wallet className="mr-2 h-4 w-4" />
+            Connect Wallet
+          </Button>
+        )}
+        {connected && (
+          <Button
+            className="w-full bg-gradient-to-r from-green-500 to-green-600"
+            disabled={isProcessingCredits || !publicKey}
+            onClick={() => handleCreditsPaymentComplete()}
+          >
+            {isProcessingCredits ? 'Processing Payment...' : 'Send Payment'}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderCreditsProcessingState = () => (
+    <div className="space-y-6 py-8 text-center">
+      <div className="relative">
+        <Loader className="mx-auto h-12 w-12 animate-spin text-green-500" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <CreditCard className="h-6 w-6 text-green-600" />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-2 font-semibold text-xl">Processing Purchase</h3>
+        <p className="text-muted-foreground">
+          We're verifying your transaction on the Solana blockchain...
+        </p>
+        <p className="mt-2 text-muted-foreground text-sm">
+          This usually takes 30-60 seconds
+        </p>
+      </div>
+
+      {creditsPaymentDetails.txSignature && (
+        <div className="space-y-3">
+          <div className="rounded-lg border bg-gray-50 p-3 dark:bg-gray-800/50">
+            <p className="font-medium text-sm">Transaction ID:</p>
+            <p className="break-all font-mono text-muted-foreground text-xs">
+              {creditsPaymentDetails.txSignature}
+            </p>
+          </div>
+          <Button
+            onClick={() =>
+              window.open(
+                `https://explorer.solana.com/tx/${creditsPaymentDetails.txSignature}${
+                  solanaConfig.network !== 'mainnet-beta'
+                    ? `?cluster=${solanaConfig.network}`
+                    : ''
+                }`,
+                '_blank'
+              )
+            }
+            size="sm"
+            variant="outline"
+          >
+            <ExternalLink className="mr-2 h-4 w-4" />
+            View on Solana Explorer
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderCreditsSuccessState = () => (
+    <div className="space-y-4 py-8 text-center">
+      <div className="inline-flex rounded-full bg-gradient-to-r from-green-500 to-green-600 p-4">
+        <Check className="h-8 w-8 text-white" />
+      </div>
+      <div>
+        <h3 className="mb-2 font-semibold text-xl">Purchase Successful!</h3>
+        <p className="text-muted-foreground">
+          Your message credits have been added to your account.
+        </p>
+        <div className="mt-4 rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
+          <div className="space-y-1">
+            <div className="font-medium text-green-800 dark:text-green-200">
+              Credits Added:
+            </div>
+            <div className="text-green-700 dark:text-green-300">
+              {totalStandardCredits} Standard + {totalPremiumCredits} Premium
+            </div>
+          </div>
+        </div>
+        {creditsPaymentDetails.txSignature && (
+          <div className="mt-4">
+            <Button
+              onClick={() =>
+                window.open(
+                  `https://explorer.solana.com/tx/${creditsPaymentDetails.txSignature}`,
+                  '_blank'
+                )
+              }
+              size="sm"
+              variant="outline"
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              View Transaction
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderCreditsErrorState = () => (
+    <div className="space-y-6 py-8 text-center">
+      <div className="inline-flex rounded-full bg-red-100 p-4 dark:bg-red-900/20">
+        <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+      </div>
+
+      <div>
+        <h3 className="mb-2 font-semibold text-xl">Purchase Failed</h3>
+        <p className="mb-4 text-muted-foreground">
+          {creditsError ||
+            'There was an issue processing your purchase. Please try again.'}
+        </p>
+
+        <div className="flex flex-col space-y-3">
+          <Button
+            className="w-full"
+            onClick={() => {
+              setCreditsPaymentStep('select');
+              setCreditsError(null);
+            }}
+          >
+            Try Again
+          </Button>
+        </div>
+
+        {creditsPaymentDetails.txSignature && (
+          <div className="rounded-lg border bg-gray-50 p-3 text-left dark:bg-gray-800/50">
+            <p className="font-medium text-sm">Transaction ID for Support:</p>
+            <p className="break-all font-mono text-muted-foreground text-xs">
+              {creditsPaymentDetails.txSignature}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <Dialog onOpenChange={handleClose} open={isOpen}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Upgrade Your Plan</DialogTitle>
+          <DialogTitle className="flex items-center space-x-2">
+            <span>Upgrade Your Experience</span>
+          </DialogTitle>
           <DialogDescription>
-            {upgradePrompt?.message ||
-              'Unlock more messages and premium AI models'}
+            Choose between subscription plans or purchase message credits
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-6">
-          {paymentStep === 'select' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {renderTierCard('pro')}
-                {renderTierCard('pro_plus')}
-              </div>
+          <Tabs
+            className="w-full"
+            onValueChange={setActiveTab}
+            value={activeTab}
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger
+                className="flex items-center space-x-1 sm:space-x-2"
+                value="subscription"
+              >
+                <Crown className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Subscription Plans</span>
+                <span className="sm:hidden">Plans</span>
+              </TabsTrigger>
+              <TabsTrigger
+                className="flex items-center space-x-1 sm:space-x-2"
+                value="credits"
+              >
+                <CreditCard className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Message Credits</span>
+                <span className="sm:hidden">Credits</span>
+              </TabsTrigger>
+            </TabsList>
 
-              <div className="flex justify-end space-x-3">
-                <Button onClick={handleClose} variant="outline">
-                  Maybe Later
-                </Button>
-                <Button
-                  className={cn('bg-gradient-to-r', selectedConfig.color)}
-                  disabled={isProcessing || !canUpgrade}
-                  onClick={handleUpgrade}
-                >
-                  {isProcessing && (
-                    <Loader className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {canUpgrade
-                    ? `Upgrade to ${selectedConfig.name}`
-                    : 'Upgrade Unavailable'}
-                </Button>
-              </div>
-            </div>
-          )}
+            <TabsContent className="mt-6" value="subscription">
+              {paymentStep === 'select' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    {renderTierCard('pro')}
+                    {renderTierCard('pro_plus')}
+                  </div>
 
-          {paymentStep === 'payment' && renderPaymentInstructions()}
-          {paymentStep === 'processing' && renderProcessingState()}
-          {paymentStep === 'success' && renderSuccessState()}
-          {paymentStep === 'error' && renderErrorState()}
+                  <div className="flex justify-end space-x-3">
+                    <Button onClick={handleClose} variant="outline">
+                      Maybe Later
+                    </Button>
+                    <Button
+                      className={cn('bg-gradient-to-r', selectedConfig.color)}
+                      disabled={isProcessing || !canUpgrade}
+                      onClick={handleUpgrade}
+                    >
+                      {isProcessing && (
+                        <Loader className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {canUpgrade
+                        ? `Upgrade to ${selectedConfig.name}`
+                        : 'Upgrade Unavailable'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {paymentStep === 'payment' && renderPaymentInstructions()}
+              {paymentStep === 'processing' && renderProcessingState()}
+              {paymentStep === 'success' && renderSuccessState()}
+              {paymentStep === 'error' && renderErrorState()}
+            </TabsContent>
+
+            <TabsContent className="mt-6" value="credits">
+              {creditsPaymentStep === 'select' && renderCreditsPackSelector()}
+              {creditsPaymentStep === 'payment' &&
+                renderCreditsPaymentInstructions()}
+              {creditsPaymentStep === 'processing' &&
+                renderCreditsProcessingState()}
+              {creditsPaymentStep === 'success' && renderCreditsSuccessState()}
+              {creditsPaymentStep === 'error' && renderCreditsErrorState()}
+            </TabsContent>
+          </Tabs>
         </div>
       </DialogContent>
     </Dialog>

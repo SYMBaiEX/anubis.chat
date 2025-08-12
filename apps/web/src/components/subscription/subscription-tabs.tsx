@@ -7,8 +7,8 @@ import { UpgradeModal } from '@/components/auth/upgrade-modal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useUpgradeModal } from '@/hooks/use-upgrade-modal';
 import { useSubscription } from '@/hooks/use-subscription';
+import { useUpgradeModal } from '@/hooks/use-upgrade-modal';
 import { cn } from '@/lib/utils';
 
 interface SubscriptionTabsProps {
@@ -29,7 +29,7 @@ const MESSAGE_CREDIT_PACK = {
   standardCredits: 150,
   premiumCredits: 25,
   priceSOL: 0.025,
-  priceUSD: 3.50,
+  priceUSD: 3.5,
 };
 
 export function SubscriptionTabs({
@@ -62,35 +62,48 @@ export function SubscriptionTabs({
       <Card className="p-4 ring-1 ring-primary/10 transition hover:ring-primary/20">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className={cn(
-              'rounded-lg p-2',
-              subscription.tier === 'pro_plus' ? 'bg-purple-100 dark:bg-purple-900' :
-              subscription.tier === 'pro' ? 'bg-blue-100 dark:bg-blue-900' :
-              'bg-slate-100 dark:bg-slate-800'
-            )}>
-              <Crown className={cn(
-                'h-5 w-5',
-                subscription.tier === 'pro_plus' ? 'text-purple-600 dark:text-purple-400' :
-                subscription.tier === 'pro' ? 'text-blue-600 dark:text-blue-400' :
-                'text-slate-600 dark:text-slate-400'
-              )} />
+            <div
+              className={cn(
+                'rounded-lg p-2',
+                subscription.tier === 'pro_plus'
+                  ? 'bg-purple-100 dark:bg-purple-900'
+                  : subscription.tier === 'pro'
+                    ? 'bg-blue-100 dark:bg-blue-900'
+                    : 'bg-slate-100 dark:bg-slate-800'
+              )}
+            >
+              <Crown
+                className={cn(
+                  'h-5 w-5',
+                  subscription.tier === 'pro_plus'
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : subscription.tier === 'pro'
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-slate-600 dark:text-slate-400'
+                )}
+              />
             </div>
             <div>
               <h3 className="font-semibold text-base sm:text-lg">
                 {formatTierLabel(subscription.tier)} Plan
               </h3>
               <p className="text-muted-foreground text-xs leading-snug sm:text-sm">
-                {subscription.tier === 'free' && 'Basic features with limited access'}
-                {subscription.tier === 'pro' && 'Enhanced features with premium models'}
-                {subscription.tier === 'pro_plus' && 'Full access including premium models'}
+                {subscription.tier === 'free' &&
+                  'Basic features with limited access'}
+                {subscription.tier === 'pro' &&
+                  'Enhanced features with premium models'}
+                {subscription.tier === 'pro_plus' &&
+                  'Full access including premium models'}
               </p>
             </div>
           </div>
           <Button
-            onClick={() => openModal({
-              tier: subscription.tier === 'pro' ? 'pro_plus' : 'pro',
-              trigger: 'manual',
-            })}
+            onClick={() =>
+              openModal({
+                tier: subscription.tier === 'pro' ? 'pro_plus' : 'pro',
+                trigger: 'manual',
+              })
+            }
             size="sm"
             variant={subscription.tier === 'pro_plus' ? 'outline' : 'default'}
           >
@@ -104,19 +117,21 @@ export function SubscriptionTabs({
       {/* Plans comparison */}
       <Card className="p-4 ring-1 ring-border/50 transition hover:ring-primary/20 sm:p-5">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-semibold text-base sm:text-lg">Available Plans</h3>
+          <h3 className="font-semibold text-base sm:text-lg">
+            Available Plans
+          </h3>
           {(subscription.tier === 'free' || subscription.tier === 'pro') && (
-            <Button 
-              onClick={() => openModal({ tier: 'pro_plus', trigger: 'manual' })} 
+            <Button
+              onClick={() => openModal({ tier: 'pro_plus', trigger: 'manual' })}
               size="sm"
             >
               Upgrade to Pro+
             </Button>
           )}
         </div>
-        
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 sm:grid-cols-3">
             {/* Free Plan */}
             <div>
               <input
@@ -129,7 +144,7 @@ export function SubscriptionTabs({
               />
               <label
                 className={cn(
-                  'group block cursor-pointer rounded-xl border p-4 transition-all h-full min-h-[10rem]',
+                  'group block h-full min-h-[10rem] cursor-pointer rounded-xl border p-4 transition-all',
                   selectedPlan === 'free'
                     ? 'border-primary/40 bg-gradient-to-br from-primary/10 to-transparent ring-1 ring-primary/40'
                     : 'border-border hover:shadow-sm hover:ring-1 hover:ring-primary/20'
@@ -141,13 +156,17 @@ export function SubscriptionTabs({
                     <div className="flex items-center justify-between">
                       <div className="font-semibold tracking-tight">Free</div>
                       {subscription.tier === 'free' && (
-                        <div className="bg-primary/10 text-primary px-2 py-1 rounded text-xs font-medium">
+                        <div className="rounded bg-primary/10 px-2 py-1 font-medium text-primary text-xs">
                           Current
                         </div>
                       )}
                     </div>
-                    <div className="font-semibold text-foreground text-sm">$0</div>
-                    <div className="text-[11px] text-muted-foreground">Forever</div>
+                    <div className="font-semibold text-foreground text-sm">
+                      $0
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Forever
+                    </div>
                   </div>
                 </div>
               </label>
@@ -165,7 +184,7 @@ export function SubscriptionTabs({
               />
               <label
                 className={cn(
-                  'group block cursor-pointer rounded-xl border p-4 transition-all h-full min-h-[10rem]',
+                  'group block h-full min-h-[10rem] cursor-pointer rounded-xl border p-4 transition-all',
                   selectedPlan === 'pro'
                     ? 'border-primary/40 bg-gradient-to-br from-primary/10 to-transparent ring-1 ring-primary/40'
                     : 'border-border hover:shadow-sm hover:ring-1 hover:ring-primary/20'
@@ -180,13 +199,17 @@ export function SubscriptionTabs({
                         <div className="font-semibold tracking-tight">Pro</div>
                       </div>
                       {subscription.tier === 'pro' && (
-                        <div className="bg-primary/10 text-primary px-2 py-1 rounded text-xs font-medium">
+                        <div className="rounded bg-primary/10 px-2 py-1 font-medium text-primary text-xs">
                           Current
                         </div>
                       )}
                     </div>
-                    <div className="font-semibold text-foreground text-sm">0.05 SOL</div>
-                    <div className="text-[11px] text-muted-foreground">per month</div>
+                    <div className="font-semibold text-foreground text-sm">
+                      0.05 SOL
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      per month
+                    </div>
                   </div>
                 </div>
               </label>
@@ -204,7 +227,7 @@ export function SubscriptionTabs({
               />
               <label
                 className={cn(
-                  'group block cursor-pointer rounded-xl border p-4 transition-all h-full min-h-[10rem]',
+                  'group block h-full min-h-[10rem] cursor-pointer rounded-xl border p-4 transition-all',
                   selectedPlan === 'pro_plus'
                     ? 'border-primary/40 bg-gradient-to-br from-primary/10 to-transparent ring-1 ring-primary/40'
                     : 'border-border hover:shadow-sm hover:ring-1 hover:ring-primary/20'
@@ -218,14 +241,19 @@ export function SubscriptionTabs({
                         <Crown className="h-4 w-4 text-purple-500" />
                         <div className="font-semibold tracking-tight">Pro+</div>
                       </div>
-                      {(subscription.tier === 'pro_plus' || subscription.tier === 'admin') && (
-                        <div className="bg-primary/10 text-primary px-2 py-1 rounded text-xs font-medium">
+                      {(subscription.tier === 'pro_plus' ||
+                        subscription.tier === 'admin') && (
+                        <div className="rounded bg-primary/10 px-2 py-1 font-medium text-primary text-xs">
                           Current
                         </div>
                       )}
                     </div>
-                    <div className="font-semibold text-foreground text-sm">0.1 SOL</div>
-                    <div className="text-[11px] text-muted-foreground">per month</div>
+                    <div className="font-semibold text-foreground text-sm">
+                      0.1 SOL
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      per month
+                    </div>
                   </div>
                 </div>
               </label>
@@ -276,34 +304,38 @@ export function SubscriptionTabs({
     <div className="space-y-6">
       {/* Current credits balance */}
       <Card className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-base sm:text-lg">Current Credit Balance</h3>
-          <Button 
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="font-semibold text-base sm:text-lg">
+            Current Credit Balance
+          </h3>
+          <Button
+            className="bg-gradient-to-r from-green-500 to-green-600 w-full sm:w-auto"
             onClick={() => setIsCreditsModalOpen(true)}
             size="sm"
-            className="bg-gradient-to-r from-green-500 to-green-600"
           >
             <Plus className="mr-2 h-4 w-4" />
             Buy Credits
           </Button>
         </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center rounded-lg border p-4">
+
+        <div className="grid grid-cols-1 gap-4 xs:grid-cols-2">
+          <div className="rounded-lg border p-4 text-center">
             <div className="font-bold text-2xl text-green-600">
               {subscription.messageCredits || 0}
             </div>
-            <div className="text-muted-foreground text-sm">Standard Credits</div>
-            <div className="text-muted-foreground text-xs mt-1">
+            <div className="text-muted-foreground text-sm">
+              Standard Credits
+            </div>
+            <div className="mt-1 text-muted-foreground text-xs">
               Used after plan messages
             </div>
           </div>
-          <div className="text-center rounded-lg border p-4">
+          <div className="rounded-lg border p-4 text-center">
             <div className="font-bold text-2xl text-green-600">
               {subscription.premiumMessageCredits || 0}
             </div>
             <div className="text-muted-foreground text-sm">Premium Credits</div>
-            <div className="text-muted-foreground text-xs mt-1">
+            <div className="mt-1 text-muted-foreground text-xs">
               Used after plan premium messages
             </div>
           </div>
@@ -311,63 +343,71 @@ export function SubscriptionTabs({
       </Card>
 
       {/* Message credit pack info */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
+      <Card className="p-4 sm:p-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center space-x-3">
-            <div className="rounded-lg bg-gradient-to-r from-green-500 to-green-600 p-2">
+            <div className="rounded-lg bg-gradient-to-r from-green-500 to-green-600 p-2 flex-shrink-0">
               <CreditCard className="h-5 w-5 text-white" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <h3 className="font-semibold text-lg">Message Credit Pack</h3>
               <p className="text-muted-foreground text-sm">
                 Get additional messages without upgrading
               </p>
             </div>
           </div>
-          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+          <div className="rounded-full bg-green-100 px-3 py-1 font-medium text-green-800 text-xs self-start">
             Best Value
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="text-center rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+        <div className="mb-4 grid grid-cols-1 gap-4 xs:grid-cols-2">
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center dark:border-green-800 dark:bg-green-900/20">
             <div className="font-bold text-2xl text-green-700 dark:text-green-300">
               {MESSAGE_CREDIT_PACK.standardCredits}
             </div>
-            <div className="text-green-600 text-sm dark:text-green-400">Standard Messages</div>
+            <div className="text-green-600 text-sm dark:text-green-400">
+              Standard Messages
+            </div>
           </div>
-          <div className="text-center rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center dark:border-green-800 dark:bg-green-900/20">
             <div className="font-bold text-2xl text-green-700 dark:text-green-300">
               {MESSAGE_CREDIT_PACK.premiumCredits}
             </div>
-            <div className="text-green-600 text-sm dark:text-green-400">Premium Messages</div>
+            <div className="text-green-600 text-sm dark:text-green-400">
+              Premium Messages
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800/50">
           <div>
             <div className="font-semibold">Price per pack</div>
             <div className="text-muted-foreground text-sm">
               No subscription required
             </div>
           </div>
-          <div className="text-right">
-            <div className="font-bold text-xl">{MESSAGE_CREDIT_PACK.priceSOL} SOL</div>
-            <div className="text-muted-foreground text-sm">≈ ${MESSAGE_CREDIT_PACK.priceUSD} USD</div>
+          <div className="text-left sm:text-right">
+            <div className="font-bold text-xl">
+              {MESSAGE_CREDIT_PACK.priceSOL} SOL
+            </div>
+            <div className="text-muted-foreground text-sm">
+              ≈ ${MESSAGE_CREDIT_PACK.priceUSD} USD
+            </div>
           </div>
         </div>
 
         <div className="mt-4 space-y-3">
-          <div className="text-sm text-muted-foreground">
-            ✓ Credits never expire<br />
-            ✓ Stack with your plan messages<br />
-            ✓ Used after plan messages are consumed<br />
-            ✓ Support referral commissions
+          <div className="text-muted-foreground text-sm">
+            ✓ Credits never expire
+            <br />✓ Stack with your plan messages
+            <br />✓ Used after plan messages are consumed
+            <br />✓ Support referral commissions
           </div>
 
-          <Button 
-            onClick={() => setIsCreditsModalOpen(true)}
+          <Button
             className="w-full bg-gradient-to-r from-green-500 to-green-600"
+            onClick={() => setIsCreditsModalOpen(true)}
             size="lg"
           >
             <Plus className="mr-2 h-5 w-5" />
@@ -378,19 +418,28 @@ export function SubscriptionTabs({
 
       {/* How it works */}
       <Card className="p-4">
-        <h4 className="font-medium mb-3">How Message Consumption Works</h4>
-        <div className="space-y-2 text-sm text-muted-foreground">
+        <h4 className="mb-3 font-medium">How Message Consumption Works</h4>
+        <div className="space-y-2 text-muted-foreground text-sm">
           <div className="flex items-start space-x-2">
-            <div className="font-bold text-blue-600 min-w-[20px]">1.</div>
-            <div>Your <strong>plan messages</strong> are used first (50 for Free, 500 for Pro, 1000 for Pro+)</div>
+            <div className="min-w-[20px] font-bold text-blue-600">1.</div>
+            <div>
+              Your <strong>plan messages</strong> are used first (50 for Free,
+              500 for Pro, 1000 for Pro+)
+            </div>
           </div>
           <div className="flex items-start space-x-2">
-            <div className="font-bold text-green-600 min-w-[20px]">2.</div>
-            <div>When plan messages run out, <strong>purchased credits</strong> are used automatically</div>
+            <div className="min-w-[20px] font-bold text-green-600">2.</div>
+            <div>
+              When plan messages run out, <strong>purchased credits</strong> are
+              used automatically
+            </div>
           </div>
           <div className="flex items-start space-x-2">
-            <div className="font-bold text-purple-600 min-w-[20px]">3.</div>
-            <div>Premium messages follow the same pattern: plan premium first, then premium credits</div>
+            <div className="min-w-[20px] font-bold text-purple-600">3.</div>
+            <div>
+              Premium messages follow the same pattern: plan premium first, then
+              premium credits
+            </div>
           </div>
         </div>
       </Card>
@@ -399,23 +448,28 @@ export function SubscriptionTabs({
 
   return (
     <>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs className="w-full" onValueChange={setActiveTab} value={activeTab}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="subscriptions" className="flex items-center space-x-2">
-            <Crown className="h-4 w-4" />
-            <span>Subscription Plans</span>
+          <TabsTrigger
+            className="flex items-center space-x-1 sm:space-x-2"
+            value="subscriptions"
+          >
+            <Crown className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Subscription Plans</span>
+            <span className="sm:hidden">Plans</span>
           </TabsTrigger>
-          <TabsTrigger value="credits" className="flex items-center space-x-2">
-            <CreditCard className="h-4 w-4" />
-            <span>Message Credits</span>
+          <TabsTrigger className="flex items-center space-x-1 sm:space-x-2" value="credits">
+            <CreditCard className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Message Credits</span>
+            <span className="sm:hidden">Credits</span>
           </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="subscriptions" className="mt-6">
+
+        <TabsContent className="mt-6" value="subscriptions">
           {renderSubscriptionTab()}
         </TabsContent>
-        
-        <TabsContent value="credits" className="mt-6">
+
+        <TabsContent className="mt-6" value="credits">
           {renderCreditsTab()}
         </TabsContent>
       </Tabs>

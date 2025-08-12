@@ -1,8 +1,7 @@
 'use client';
 
-import { AlertTriangle, Calendar, Crown, TrendingUp, Zap } from 'lucide-react';
+import { AlertTriangle, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { UpgradeModal } from '@/components/auth/upgrade-modal';
 import { UsageIndicator } from '@/components/chat/usage-indicator';
 import {
   useSubscriptionLimits,
@@ -10,16 +9,12 @@ import {
 } from '@/components/providers/auth-provider';
 import SubscriptionTabs from '@/components/subscription/subscription-tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useUpgradeModal } from '@/hooks/use-upgrade-modal';
 import { getModelsForTier, isPremiumModel } from '@/lib/constants/ai-models';
 
 export default function SubscriptionPage() {
   const subscription = useSubscriptionStatus();
   const limits = useSubscriptionLimits();
-  const { isOpen, openModal, closeModal, suggestedTier } = useUpgradeModal();
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro' | 'pro_plus'>(
     () => {
       const tier = subscription?.tier ?? 'free';
@@ -66,48 +61,14 @@ export default function SubscriptionPage() {
   const usagePercent =
     subscription.messagesLimit > 0
       ? Math.round(
-        (subscription.messagesUsed / subscription.messagesLimit) * 100
-      )
+          (subscription.messagesUsed / subscription.messagesLimit) * 100
+        )
       : 0;
-
-  const _getTierColor = (tier: string) => {
-    if (tier === 'pro_plus') {
-      return 'text-purple-600 dark:text-purple-400';
-    }
-    if (tier === 'pro') {
-      return 'text-blue-600 dark:text-blue-400';
-    }
-    return 'text-slate-600 dark:text-slate-400';
-  };
-
-  const _getTierBg = (tier: string) => {
-    if (tier === 'pro_plus') {
-      return 'bg-purple-100 dark:bg-purple-900';
-    }
-    if (tier === 'pro') {
-      return 'bg-blue-100 dark:bg-blue-900';
-    }
-    return 'bg-slate-100 dark:bg-slate-800';
-  };
-
-  const _formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
 
   const isExpiringSoon =
     subscription.tier !== 'free' &&
     (subscription.daysRemaining ?? Number.POSITIVE_INFINITY) <= 7;
   const isNearLimit = usagePercent >= 75;
-
-  const tierForModels: 'free' | 'pro' | 'pro_plus' =
-    subscription.tier === 'admin'
-      ? 'pro_plus'
-      : (subscription.tier as 'free' | 'pro' | 'pro_plus');
-  const _models = getModelsForTier(tierForModels);
 
   const formatTierLabel = (tier: string): string => {
     switch (tier) {
@@ -161,11 +122,11 @@ export default function SubscriptionPage() {
         />
 
         <SubscriptionTabs
-          subscription={subscription}
           limits={limits}
-          selectedPlan={selectedPlan}
           onSelectPlan={setSelectedPlan}
           preview={preview}
+          selectedPlan={selectedPlan}
+          subscription={subscription}
         />
       </div>
     </div>
@@ -262,216 +223,6 @@ function UsageOverview({
       </div>
       <div className="mt-3">
         <UsageIndicator showUpgrade={false} variant="compact" />
-      </div>
-    </Card>
-  );
-}
-
-type PlansGridProps = {
-  selectedPlan: 'free' | 'pro' | 'pro_plus';
-  subscriptionTier: 'free' | 'pro' | 'pro_plus' | 'admin';
-  preview: {
-    standardPreview: { id: string; name: string }[];
-    premiumPreview: { id: string; name: string }[];
-    standardTotal: number;
-    premiumTotal: number;
-  };
-  onSelectPlan: (plan: 'free' | 'pro' | 'pro_plus') => void;
-  onUpgrade: () => void;
-};
-
-function PlansGrid({
-  selectedPlan,
-  subscriptionTier,
-  preview,
-  onSelectPlan,
-  onUpgrade,
-}: PlansGridProps) {
-  return (
-    <Card className="p-4 ring-1 ring-border/50 transition hover:ring-primary/20 sm:p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-semibold text-base sm:text-lg">Plans</h3>
-        {(subscriptionTier === 'free' || subscriptionTier === 'pro') && (
-          <Button onClick={onUpgrade} size="sm">
-            Upgrade to Pro+
-          </Button>
-        )}
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <input
-                checked={selectedPlan === 'free'}
-                className="sr-only"
-                id="plan-free"
-                name="plan"
-                onChange={() => onSelectPlan('free')}
-                type="radio"
-              />
-              <label
-                className={`group block cursor-pointer rounded-xl border p-4 transition-all ${selectedPlan === 'free' ? 'border-primary/40 bg-gradient-to-br from-primary/10 to-transparent ring-1 ring-primary/40' : 'border-border hover:shadow-sm hover:ring-1 hover:ring-primary/20'} h-full min-h-[10rem]`}
-                htmlFor="plan-free"
-              >
-                <div className="flex h-full flex-col justify-between gap-2">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="font-semibold tracking-tight">Free</div>
-                      {subscriptionTier === 'free' && (
-                        <Badge size="sm" variant="outline">
-                          Current
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="font-semibold text-foreground text-sm">
-                      $0
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      Forever
-                    </div>
-                  </div>
-                </div>
-              </label>
-            </div>
-            <div>
-              <input
-                checked={selectedPlan === 'pro'}
-                className="sr-only"
-                id="plan-pro"
-                name="plan"
-                onChange={() => onSelectPlan('pro')}
-                type="radio"
-              />
-              <label
-                className={`group block cursor-pointer rounded-xl border p-4 transition-all ${selectedPlan === 'pro' ? 'border-primary/40 bg-gradient-to-br from-primary/10 to-transparent ring-1 ring-primary/40' : 'border-border hover:shadow-sm hover:ring-1 hover:ring-primary/20'} h-full min-h-[10rem]`}
-                htmlFor="plan-pro"
-              >
-                <div className="flex h-full flex-col justify-between gap-2">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-blue-500" />
-                        <div className="font-semibold tracking-tight">Pro</div>
-                      </div>
-                      {subscriptionTier === 'pro' && (
-                        <Badge size="sm" variant="outline">
-                          Current
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="font-semibold text-foreground text-sm">
-                      0.05 SOL
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      per month
-                    </div>
-                  </div>
-                </div>
-              </label>
-            </div>
-            <div>
-              <input
-                checked={selectedPlan === 'pro_plus'}
-                className="sr-only"
-                id="plan-pro-plus"
-                name="plan"
-                onChange={() => onSelectPlan('pro_plus')}
-                type="radio"
-              />
-              <label
-                className={`group block cursor-pointer rounded-xl border p-4 transition-all ${selectedPlan === 'pro_plus' ? 'border-primary/40 bg-gradient-to-br from-primary/10 to-transparent ring-1 ring-primary/40' : 'border-border hover:shadow-sm hover:ring-1 hover:ring-primary/20'} h-full min-h-[10rem]`}
-                htmlFor="plan-pro-plus"
-              >
-                <div className="flex h-full flex-col justify-between gap-2">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Crown className="h-4 w-4 text-purple-500" />
-                        <div className="font-semibold tracking-tight">Pro+</div>
-                      </div>
-                      {(subscriptionTier === 'pro_plus' ||
-                        subscriptionTier === 'admin') && (
-                          <Badge size="sm" variant="outline">
-                            Current
-                          </Badge>
-                        )}
-                    </div>
-                    <div className="font-semibold text-foreground text-sm">
-                      0.1 SOL
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      per month
-                    </div>
-                  </div>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
-        <div>
-          <h4 className="mb-2 font-medium">
-            Features for{' '}
-            {selectedPlan === 'pro_plus'
-              ? 'Pro+'
-              : selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)}
-          </h4>
-          <div className="flex flex-wrap gap-1.5 text-[11px] sm:text-xs">
-            {preview.standardTotal > 0 ? (
-              preview.standardPreview.map((model) => (
-                <Badge key={model.id} size="sm" variant="secondary">
-                  {model.name}
-                </Badge>
-              ))
-            ) : (
-              <div className="text-muted-foreground">
-                Basic models available
-              </div>
-            )}
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs">
-            {selectedPlan !== 'free' ? (
-              preview.premiumTotal > 0 ? (
-                preview.premiumPreview.map((model) => (
-                  <Badge key={model.id} size="sm" variant="secondary">
-                    {model.name} • Premium
-                  </Badge>
-                ))
-              ) : (
-                <div className="text-green-600">Premium models included</div>
-              )
-            ) : (
-              <div className="text-muted-foreground">
-                Requires Pro or Pro+ subscription
-              </div>
-            )}
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:text-xs">
-            <div className="rounded-xl border p-2">
-              <div className="text-muted-foreground">Messages/month</div>
-              <div className="font-medium">
-                {selectedPlan === 'free' && '50'}
-                {selectedPlan === 'pro' && '500'}
-                {selectedPlan === 'pro_plus' && '1,000'}
-              </div>
-            </div>
-            <div className="rounded-xl border p-2">
-              <div className="text-muted-foreground">Premium messages</div>
-              <div className="font-medium">
-                {selectedPlan === 'free' && '—'}
-                {selectedPlan === 'pro' && '100'}
-                {selectedPlan === 'pro_plus' && '300'}
-              </div>
-            </div>
-            <div className="rounded-xl border p-2">
-              <div className="text-muted-foreground">Standard models</div>
-              <div className="font-medium">{preview.standardTotal}</div>
-            </div>
-            <div className="rounded-xl border p-2">
-              <div className="text-muted-foreground">Premium models</div>
-              <div className="font-medium">{preview.premiumTotal}</div>
-            </div>
-          </div>
-        </div>
       </div>
     </Card>
   );

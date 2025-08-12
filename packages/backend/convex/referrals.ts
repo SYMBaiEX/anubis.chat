@@ -839,7 +839,8 @@ export const updateReferrerStats = internalMutation({
 
     // Only increment totalReferrals on the first successful conversion for this referred user
     const shouldIncrement = Boolean(args.isFirstConversion);
-    const newTotalReferrals = referralCode.totalReferrals + (shouldIncrement ? 1 : 0);
+    const newTotalReferrals =
+      referralCode.totalReferrals + (shouldIncrement ? 1 : 0);
     const tierInfo = getTierInfo(newTotalReferrals);
 
     // Update referral code record

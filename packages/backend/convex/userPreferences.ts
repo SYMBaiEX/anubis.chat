@@ -108,39 +108,37 @@ export const updateUserPreferences = mutation({
     }
 
     if (existingPreferences) {
-      // Update existing preferences
       await ctx.db.patch(existingPreferences._id, updates);
       return await ctx.db.get(existingPreferences._id);
     }
-    // Create new preferences with defaults (use typed args to avoid unknown types)
-    const newPreferences = {
-      userId: user._id,
-      updatedAt: Date.now(),
-      // Set sensible defaults for new users
-      theme: args.theme ?? 'system',
-      language: args.language ?? 'en',
-      soundEnabled: args.soundEnabled ?? true,
-      autoScroll: args.autoScroll ?? true,
-      streamResponses: args.streamResponses ?? true,
-      saveHistory: args.saveHistory ?? true,
-      enableMemory: args.enableMemory ?? true,
-      responseFormat: args.responseFormat ?? 'markdown',
-      contextWindow: args.contextWindow ?? 10,
-      autoCreateTitles: args.autoCreateTitles ?? true,
-      emailNotifications: args.emailNotifications ?? false,
-      pushNotifications: args.pushNotifications ?? true,
-      dataCollection: args.dataCollection ?? true,
-      analytics: args.analytics ?? true,
-      reducedMotion: args.reducedMotion ?? false,
-      highContrast: args.highContrast ?? false,
-      fontSize: args.fontSize ?? 'medium',
-      createdAt: Date.now(),
+
+    const defaults = {
+      theme: 'system' as const,
+      language: 'en',
+      soundEnabled: true,
+      autoScroll: true,
+      streamResponses: true,
+      saveHistory: true,
+      enableMemory: true,
+      responseFormat: 'markdown' as const,
+      contextWindow: 10,
+      autoCreateTitles: true,
+      emailNotifications: false,
+      pushNotifications: true,
+      dataCollection: true,
+      analytics: true,
+      reducedMotion: false,
+      highContrast: false,
+      fontSize: 'medium' as const,
     };
 
-    const preferencesId = await ctx.db.insert(
-      'userPreferences',
-      newPreferences
-    );
+    const preferencesId = await ctx.db.insert('userPreferences', {
+      userId: user._id,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      ...defaults,
+      ...updates,
+    });
     return await ctx.db.get(preferencesId);
   },
 });
@@ -272,93 +270,46 @@ export const updatePreferenceCategory = mutation({
 
     const validatedPreferences: Record<string, unknown> = {};
 
-    switch (args.category) {
-      case 'interface':
-        if (args.preferences.theme) {
-          validatedPreferences.theme = args.preferences.theme;
-        }
-        if (args.preferences.language) {
-          validatedPreferences.language = args.preferences.language;
-        }
-        if (args.preferences.soundEnabled !== undefined) {
-          validatedPreferences.soundEnabled = args.preferences.soundEnabled;
-        }
-        if (args.preferences.autoScroll !== undefined) {
-          validatedPreferences.autoScroll = args.preferences.autoScroll;
-        }
-        if (args.preferences.fontSize) {
-          validatedPreferences.fontSize = args.preferences.fontSize;
-        }
-        if (args.preferences.reducedMotion !== undefined) {
-          validatedPreferences.reducedMotion = args.preferences.reducedMotion;
-        }
-        if (args.preferences.highContrast !== undefined) {
-          validatedPreferences.highContrast = args.preferences.highContrast;
-        }
-        break;
-
-      case 'behavior':
-        if (args.preferences.streamResponses !== undefined) {
-          validatedPreferences.streamResponses =
-            args.preferences.streamResponses;
-        }
-        if (args.preferences.saveHistory !== undefined) {
-          validatedPreferences.saveHistory = args.preferences.saveHistory;
-        }
-        if (args.preferences.enableMemory !== undefined) {
-          validatedPreferences.enableMemory = args.preferences.enableMemory;
-        }
-        if (args.preferences.responseFormat) {
-          validatedPreferences.responseFormat = args.preferences.responseFormat;
-        }
-        if (args.preferences.contextWindow) {
-          validatedPreferences.contextWindow = args.preferences.contextWindow;
-        }
-        break;
-
-      case 'model':
-        if (args.preferences.defaultModel) {
-          validatedPreferences.defaultModel = args.preferences.defaultModel;
-        }
-        if (args.preferences.defaultTemperature !== undefined) {
-          validatedPreferences.defaultTemperature =
-            args.preferences.defaultTemperature;
-        }
-        if (args.preferences.defaultMaxTokens) {
-          validatedPreferences.defaultMaxTokens =
-            args.preferences.defaultMaxTokens;
-        }
-        if (args.preferences.defaultTopP !== undefined) {
-          validatedPreferences.defaultTopP = args.preferences.defaultTopP;
-        }
-        if (args.preferences.defaultFrequencyPenalty !== undefined) {
-          validatedPreferences.defaultFrequencyPenalty =
-            args.preferences.defaultFrequencyPenalty;
-        }
-        if (args.preferences.defaultPresencePenalty !== undefined) {
-          validatedPreferences.defaultPresencePenalty =
-            args.preferences.defaultPresencePenalty;
-        }
-        break;
-
-      case 'privacy':
-        if (args.preferences.emailNotifications !== undefined) {
-          validatedPreferences.emailNotifications =
-            args.preferences.emailNotifications;
-        }
-        if (args.preferences.pushNotifications !== undefined) {
-          validatedPreferences.pushNotifications =
-            args.preferences.pushNotifications;
-        }
-        if (args.preferences.dataCollection !== undefined) {
-          validatedPreferences.dataCollection = args.preferences.dataCollection;
-        }
-        if (args.preferences.analytics !== undefined) {
-          validatedPreferences.analytics = args.preferences.analytics;
-        }
-        break;
-      default:
-        break;
+    const p = args.preferences as Record<string, unknown>;
+    if (args.category === 'interface') {
+      if (p.theme !== undefined) validatedPreferences.theme = p.theme;
+      if (p.language !== undefined) validatedPreferences.language = p.language;
+      if (p.soundEnabled !== undefined)
+        validatedPreferences.soundEnabled = p.soundEnabled;
+      if (p.autoScroll !== undefined) validatedPreferences.autoScroll = p.autoScroll;
+      if (p.fontSize !== undefined) validatedPreferences.fontSize = p.fontSize;
+      if (p.reducedMotion !== undefined)
+        validatedPreferences.reducedMotion = p.reducedMotion;
+      if (p.highContrast !== undefined)
+        validatedPreferences.highContrast = p.highContrast;
+    } else if (args.category === 'behavior') {
+      if (p.streamResponses !== undefined)
+        validatedPreferences.streamResponses = p.streamResponses;
+      if (p.saveHistory !== undefined) validatedPreferences.saveHistory = p.saveHistory;
+      if (p.enableMemory !== undefined) validatedPreferences.enableMemory = p.enableMemory;
+      if (p.responseFormat !== undefined)
+        validatedPreferences.responseFormat = p.responseFormat;
+      if (p.contextWindow !== undefined)
+        validatedPreferences.contextWindow = p.contextWindow;
+    } else if (args.category === 'model') {
+      if (p.defaultModel !== undefined) validatedPreferences.defaultModel = p.defaultModel;
+      if (p.defaultTemperature !== undefined)
+        validatedPreferences.defaultTemperature = p.defaultTemperature;
+      if (p.defaultMaxTokens !== undefined)
+        validatedPreferences.defaultMaxTokens = p.defaultMaxTokens;
+      if (p.defaultTopP !== undefined) validatedPreferences.defaultTopP = p.defaultTopP;
+      if (p.defaultFrequencyPenalty !== undefined)
+        validatedPreferences.defaultFrequencyPenalty = p.defaultFrequencyPenalty;
+      if (p.defaultPresencePenalty !== undefined)
+        validatedPreferences.defaultPresencePenalty = p.defaultPresencePenalty;
+    } else if (args.category === 'privacy') {
+      if (p.emailNotifications !== undefined)
+        validatedPreferences.emailNotifications = p.emailNotifications;
+      if (p.pushNotifications !== undefined)
+        validatedPreferences.pushNotifications = p.pushNotifications;
+      if (p.dataCollection !== undefined)
+        validatedPreferences.dataCollection = p.dataCollection;
+      if (p.analytics !== undefined) validatedPreferences.analytics = p.analytics;
     }
 
     if (Object.keys(validatedPreferences).length === 0) {

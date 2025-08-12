@@ -70,7 +70,10 @@ export function useSubscription() {
         ? (maybeSubscription.daysRemaining as number)
         : undefined;
 
-    const maybeSubscriptionWithCredits = subscription as Record<string, unknown> & {
+    const maybeSubscriptionWithCredits = subscription as Record<
+      string,
+      unknown
+    > & {
       messageCredits?: number;
       premiumMessageCredits?: number;
     };
@@ -82,7 +85,8 @@ export function useSubscription() {
       premiumMessagesUsed: subscription.premiumMessagesUsed ?? 0,
       premiumMessagesLimit: subscription.premiumMessagesLimit ?? 0,
       messageCredits: maybeSubscriptionWithCredits.messageCredits ?? 0,
-      premiumMessageCredits: maybeSubscriptionWithCredits.premiumMessageCredits ?? 0,
+      premiumMessageCredits:
+        maybeSubscriptionWithCredits.premiumMessageCredits ?? 0,
       currentPeriodStart: subscription.currentPeriodStart ?? Date.now(),
       currentPeriodEnd: subscription.currentPeriodEnd ?? Date.now(),
       autoRenew: Boolean(subscription.autoRenew),

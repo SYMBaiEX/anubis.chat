@@ -53,10 +53,13 @@ const CREDIT_PACK = {
   standardCredits: 150,
   premiumCredits: 25,
   priceSOL: 0.025,
-  priceUSD: 3.50, // Approximate USD value
+  priceUSD: 3.5, // Approximate USD value
 };
 
-export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProps) {
+export function MessageCreditsModal({
+  isOpen,
+  onClose,
+}: MessageCreditsModalProps) {
   const [numberOfPacks, setNumberOfPacks] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStep, setPaymentStep] = useState<
@@ -72,8 +75,10 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
   // User data and subscriptions
   const { subscription } = useSubscription();
   const user = useQuery(api.users.getCurrentUserProfile);
-  const purchaseMessageCredits = useMutation(api.subscriptions.purchaseMessageCredits);
-  
+  const purchaseMessageCredits = useMutation(
+    api.subscriptions.purchaseMessageCredits
+  );
+
   // Check payment status
   const checkPurchaseStatus = useQuery(
     api.subscriptions.checkMessageCreditPurchaseStatus,
@@ -346,7 +351,7 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
 
       if (verificationResult.success) {
         setPaymentStep('success');
-        
+
         log.info('Message credits purchase verified', {
           txSignature: txSignatureToVerify,
           purchaseId: verificationResult.purchaseId,
@@ -383,12 +388,13 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
           setPaymentStep('success');
           return;
         }
-        
+
         // Handle other error types similar to subscription upgrade
         errorMessage = err.message;
-        isRetryable = err.message.includes('Network') || 
-                    err.message.includes('timeout') ||
-                    err.message.includes('SIMULATION_FAILED');
+        isRetryable =
+          err.message.includes('Network') ||
+          err.message.includes('timeout') ||
+          err.message.includes('SIMULATION_FAILED');
       }
 
       if (isRetryable && retryAttempt < MAX_RETRIES) {
@@ -439,15 +445,23 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
             <h4 className="font-semibold">Message Credit Pack</h4>
             <Badge className="bg-green-100 text-green-800">Best Value</Badge>
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center rounded-lg border p-4">
-              <div className="font-bold text-2xl">{CREDIT_PACK.standardCredits}</div>
-              <div className="text-muted-foreground text-sm">Standard Messages</div>
+
+          <div className="grid grid-cols-1 gap-4 xs:grid-cols-2">
+            <div className="rounded-lg border p-4 text-center">
+              <div className="font-bold text-2xl">
+                {CREDIT_PACK.standardCredits}
+              </div>
+              <div className="text-muted-foreground text-sm">
+                Standard Messages
+              </div>
             </div>
-            <div className="text-center rounded-lg border p-4">
-              <div className="font-bold text-2xl">{CREDIT_PACK.premiumCredits}</div>
-              <div className="text-muted-foreground text-sm">Premium Messages</div>
+            <div className="rounded-lg border p-4 text-center">
+              <div className="font-bold text-2xl">
+                {CREDIT_PACK.premiumCredits}
+              </div>
+              <div className="text-muted-foreground text-sm">
+                Premium Messages
+              </div>
             </div>
           </div>
 
@@ -456,7 +470,9 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
               <span className="font-medium">Price per pack:</span>
               <div className="text-right">
                 <div className="font-bold">{CREDIT_PACK.priceSOL} SOL</div>
-                <div className="text-muted-foreground text-sm">≈ ${CREDIT_PACK.priceUSD} USD</div>
+                <div className="text-muted-foreground text-sm">
+                  ≈ ${CREDIT_PACK.priceUSD} USD
+                </div>
               </div>
             </div>
 
@@ -465,31 +481,41 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
               <div className="flex items-center space-x-3">
                 <Button
                   disabled={numberOfPacks <= 1}
-                  onClick={() => setNumberOfPacks(Math.max(1, numberOfPacks - 1))}
+                  onClick={() =>
+                    setNumberOfPacks(Math.max(1, numberOfPacks - 1))
+                  }
                   size="sm"
                   variant="outline"
                 >
                   -
                 </Button>
-                <span className="w-12 text-center font-bold">{numberOfPacks}</span>
+                <span className="w-12 text-center font-bold">
+                  {numberOfPacks}
+                </span>
                 <Button
                   disabled={numberOfPacks >= 10}
-                  onClick={() => setNumberOfPacks(Math.min(10, numberOfPacks + 1))}
+                  onClick={() =>
+                    setNumberOfPacks(Math.min(10, numberOfPacks + 1))
+                  }
                   size="sm"
                   variant="outline"
                 >
                   +
                 </Button>
               </div>
-              <div className="text-muted-foreground text-xs">Maximum 10 packs per purchase</div>
+              <div className="text-muted-foreground text-xs">
+                Maximum 10 packs per purchase
+              </div>
             </div>
           </div>
 
           {numberOfPacks > 1 && (
             <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
-              <h5 className="font-medium text-green-800 dark:text-green-200">Total Purchase:</h5>
-              <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
-                <div>
+              <h5 className="font-medium text-green-800 dark:text-green-200">
+                Total Purchase:
+              </h5>
+              <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:justify-between text-sm">
+                <div className="space-y-1">
                   <div className="font-bold text-green-800 dark:text-green-200">
                     {totalStandardCredits} Standard
                   </div>
@@ -497,8 +523,8 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
                     {totalPremiumCredits} Premium
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold text-xl text-green-800 dark:text-green-200">
+                <div className="text-left sm:text-right">
+                  <div className="font-bold text-green-800 text-xl dark:text-green-200">
                     {totalCost} SOL
                   </div>
                   <div className="text-green-600 dark:text-green-300">
@@ -515,13 +541,17 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
       {subscription && (
         <Card className="p-4">
           <h5 className="mb-3 font-medium">Current Credit Balance</h5>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="text-center rounded border p-3">
-              <div className="font-bold text-lg">{subscription.messageCredits || 0}</div>
+          <div className="grid grid-cols-1 gap-4 xs:grid-cols-2 text-sm">
+            <div className="rounded border p-3 text-center">
+              <div className="font-bold text-lg">
+                {subscription.messageCredits || 0}
+              </div>
               <div className="text-muted-foreground">Standard Credits</div>
             </div>
-            <div className="text-center rounded border p-3">
-              <div className="font-bold text-lg">{subscription.premiumMessageCredits || 0}</div>
+            <div className="rounded border p-3 text-center">
+              <div className="font-bold text-lg">
+                {subscription.premiumMessageCredits || 0}
+              </div>
               <div className="text-muted-foreground">Premium Credits</div>
             </div>
           </div>
@@ -534,7 +564,10 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
           <h5 className="mb-3 font-medium">Recent Purchases</h5>
           <div className="space-y-2">
             {purchaseHistory.slice(0, 3).map((purchase) => (
-              <div key={purchase.id} className="flex items-center justify-between border-b pb-2 text-sm">
+              <div
+                className="flex items-center justify-between border-b pb-2 text-sm"
+                key={purchase.id}
+              >
                 <div>
                   <div className="font-medium">
                     {purchase.standardCredits + purchase.premiumCredits} credits
@@ -545,9 +578,11 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
                 </div>
                 <div className="text-right">
                   <div className="font-medium">{purchase.priceSOL} SOL</div>
-                  <Badge 
-                    size="sm" 
-                    variant={purchase.status === 'confirmed' ? 'default' : 'secondary'}
+                  <Badge
+                    size="sm"
+                    variant={
+                      purchase.status === 'confirmed' ? 'default' : 'secondary'
+                    }
                   >
                     {purchase.status}
                   </Badge>
@@ -558,17 +593,18 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
         </Card>
       )}
 
-      <div className="flex justify-end space-x-3">
-        <Button onClick={handleClose} variant="outline">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <Button className="w-full sm:w-auto" onClick={handleClose} variant="outline">
           Cancel
         </Button>
         <Button
-          className="bg-gradient-to-r from-green-500 to-green-600"
+          className="bg-gradient-to-r from-green-500 to-green-600 w-full sm:w-auto"
           disabled={isProcessing}
           onClick={handlePurchase}
         >
           {isProcessing && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-          Purchase {numberOfPacks} Pack{numberOfPacks > 1 ? 's' : ''} • {totalCost} SOL
+          Purchase {numberOfPacks} Pack{numberOfPacks > 1 ? 's' : ''} •{' '}
+          {totalCost} SOL
         </Button>
       </div>
     </div>
@@ -647,12 +683,15 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
             <div className="mt-1 rounded-lg border bg-white p-3 font-mono text-sm dark:bg-gray-900">
               <div className="flex items-center justify-between">
                 <span className="break-all">
-                  {solanaConfig.paymentAddress || 'Payment address not configured'}
+                  {solanaConfig.paymentAddress ||
+                    'Payment address not configured'}
                 </span>
                 <Button
                   disabled={!solanaConfig.paymentAddress}
                   onClick={() =>
-                    navigator.clipboard.writeText(solanaConfig.paymentAddress || '')
+                    navigator.clipboard.writeText(
+                      solanaConfig.paymentAddress || ''
+                    )
                   }
                   size="sm"
                   variant="ghost"
@@ -670,10 +709,12 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
         <AlertDescription className="text-green-800 dark:text-green-200">
           <div className="space-y-2">
             <p>
-              <strong>Important:</strong> Send exactly {totalCost} SOL to avoid processing delays.
+              <strong>Important:</strong> Send exactly {totalCost} SOL to avoid
+              processing delays.
             </p>
             <p>
-              Your message credits will be added automatically once payment is confirmed.
+              Your message credits will be added automatically once payment is
+              confirmed.
             </p>
           </div>
         </AlertDescription>
@@ -734,7 +775,9 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
             onClick={() =>
               window.open(
                 `https://explorer.solana.com/tx/${paymentDetails.txSignature}${
-                  solanaConfig.network !== 'mainnet-beta' ? `?cluster=${solanaConfig.network}` : ''
+                  solanaConfig.network !== 'mainnet-beta'
+                    ? `?cluster=${solanaConfig.network}`
+                    : ''
                 }`,
                 '_blank'
               )
@@ -800,7 +843,8 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
       <div>
         <h3 className="mb-2 font-semibold text-xl">Purchase Failed</h3>
         <p className="mb-4 text-muted-foreground">
-          {error || 'There was an issue processing your purchase. Please try again.'}
+          {error ||
+            'There was an issue processing your purchase. Please try again.'}
         </p>
 
         <div className="flex flex-col space-y-3">
@@ -829,7 +873,7 @@ export function MessageCreditsModal({ isOpen, onClose }: MessageCreditsModalProp
 
   return (
     <Dialog onOpenChange={handleClose} open={isOpen}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Plus className="h-5 w-5" />

@@ -37,7 +37,7 @@ import {
   statusConfig,
 } from '@/lib/constants/roadmap-data';
 import { cn } from '@/lib/utils';
-import SiteLinksSection from '../(landing)/components/SiteLinksSection';
+import SiteLinksSection from '../(landing)/components/siteLinksSection';
 
 type FeatureStatus = 'completed' | 'in-progress' | 'upcoming';
 type ViewMode = 'timeline' | 'kanban' | 'list';

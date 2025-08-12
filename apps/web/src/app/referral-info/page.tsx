@@ -23,7 +23,7 @@ import LandingHeader from '@/components/landing/landing-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import SiteLinksSection from '../(landing)/components/SiteLinksSection';
+import SiteLinksSection from '../(landing)/components/siteLinksSection';
 
 export default function ReferralInfoPage() {
   const subscriptionStatus = useQuery(api.subscriptions.getSubscriptionStatus);

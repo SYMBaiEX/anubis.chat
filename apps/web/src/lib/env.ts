@@ -98,7 +98,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_SOLANA_NETWORK: z
     .enum(['mainnet-beta', 'testnet', 'devnet', 'localhost'])
     .default('devnet'),
-  NEXT_PUBLIC_SOLANA_RPC_HOST: z
+  NEXT_PUBLIC_SOLANA_RPC_URL: z
     .string()
     .url()
     .default('https://api.devnet.solana.com'),
@@ -185,7 +185,7 @@ function parseEnv() {
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SOLANA_NETWORK: process.env.NEXT_PUBLIC_SOLANA_NETWORK,
-    NEXT_PUBLIC_SOLANA_RPC_HOST: process.env.NEXT_PUBLIC_SOLANA_RPC_HOST,
+    NEXT_PUBLIC_SOLANA_RPC_URL: process.env.NEXT_PUBLIC_SOLANA_RPC_URL,
     NEXT_PUBLIC_APP_DOMAIN: process.env.NEXT_PUBLIC_APP_DOMAIN,
     NEXT_PUBLIC_SOLANA_PAYMENT_ADDRESS:
       process.env.NEXT_PUBLIC_SOLANA_PAYMENT_ADDRESS,
@@ -316,8 +316,7 @@ export const storageConfig = {
 // Solana configuration
 export const solanaConfig = {
   network: env.NEXT_PUBLIC_SOLANA_NETWORK,
-  rpcHost: env.NEXT_PUBLIC_SOLANA_RPC_HOST,
-  rpcUrl: env.NEXT_PUBLIC_SOLANA_RPC_HOST, // Add rpcUrl alias for consistency
+  rpcUrl: env.NEXT_PUBLIC_SOLANA_RPC_URL,
   appDomain: env.NEXT_PUBLIC_APP_DOMAIN,
   paymentAddress: env.NEXT_PUBLIC_SOLANA_PAYMENT_ADDRESS,
   commitment: env.NEXT_PUBLIC_SOLANA_COMMITMENT,
