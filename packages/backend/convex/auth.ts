@@ -238,7 +238,7 @@ export const verifyAndSignIn = internalMutation({
         : undefined,
       preferences: {
         theme: 'dark',
-        aiModel: 'gpt-4o',
+        aiModel: 'gpt-5-mini',
         notifications: true,
         language: 'en',
         temperature: 0.7,

@@ -4,7 +4,7 @@ import { api } from '@convex/_generated/api';
 import { useQuery } from 'convex/react';
 import { Bot, Calendar, MessageSquare, TrendingUp, Zap } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 // UsageIndicator is only used inside cards below
 import { SubscriptionCard } from '@/components/dashboard/subscription-card';
@@ -31,6 +31,60 @@ export default function DashboardPage() {
     api.subscriptions.getMessageCreditPurchases,
     user ? { limit: 5 } : 'skip'
   );
+  const creditsSummary = useQuery(
+    api.subscriptions.getMessageCreditsSummary,
+    {}
+  );
+  const subscriptionPayments = useQuery(
+    api.subscriptions.getSubscriptionPayments,
+    user ? { limit: 5 } : 'skip'
+  );
+
+  type RecentPurchaseItem =
+    | {
+        kind: 'subscription';
+        id: string;
+        title: string;
+        amountSol: number;
+        status: 'pending' | 'confirmed' | 'failed' | 'refunded';
+        date: number;
+      }
+    | {
+        kind: 'credits';
+        id: string;
+        title: string;
+        amountSol: number;
+        status: 'pending' | 'confirmed' | 'failed' | 'refunded';
+        date: number;
+        totalCredits: number;
+      };
+
+  const recentPurchases: RecentPurchaseItem[] = useMemo(() => {
+    const subRows: RecentPurchaseItem[] = (subscriptionPayments || []).map(
+      (p) => ({
+        kind: 'subscription',
+        id: p.id as string,
+        title: `${String(p.tier).toUpperCase()} plan`,
+        amountSol: p.amountSol as number,
+        status: p.status as RecentPurchaseItem['status'],
+        date: p.paymentDate as number,
+      })
+    );
+    const creditRows: RecentPurchaseItem[] = (purchases || []).map(
+      (purchase) => ({
+        kind: 'credits',
+        id: purchase.id as string,
+        title: 'Message credits',
+        amountSol: purchase.priceSOL as number,
+        status: purchase.status as RecentPurchaseItem['status'],
+        date: purchase.createdAt as number,
+        totalCredits:
+          (purchase.standardCredits as number) +
+          (purchase.premiumCredits as number),
+      })
+    );
+    return [...subRows, ...creditRows].sort((a, b) => b.date - a.date);
+  }, [subscriptionPayments, purchases]);
 
   // Tier helpers moved into SubscriptionCard
 
@@ -281,40 +335,96 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Recent Credit Purchases */}
-        {purchases && purchases.length > 0 && (
+        {/* Purchased Credits Progress */}
+        {creditsSummary && (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Card className="border-green-600/30 bg-green-600/10 p-2.5 transition-colors hover:ring-1 hover:ring-green-600/30 dark:bg-green-600/15">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-[11px] text-muted-foreground sm:text-xs md:text-sm">
+                    Purchased Standard Credits
+                  </h3>
+                  <p className="font-bold text-lg sm:text-xl md:text-2xl">
+                    {creditsSummary.standardRemaining}/
+                    {creditsSummary.totalStandardPurchased}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-1.5 sm:mt-2">
+                <Progress
+                  className="h-1 sm:h-1.5"
+                  value={
+                    creditsSummary.totalStandardPurchased > 0
+                      ? (creditsSummary.standardRemaining /
+                          creditsSummary.totalStandardPurchased) *
+                        100
+                      : 0
+                  }
+                />
+              </div>
+            </Card>
+
+            <Card className="border-purple-600/30 bg-purple-600/10 p-2.5 transition-colors hover:ring-1 hover:ring-purple-600/30 dark:bg-purple-600/15">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-[11px] text-muted-foreground sm:text-xs md:text-sm">
+                    Purchased Premium Credits
+                  </h3>
+                  <p className="font-bold text-lg sm:text-xl md:text-2xl">
+                    {creditsSummary.premiumRemaining}/
+                    {creditsSummary.totalPremiumPurchased}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-1.5 sm:mt-2">
+                <Progress
+                  className="h-1 sm:h-1.5"
+                  value={
+                    creditsSummary.totalPremiumPurchased > 0
+                      ? (creditsSummary.premiumRemaining /
+                          creditsSummary.totalPremiumPurchased) *
+                        100
+                      : 0
+                  }
+                />
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Recent Purchases (latest -> oldest) */}
+        {recentPurchases.length > 0 && (
           <Card className="p-4 ring-1 ring-primary/10">
-            <h3 className="mb-3 font-semibold text-base">
-              Recent Credit Purchases
-            </h3>
+            <h3 className="mb-3 font-semibold text-base">Recent Purchases</h3>
             <div className="space-y-2">
-              {purchases.map((purchase) => (
+              {recentPurchases.map((item) => (
                 <div
                   className="flex items-center justify-between border-b pb-2 text-sm last:border-b-0 last:pb-0"
-                  key={purchase.id}
+                  key={`${item.kind}-${item.id}`}
                 >
                   <div>
                     <div className="font-medium">
-                      {purchase.standardCredits + purchase.premiumCredits}{' '}
-                      credits
+                      {item.kind === 'subscription'
+                        ? item.title
+                        : `${item.title} (${item.totalCredits} credits)`}
                     </div>
                     <div className="text-muted-foreground text-xs">
-                      {new Date(purchase.createdAt).toLocaleString()}
+                      {new Date(item.date).toLocaleString()}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-medium">{purchase.priceSOL} SOL</div>
+                    <div className="font-medium">{item.amountSol} SOL</div>
                     <Badge
                       size="sm"
                       variant={
-                        purchase.status === 'confirmed'
+                        item.status === 'confirmed'
                           ? 'default'
-                          : purchase.status === 'pending'
+                          : item.status === 'pending'
                             ? 'secondary'
                             : 'destructive'
                       }
                     >
-                      {purchase.status}
+                      {item.status}
                     </Badge>
                   </div>
                 </div>

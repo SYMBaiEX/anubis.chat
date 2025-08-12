@@ -236,6 +236,38 @@ export const canUseModel = query({
   },
 });
 
+// Get user's subscription payment history
+export const getSubscriptionPayments = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return null;
+    }
+
+    const limit = args.limit || 20;
+
+    const payments = await ctx.db
+      .query('subscriptionPayments')
+      .withIndex('by_user', (q) => q.eq('userId', user._id))
+      .order('desc')
+      .take(limit);
+
+    return payments.map((p) => ({
+      id: p._id,
+      tier: p.tier,
+      amountSol: p.amountSol,
+      status: p.status,
+      txSignature: p.txSignature,
+      paymentDate: p.paymentDate,
+      periodStart: p.periodStart,
+      periodEnd: p.periodEnd,
+    }));
+  },
+});
+
 // Track message usage by wallet address (for HTTP actions)
 export const trackMessageUsageByWallet = mutation({
   args: {
