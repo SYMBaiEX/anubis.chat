@@ -35,7 +35,7 @@ export type UseCommandPaletteProps = {
   onOpenPreferences?: () => void;
   currentChatId?: string;
   chats?: { id: string; title: string }[];
-}
+};
 
 export function useCommandPalette({
   onNewChat,
@@ -69,37 +69,37 @@ export function useCommandPalette({
 
   // Command handlers map with type-safe keys
   const commandHandlers: Partial<Record<CommandId, () => void>> = {
-    // Papyrus Commands
-    'new-papyrus': () => {
+    // Chat Commands
+    'new-chat': () => {
       onNewChat?.();
-      toast.success('Creating new papyrus...');
+      toast.success('New chat created');
     },
-    'clear-papyrus': () => {
+    'clear-chat': () => {
       if (currentChatId) {
         onClearChat?.();
-        toast.success('Papyrus cleared');
+        toast.success('Chat cleared');
       }
     },
-    'delete-papyrus': () => {
+    'delete-chat': () => {
       if (currentChatId) {
         onDeleteChat?.();
-        toast.success('Papyrus deleted');
+        toast.success('Chat deleted');
       }
     },
-    'rename-papyrus': () => {
+    'rename-chat': () => {
       if (currentChatId) {
         onRenameChat?.();
       }
     },
-    'duplicate-papyrus': () => {
+    'duplicate-chat': () => {
       if (currentChatId) {
         onDuplicateChat?.();
-        toast.success('Papyrus duplicated');
+        toast.success('Chat duplicated');
       }
     },
 
     // Navigation
-    'open-book-of-dead': () => {
+    'open-command-palette': () => {
       setIsCommandPaletteOpen((prev) => !prev);
     },
     'focus-input': () => {
@@ -109,7 +109,7 @@ export function useCommandPalette({
         messageInputRef.current?.focus();
       });
     },
-    'search-scrolls': () => {
+    'search-conversations': () => {
       onSearchConversations?.();
     },
     'toggle-sidebar': () => {
@@ -121,56 +121,56 @@ export function useCommandPalette({
     'scroll-to-top': () => {
       onScrollToTop?.();
     },
-    'previous-chamber': () => {
+    'previous-chat': () => {
       if (currentChatId && chats.length > 0) {
         const currentIndex = chats.findIndex((c) => c.id === currentChatId);
         if (currentIndex > 0) {
           onSelectChat?.(chats[currentIndex - 1].id);
-          toast.success('Previous chamber opened');
+          toast.success('Previous chat opened');
         } else if (currentIndex === 0) {
           // Wrap to last chamber
           onSelectChat?.(chats[chats.length - 1].id);
-          toast.success('Wrapped to last chamber');
+          toast.success('Wrapped to last chat');
         }
       }
     },
-    'next-chamber': () => {
+    'next-chat': () => {
       if (currentChatId && chats.length > 0) {
         const currentIndex = chats.findIndex((c) => c.id === currentChatId);
         if (currentIndex < chats.length - 1) {
           onSelectChat?.(chats[currentIndex + 1].id);
-          toast.success('Next chamber opened');
+          toast.success('Next chat opened');
         } else if (currentIndex === chats.length - 1) {
           // Wrap to first chamber
           onSelectChat?.(chats[0].id);
-          toast.success('Wrapped to first chamber');
+          toast.success('Wrapped to first chat');
         }
       }
     },
 
-    // Divine Powers
-    'summon-anubis': () => {
+    // AI & Models
+    'select-agent': () => {
       onSelectAgent?.();
-      toast.success('Summoning Anubis...');
+      toast.success('Agent selector opened');
     },
-    'divine-models': () => {
+    'select-model': () => {
       onSelectModel?.();
     },
     'toggle-reasoning': () => {
       onToggleReasoning?.();
-      toast.success('Deep wisdom toggled');
+      toast.success('Reasoning toggled');
     },
     'quick-claude': () => {
       onQuickSelectClaude?.();
-      toast.success('Claude summoned');
+      toast.success('Switched to Claude');
     },
     'quick-gpt': () => {
       onQuickSelectGPT?.();
-      toast.success('GPT summoned');
+      toast.success('Switched to GPT');
     },
 
-    // Temple Settings
-    'temple-settings': () => {
+    // Settings
+    'open-settings': () => {
       onOpenSettings?.();
     },
     'toggle-theme': () => {
@@ -178,47 +178,56 @@ export function useCommandPalette({
       setTheme(nextTheme);
       toast.success(
         nextTheme === 'light'
-          ? "Ra's light illuminates your path"
-          : "Osiris' shadow embraces you"
+          ? 'Switched to light theme'
+          : 'Switched to dark theme'
       );
     },
-    'upload-papyrus': () => {
+    'upload-file': () => {
       onUploadFile?.();
     },
     'export-chat': () => {
       if (currentChatId) {
         onExportChat?.();
-        toast.success('Sacred texts exported');
+        toast.success('Chat exported');
       }
     },
-    'preferences': () => {
+    'open-preferences': () => {
       onOpenPreferences?.();
     },
 
-    // Sacred Knowledge
-    'commands-maat': () => {
+    // Help & Info
+    'open-shortcuts': () => {
       setIsShortcutsModalOpen(true);
     },
-    'divine-guidance': () => {
-      window.open('/help', '_blank', 'noopener,noreferrer');
-    },
-    'roadmap-scroll': () => {
+    'open-roadmap': () => {
       router.push('/roadmap');
     },
-    'escape-underworld': () => {
-      // Close any open dialogs
-      setIsCommandPaletteOpen(false);
-      setIsShortcutsModalOpen(false);
+
+    // Navigation helpers
+    'open-dashboard': () => {
+      router.push('/dashboard');
+    },
+    'open-chats': () => {
+      router.push('/chat');
+    },
+    'open-agents': () => {
+      router.push('/agents');
+    },
+    'open-account': () => {
+      router.push('/account');
+    },
+    'open-memories': () => {
+      router.push('/memories');
     },
   };
 
-  // Handle chamber navigation (1-9)
+  // Handle direct chat switching (1-9)
   for (let i = 1; i <= 9; i++) {
-    commandHandlers[`chamber-${i}`] = () => {
+    commandHandlers[`switch-chat-${i}` as CommandId] = () => {
       const chatIndex = i - 1;
       if (chats[chatIndex]) {
         onSelectChat?.(chats[chatIndex].id);
-        toast.success(`Entering chamber ${i}`);
+        toast.success(`Switched to chat ${i}`);
       }
     };
   }
@@ -232,10 +241,8 @@ export function useCommandPalette({
       const handler = commandHandlers[commandId];
       if (handler) {
         handler();
-      } else {
-        if (process.env.NODE_ENV !== 'production') {
-          toast.error(`Unknown command: ${commandId}`);
-        }
+      } else if (process.env.NODE_ENV !== 'production') {
+        toast.error(`Unknown command: ${commandId}`);
       }
     },
     [
@@ -277,12 +284,12 @@ export function useCommandPalette({
         if (!command.shortcut || command.shortcut.length === 0) {
           return acc;
         }
-        
+
         // Skip if any shortcut part is empty
-        if (command.shortcut.some(key => !key || key.trim() === '')) {
+        if (command.shortcut.some((key) => !key || key.trim() === '')) {
           return acc;
         }
-        
+
         const shortcutKey = command.shortcut.join('+');
         acc[shortcutKey] = (e: KeyboardEvent) => {
           e.preventDefault();

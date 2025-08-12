@@ -16,11 +16,11 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+  Root as Accordion,
+  Content as AccordionContent,
+  Item as AccordionItem,
+  Trigger as AccordionTrigger,
+} from '@radix-ui/react-accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -170,13 +170,12 @@ export function ChatSettingsPanel({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="temperature">Temperature</Label>
+              <span className="font-medium text-sm">Temperature</span>
               <span className="text-muted-foreground text-sm">
                 {localSettings.temperature}
               </span>
             </div>
             <Slider
-              id="temperature"
               max={2}
               min={0}
               onValueChange={([value]) => handleChange('temperature', value)}
@@ -191,13 +190,12 @@ export function ChatSettingsPanel({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="maxTokens">Max Tokens</Label>
+              <span className="font-medium text-sm">Max Tokens</span>
               <span className="text-muted-foreground text-sm">
                 {localSettings.maxTokens}
               </span>
             </div>
             <Slider
-              id="maxTokens"
               max={4000}
               min={100}
               onValueChange={([value]) => handleChange('maxTokens', value)}
@@ -231,13 +229,12 @@ export function ChatSettingsPanel({
               <AccordionContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="topP">Top P</Label>
+                    <span className="font-medium text-sm">Top P</span>
                     <span className="text-muted-foreground text-sm">
                       {localSettings.topP}
                     </span>
                   </div>
                   <Slider
-                    id="topP"
                     max={1}
                     min={0}
                     onValueChange={([value]) => handleChange('topP', value)}
@@ -248,13 +245,14 @@ export function ChatSettingsPanel({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="frequencyPenalty">Frequency Penalty</Label>
+                    <span className="font-medium text-sm">
+                      Frequency Penalty
+                    </span>
                     <span className="text-muted-foreground text-sm">
                       {localSettings.frequencyPenalty}
                     </span>
                   </div>
                   <Slider
-                    id="frequencyPenalty"
                     max={2}
                     min={-2}
                     onValueChange={([value]) =>
@@ -267,13 +265,14 @@ export function ChatSettingsPanel({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="presencePenalty">Presence Penalty</Label>
+                    <span className="font-medium text-sm">
+                      Presence Penalty
+                    </span>
                     <span className="text-muted-foreground text-sm">
                       {localSettings.presencePenalty}
                     </span>
                   </div>
                   <Slider
-                    id="presencePenalty"
                     max={2}
                     min={-2}
                     onValueChange={([value]) =>
@@ -434,13 +433,12 @@ export function ChatSettingsPanel({
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="contextWindow">Context Window</Label>
+                <span className="font-medium text-sm">Context Window</span>
                 <span className="text-muted-foreground text-sm">
                   {localSettings.contextWindow} messages
                 </span>
               </div>
               <Slider
-                id="contextWindow"
                 max={50}
                 min={1}
                 onValueChange={([value]) =>

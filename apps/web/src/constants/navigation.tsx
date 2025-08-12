@@ -65,6 +65,15 @@ const allItems: NavItem[] = [
     inSidebar: true,
   },
   {
+    label: 'Prompt Library',
+    href: '/book-of-the-dead',
+    icon: Workflow,
+    requiresAuth: true,
+    adminOnly: true,
+    inHeader: true,
+    inSidebar: true,
+  },
+  {
     label: 'Referrals',
     href: '/referrals',
     icon: Users,

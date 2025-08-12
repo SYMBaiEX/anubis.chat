@@ -15,7 +15,6 @@ import {
 import { useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -196,13 +195,25 @@ export function ChatSearchBar({
                             : 'From'}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent align="start" className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          onSelect={(date) =>
-                            setFilters((prev) => ({ ...prev, dateFrom: date }))
+                      <PopoverContent align="start" className="w-auto p-2">
+                        <input
+                          aria-label="Select start date"
+                          className="rounded-md border px-2 py-1 text-sm"
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setFilters((prev) => ({
+                              ...prev,
+                              dateFrom: value
+                                ? new Date(`${value}T00:00:00`)
+                                : undefined,
+                            }));
+                          }}
+                          type="date"
+                          value={
+                            filters.dateFrom
+                              ? format(filters.dateFrom, 'yyyy-MM-dd')
+                              : ''
                           }
-                          selected={filters.dateFrom}
                         />
                       </PopoverContent>
                     </Popover>
@@ -218,13 +229,25 @@ export function ChatSearchBar({
                           {filters.dateTo ? format(filters.dateTo, 'PP') : 'To'}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent align="start" className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          onSelect={(date) =>
-                            setFilters((prev) => ({ ...prev, dateTo: date }))
+                      <PopoverContent align="start" className="w-auto p-2">
+                        <input
+                          aria-label="Select end date"
+                          className="rounded-md border px-2 py-1 text-sm"
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setFilters((prev) => ({
+                              ...prev,
+                              dateTo: value
+                                ? new Date(`${value}T23:59:59`)
+                                : undefined,
+                            }));
+                          }}
+                          type="date"
+                          value={
+                            filters.dateTo
+                              ? format(filters.dateTo, 'yyyy-MM-dd')
+                              : ''
                           }
-                          selected={filters.dateTo}
                         />
                       </PopoverContent>
                     </Popover>

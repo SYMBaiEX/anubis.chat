@@ -84,6 +84,7 @@ export interface AuthSession {
 // =============================================================================
 
 export interface UserProfile {
+  _id: string;
   walletAddress: string;
   publicKey: string;
   displayName?: string;

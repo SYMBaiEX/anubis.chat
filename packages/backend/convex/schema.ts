@@ -506,6 +506,45 @@ export default defineSchema({
       filterFields: ['ownerId', 'type', 'isPublic'],
     }),
 
+  // =============================================================================
+  // Book of the Dead (Prompts)
+  // =============================================================================
+
+  // Hierarchical folders to organize prompts
+  promptFolders: defineTable({
+    ownerId: v.string(), // users._id
+    name: v.string(),
+    parentId: v.optional(v.id('promptFolders')),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_owner', ['ownerId', 'updatedAt'])
+    .index('by_parent', ['ownerId', 'parentId', 'updatedAt']),
+
+  // Saved prompts
+  prompts: defineTable({
+    ownerId: v.string(), // users._id
+    title: v.string(),
+    content: v.string(),
+    folderId: v.optional(v.id('promptFolders')),
+    usageCount: v.number(),
+    lastUsedAt: v.optional(v.number()),
+    isArchived: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_owner', ['ownerId', 'updatedAt'])
+    .index('by_folder', ['ownerId', 'folderId', 'updatedAt'])
+    .index('by_usage', ['ownerId', 'usageCount'])
+    .searchIndex('search_title', {
+      searchField: 'title',
+      filterFields: ['ownerId', 'isArchived'],
+    })
+    .searchIndex('search_content', {
+      searchField: 'content',
+      filterFields: ['ownerId', 'isArchived'],
+    }),
+
   // Document chunks for RAG retrieval
   documentChunks: defineTable({
     documentId: v.id('documents'),

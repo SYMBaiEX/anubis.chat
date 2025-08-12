@@ -25,11 +25,11 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+  Root as Accordion,
+  Content as AccordionContent,
+  Item as AccordionItem,
+  Trigger as AccordionTrigger,
+} from '@radix-ui/react-accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -194,6 +194,7 @@ export function AgentToolBuilder({
       headers: newTool.headers,
       auth: newTool.auth,
       parameters: newTool.parameters,
+      config: {},
       enabled: true,
     };
 

@@ -1,10 +1,9 @@
 'use client';
 
+import { motion, useScroll, useTransform } from 'framer-motion';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AnubisAurora from '@/components/AnubisAurora';
-import { RosettaHieroglyphs } from '@/components/effects/rosetta-hieroglyphs';
-import { HieroglyphicAnimations } from '@/components/landing/hieroglyphic-animations';
 import { TombBackground } from '@/components/landing/tomb-background';
 
 export type AnimationIntensity = 'low' | 'medium' | 'high';
@@ -20,64 +19,97 @@ export type AnimationIntensity = 'low' | 'medium' | 'high';
  * Notes:
  * - Respects prefers-reduced-motion and disables animations when enabled
  * - Uses IntersectionObserver to pause animations when section is off-screen
- * - Decorative layers can be toggled via props:
- *   - includeRosetta (default false) shows subtle Rosetta Stone overlay
- *   - includeHieroglyphs (default true) renders ambient hieroglyphic animations
+ * - Decorative layers can be toggled via props for tomb background
  */
 interface AnimatedSectionProps
   extends Omit<React.HTMLAttributes<HTMLElement>, 'children' | 'className'> {
   children: React.ReactNode;
   className?: string;
+  /** Whether to apply the themed surface background (papyrus/basalt). Defaults to true */
+  useSurface?: boolean;
   auroraVariant?: 'primary' | 'gold' | undefined;
+  auroraPosition?: 'top' | 'bottom';
   includeTomb?: boolean;
-  includeRosetta?: boolean;
-  /** Toggle decorative hieroglyphic effects (default: true) */
-  includeHieroglyphs?: boolean;
-  glyphIntensity?: AnimationIntensity;
   dustIntensity?: AnimationIntensity;
   edgeMask?: boolean;
   /** Allow background visuals to bleed beyond section bounds */
   allowOverlap?: boolean;
   /** Adds soft top/bottom gradient fades to avoid hard seams between sections (default: true) */
   softEdges?: boolean;
+  /** Control the top soft edge independently (defaults to softEdges) */
+  softTopEdge?: boolean;
+  /** Control the bottom soft edge independently (defaults to softEdges) */
+  softBottomEdge?: boolean;
+  /** Optional parallax strength (px). 0 disables. */
+  parallaxY?: number;
+  /** Reveal animation strategy */
+  revealStrategy?: 'none' | 'inview' | 'scroll';
+  /** Distance in px to slide when revealing */
+  revealDistance?: number;
+  /** Scroll reveal curve control points (0-1). Defaults to [0,0.3,0.6,1] */
+  revealCurve?: [number, number, number, number];
+  /** Force aurora to be visible regardless of scroll state */
+  forceAurora?: boolean;
 }
 
 export default function AnimatedSection({
   children,
   className,
+  useSurface = true,
   auroraVariant,
+  auroraPosition = 'top',
   includeTomb = false,
-  includeRosetta = false,
-  includeHieroglyphs = false,
-  glyphIntensity = 'low',
   dustIntensity = 'low',
   edgeMask = false,
   allowOverlap = false,
   softEdges = true,
+  softTopEdge,
+  softBottomEdge,
+  parallaxY = 0,
+  revealStrategy = 'none',
+  revealDistance = 24,
+  revealCurve = [0, 0.3, 0.6, 1],
+  forceAurora = false,
   ...rest
 }: AnimatedSectionProps) {
   const ref = useRef<HTMLElement | null>(null);
-  const [active, setActive] = useState<boolean>(true);
-
-  const effectiveIntensity = useMemo(() => {
-    // Base on props
-    let glyph = glyphIntensity;
-    let dust = dustIntensity;
-
-    // Reduce for small screens
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      glyph = 'low';
-      dust = 'low';
-    }
-    // Reduce for low device memory if available
-    const dm = (typeof navigator !== 'undefined' &&
-      (navigator as any).deviceMemory) as number | undefined;
-    if (dm && dm < 4) {
-      glyph = 'low';
-      dust = 'low';
-    }
-    return { glyph, dust } as const;
-  }, [glyphIntensity, dustIntensity]);
+  // Start inactive to prevent background aurora from rendering before the
+  // section is actually in view (avoids glow bleeding from off-screen sections)
+  const [active, setActive] = useState<boolean>(false);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start end', 'end start'],
+  });
+  const translateY = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [parallaxY, -parallaxY]
+  );
+  // Scroll-linked reveal transforms (reversible)
+  const yReveal = useTransform(scrollYProgress, revealCurve, [
+    revealDistance,
+    revealDistance * 0.5,
+    0,
+    0,
+  ]);
+  const opacityReveal = useTransform(
+    scrollYProgress,
+    revealCurve,
+    [0, 0.3, 0.9, 1]
+  );
+  // Track if the user has scrolled the page at least once to defer aurora/glow
+  // rendering on first load (prevents initial glow flash on top sections)
+  const [hasScrolled, setHasScrolled] = useState<boolean>(false);
+  useEffect(() => {
+    const updateHasScrolled = (): void => {
+      if (window.scrollY > 0) {
+        setHasScrolled(true);
+      }
+    };
+    updateHasScrolled();
+    window.addEventListener('scroll', updateHasScrolled, { passive: true });
+    return () => window.removeEventListener('scroll', updateHasScrolled);
+  }, []);
 
   useEffect(() => {
     if (!ref.current) {
@@ -103,11 +135,17 @@ export default function AnimatedSection({
     return () => observer.disconnect();
   }, []);
 
+  const motionEnabled = active;
+  const effectiveParallaxStyle =
+    motionEnabled && parallaxY ? { y: translateY } : undefined;
+  const useInViewReveal = motionEnabled && revealStrategy === 'inview';
+  const useScrollReveal = motionEnabled && revealStrategy === 'scroll';
+
   return (
-    <section
-      className={`relative ${allowOverlap ? 'overflow-visible' : 'overflow-hidden'} light:papyrus-surface dark:basalt-surface bg-background ${className ?? ''}`}
+    <motion.section
+      className={`relative ${allowOverlap ? 'overflow-visible' : 'overflow-hidden'} ${useSurface ? 'light:papyrus-surface dark:basalt-surface' : ''} bg-background ${className ?? ''}`}
       ref={ref}
-      style={{ contain: 'paint' }}
+      style={{ contain: 'paint', position: 'relative' }}
       {...rest}
     >
       {/* Background layers (non-interactive) */}
@@ -125,37 +163,55 @@ export default function AnimatedSection({
         }
       >
         {includeTomb && <TombBackground showAccentGlow={false} />}
-        {includeRosetta && <RosettaHieroglyphs />}
-        {includeHieroglyphs && (
-          <HieroglyphicAnimations
-            intensity={effectiveIntensity.glyph}
-            shouldAnimate={active}
-          />
-        )}
       </div>
-      {auroraVariant !== undefined &&
+      {(forceAurora ||
+        (motionEnabled &&
+          auroraVariant !== undefined &&
+          (hasScrolled || useInViewReveal || useScrollReveal))) &&
         (auroraVariant ? (
-          <AnubisAurora variant={auroraVariant} />
+          <AnubisAurora position={auroraPosition} variant={auroraVariant} />
         ) : (
-          <AnubisAurora />
+          <AnubisAurora position={auroraPosition} />
         ))}
 
       {/* Soft section transitions to avoid hard seams */}
-      {softEdges ? (
-        <>
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-background via-background/60 to-transparent"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background via-background/60 to-transparent"
-          />
-        </>
+      {(softTopEdge ?? softEdges) ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-background via-background/60 to-transparent"
+        />
+      ) : null}
+      {(softBottomEdge ?? softEdges) ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background via-background/60 to-transparent"
+        />
       ) : null}
 
       {/* Foreground content */}
-      <div className="relative z-10">{children}</div>
-    </section>
+      <motion.div className="relative z-10" style={effectiveParallaxStyle}>
+        <motion.div
+          initial={
+            useInViewReveal ? { opacity: 0, y: revealDistance } : undefined
+          }
+          style={
+            useScrollReveal ? { y: yReveal, opacity: opacityReveal } : undefined
+          }
+          transition={
+            useInViewReveal
+              ? { type: 'spring', bounce: 0.25, duration: 1.2 }
+              : undefined
+          }
+          viewport={
+            useInViewReveal
+              ? { margin: '-40% 0px -40% 0px', once: true }
+              : undefined
+          }
+          whileInView={useInViewReveal ? { opacity: 1, y: 0 } : undefined}
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    </motion.section>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { BaseComponentProps } from '@/lib/types/components';
@@ -30,17 +31,12 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
       <ReactMarkdown
         components={{
           // Code blocks with syntax highlighting
-          code: ({
-            node,
-            inline,
-            className: codeClassName,
-            children,
-            ...props
-          }) => {
+          code: ({ node, className: codeClassName, children, ...props }) => {
             const match = /language-(\w+)/.exec(codeClassName || '');
             const language = match ? match[1] : '';
+            const isBlock = Boolean(match);
 
-            if (!inline && enableCodeBlocks) {
+            if (isBlock && enableCodeBlocks) {
               return (
                 <CodeBlock
                   code={String(children).replace(/\n$/, '')}
@@ -157,14 +153,19 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
           em: ({ children }) => <em className="italic">{children}</em>,
 
           // Custom image styling
-          img: ({ src, alt }) => (
-            <img
-              alt={alt ?? 'Image'}
-              className="max-w-full rounded-lg border border-muted"
-              loading="lazy"
-              src={src}
-            />
-          ),
+          img: ({ src, alt }) => {
+            const safeSrc = typeof src === 'string' ? src : '';
+            return (
+              <Image
+                alt={alt ?? 'Image'}
+                className="h-auto max-w-full rounded-lg border border-muted"
+                height={600}
+                src={safeSrc}
+                unoptimized
+                width={800}
+              />
+            );
+          },
         }}
       >
         {content}

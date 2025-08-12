@@ -48,7 +48,7 @@ export interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   suggestedTier?: 'pro' | 'pro_plus';
-  trigger?: 'limit_reached' | 'feature_request' | 'manual';
+  trigger?: import('@/hooks/use-upgrade-modal').UpgradeTrigger;
 }
 
 // Subscription tier configurations
@@ -141,6 +141,11 @@ export function UpgradeModal({
 
   const selectedConfig = TIER_CONFIG[selectedTier];
   const isSendingRef = useRef(false);
+  const currentTier = subscription?.tier;
+  const isCurrentTierSelected = currentTier === selectedTier;
+  const isDowngradeSelected =
+    currentTier === 'pro_plus' && selectedTier === 'pro';
+  const canUpgrade = !(isCurrentTierSelected || isDowngradeSelected);
 
   // Initialize Solana connection
   const connection = new Connection(
@@ -188,6 +193,15 @@ export function UpgradeModal({
   }, [paymentStep, paymentDetails.txSignature, checkPaymentStatus]);
 
   const handleUpgrade = async () => {
+    if (!canUpgrade) {
+      setError(
+        isCurrentTierSelected
+          ? 'You are already on this plan.'
+          : 'Downgrades are not available from Pro+ within this flow.'
+      );
+      setPaymentStep('error');
+      return;
+    }
     if (!user) {
       setError('Please sign in first');
       return;
@@ -1076,13 +1090,15 @@ export function UpgradeModal({
                 </Button>
                 <Button
                   className={cn('bg-gradient-to-r', selectedConfig.color)}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !canUpgrade}
                   onClick={handleUpgrade}
                 >
                   {isProcessing && (
                     <Loader className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Upgrade to {selectedConfig.name}
+                  {canUpgrade
+                    ? `Upgrade to ${selectedConfig.name}`
+                    : 'Upgrade Unavailable'}
                 </Button>
               </div>
             </div>

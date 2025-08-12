@@ -23,9 +23,7 @@ export function EmptyState({
     >
       {/* Icon */}
       {icon && (
-        <div className="mb-4 text-gray-400 dark:text-gray-600">
-          {React.isValidElement(icon) ? icon : React.createElement(icon)}
-        </div>
+        <div className="mb-4 text-gray-400 dark:text-gray-600">{icon}</div>
       )}
 
       {/* Title */}

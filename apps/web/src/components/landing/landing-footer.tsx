@@ -19,7 +19,13 @@ export default function LandingFooter() {
           <span className="text-foreground/70 text-sm">
             Anubis by{' '}
             <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text font-semibold text-transparent">
-              SYMBaiEX
+              <a
+                href="https://x.com/symbiex"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                SYMBaiEX
+              </a>
             </span>
           </span>
         </div>

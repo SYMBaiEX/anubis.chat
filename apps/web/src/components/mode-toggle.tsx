@@ -12,9 +12,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { applyThemeWithTransition } from '@/lib/theme-transition';
 
-export function ModeToggle({ animated = true }: { animated?: boolean } = {}) {
+export function ModeToggle() {
   const { setTheme } = useTheme();
   const { isAuthenticated } = useAuthContext();
   const updateUserPreferences = useMutation(
@@ -32,36 +31,39 @@ export function ModeToggle({ animated = true }: { animated?: boolean } = {}) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem
-          onClick={async () => {
-            applyThemeWithTransition('light', setTheme, { animated });
+          onClick={() => {
+            setTheme('light');
+            // Update preferences asynchronously without blocking UI
             if (isAuthenticated) {
-              try {
-                await updateUserPreferences({ theme: 'light' });
-              } catch (_error) {}
+              updateUserPreferences({ theme: 'light' }).catch(() => {
+                // Silently handle errors to avoid UI blocking
+              });
             }
           }}
         >
           Light
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={async () => {
-            applyThemeWithTransition('dark', setTheme, { animated });
+          onClick={() => {
+            setTheme('dark');
+            // Update preferences asynchronously without blocking UI
             if (isAuthenticated) {
-              try {
-                await updateUserPreferences({ theme: 'dark' });
-              } catch (_error) {}
+              updateUserPreferences({ theme: 'dark' }).catch(() => {
+                // Silently handle errors to avoid UI blocking
+              });
             }
           }}
         >
           Dark
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={async () => {
-            applyThemeWithTransition('system', setTheme, { animated });
+          onClick={() => {
+            setTheme('system');
+            // Update preferences asynchronously without blocking UI
             if (isAuthenticated) {
-              try {
-                await updateUserPreferences({ theme: 'system' });
-              } catch (_error) {}
+              updateUserPreferences({ theme: 'system' }).catch(() => {
+                // Silently handle errors to avoid UI blocking
+              });
             }
           }}
         >

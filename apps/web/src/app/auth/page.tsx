@@ -21,7 +21,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { EmptyState } from '@/components/data/empty-states';
-import { RosettaHieroglyphs } from '@/components/effects/rosetta-hieroglyphs';
 import LandingFooter from '@/components/landing/landing-footer';
 import LandingHeader from '@/components/landing/landing-header';
 import { useAuthContext } from '@/components/providers/auth-provider';
@@ -109,24 +108,10 @@ export default function AuthPage() {
       <LandingHeader />
 
       {/* Background Effects */}
-      <RosettaHieroglyphs />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-background" />
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:radial-gradient(white,transparent_70%)]" />
 
-      <div className="relative z-0 mx-auto min-h-[calc(100vh-6.5rem)] w-full px-3 pt-16 pb-10 sm:px-4 md:px-6">
-        {/* Back to Home Banner */}
-        <div className="mb-6 w-full bg-gradient-to-b from-primary/5 to-transparent">
-          <div className="mx-auto max-w-6xl py-4">
-            <Link
-              className="inline-flex items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground"
-              href="/"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Home
-            </Link>
-          </div>
-        </div>
-
+      <div className="relative z-0 mx-auto min-h-screen w-full px-3 pt-16 pb-10 sm:px-4 md:px-6 lg:pt-24">
         <div className="mx-auto max-w-6xl">
           {/* Mobile Welcome Header - Only visible on mobile */}
           <div className="mb-8 block text-center lg:hidden">

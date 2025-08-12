@@ -10,8 +10,6 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
-import { BookOfTheDead } from '@/components/command-palette/book-of-the-dead';
-import { CommandsOfMaatModal } from '@/components/command-palette/commands-of-maat-modal';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import {
@@ -31,7 +29,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ModelGrid } from '@/components/ui/model-grid';
-import { useCommandPalette } from '@/hooks/use-command-palette';
+
 import { useConvexChat } from '@/hooks/use-convex-chat';
 import { useTypingIndicator } from '@/hooks/use-typing-indicator';
 import { AI_MODELS, DEFAULT_MODEL } from '@/lib/constants/ai-models';
@@ -396,76 +394,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   };
 
-  // Command Palette integration
-  const {
-    isCommandPaletteOpen,
-    setIsCommandPaletteOpen,
-    isShortcutsModalOpen,
-    setIsShortcutsModalOpen,
-    setMessageInputRef,
-  } = useCommandPalette({
-    onNewChat: handleCreateChat,
-    onSelectChat: handleChatSelect,
-    onSelectAgent: () => setShowMobileAgentSelector(true),
-    onSelectModel: () => setShowMobileModelSelector(true),
-    onOpenSettings: () => setShowMobileSettings(true),
-    onToggleSidebar: () => setSidebarOpen(!sidebarOpen),
-    onSearchConversations: () => setShowSearchDialog(true),
-    onClearChat: () => {
-      // Clear chat implementation
-      if (selectedChatId) {
-        // Add clear chat logic here
-        toast.success('Chat cleared');
-      }
-    },
-    onDeleteChat: () => {
-      if (selectedChatId) {
-        handleDeleteChat(selectedChatId);
-      }
-    },
-    onRenameChat: () => {
-      // Open rename dialog
-      toast.info('Rename chat feature coming soon');
-    },
-    onDuplicateChat: () => {
-      // Duplicate chat logic
-      toast.info('Duplicate chat feature coming soon');
-    },
-    onExportChat: () => {
-      // Export chat as markdown
-      toast.info('Export feature coming soon');
-    },
-    onFocusInput: () => {
-      // Focus will be handled by message input component
-    },
-    onScrollToBottom: () => {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-    },
-    onScrollToTop: () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    },
-    onToggleReasoning: () => {
-      // Toggle reasoning mode
-      toast.info('Reasoning mode toggle coming soon');
-    },
-    onQuickSelectClaude: () => {
-      setSelectedModel('claude-3-5-sonnet-20241022');
-    },
-    onQuickSelectGPT: () => {
-      setSelectedModel('gpt-4o');
-    },
-    onUploadFile: () => {
-      toast.info('File upload feature coming soon');
-    },
-    onOpenPreferences: () => {
-      router.push('/settings');
-    },
-    currentChatId: selectedChatId,
-    chats: chats?.map((chat) => ({
-      id: chat._id,
-      title: chat.title || 'Untitled',
-    })),
-  });
+  // Global Command Palette handles shortcuts now; local integration removed.
 
   const handleSendMessage = async (content: string, useReasoning?: boolean) => {
     if (!(selectedChatId && user && userWalletAddress)) {
@@ -960,27 +889,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         />
       )}
 
-      {/* Command Palette - Book of the Dead */}
-      <BookOfTheDead
-        chats={chats?.map((chat) => ({
-          id: chat._id,
-          title: chat.title || 'Untitled',
-        }))}
-        onNewChat={handleCreateChat}
-        onOpenChange={setIsCommandPaletteOpen}
-        onOpenSettings={() => setShowMobileSettings(true)}
-        onSelectAgent={() => setShowMobileAgentSelector(true)}
-        onSelectChat={handleChatSelect}
-        onSelectModel={() => setShowMobileModelSelector(true)}
-        onShowShortcuts={() => setIsShortcutsModalOpen(true)}
-        open={isCommandPaletteOpen}
-      />
-
-      {/* Commands of Ma'at - Shortcuts Modal */}
-      <CommandsOfMaatModal
-        isOpen={isShortcutsModalOpen}
-        onClose={() => setIsShortcutsModalOpen(false)}
-      />
+      {/* Global command palette covers this page */}
 
       {/* Upgrade Prompt Modal */}
       {showUpgradePrompt && upgradePrompt.suggestedTier && (

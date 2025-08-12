@@ -311,25 +311,6 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/30;
   }
-
-  /* Smooth Transitions */
-  /* Gate transitions via html.theme-transition */
-  html.theme-transition *,
-  html.theme-transition *::before,
-  html.theme-transition *::after {
-    transition-property:
-      color, background-color, border-color, fill, stroke, box-shadow;
-    transition-duration: 300ms;
-    transition-timing-function: var(--ease-spring);
-  }
-
-  /* Disable element-level transitions when VT is active to avoid double animations */
-  html.disable-theme-transitions *,
-  html.disable-theme-transitions *::before,
-  html.disable-theme-transitions *::after {
-    transition: none;
-    animation: none;
-  }
 }
 /* Theme transition helper class is added/removed by JS */
 
@@ -383,13 +364,6 @@
       linear-gradient(to bottom, rgba(255, 215, 0, 0.06) 1px, transparent 1px);
     background-size: 40px 40px;
     mask-image: radial-gradient(ellipse at 50% 30%, black 40%, transparent 75%);
-  }
-
-  .hieroglyphs-bg {
-    background-image: url("/patterns-hieroglyphs.svg");
-    background-size: 120px 120px;
-    background-repeat: repeat;
-    opacity: 0.25;
   }
 
   .papyrus-surface {
@@ -594,6 +568,40 @@
   :root:not(.dark) [data-variant="default"] {
     @apply shadow-md hover:shadow-xl;
   }
+
+  /* Animation utilities */
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Stagger animation delays */
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .animate-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .animate-delay-500 {
+    animation-delay: 500ms;
+  }
 }
 
 /* Animations */
@@ -662,13 +670,33 @@
   }
 }
 
-/* Hieroglyphic Styles */
-.hieroglyphic {
-  font-family: "Noto Sans Egyptian Hieroglyphs", "Segoe UI Historic", serif;
-  @apply text-egypt-gold;
-  text-shadow:
-    0 0 10px rgba(255, 215, 0, 0.5),
-    0 0 20px rgba(255, 215, 0, 0.3);
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(var(--anubis-primary-rgb), 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(var(--anubis-primary-rgb), 0.6);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
 }
 
 /* Section Transitions - Smooth wave effects */
@@ -720,6 +748,22 @@
     radial-gradient(at 0% 50%, hsla(51, 100%, 50%, 0.05) 0px, transparent 50%),
     radial-gradient(at 80% 50%, hsla(162, 84%, 51%, 0.06) 0px, transparent 50%),
     radial-gradient(at 0% 100%, hsla(269, 72%, 56%, 0.07) 0px, transparent 50%);
+}
+
+/* Smooth vignette mask utility for dark mode hero preview */
+.mask-vignette-b {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 72%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 72%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }
 
 /* Accessibility */

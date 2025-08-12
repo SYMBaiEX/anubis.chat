@@ -8,16 +8,25 @@ import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
+type AdminPermission =
+  | 'user_management'
+  | 'subscription_management'
+  | 'content_moderation'
+  | 'system_settings'
+  | 'financial_data'
+  | 'usage_analytics'
+  | 'admin_management';
+
 interface AdminGuardProps {
   children: React.ReactNode;
   fallback?: React.ReactNode;
-  requiredPermissions?: string[];
+  requiredPermissions?: AdminPermission[];
 }
 
 export function AdminGuard({
   children,
   fallback,
-  requiredPermissions = [],
+  requiredPermissions = [] as AdminPermission[],
 }: AdminGuardProps) {
   const { isAuthenticated, user } = useAuthContext();
   const router = useRouter();

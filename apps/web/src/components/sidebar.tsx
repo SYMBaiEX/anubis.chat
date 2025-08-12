@@ -38,7 +38,6 @@ import { getSidebarNav } from '@/constants/navigation';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useUpgradeModal } from '@/hooks/use-upgrade-modal';
 import { formatTierLabel } from '@/lib/format-tier-label';
-import { applyThemeWithTransition } from '@/lib/theme-transition';
 import { cn } from '@/lib/utils';
 
 const bottomItems: Array<{
@@ -273,41 +272,6 @@ export default function Sidebar() {
                   {!isCollapsed && 'Upgrade Account'}
                 </Button>
               )}
-
-            {/* Theme Toggle */}
-            <button
-              aria-label="Toggle theme"
-              className={cn(
-                'button-press flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sidebar-foreground text-xs ring-1 ring-transparent transition-all hover:bg-sidebar-accent hover:ring-sidebar-ring/20',
-                isCollapsed && 'justify-center'
-              )}
-              onClick={async () => {
-                const newTheme = theme === 'dark' ? 'light' : 'dark';
-                applyThemeWithTransition(newTheme, setTheme, {
-                  animated: false,
-                });
-                // Update user preferences in database if authenticated
-                if (isAuthenticated) {
-                  try {
-                    await updateUserPreferences({ theme: newTheme });
-                  } catch (_error) {}
-                }
-              }}
-              type="button"
-            >
-              {mounted ? (
-                theme === 'dark' ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )
-              ) : (
-                <div className="h-4 w-4" /> // Placeholder during SSR
-              )}
-              {!isCollapsed && mounted && (
-                <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-              )}
-            </button>
 
             {/* Bottom Navigation Items */}
             {filteredBottomItems.map((item) => {

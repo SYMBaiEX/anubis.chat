@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
@@ -10,7 +9,7 @@ import {
   Settings,
   Zap,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -36,11 +35,11 @@ interface CommandsOfMaatModalProps {
 }
 
 const categoryIcons = {
-  papyrus: FileText,
+  chat: FileText,
   navigation: Navigation,
-  divine: Zap,
-  temple: Settings,
-  knowledge: BookOpen,
+  ai: Zap,
+  settings: Settings,
+  help: BookOpen,
 };
 
 export function CommandsOfMaatModal({
@@ -82,7 +81,9 @@ export function CommandsOfMaatModal({
       <div className="flex items-center gap-1">
         {shortcut.map((key, index) => (
           <React.Fragment key={index}>
-            {index > 0 && <span className="text-muted-foreground mx-0.5">+</span>}
+            {index > 0 && (
+              <span className="mx-0.5 text-muted-foreground">+</span>
+            )}
             <ShortcutKey>{formatShortcut([key])}</ShortcutKey>
           </React.Fragment>
         ))}
@@ -97,13 +98,13 @@ export function CommandsOfMaatModal({
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg">
               ⚖️
             </div>
             <div>
-              <div>Commands of Ma'at</div>
+              <div>Keyboard Shortcuts</div>
               <div className="font-normal text-muted-foreground text-sm">
-                Sacred keyboard shortcuts for divine efficiency
+                Quick reference for all keyboard shortcuts
               </div>
             </div>
           </DialogTitle>
@@ -116,9 +117,9 @@ export function CommandsOfMaatModal({
               🔍
             </div>
             <input
-              className="w-full rounded-lg border bg-background py-2 pr-3 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+              className="w-full rounded-lg border bg-background py-2 pr-3 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search the sacred scrolls..."
+              placeholder="Search shortcuts..."
               type="text"
               value={searchQuery}
             />
@@ -127,14 +128,13 @@ export function CommandsOfMaatModal({
           {/* Category Tabs */}
           <Tabs
             onValueChange={(v) =>
--              setActiveCategory(v as any)
-+              setActiveCategory(v as keyof typeof MAAT_CATEGORIES | 'all')
+              setActiveCategory(v as keyof typeof MAAT_CATEGORIES | 'all')
             }
             value={activeCategory}
           >
             <TabsList className="grid w-full grid-cols-6 bg-muted/50">
               <TabsTrigger
-                className="data-[state=active]:bg-amber-500/10"
+                className="data-[state=active]:bg-primary/10"
                 value="all"
               >
                 <span className="mr-1.5">🌟</span>
@@ -144,7 +144,7 @@ export function CommandsOfMaatModal({
                 const Icon = categoryIcons[key as keyof typeof categoryIcons];
                 return (
                   <TabsTrigger
-                    className="data-[state=active]:bg-amber-500/10"
+                    className="data-[state=active]:bg-primary/10"
                     key={key}
                     value={key}
                   >
@@ -210,7 +210,11 @@ export function CommandsOfMaatModal({
                                     >
                                       <div className="flex items-center gap-3">
                                         <span className="text-lg">
-                                          {command.icon || '📜'}
+                                          {command.icon ? (
+                                            <command.icon className="h-4 w-4 text-muted-foreground" />
+                                          ) : (
+                                            '📜'
+                                          )}
                                         </span>
                                         <div>
                                           <div className="font-medium text-sm">
@@ -243,7 +247,11 @@ export function CommandsOfMaatModal({
                         >
                           <div className="flex items-center gap-3">
                             <span className="text-lg">
-                              {command.icon || '📜'}
+                              {command.icon ? (
+                                <command.icon className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                '📜'
+                              )}
                             </span>
                             <div>
                               <div className="font-medium text-sm">
@@ -264,10 +272,8 @@ export function CommandsOfMaatModal({
                 {filteredCommands.length === 0 && (
                   <div className="py-12 text-center text-muted-foreground">
                     <div className="mb-2 text-4xl">🏺</div>
-                    <div>No sacred commands found</div>
-                    <div className="mt-1 text-xs">
-                      The scrolls remain hidden
-                    </div>
+                    <div>No shortcuts found</div>
+                    <div className="mt-1 text-xs">Try a different search</div>
                   </div>
                 )}
               </div>
@@ -279,7 +285,7 @@ export function CommandsOfMaatModal({
             <div className="flex items-center justify-between text-muted-foreground text-xs">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-amber-500/10" variant="outline">
+                  <Badge className="bg-primary/10" variant="outline">
                     <span className="mr-1">💡</span>
                     Pro Tip
                   </Badge>
@@ -288,13 +294,13 @@ export function CommandsOfMaatModal({
                     <ShortcutKey>
                       {platformKey === 'Cmd' ? '⌘' : 'Ctrl'}
                     </ShortcutKey>
-                    <ShortcutKey>K</ShortcutKey> to open the Book of the Dead
+                    <ShortcutKey>K</ShortcutKey> to open the command palette
                   </span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span>Platform:</span>
-                <Badge className="bg-amber-500/10">
+                <Badge className="bg-primary/10">
                   {platformKey === 'Cmd' ? '🍎 macOS' : '🪟 Windows/Linux'}
                 </Badge>
               </div>

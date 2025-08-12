@@ -32,11 +32,12 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   categoryColors,
+  type RoadmapFeature,
   roadmapData,
   statusConfig,
-  type RoadmapFeature,
 } from '@/lib/constants/roadmap-data';
 import { cn } from '@/lib/utils';
+import SiteLinksSection from '../(landing)/components/SiteLinksSection';
 
 type FeatureStatus = 'completed' | 'in-progress' | 'upcoming';
 type ViewMode = 'timeline' | 'kanban' | 'list';
@@ -80,15 +81,16 @@ function FeatureCard({
   return (
     <Card
       className={cn(
-        'transform-gpu transition-all duration-300',
-        expanded && 'shadow-xl ring-2 ring-primary'
+        'group relative transform-gpu overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl',
+        expanded && 'scale-[1.02] shadow-xl ring-2 ring-primary'
       )}
     >
-      <CardHeader className="pb-4">
+      <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      <CardHeader className="relative pb-4">
         <button
           aria-expanded={expanded}
           aria-label={`${feature.title} - ${feature.status} - Click to ${expanded ? 'collapse' : 'expand'} details`}
-          className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg"
+          className="relative w-full rounded-lg text-left transition-all duration-200 hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           onClick={onToggle}
           type="button"
         >
@@ -96,7 +98,7 @@ function FeatureCard({
             <div className="flex items-start gap-3">
               <div
                 className={cn(
-                  'rounded-lg p-2',
+                  'rounded-lg p-2 transition-transform duration-200 group-hover:scale-110',
                   statusConfig[feature.status].bgColor
                 )}
               >
@@ -106,7 +108,10 @@ function FeatureCard({
                 <CardTitle className="flex items-center gap-2 text-lg">
                   {feature.title}
                   <StatusIcon
-                    className={cn('h-4 w-4', statusConfig[feature.status].color)}
+                    className={cn(
+                      'h-4 w-4',
+                      statusConfig[feature.status].color
+                    )}
                   />
                 </CardTitle>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -121,7 +126,7 @@ function FeatureCard({
                   )}
                 </div>
               </div>
-              <div className="h-6 w-6 flex items-center justify-center">
+              <div className="flex h-6 w-6 items-center justify-center">
                 {expanded ? (
                   <ChevronDown className="h-4 w-4" />
                 ) : (
@@ -132,7 +137,7 @@ function FeatureCard({
           </div>
         </button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
         <p className="text-muted-foreground text-sm">{feature.description}</p>
 
         {feature.status !== 'upcoming' && (
@@ -225,15 +230,18 @@ function TimelineView({
 
   return (
     <div className="space-y-8">
-      {/* Overall Progress */}
-      <Card>
-        <CardHeader>
+      {/* Overall Progress with glow */}
+      <Card className="relative overflow-hidden border-primary/20">
+        <div className="-inset-2 pointer-events-none absolute rounded-xl">
+          <div className="absolute inset-0 rounded-xl bg-[radial-gradient(50%_30%_at_50%_20%,rgba(34,197,94,0.12)_0%,rgba(34,197,94,0.06)_40%,transparent_85%)] opacity-40 blur-[6px]" />
+        </div>
+        <CardHeader className="relative">
           <CardTitle className="flex items-center gap-2">
             <Rocket className="h-5 w-5" />
             Overall Roadmap Progress
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
           <div className="space-y-4">
             <Progress
               className="h-3"
@@ -277,10 +285,16 @@ function TimelineView({
 
           return (
             <div className="relative mb-12" key={quarter}>
-              {/* Quarter Marker */}
+              {/* Quarter Marker with enhanced glow */}
               <div className="mb-6 flex items-center gap-4">
-                <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-4 border-primary bg-background shadow-lg">
-                  <Calendar className="h-6 w-6" />
+                <div className="relative">
+                  {/* Glow effect behind marker */}
+                  <div className="-inset-2 pointer-events-none absolute rounded-full">
+                    <div className="absolute inset-0 rounded-full bg-primary/20 opacity-60 blur-[8px]" />
+                  </div>
+                  <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-4 border-primary bg-background shadow-lg transition-transform duration-200 hover:scale-105">
+                    <Calendar className="h-6 w-6" />
+                  </div>
                 </div>
                 <div>
                   <h3 className="font-bold text-xl">{quarter}</h3>
@@ -290,8 +304,8 @@ function TimelineView({
                 </div>
               </div>
 
-              {/* Features */}
-              <div className="ml-20 space-y-4">
+              {/* Features with enhanced spacing */}
+              <div className="ml-20 space-y-6">
                 {quarterFeatures.map((feature) => (
                   <FeatureCard
                     expanded={expandedCards.has(feature.id)}
@@ -415,37 +429,70 @@ export default function RoadmapPage(): ReactElement {
   });
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="min-h-screen w-full">
       <LandingHeader />
 
-      <main className="w-full flex-1 pt-16 pb-10">
+      <main className="relative w-full flex-1 pb-10">
         {/* Hero */}
-        <AnimatedSection auroraVariant="gold" className="px-6 py-12">
-          <div className="mx-auto max-w-4xl text-center">
-            <h1 className="mb-4 font-bold text-3xl sm:text-4xl md:text-5xl">
-              <span className="text-gradient">Interactive Product Roadmap</span>
+        <AnimatedSection
+          allowOverlap
+          auroraVariant="gold"
+          className="isolate overflow-visible px-4 py-24 text-center sm:px-6 md:py-32 lg:px-8"
+          dustIntensity="low"
+          parallaxY={24}
+          revealStrategy="none"
+          softEdges
+        >
+          <div className="relative z-10 mx-auto w-full max-w-4xl">
+            <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-orange-500/10 px-3 py-1 backdrop-blur-sm md:mb-8">
+              <Sparkles className="h-3 w-3 animate-pulse text-primary" />
+              <span className="font-medium text-primary text-xs tracking-wide">
+                Live Updates • Community Driven
+              </span>
+              <Sparkles className="h-3 w-3 animate-pulse text-primary" />
+            </div>
+
+            <h1 className="mt-2 mb-4 font-bold text-4xl transition-all delay-100 duration-700 sm:text-5xl md:mt-4 md:mb-6 md:text-6xl lg:text-7xl">
+              <span className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary">
+                Interactive Product Roadmap
+              </span>
             </h1>
-            <p className="mx-auto max-w-2xl text-muted-foreground">
+
+            <p className="mx-auto mt-3 mb-10 max-w-3xl text-lg text-muted-foreground transition-all delay-200 duration-700 sm:text-xl md:mt-4 md:mb-12 md:text-2xl">
               Track our progress, explore upcoming features, and see what we're
               building next. Click on any card to see more details.
             </p>
-            <div className="mt-6 flex flex-col items-center justify-center gap-2 text-muted-foreground text-xs sm:flex-row sm:gap-4">
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
--                Last updated: 2025-08-11
-+                Last updated: {new Date().toISOString().split('T')[0]}
-              </span>
-              <Badge className="gap-1" variant="outline">
-                <Sparkles className="h-3 w-3" />
-                Pro+ users can vote on features
-              </Badge>
+            {/* Info badges with glow background */}
+            <div className="relative mt-6">
+              {/* Glow effect behind info */}
+              <div className="-inset-4 pointer-events-none absolute rounded-xl">
+                <div className="absolute inset-0 rounded-xl bg-[radial-gradient(50%_30%_at_50%_50%,rgba(34,197,94,0.08)_0%,rgba(34,197,94,0.04)_40%,transparent_85%)] opacity-50 blur-[6px]" />
+              </div>
+
+              <div className="relative z-10 flex flex-col items-center justify-center gap-2 text-muted-foreground text-xs sm:flex-row sm:gap-4">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Last updated: {new Date().toISOString().split('T')[0]}
+                </span>
+                <Badge className="gap-1" variant="outline">
+                  <Sparkles className="h-3 w-3" />
+                  Pro+ users can vote on features
+                </Badge>
+              </div>
             </div>
           </div>
         </AnimatedSection>
 
         {/* Controls */}
-        <section className="px-6 py-6">
-          <div className="mx-auto max-w-6xl space-y-4">
+        <AnimatedSection
+          auroraVariant="primary"
+          className="px-4 py-12 sm:px-6 lg:px-8"
+          dustIntensity="low"
+          parallaxY={8}
+          revealStrategy="inview"
+          softEdges
+        >
+          <div className="relative z-10 mx-auto max-w-6xl space-y-4">
             {/* Show results count when searching */}
             {searchQuery && (
               <div className="mb-4 text-muted-foreground text-sm">
@@ -590,34 +637,62 @@ export default function RoadmapPage(): ReactElement {
               </TabsContent>
             </Tabs>
           </div>
-        </section>
+        </AnimatedSection>
 
         {/* Footer CTA */}
-        <AnimatedSection auroraVariant="primary" className="px-6 py-8">
-          <div className="mx-auto max-w-4xl text-center">
-            <h3 className="mb-4 font-bold text-2xl">
-              Have feedback or feature requests?
+        <AnimatedSection
+          allowOverlap
+          auroraVariant="primary"
+          className="isolate overflow-visible px-4 py-16 text-center sm:px-6 md:py-20 lg:px-8"
+          dustIntensity="medium"
+          parallaxY={16}
+          revealStrategy="inview"
+          softEdges
+          useSurface={false}
+        >
+          <div className="relative z-10 mx-auto max-w-4xl">
+            <h3 className="mb-4 font-bold text-2xl md:text-3xl">
+              <span className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary">
+                Have feedback or feature requests?
+              </span>
             </h3>
-            <p className="mb-6 text-muted-foreground">
+            <p className="mb-8 text-lg text-muted-foreground sm:text-xl md:mb-10">
               We'd love to hear from you! Pro+ users can vote on upcoming
               features and influence our roadmap.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <Button className="group" size="lg" variant="default">
-                <Sparkles className="mr-2 h-4 w-4 transition-transform group-hover:rotate-12" />
-                Vote on Features (Pro+)
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/referral-info">Learn about referrals</Link>
-              </Button>
-              <Button asChild size="lg" variant="ghost">
-                <Link href="/">Back to Home</Link>
-              </Button>
+
+            {/* Glow effect behind buttons */}
+            <div className="relative">
+              <div className="-inset-8 pointer-events-none absolute rounded-2xl">
+                <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(60%_40%_at_50%_50%,rgba(34,197,94,0.10)_0%,rgba(34,197,94,0.05)_40%,transparent_85%)] opacity-60 blur-[12px]" />
+              </div>
+
+              <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 md:gap-4">
+                <Button
+                  className="group relative overflow-hidden"
+                  size="lg"
+                  variant="default"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                  <Sparkles className="mr-2 h-4 w-4 transition-transform group-hover:rotate-12" />
+                  Vote on Features (Pro+)
+                </Button>
+                <Link href="/referral-info">
+                  <Button
+                    className="group border-primary/20 backdrop-blur-sm hover:border-primary/40"
+                    size="lg"
+                    variant="outline"
+                  >
+                    Learn about referrals
+                  </Button>
+                </Link>
+                {/* Removed Back to Home CTA per design update */}
+              </div>
             </div>
           </div>
         </AnimatedSection>
+        <SiteLinksSection />
       </main>
-
       <LandingFooter />
     </div>
   );

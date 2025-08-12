@@ -13,7 +13,6 @@ import { ConvexErrorBoundary } from './error/ConvexErrorBoundary';
 import { AuthProvider, useAuthContext } from './providers/auth-provider';
 import { ClientOnlyWrapper } from './providers/client-only-wrapper';
 import { SolanaAgentProvider } from './providers/solana-agent-provider';
-import { ThemeProvider } from './theme-provider';
 import { Toaster } from './ui/sonner';
 import { WalletProvider } from './wallet/wallet-provider';
 
@@ -57,23 +56,21 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       }}
       showDetails={isDevelopment}
     >
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <SidebarProvider>
-          <ConvexAuthProvider client={convex}>
-            <ClientOnlyWrapper>
-              <WalletProvider>
-                <AuthProvider>
-                  <ThemeSyncInline />
-                  <UpgradeProvider>
-                    <SolanaAgentProvider>{children}</SolanaAgentProvider>
-                  </UpgradeProvider>
-                </AuthProvider>
-              </WalletProvider>
-            </ClientOnlyWrapper>
-          </ConvexAuthProvider>
-          <Toaster richColors />
-        </SidebarProvider>
-      </ThemeProvider>
+      <SidebarProvider>
+        <ConvexAuthProvider client={convex}>
+          <ClientOnlyWrapper>
+            <WalletProvider>
+              <AuthProvider>
+                <ThemeSyncInline />
+                <UpgradeProvider>
+                  <SolanaAgentProvider>{children}</SolanaAgentProvider>
+                </UpgradeProvider>
+              </AuthProvider>
+            </WalletProvider>
+          </ClientOnlyWrapper>
+        </ConvexAuthProvider>
+        <Toaster richColors />
+      </SidebarProvider>
     </ConvexErrorBoundary>
   );
 }

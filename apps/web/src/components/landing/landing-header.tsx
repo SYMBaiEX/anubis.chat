@@ -1,95 +1,128 @@
 'use client';
 
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import React from 'react';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { LogoWithText } from '@/components/ui/logo';
+import { cn } from '@/lib/utils';
+
+const menuItems = [
+  { name: 'Home', href: '/' },
+  { name: 'Referral Info', href: '/referral-info' },
+  { name: 'Roadmap', href: '/roadmap' },
+];
 
 export default function LandingHeader() {
   const { isAuthenticated } = useAuthContext();
+  const [menuState, setMenuState] = React.useState(false);
+  const [isScrolled, setIsScrolled] = React.useState(false);
+  const pathname = usePathname();
+
+  React.useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <header className="fixed top-0 right-0 left-0 z-50 border-border/50 border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
-      <div className="relative mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4">
-        {/* Brand */}
-        <LogoWithText
-          href={isAuthenticated ? '/dashboard' : '/'}
-          size="md"
-          textVariant="gradient"
-        />
-
-        {/* Centered Primary Nav (desktop) */}
-        <nav
-          aria-label="Primary"
-          className="-translate-x-1/2 pointer-events-none absolute left-1/2 hidden md:block"
+    <header>
+      <nav
+        className="group fixed top-0 right-0 left-0 z-50 px-2"
+        data-state={menuState && 'active'}
+      >
+        <div
+          className={cn(
+            'mx-auto mt-2 max-w-7xl px-4 transition-all duration-300 lg:px-8',
+            isScrolled && 'rounded-2xl border bg-background/60 backdrop-blur-lg'
+          )}
         >
-          <ul className="pointer-events-auto flex items-center gap-6">
-            <li>
-              <Link
-                className="font-medium text-foreground/80 text-sm transition-colors hover:text-foreground"
-                href="/"
-              >
-                Home
-              </Link>
-            </li>
-            <li>
-              <Link
-                className="font-medium text-foreground/80 text-sm transition-colors hover:text-foreground"
-                href="/referral-info"
-              >
-                Referral Info
-              </Link>
-            </li>
-            <li>
-              <Link
-                className="font-medium text-foreground/80 text-sm transition-colors hover:text-foreground"
-                href="/roadmap"
-              >
-                Roadmap
-              </Link>
-            </li>
-          </ul>
-        </nav>
+          <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
+            <div className="flex w-full justify-between lg:w-auto">
+              <LogoWithText
+                href={isAuthenticated ? '/dashboard' : '/'}
+                size="md"
+                textVariant="gradient"
+              />
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {/* Mobile menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild className="md:hidden">
-              <Button size="icon" type="button" variant="outline">
-                <Menu className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href="/">Home</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/referral-info">Referral Info</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/roadmap">Roadmap</Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <button
+                aria-label={menuState === true ? 'Close Menu' : 'Open Menu'}
+                className="-m-2.5 -mr-4 relative z-20 block cursor-pointer p-2.5 lg:hidden"
+                onClick={() => setMenuState(!menuState)}
+                type="button"
+              >
+                <Menu className="m-auto size-6 in-data-[state=active]:rotate-180 duration-200 group-data-[state=active]:scale-0 group-data-[state=active]:opacity-0" />
+                <X className="-rotate-180 absolute inset-0 m-auto size-6 scale-0 opacity-0 duration-200 group-data-[state=active]:rotate-0 group-data-[state=active]:scale-100 group-data-[state=active]:opacity-100" />
+              </button>
+            </div>
 
-          <ModeToggle />
-          <Link href={isAuthenticated ? '/dashboard' : '/auth'}>
-            <Button className="button-press" size="sm" type="button">
-              Enter App
-            </Button>
-          </Link>
+            {/* Center nav (desktop) */}
+            <div className="absolute inset-0 m-auto hidden size-fit lg:block">
+              <ul className="flex gap-8 text-sm">
+                {menuItems.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
+                  return (
+                    <li key={item.name}>
+                      <Link
+                        aria-current={isActive ? 'page' : undefined}
+                        className={cn(
+                          'block border-transparent border-b-2 pb-1 text-muted-foreground duration-150 hover:border-primary hover:text-accent-foreground',
+                          isActive && 'border-primary text-foreground'
+                        )}
+                        href={item.href}
+                      >
+                        <span>{item.name}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* Actions & mobile expanded menu */}
+            <div className="mb-6 hidden w-full flex-wrap items-center justify-end space-y-8 rounded-3xl border bg-background p-6 shadow-2xl shadow-zinc-300/20 group-data-[state=active]:block md:flex-nowrap lg:m-0 lg:flex lg:w-fit lg:gap-6 lg:space-y-0 lg:border-transparent lg:bg-transparent lg:p-0 lg:shadow-none lg:group-data-[state=active]:flex dark:shadow-none dark:lg:bg-transparent">
+              <div className="lg:hidden">
+                <ul className="space-y-6 text-base">
+                  {menuItems.map((item) => {
+                    const isActive =
+                      pathname === item.href ||
+                      pathname.startsWith(`${item.href}/`);
+                    return (
+                      <li key={item.name}>
+                        <Link
+                          aria-current={isActive ? 'page' : undefined}
+                          className={cn(
+                            'block border-transparent border-b-2 pb-1 text-muted-foreground duration-150 hover:border-primary hover:text-accent-foreground',
+                            isActive && 'border-primary text-foreground'
+                          )}
+                          href={item.href}
+                        >
+                          <span>{item.name}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+              <div className="flex w-full flex-col items-center gap-3 sm:flex-row sm:gap-3 md:w-fit">
+                <ModeToggle />
+                <Button asChild size="sm">
+                  <Link href={isAuthenticated ? '/dashboard' : '/auth'}>
+                    <span>
+                      {isAuthenticated ? 'Open Dashboard' : 'Enter App'}
+                    </span>
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </nav>
     </header>
   );
 }

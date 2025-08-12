@@ -305,7 +305,7 @@ export function ActionsSection({ pathname }: { pathname: string | null }) {
 
       <Separator className="mx-1 hidden h-4 md:block" orientation="vertical" />
       <div className="flex items-center">
-        <ModeToggle animated={false} />
+        <ModeToggle />
       </div>
     </div>
   );

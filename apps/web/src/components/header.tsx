@@ -81,7 +81,7 @@ export default function Header() {
 
         <div className="flex items-center gap-3">
           <WalletConnectButton />
-          <ModeToggle animated={false} />
+          <ModeToggle />
         </div>
       </div>
     </div>

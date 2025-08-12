@@ -35,6 +35,7 @@ import type * as migrations_updateGeneralAssistantToAnubis from "../migrations/u
 import type * as migrations from "../migrations.js";
 import type * as monitoring from "../monitoring.js";
 import type * as paymentVerification from "../paymentVerification.js";
+import type * as prompts from "../prompts.js";
 import type * as rag from "../rag.js";
 import type * as referrals from "../referrals.js";
 import type * as solanaPayouts from "../solanaPayouts.js";
@@ -90,6 +91,7 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   monitoring: typeof monitoring;
   paymentVerification: typeof paymentVerification;
+  prompts: typeof prompts;
   rag: typeof rag;
   referrals: typeof referrals;
   solanaPayouts: typeof solanaPayouts;

@@ -361,7 +361,8 @@ function extractTitleFromMessage(content: string): string {
     .trim();
 
   // Remove common question prefixes
-  const prefixPattern = /^(can you |could you |please |i want to |i need to |help me |how to |how do i |what is |what are |where is |where are |when is |when are |why is |why are |who is |who are )/i;
+  const prefixPattern =
+    /^(can you |could you |please |i want to |i need to |help me |how to |how do i |what is |what are |where is |where are |when is |when are |why is |why are |who is |who are )/i;
   cleaned = cleaned.replace(prefixPattern, '');
 
   // Get the first sentence or question
@@ -523,24 +524,24 @@ Title:`;
 });
 
 // Internal mutation to update chat title
- export const updateTitle = mutation({
-   args: {
-     chatId: v.id('chats'),
-     title: v.string(),
-     ownerId: v.string(),
-   },
-   handler: async (ctx, args) => {
-     const chat = await ctx.db.get(args.chatId);
+export const updateTitle = mutation({
+  args: {
+    chatId: v.id('chats'),
+    title: v.string(),
+    ownerId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const chat = await ctx.db.get(args.chatId);
 
-     if (!chat || chat.ownerId !== args.ownerId) {
-       throw new Error('Chat not found or access denied');
-     }
+    if (!chat || chat.ownerId !== args.ownerId) {
+      throw new Error('Chat not found or access denied');
+    }
 
-     await ctx.db.patch(args.chatId, {
-       title: args.title,
-       updatedAt: Date.now(),
-     });
+    await ctx.db.patch(args.chatId, {
+      title: args.title,
+      updatedAt: Date.now(),
+    });
 
-     return await ctx.db.get(args.chatId);
-   },
- });
+    return await ctx.db.get(args.chatId);
+  },
+});
