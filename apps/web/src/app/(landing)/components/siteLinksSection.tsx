@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
+import { motion } from 'framer-motion';
 import { LogoWithText } from '@/components/ui/logo';
 
 export default function SiteLinksSection() {
@@ -12,7 +14,46 @@ export default function SiteLinksSection() {
         className="-top-8 pointer-events-none absolute inset-x-0 h-8 bg-background"
       />
       <div className="relative mx-auto w-full max-w-7xl px-4 pt-10 pb-16 sm:px-6 lg:px-8">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
+          {/* Left visual — logo mark with green glow */}
+          <div className="relative flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="relative"
+            >
+              {/* Base ambient gradient */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -inset-2 rounded-full blur-md"
+                style={{
+                  background:
+                    'radial-gradient(closest-side, rgba(16,185,129,0.12), transparent 70%)',
+                }}
+              />
+              {/* Subtle breathing highlight */}
+              <motion.span
+                aria-hidden
+                className="pointer-events-none absolute -inset-1 rounded-full"
+                style={{
+                  background:
+                    'radial-gradient(closest-side, rgba(16,185,129,0.10), transparent 60%)',
+                }}
+                animate={{ scale: [1, 1.02, 1], opacity: [0.18, 0.25, 0.18] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              <Image
+                alt="Anubis mark"
+                className="relative drop-shadow-[0_0_5px_rgba(16,185,129,0.06)]"
+                height={128}
+                priority={false}
+                src="/assets/logoNoText.png"
+                width={128}
+              />
+            </motion.div>
+          </div>
           <div>
             <LogoWithText size="md" textVariant="gradient" />
             <p className="mt-3 text-muted-foreground text-sm leading-relaxed">

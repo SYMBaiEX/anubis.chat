@@ -1,6 +1,6 @@
 'use client';
 
-import { useChat as useAIChat } from 'ai/react';
+import { useChat } from 'ai/react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import type { MessageAttachment } from '@/lib/types/api';
@@ -52,7 +52,7 @@ export function useAIChat({
     setMessages,
     data,
     addToolResult,
-  } = useAIChat({
+  } = useChat({
     api: '/api/ai/chat',
     id: chatId,
     initialMessages,

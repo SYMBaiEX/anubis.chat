@@ -359,10 +359,11 @@ export function MessageCreditsModal({
           premiumCredits: totalPremiumCredits,
         });
 
-        // Refresh the page to update credits
+        // No full page reload needed; Convex queries update in realtime.
+        // Briefly show success, then close the modal.
         setTimeout(() => {
-          window.location.reload();
-        }, 3000);
+          handleClose();
+        }, 2000);
       } else {
         throw new Error(
           verificationResult.error || 'Purchase verification failed'
@@ -384,7 +385,7 @@ export function MessageCreditsModal({
           err.message.includes('ALREADY_PROCESSED')
         ) {
           errorMessage =
-            'This purchase has already been processed. Please refresh the page to check your credits.';
+            'This purchase has already been processed. Your credits will update automatically.';
           setPaymentStep('success');
           return;
         }
@@ -778,10 +779,9 @@ export function MessageCreditsModal({
           <Button
             onClick={() =>
               window.open(
-                `https://explorer.solana.com/tx/${paymentDetails.txSignature}${
-                  solanaConfig.network !== 'mainnet-beta'
-                    ? `?cluster=${solanaConfig.network}`
-                    : ''
+                `https://explorer.solana.com/tx/${paymentDetails.txSignature}${solanaConfig.network !== 'mainnet-beta'
+                  ? `?cluster=${solanaConfig.network}`
+                  : ''
                 }`,
                 '_blank'
               )

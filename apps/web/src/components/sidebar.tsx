@@ -16,6 +16,8 @@ import {
   Zap,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import type { ReactElement } from 'react';
@@ -46,31 +48,31 @@ const bottomItems: Array<{
   requiresAuth?: boolean;
   icon: ReactElement;
 }> = [
-  {
-    label: 'Account',
-    href: '/account',
-    requiresAuth: true,
-    icon: <User className="h-4 w-4 flex-shrink-0" />,
-  },
-  {
-    label: 'Subscription',
-    href: '/subscription',
-    requiresAuth: true,
-    icon: <Crown className="h-4 w-4 flex-shrink-0" />,
-  },
-  {
-    label: 'Settings',
-    href: '/settings',
-    requiresAuth: true,
-    icon: <Settings className="h-4 w-4 flex-shrink-0" />,
-  },
-  {
-    label: 'Wallet',
-    href: '/wallet',
-    requiresAuth: true,
-    icon: <Wallet className="h-4 w-4 flex-shrink-0" />,
-  },
-];
+    {
+      label: 'Account',
+      href: '/account',
+      requiresAuth: true,
+      icon: <User className="h-4 w-4 flex-shrink-0" />,
+    },
+    {
+      label: 'Subscription',
+      href: '/subscription',
+      requiresAuth: true,
+      icon: <Crown className="h-4 w-4 flex-shrink-0" />,
+    },
+    {
+      label: 'Settings',
+      href: '/settings',
+      requiresAuth: true,
+      icon: <Settings className="h-4 w-4 flex-shrink-0" />,
+    },
+    {
+      label: 'Wallet',
+      href: '/wallet',
+      requiresAuth: true,
+      icon: <Wallet className="h-4 w-4 flex-shrink-0" />,
+    },
+  ];
 
 export default function Sidebar() {
   const { isCollapsed, toggleCollapsed } = useSidebar();
@@ -164,17 +166,67 @@ export default function Sidebar() {
             aria-hidden="true"
             className="aurora aurora-primary absolute inset-0"
           />
-          {/* Logo */}
+          {/* Logo with subtle glowing mark */}
           <div className="flex h-12 items-center justify-between border-sidebar-border/80 border-b bg-sidebar-background/60 px-3">
             {isCollapsed ? (
-              <LogoIcon className="mx-auto" size="lg" />
+              <div className="mx-auto relative inline-flex items-center justify-center">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -inset-1 rounded-full blur-sm"
+                  style={{
+                    background:
+                      'radial-gradient(closest-side, rgba(16,185,129,0.10), transparent 70%)',
+                  }}
+                />
+                <motion.span
+                  aria-hidden
+                  className="pointer-events-none absolute -inset-0.5 rounded-full"
+                  style={{
+                    background:
+                      'radial-gradient(closest-side, rgba(16,185,129,0.08), transparent 60%)',
+                  }}
+                  animate={{ scale: [1, 1.02, 1], opacity: [0.16, 0.22, 0.16] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                <Image
+                  alt="Anubis mark"
+                  className="relative drop-shadow-[0_0_4px_rgba(16,185,129,0.06)]"
+                  height={28}
+                  src="/assets/logoNoText.png"
+                  width={28}
+                />
+              </div>
             ) : (
-              <Logo
-                href="/dashboard"
-                size="lg"
-                text="anubis.chat"
-                textVariant="gradient"
-              />
+              <Link aria-label="Dashboard" className="inline-flex items-center gap-2" href="/dashboard">
+                <span className="relative inline-flex items-center justify-center">
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -inset-1 rounded-full blur-sm"
+                    style={{
+                      background:
+                        'radial-gradient(closest-side, rgba(16,185,129,0.10), transparent 70%)',
+                    }}
+                  />
+                  <motion.span
+                    aria-hidden
+                    className="pointer-events-none absolute -inset-0.5 rounded-full"
+                    style={{
+                      background:
+                        'radial-gradient(closest-side, rgba(16,185,129,0.08), transparent 60%)',
+                    }}
+                    animate={{ scale: [1, 1.02, 1], opacity: [0.16, 0.22, 0.16] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                  <Image
+                    alt="Anubis mark"
+                    className="relative drop-shadow-[0_0_4px_rgba(16,185,129,0.06)]"
+                    height={42}
+                    src="/assets/logoNoText.png"
+                    width={42}
+                  />
+                </span>
+                <Logo href="/dashboard" size="lg" text="anubis.chat" textVariant="gradient" />
+              </Link>
             )}
 
             {/* Collapse Button - Desktop Only */}
@@ -357,13 +409,12 @@ export default function Sidebar() {
                   <div className="flex justify-center px-1 py-1">
                     <div className="flex flex-col items-center gap-0.5">
                       <Crown
-                        className={`h-3 w-3 ${
-                          subscription.tier === 'free'
-                            ? 'text-slate-600 dark:text-slate-400'
-                            : subscription.tier === 'pro'
-                              ? 'text-blue-600 dark:text-blue-400'
-                              : 'text-purple-600 dark:text-purple-400'
-                        }`}
+                        className={`h-3 w-3 ${subscription.tier === 'free'
+                          ? 'text-slate-600 dark:text-slate-400'
+                          : subscription.tier === 'pro'
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-purple-600 dark:text-purple-400'
+                          }`}
                       />
                       {(() => {
                         const barClass =

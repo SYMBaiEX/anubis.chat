@@ -38,8 +38,44 @@
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
 .animation-delay-300 {
   animation-delay: 300ms;
+}
+
+/* Font size preference classes */
+.font-size-small {
+  --font-scale: 0.875;
+}
+
+.font-size-medium {
+  --font-scale: 1;
+}
+
+.font-size-large {
+  --font-scale: 1.125;
+}
+
+/* Apply font scaling to root */
+:root {
+  --font-scale: 1;
+}
+
+/* Base font sizes with scaling */
+html {
+  font-size: calc(16px * var(--font-scale));
 }
 
 /* Define dark mode variant for Tailwind v4 */

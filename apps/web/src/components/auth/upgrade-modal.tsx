@@ -548,10 +548,11 @@ export function UpgradeModal({
           attempt: retryAttempt + 1,
         });
 
-        // Refresh the page to update subscription status
+        // No full page reload needed; Convex queries update in realtime.
+        // Briefly show success, then close the modal.
         setTimeout(() => {
-          window.location.reload();
-        }, 3000);
+          handleClose();
+        }, 2000);
       } else {
         throw new Error(
           verificationResult.error || 'Payment verification failed'
@@ -577,7 +578,7 @@ export function UpgradeModal({
         ) {
           // This transaction was already processed - NOT retryable
           errorMessage =
-            'This payment has already been processed. Please refresh the page to check your subscription status.';
+            'This payment has already been processed. Your subscription will update automatically.';
           isRetryable = false;
 
           // Set success state since payment was actually processed
@@ -892,8 +893,8 @@ export function UpgradeModal({
                 </span>
                 <span className="text-muted-foreground text-sm">
                   {proratedUpgrade?.isProrated &&
-                  selectedTier === 'pro_plus' &&
-                  subscription?.tier === 'pro'
+                    selectedTier === 'pro_plus' &&
+                    subscription?.tier === 'pro'
                     ? 'Prorated upgrade'
                     : `≈ $${selectedConfig.priceUSD} USD`}
                 </span>
@@ -1390,10 +1391,11 @@ export function UpgradeModal({
           premiumCredits: totalPremiumCredits,
         });
 
-        // Refresh the page to update credits
+        // No full page reload needed; Convex queries update in realtime.
+        // Briefly show success, then close the modal.
         setTimeout(() => {
-          window.location.reload();
-        }, 3000);
+          handleClose();
+        }, 2000);
       } else {
         throw new Error(
           verificationResult.error || 'Purchase verification failed'
@@ -1415,7 +1417,7 @@ export function UpgradeModal({
           err.message.includes('ALREADY_PROCESSED')
         ) {
           errorMessage =
-            'This purchase has already been processed. Please refresh the page to check your credits.';
+            'This purchase has already been processed. Your credits will update automatically.';
           setCreditsPaymentStep('success');
           return;
         }
@@ -1780,10 +1782,9 @@ export function UpgradeModal({
           <Button
             onClick={() =>
               window.open(
-                `https://explorer.solana.com/tx/${creditsPaymentDetails.txSignature}${
-                  solanaConfig.network !== 'mainnet-beta'
-                    ? `?cluster=${solanaConfig.network}`
-                    : ''
+                `https://explorer.solana.com/tx/${creditsPaymentDetails.txSignature}${solanaConfig.network !== 'mainnet-beta'
+                  ? `?cluster=${solanaConfig.network}`
+                  : ''
                 }`,
                 '_blank'
               )

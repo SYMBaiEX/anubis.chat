@@ -20,7 +20,7 @@ import {
   ThumbsUp,
   User,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ import type { MessageProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { type FontSize, getFontSizeClasses } from '@/lib/utils/font-sizes';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { MarkdownRenderer } from './markdown-renderer';
+import { OptimizedMarkdownRenderer } from './optimized-markdown-renderer';
 
 // Initialize logger
 const log = createModuleLogger('message-bubble');
@@ -71,8 +71,8 @@ export function MessageBubble({
   const isSystem = message.role === 'system';
   const isAssistant = message.role === 'assistant';
 
-  // Get dynamic font size classes
-  const fontSizes = getFontSizeClasses(fontSize);
+  // Get dynamic font size classes - Applied immediately before render
+  const fontSizes = useMemo(() => getFontSizeClasses(fontSize), [fontSize]);
 
   const handleCopy = async () => {
     try {
@@ -305,7 +305,7 @@ export function MessageBubble({
                   {message.content}
                 </p>
               ) : (
-                <MarkdownRenderer content={message.content} />
+                <OptimizedMarkdownRenderer content={message.content} isStreaming={false} />
               )}
             </div>
 
@@ -362,15 +362,15 @@ export function MessageBubble({
               )}
           </div>
 
-          {/* Message Actions */}
+          {/* Message Actions - Below the bubble */}
           {showActions && (
             <div
               className={cn(
-                'absolute top-0 opacity-0 transition-opacity group-hover:opacity-100',
-                isUser ? '-translate-x-full left-0' : 'right-0 translate-x-full'
+                'mt-2 opacity-0 transition-opacity group-hover:opacity-100',
+                isUser ? 'flex justify-end' : 'flex justify-start'
               )}
             >
-              <div className="flex items-center gap-1 p-1">
+              <div className="flex items-center gap-1 rounded-lg bg-background/80 backdrop-blur border p-1">
                 <Button onClick={handleCopy} size="sm" variant="ghost">
                   {copied ? (
                     <Check className="h-3 w-3" />

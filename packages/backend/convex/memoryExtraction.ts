@@ -1,15 +1,15 @@
 /**
  * Memory Extraction System for ANUBIS Chat RAG Implementation
  *
- * This comprehensive memory extraction system analyzes conversations to extract and store
- * important information about users, enabling personalized AI responses through context injection.
+ * This streamlined memory extraction system directly creates embeddings from user messages
+ * for cost-effective personalized AI responses through context injection.
  *
  * ## Features:
- * - **Intelligent Extraction**: Uses GPT-4o-mini to identify memory-worthy content
- * - **Smart Categorization**: Automatically categorizes into facts, preferences, skills, goals, context
- * - **Importance Scoring**: 0-1 scale with keyword-based boosting and deduplication
+ * - **Direct Embedding**: Creates memories directly from messages without expensive LLM analysis
+ * - **Simple Categorization**: Messages stored as 'context' type memories
+ * - **Importance Scoring**: Based on message length and content patterns
  * - **Vector Search**: Generates embeddings for semantic similarity and retrieval
- * - **Auto-Processing**: Can automatically process messages after creation
+ * - **Auto-Processing**: Automatically processes messages after creation
  * - **Memory Consolidation**: Merges similar memories to reduce redundancy
  * - **Context Injection**: Formats memories for AI context with smart retrieval
  *
@@ -58,10 +58,8 @@ import { action, mutation, query } from './_generated/server';
 import { cosineSimilarity } from './embeddings';
 
 // Memory extraction configuration
-const MEMORY_EXTRACTION_MODEL = 'gpt-4o-mini'; // Cost-effective for analysis
+const MIN_MESSAGE_LENGTH = 20; // Minimum message length to create memory
 const MIN_IMPORTANCE_THRESHOLD = 0.3; // Minimum importance score to save memory
-const MAX_RETRIES = 2;
-const RETRY_DELAY = 1000;
 const WHITESPACE_REGEX = /\s+/g;
 
 // Memory type definitions based on schema
@@ -88,146 +86,96 @@ interface MemoryExtractionResult {
 }
 
 /**
- * LLM-powered memory extraction from conversation content
+ * Create memory directly from message content without LLM analysis
  */
-async function extractMemoriesFromContent(
+function createMemoryFromMessage(
   content: string,
-  context: string,
+  _context: string,
   existingMemories: string[] = []
-): Promise<MemoryExtractionResult> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY not configured');
+): MemoryExtractionResult {
+  // Check if content is meaningful enough to store
+  if (content.length < MIN_MESSAGE_LENGTH) {
+    return {
+      memories: [],
+      analysisReasoning: 'Message too short to create memory',
+    };
   }
 
-  // Prepare the system prompt for memory extraction
-  const systemPrompt = `You are an expert memory extraction system for an AI chat application. Your job is to analyze conversations and extract important, memorable information about the user.
-
-MEMORY TYPES to extract:
-- fact: Concrete information about the user (name, location, job, family, etc.)
-- preference: User's likes, dislikes, opinions, choices (tools, methods, styles, etc.)
-- skill: User's abilities, knowledge areas, experience levels, technologies they know
-- goal: User's objectives, aspirations, things they want to learn or achieve
-- context: Important situational information, ongoing projects, current focuses
-
-IMPORTANCE SCORING (0.0 to 1.0):
-- 0.9-1.0: Critical personal info (name, core skills, major goals, key preferences)
-- 0.7-0.9: Important patterns (frequently mentioned preferences, ongoing projects)
-- 0.5-0.7: Useful context (tools used, learning interests, work context)
-- 0.3-0.5: Minor details worth noting (occasional preferences, small facts)
-- 0.0-0.3: Trivial information (don't extract these)
-
-EXTRACTION RULES:
-1. Extract only information ABOUT THE USER, not general knowledge
-2. Focus on lasting information, not temporary states
-3. Be specific and concrete - avoid vague generalizations
-4. Each memory should be a single, clear fact/preference/skill/goal
-5. Avoid duplicating existing memories
-6. Only extract memories with importance >= 0.3
-
-EXISTING MEMORIES to avoid duplicating:
-${existingMemories.length > 0 ? existingMemories.join('\n- ') : 'None'}
-
-Respond ONLY in valid JSON format:
-{
-  "memories": [
-    {
-      "content": "Specific memory content (clear, concise statement)",
-      "type": "fact|preference|skill|goal|context",
-      "importance": 0.5,
-      "tags": ["relevant", "keywords"],
-      "reasoning": "Why this is important/relevant"
-    }
-  ],
-  "analysisReasoning": "Brief explanation of your extraction decisions"
-}`;
-
-  const userPrompt = `CONVERSATION CONTEXT:
-${context}
-
-CONTENT TO ANALYZE:
-${content}
-
-Extract memorable information about the user from this content. Focus on lasting facts, preferences, skills, goals, and important context. Remember to avoid duplicating existing memories and only extract information with importance >= 0.3.`;
-
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      const response = await fetch(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: MEMORY_EXTRACTION_MODEL,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt },
-            ],
-            temperature: 0.3, // Lower temperature for more consistent extraction
-            max_tokens: 2000,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(
-          `OpenAI API error: ${error.error?.message || response.statusText}`
-        );
-      }
-
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content;
-
-      if (!content) {
-        throw new Error('No content returned from LLM');
-      }
-
-      // Parse JSON response
-      try {
-        const parsed = JSON.parse(content) as MemoryExtractionResult;
-
-        // Validate the response structure
-        if (!(parsed.memories && Array.isArray(parsed.memories))) {
-          throw new Error('Invalid response format: memories array missing');
-        }
-
-        // Filter memories by importance threshold and validate
-        const validMemories = parsed.memories.filter((memory) => {
-          return (
-            memory.importance >= MIN_IMPORTANCE_THRESHOLD &&
-            memory.content &&
-            MEMORY_TYPES.includes(memory.type) &&
-            memory.content.length > 10
-          ); // Ensure meaningful content
-        });
-
-        return {
-          memories: validMemories,
-          analysisReasoning:
-            parsed.analysisReasoning || 'Memory extraction completed',
-        };
-      } catch (parseError) {
-        throw new Error(`Failed to parse LLM response as JSON: ${parseError}`);
-      }
-    } catch (error) {
-      lastError = error as Error;
-
-      const shouldBackoff =
-        error instanceof Error && error.message.includes('429');
-      if (shouldBackoff || attempt < MAX_RETRIES - 1) {
-        const delay = shouldBackoff ? RETRY_DELAY * 2 ** attempt : RETRY_DELAY;
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
+  // Check for duplicates
+  const contentLower = content.toLowerCase();
+  for (const existingMemory of existingMemories) {
+    if (
+      existingMemory.toLowerCase().includes(contentLower) ||
+      contentLower.includes(existingMemory.toLowerCase())
+    ) {
+      return {
+        memories: [],
+        analysisReasoning: 'Similar memory already exists',
+      };
     }
   }
 
-  throw lastError || new Error('Failed to extract memories after retries');
+  // Calculate importance based on message characteristics
+  let importance = 0.4; // Base importance
+  
+  // Boost importance for longer, more detailed messages
+  if (content.length > 100) importance += 0.1;
+  if (content.length > 200) importance += 0.1;
+  
+  // Boost for personal indicators
+  const personalIndicators = ['i ', 'my ', 'i\'m ', 'i am ', 'we ', 'our '];
+  for (const indicator of personalIndicators) {
+    if (contentLower.includes(indicator)) {
+      importance += 0.05;
+      break;
+    }
+  }
+  
+  // Boost for question marks (indicates user is asking for help)
+  if (content.includes('?')) importance += 0.1;
+  
+  // Cap importance at 0.8 for automated extraction
+  importance = Math.min(importance, 0.8);
+  
+  // Only create memory if importance threshold is met
+  if (importance < MIN_IMPORTANCE_THRESHOLD) {
+    return {
+      memories: [],
+      analysisReasoning: 'Message importance below threshold',
+    };
+  }
+
+  // Extract simple tags from content
+  const words = contentLower.split(WHITESPACE_REGEX);
+  const tags: string[] = [];
+  
+  // Add tags for common topics
+  const topicKeywords = {
+    'code': ['code', 'coding', 'programming', 'developer', 'software'],
+    'work': ['work', 'job', 'project', 'task', 'meeting'],
+    'learning': ['learn', 'study', 'course', 'tutorial', 'practice'],
+    'help': ['help', 'issue', 'problem', 'error', 'bug', 'fix'],
+  };
+  
+  for (const [tag, keywords] of Object.entries(topicKeywords)) {
+    if (keywords.some(keyword => contentLower.includes(keyword))) {
+      tags.push(tag);
+    }
+  }
+
+  // Create a single context memory from the message
+  const memory: ExtractedMemory = {
+    content: content.slice(0, 500), // Limit memory length
+    type: 'context', // All direct message memories are stored as context
+    importance,
+    tags,
+    reasoning: 'Direct message context for future reference',
+  };
+
+  return {
+    memories: [memory],
+    analysisReasoning: 'Created memory from user message',
+  };
 }
 
 /**
@@ -436,8 +384,8 @@ async function handleExtractMemoriesFromMessage(
 
     const existingContents: string[] = existingMemories.map((m) => m.content);
 
-    // Extract memories using LLM
-    const result = await extractMemoriesFromContent(
+    // Create memory directly from message content
+    const result = createMemoryFromMessage(
       args.content,
       conversationContext,
       existingContents
@@ -655,8 +603,8 @@ export const consolidateMemories = action({
 
       // If we found similar memories, consolidate them
       if (similarMemories.length > 1) {
-        // Merge memories using LLM
-        const consolidatedContent = await consolidateMemoryContent(
+        // Merge memories using simple consolidation
+        const consolidatedContent = consolidateMemoryContent(
           similarMemories.map((m) => m.content)
         );
 
@@ -712,58 +660,40 @@ export const consolidateMemories = action({
 });
 
 /**
- * Helper function to consolidate similar memory contents using LLM
+ * Helper function to consolidate similar memory contents
  */
-async function consolidateMemoryContent(
+function consolidateMemoryContent(
   contents: string[]
-): Promise<string | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey || contents.length <= 1) {
+): string | null {
+  if (contents.length <= 1) {
     return null;
   }
 
-  const systemPrompt = `You are consolidating similar memories about a user. Merge the provided similar memory entries into a single, comprehensive memory that captures all the important information without redundancy.
-
-Rules:
-1. Combine all unique information from the provided memories
-2. Remove redundancy and contradictions
-3. Keep the most specific and accurate information
-4. Maintain the same tone and perspective
-5. Ensure the result is a single, clear statement
-
-Respond with only the consolidated memory content, nothing else.`;
-
-  const userPrompt = `Consolidate these similar memories:
-
-${contents.map((content, i) => `${i + 1}. ${content}`).join('\n')}`;
-
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: MEMORY_EXTRACTION_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 200,
-      }),
-    });
-
-    if (!response.ok) {
-      return null;
+  // Simple consolidation: combine unique parts and remove duplicates
+  const allWords = new Set<string>();
+  const sentences: string[] = [];
+  
+  for (const content of contents) {
+    const words = content.toLowerCase().split(WHITESPACE_REGEX);
+    let hasNewInfo = false;
+    
+    for (const word of words) {
+      if (word.length > 3 && !allWords.has(word)) {
+        hasNewInfo = true;
+        allWords.add(word);
+      }
     }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content?.trim() || null;
-  } catch (_error) {
-    return null;
+    
+    // Only add sentence if it contains new information
+    if (hasNewInfo || sentences.length === 0) {
+      sentences.push(content);
+    }
   }
+  
+  // Join the unique sentences, limiting to reasonable length
+  const consolidated = sentences.join('. ').slice(0, 500);
+  
+  return consolidated.length > 20 ? consolidated : null;
 }
 
 /**

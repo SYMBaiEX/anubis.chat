@@ -176,12 +176,12 @@ export const streamChat = httpAction(async (ctx, request) => {
   // Try to kick off memory extraction for this user message
   try {
     if (_userMessage) {
-      await ctx.runAction((api as any).memoryExtraction.processNewMessage, {
+      await ctx.runAction(api.memoryExtraction.processNewMessage, {
         messageId: _userMessage._id,
       });
     }
-  } catch (_err) {
-    // Non-blocking
+  } catch (err) {
+    // Non-blocking - continue with response
   }
 
   // Check user preferences for memory and RAG features
@@ -656,10 +656,10 @@ Step 3: [Continue as needed...]
       if (memoryEnabled && _userMessage) {
         // Non-blocking memory extraction
         try {
-          await ctx.runAction((api as any).memoryExtraction.processNewMessage, {
+          await ctx.runAction(api.memoryExtraction.processNewMessage, {
             messageId: _userMessage._id,
           });
-        } catch (_error) {
+        } catch (error) {
           // Memory extraction is optional, ignore errors
         }
       }
@@ -763,13 +763,12 @@ Use your judgment - only use the thinking section if the query truly benefits fr
         if (memoryEnabled && _userMessage) {
           // Non-blocking memory extraction
           try {
-            await ctx.runAction(
-              (api as any).memoryExtraction.processNewMessage,
-              {
-                messageId: _userMessage._id,
-              }
-            );
-          } catch (_error) {}
+            await ctx.runAction(api.memoryExtraction.processNewMessage, {
+              messageId: _userMessage._id,
+            });
+          } catch (error) {
+            // Memory extraction is optional, ignore errors
+          }
         }
 
         // Track message usage for subscription (skip for admins) - consume appropriate number of messages

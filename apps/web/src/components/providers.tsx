@@ -1,18 +1,16 @@
 'use client';
 
-import { api } from '@convex/_generated/api';
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
-import { ConvexReactClient, useQuery } from 'convex/react';
-import { useTheme } from 'next-themes';
-import { useEffect } from 'react';
+import { ConvexReactClient } from 'convex/react';
 import { SidebarProvider } from '@/contexts/SidebarContext';
 import { convexConfig, isDevelopment } from '@/lib/env';
 import { createModuleLogger } from '@/lib/utils/logger';
 import { UpgradeProvider } from './auth/upgrade-wrapper';
 import { ConvexErrorBoundary } from './error/ConvexErrorBoundary';
-import { AuthProvider, useAuthContext } from './providers/auth-provider';
+import { AuthProvider } from './providers/auth-provider';
 import { ClientOnlyWrapper } from './providers/client-only-wrapper';
 import { SolanaAgentProvider } from './providers/solana-agent-provider';
+import { ThemeSync } from './providers/theme-sync';
 import { Toaster } from './ui/sonner';
 import { WalletProvider } from './wallet/wallet-provider';
 
@@ -27,22 +25,6 @@ const convex = new ConvexReactClient(convexConfig.publicUrl, {
 });
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  // Inline ThemeSync: apply userPreferences.theme globally
-  function ThemeSyncInline() {
-    const { isAuthenticated } = useAuthContext();
-    const { theme, setTheme } = useTheme();
-    const userPreferences = useQuery(
-      api.userPreferences.getUserPreferencesWithDefaults,
-      isAuthenticated ? {} : 'skip'
-    );
-    useEffect(() => {
-      if (userPreferences?.theme && userPreferences.theme !== theme) {
-        setTheme(userPreferences.theme);
-      }
-    }, [userPreferences?.theme, theme, setTheme]);
-    return null;
-  }
-
   return (
     <ConvexErrorBoundary
       onError={(error, errorInfo) => {
@@ -61,7 +43,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <ClientOnlyWrapper>
             <WalletProvider>
               <AuthProvider>
-                <ThemeSyncInline />
+                <ThemeSync />
                 <UpgradeProvider>
                   <SolanaAgentProvider>{children}</SolanaAgentProvider>
                 </UpgradeProvider>

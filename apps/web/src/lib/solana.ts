@@ -431,7 +431,7 @@ export const processPaymentTransaction = async (
       }
 
       throw new Error(
-        'DUPLICATE_TRANSACTION: This payment has already been processed. Please refresh the page to check your subscription status.'
+        'DUPLICATE_TRANSACTION: This payment has already been processed. Your subscription will update automatically.'
       );
     }
 

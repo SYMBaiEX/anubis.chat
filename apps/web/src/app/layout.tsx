@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, Inter } from 'next/font/google';
+import Script from 'next/script';
 import '../index.css';
 import BreadcrumbSchema from '@/components/breadcrumb-schema';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -9,6 +10,7 @@ import SchemaMarkup from '@/components/schema-markup';
 import ServiceWorkerManager from '@/components/service-worker-manager';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { themeInitScript } from '@/lib/theme-script';
 
 // PRD Typography: Inter for body, IBM Plex Mono for code
 // Note: Satoshi Variable for headers will be loaded via CSS for better Bun runtime performance
@@ -128,6 +130,8 @@ export default function RootLayout({
             }
           } catch (e) {}
         `}</script>
+        {/* Theme initialization script - prevents flash */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         {/* Load Satoshi font stylesheet without client event handlers */}
         <link
           crossOrigin="anonymous"

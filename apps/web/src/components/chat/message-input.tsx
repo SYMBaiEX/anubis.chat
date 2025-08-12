@@ -1,5 +1,6 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import {
   Brain,
@@ -12,9 +13,10 @@ import {
   Send,
   Smile,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -78,6 +80,7 @@ export function MessageInput({
   const [isActive, setIsActive] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [useReasoning, setUseReasoning] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -121,35 +124,52 @@ export function MessageInput({
   // Get dynamic font size classes
   const fontSizes = getFontSizeClasses(fontSize);
 
-  // Auto-resize textarea
-  useEffect(() => {
+  // Enhanced auto-resize textarea with smooth transitions
+  const adjustTextareaHeight = useCallback(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      const textarea = textareaRef.current;
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(textarea.scrollHeight, 200);
+      textarea.style.height = `${newHeight}px`;
     }
   }, []);
 
-  const handleSend = () => {
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [message, adjustTextareaHeight]);
+
+  const handleSend = async () => {
     const trimmedMessage = message.trim();
-    if (!trimmedMessage || disabled) {
+    if (!trimmedMessage || disabled || isSending) {
       return;
     }
 
-    onSend(
-      trimmedMessage,
-      useReasoning,
-      attachments.map((a) => ({
-        fileId: a.storageId || a.id,
-        url: a.url,
-        mimeType: a.type,
-        size: a.size,
-        type: a.kind,
-      }))
-    );
-    setMessage('');
-    setShowEmojiPicker(false);
-    setUseReasoning(false); // Reset reasoning toggle after sending
-    setAttachments([]);
+    // Set sending state for instant visual feedback
+    setIsSending(true);
+    
+    try {
+      // Send message with instant feedback
+      await onSend(
+        trimmedMessage,
+        useReasoning,
+        attachments.map((a) => ({
+          fileId: a.storageId || a.id,
+          url: a.url,
+          mimeType: a.type,
+          size: a.size,
+          type: a.kind,
+        }))
+      );
+      
+      // Clear inputs immediately for instant response
+      setMessage('');
+      setShowEmojiPicker(false);
+      setUseReasoning(false); // Reset reasoning toggle after sending
+      setAttachments([]);
+    } finally {
+      // Reset sending state
+      setIsSending(false);
+    }
   };
 
   const handleEmojiClick = (emojiData: any) => {
@@ -161,6 +181,10 @@ export function MessageInput({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+    // Trigger typing indicator on any key press
+    if (onTyping) {
+      onTyping();
     }
   };
 
@@ -332,22 +356,31 @@ export function MessageInput({
 
   return (
     <TooltipProvider>
-      <div
+      <motion.div
         className={cn('flex w-full flex-col space-y-1 sm:space-y-2', className)}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
       >
-        {/* Character Count */}
-        {message.length > maxLength * 0.8 && (
-          <div
-            className={cn(
-              'text-right text-muted-foreground',
-              fontSizes.characterCount
-            )}
-          >
-            <span className={cn(isAtMaxLength && 'text-red-500')}>
-              {message.length}/{maxLength}
-            </span>
-          </div>
-        )}
+        {/* Animated Character Count */}
+        <AnimatePresence>
+          {message.length > maxLength * 0.8 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.2 }}
+              className={cn(
+                'text-right text-muted-foreground',
+                fontSizes.characterCount
+              )}
+            >
+              <span className={cn(isAtMaxLength && 'text-red-500 font-semibold')}>
+                {message.length}/{maxLength}
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Input Container */}
         <div className="flex w-full items-center gap-1 sm:gap-2">
@@ -412,27 +445,40 @@ export function MessageInput({
               ref={textareaRef}
               value={message}
             />
-            {/* Attached files preview with proper thumbnails */}
-            {attachments.length > 0 && (
-              <div className="mb-2 flex flex-wrap items-center gap-2 px-2">
-                {attachments.map((a) => {
-                  const isImage = a.kind === 'image';
-                  const isPdf = a.type === 'application/pdf';
-                  const fileIcon = isImage ? (
-                    <Image className="h-3.5 w-3.5" />
-                  ) : a.kind === 'video' ? (
-                    <FileVideo className="h-3.5 w-3.5" />
-                  ) : isPdf ? (
-                    <FileText className="h-3.5 w-3.5" />
-                  ) : (
-                    <Paperclip className="h-3.5 w-3.5" />
-                  );
+            {/* Animated Attachment Preview */}
+            <AnimatePresence>
+              {attachments.length > 0 && (
+                <motion.div 
+                  className="mb-2 flex flex-wrap items-center gap-2 px-2"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {attachments.map((a) => {
+                    const isImage = a.kind === 'image';
+                    const isPdf = a.type === 'application/pdf';
+                    const fileIcon = isImage ? (
+                      <Image className="h-3.5 w-3.5" />
+                    ) : a.kind === 'video' ? (
+                      <FileVideo className="h-3.5 w-3.5" />
+                    ) : isPdf ? (
+                      <FileText className="h-3.5 w-3.5" />
+                    ) : (
+                      <Paperclip className="h-3.5 w-3.5" />
+                    );
 
-                  return (
-                    <div
-                      className="group relative inline-flex items-center gap-2 rounded-lg border bg-muted/50 px-2.5 py-1.5 text-xs transition-colors hover:bg-muted"
-                      key={a.id}
-                    >
+                    return (
+                      <motion.div
+                        className="group relative inline-flex items-center gap-2 rounded-lg border bg-muted/50 px-2.5 py-1.5 text-xs transition-colors hover:bg-muted"
+                        key={a.id}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
                       {/* Thumbnail or icon */}
                       {a.preview && isImage ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -474,11 +520,12 @@ export function MessageInput({
                       >
                         <X className="h-3 w-3" />
                       </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Centered overlay placeholder to match project styling */}
             {!isActive && message.trim().length === 0 && (
@@ -640,51 +687,96 @@ export function MessageInput({
                 </Popover>
               )}
 
-              {/* Send Button (2x2 size, rightmost) */}
+              {/* Animated Send Button */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    className="h-8 w-8 p-0 sm:h-9 sm:w-9"
-                    disabled={disabled || !isMessageValid}
-                    onClick={handleSend}
-                    size="icon"
-                    variant="default"
+                  <motion.div
+                    animate={{ 
+                      scale: isMessageValid ? 1 : 0.9,
+                      opacity: isMessageValid ? 1 : 0.6
+                    }}
+                    transition={{ duration: 0.2, type: 'spring', stiffness: 500 }}
+                    whileHover={{ scale: isMessageValid ? 1.1 : 0.9 }}
+                    whileTap={{ scale: isMessageValid ? 0.95 : 0.9 }}
                   >
-                    <Send className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-                  </Button>
+                    <Button
+                      className={cn(
+                        "h-8 w-8 p-0 sm:h-9 sm:w-9 transition-all",
+                        isMessageValid && "bg-primary hover:bg-primary/90 shadow-lg",
+                        isSending && "animate-pulse"
+                      )}
+                      disabled={disabled || !isMessageValid || isSending}
+                      onClick={handleSend}
+                      size="icon"
+                      variant={isMessageValid ? "default" : "ghost"}
+                    >
+                      {isSending ? (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <Sparkles className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                        </motion.div>
+                      ) : isMessageValid ? (
+                        <motion.div
+                          animate={{ rotate: 0 }}
+                          initial={{ rotate: -45 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <Send className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                        </motion.div>
+                      ) : (
+                        <Send className="h-4 w-4 sm:h-4.5 sm:w-4.5 opacity-50" />
+                      )}
+                    </Button>
+                  </motion.div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  Send message (Enter)
+                  {isSending ? 'Sending...' : isMessageValid ? 'Send message (Enter)' : 'Type a message to send'}
                 </TooltipContent>
               </Tooltip>
             </div>
           </div>
         </div>
 
-        {/* Voice Transcription Status */}
-        {isListening && (
-          <div className="flex items-center justify-center space-x-2 rounded-lg bg-red-50 p-2 text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            <div className="flex space-x-1">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-              <div
-                className="h-2 w-2 animate-pulse rounded-full bg-red-500"
-                style={{ animationDelay: '0.5s' }}
-              />
-              <div
-                className="h-2 w-2 animate-pulse rounded-full bg-red-500"
-                style={{ animationDelay: '1s' }}
-              />
-            </div>
-            <span className="font-medium text-xs sm:text-sm">
-              {interimTranscript
-                ? `Listening: "${interimTranscript}"`
-                : 'Speak now...'}
-            </span>
-            <Button onClick={handleVoiceToggle} size="sm" variant="ghost">
-              <MicOff className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+        {/* Animated Voice Transcription Status */}
+        <AnimatePresence>
+          {isListening && (
+            <motion.div 
+              className="flex items-center justify-center space-x-2 rounded-lg bg-red-50 p-2 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex space-x-1">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="h-2 w-2 rounded-full bg-red-500"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.5, 1, 0.5]
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      delay: i * 0.2
+                    }}
+                  />
+                ))}
+              </div>
+              <span className="font-medium text-xs sm:text-sm">
+                {interimTranscript
+                  ? `Listening: "${interimTranscript}"`
+                  : 'Speak now...'}
+              </span>
+              <Button onClick={handleVoiceToggle} size="sm" variant="ghost">
+                <MicOff className="h-4 w-4" />
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* File Inputs (Hidden) */}
         <input
@@ -706,7 +798,7 @@ export function MessageInput({
         />
 
         {children}
-      </div>
+      </motion.div>
     </TooltipProvider>
   );
 }

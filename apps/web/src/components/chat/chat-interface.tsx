@@ -123,12 +123,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     api.userPreferences.updateUserPreferences
   );
 
-  // Sync theme from database to next-themes on load (no animation)
-  useEffect(() => {
-    if (userPreferences?.theme && userPreferences.theme !== theme) {
-      setTheme(userPreferences.theme);
-    }
-  }, [userPreferences?.theme, theme, setTheme]);
+  // Theme sync is now handled globally in ThemeSync component
 
   // Chat settings state - complete configuration
   const [chatSettings, setChatSettings] = useState<ChatSettings>({

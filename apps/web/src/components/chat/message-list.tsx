@@ -1,7 +1,8 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown, MessageSquare } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import { Button } from '@/components/ui/button';
@@ -30,44 +31,116 @@ export function MessageList({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [lastMessageCount, setLastMessageCount] = useState(0);
+  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Get dynamic font size classes
-  const fontSizes = getFontSizeClasses(fontSize);
+  // Get dynamic font size classes - Applied immediately before render
+  const fontSizes = useMemo(() => getFontSizeClasses(fontSize), [fontSize]);
 
-  // Stable scroll-to-bottom helper
+  // Enhanced scroll-to-bottom with better performance
   const scrollToBottom = useCallback((smooth = true) => {
-    if (!scrollRef.current) {
-      return;
+    if (!scrollRef.current) return;
+    
+    const scrollElement = scrollRef.current;
+    const targetScroll = scrollElement.scrollHeight - scrollElement.clientHeight;
+    
+    if (smooth) {
+      // Use requestAnimationFrame for smoother scrolling
+      const startScroll = scrollElement.scrollTop;
+      const distance = targetScroll - startScroll;
+      const duration = 300;
+      let start: number | null = null;
+      
+      const step = (timestamp: number) => {
+        if (!start) start = timestamp;
+        const progress = Math.min((timestamp - start) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+        
+        scrollElement.scrollTop = startScroll + distance * easeProgress;
+        
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        }
+      };
+      
+      requestAnimationFrame(step);
+    } else {
+      scrollElement.scrollTop = targetScroll;
     }
-
-    scrollRef.current.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: smooth ? 'smooth' : 'auto',
-    });
+    
+    setIsAutoScrolling(true);
   }, []);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Enhanced auto-scroll with streaming support
   useEffect(() => {
-    if (messages && messages.length > lastMessageCount) {
-      // Force auto to ensure jump when a new message lands, then smooth for subsequent deltas
-      scrollToBottom(false);
-      setLastMessageCount(messages.length);
-      // Smooth follow-up for minor content reflow
-      const id = window.setTimeout(() => scrollToBottom(true), 50);
-      return () => window.clearTimeout(id);
+    if (!messages) return;
+    
+    const hasNewMessage = messages.length > lastMessageCount;
+    const hasStreamingMessage = messages.some(m => 
+      'isStreaming' in m && (m as StreamingMessage).isStreaming
+    );
+    
+    // Auto-scroll conditions:
+    // 1. New message arrived and auto-scrolling is enabled
+    // 2. Streaming message is active
+    // 3. User is not manually scrolling
+    if ((hasNewMessage || hasStreamingMessage) && isAutoScrolling && !isUserScrolling) {
+      // Use smooth scrolling for streaming, instant for new messages
+      scrollToBottom(hasStreamingMessage);
+      
+      if (hasNewMessage) {
+        setLastMessageCount(messages.length);
+      }
     }
-  }, [messages, lastMessageCount, scrollToBottom]);
-
-  // Handle scroll event to show/hide scroll-to-bottom button
-  const handleScroll = () => {
-    if (!scrollRef.current) {
-      return;
+  }, [messages, lastMessageCount, isAutoScrolling, isUserScrolling, scrollToBottom]);
+  
+  // Auto-scroll for streaming content updates
+  useEffect(() => {
+    if (!messages) return;
+    
+    const streamingMessage = messages.find(m => 
+      'isStreaming' in m && (m as StreamingMessage).isStreaming
+    );
+    
+    if (streamingMessage && isAutoScrolling && !isUserScrolling) {
+      // Debounce streaming scrolls for performance
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      scrollTimeoutRef.current = setTimeout(() => {
+        scrollToBottom(true);
+      }, 50);
     }
+    
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [messages, isAutoScrolling, isUserScrolling, scrollToBottom]);
 
+  // Enhanced scroll handler with user scroll detection
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const isNearBottom = distanceFromBottom < 100;
+    
+    // Detect if user is scrolling
+    if (!isNearBottom && !isUserScrolling) {
+      setIsUserScrolling(true);
+      setIsAutoScrolling(false);
+    } else if (isNearBottom && isUserScrolling) {
+      setIsUserScrolling(false);
+      setIsAutoScrolling(true);
+    }
+    
+    // Show scroll button when not at bottom
     setShowScrollButton(!isNearBottom && messages && messages.length > 0);
-  };
+  }, [messages, isUserScrolling]);
 
   // Group messages by date for date separators
   const groupMessagesByDate = (
@@ -175,79 +248,115 @@ export function MessageList({
                 </div>
               </div>
 
-              {/* Messages for this date */}
-              <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                {group.messages.map(
-                  (
-                    message: ChatMessage | StreamingMessage | MinimalMessage,
-                    _messageIndex: number
-                  ) => {
-                    // Check if this is a streaming message
-                    if (
-                      'isStreaming' in message &&
-                      (message as StreamingMessage).isStreaming
-                    ) {
+              {/* Messages for this date with animations */}
+              <AnimatePresence mode="popLayout">
+                <div className="space-y-2 sm:space-y-3 md:space-y-4">
+                  {group.messages.map(
+                    (
+                      message: ChatMessage | StreamingMessage | MinimalMessage,
+                      _messageIndex: number
+                    ) => {
+                      // Check if this is a streaming message
+                      if (
+                        'isStreaming' in message &&
+                        (message as StreamingMessage).isStreaming
+                      ) {
+                        return (
+                          <motion.div
+                            key={(message as StreamingMessage).id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <StreamingMessageComponent
+                              content={(message as StreamingMessage).content}
+                            />
+                          </motion.div>
+                        );
+                      }
+
                       return (
-                        <StreamingMessageComponent
-                          content={(message as StreamingMessage).content}
-                          key={(message as StreamingMessage).id}
-                        />
+                        <motion.div
+                          key={(message as ChatMessage | MinimalMessage)._id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                        >
+                          <MessageBubble
+                            fontSize={fontSize}
+                            message={message as ChatMessage}
+                            onCopy={() => {
+                              navigator.clipboard.writeText(
+                                (message as ChatMessage | MinimalMessage).content
+                              );
+                            }}
+                            onEdit={(_newContent) => {}}
+                            onRegenerate={() =>
+                              onMessageRegenerate?.(
+                                (message as ChatMessage | MinimalMessage)._id
+                              )
+                            }
+                            showActions={true}
+                          />
+                        </motion.div>
                       );
                     }
-
-                    return (
-                      <MessageBubble
-                        fontSize={fontSize}
-                        key={(message as ChatMessage | MinimalMessage)._id}
-                        message={message as ChatMessage}
-                        onCopy={() => {
-                          navigator.clipboard.writeText(
-                            (message as ChatMessage | MinimalMessage).content
-                          );
-                        }}
-                        onEdit={(_newContent) => {}}
-                        onRegenerate={() =>
-                          onMessageRegenerate?.(
-                            (message as ChatMessage | MinimalMessage)._id
-                          )
-                        }
-                        showActions={true}
-                      />
-                    );
-                  }
-                )}
-              </div>
+                  )}
+                </div>
+              </AnimatePresence>
             </div>
           ))}
 
-          {/* Typing Indicator */}
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="max-w-xs">
-                <TypingIndicator isTyping={true} />
-              </div>
-            </div>
-          )}
+          {/* Animated Typing Indicator */}
+          <AnimatePresence>
+            {isTyping && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="flex justify-start"
+              >
+                <div className="max-w-xs">
+                  <TypingIndicator isTyping={true} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Scroll anchor */}
           <div className="h-1" />
         </div>
       </ScrollArea>
 
-      {/* Scroll to Bottom Button */}
-      {showScrollButton && (
-        <div className="absolute right-4 bottom-4">
-          <Button
-            className="rounded-full shadow-lg"
-            onClick={() => scrollToBottom()}
-            size="sm"
-            variant="secondary"
+      {/* Animated Scroll to Bottom Button */}
+      <AnimatePresence>
+        {showScrollButton && (
+          <motion.div
+            className="absolute right-4 bottom-4"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
           >
-            <ArrowDown className="h-4 w-4" />
-            <span className="sr-only">Scroll to bottom</span>
-          </Button>
-        </div>
-      )}
+            <Button
+              className="rounded-full shadow-lg transition-transform hover:scale-110"
+              onClick={() => {
+                setIsUserScrolling(false);
+                setIsAutoScrolling(true);
+                scrollToBottom(true);
+              }}
+              size="sm"
+              variant="secondary"
+            >
+              <ArrowDown className="h-4 w-4" />
+              <span className="sr-only">Scroll to bottom</span>
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {children}
     </div>

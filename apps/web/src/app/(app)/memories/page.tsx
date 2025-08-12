@@ -61,15 +61,15 @@ export default function MemoriesPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSettings, setShowSettings] = useState(false);
 
-  // Queries
+  // Queries - use user._id for proper integration
   const memories = useQuery(
     api.memories.getUserMemories,
-    user?.walletAddress ? { userId: user.walletAddress } : 'skip'
+    user?._id ? { userId: user._id } : 'skip'
   );
 
   const stats = useQuery(
     api.memories.getStats,
-    user?.walletAddress ? { userId: user.walletAddress } : 'skip'
+    user?._id ? { userId: user._id } : 'skip'
   );
 
   // Filter and sort memories
@@ -107,7 +107,7 @@ export default function MemoriesPage() {
     );
   }, [memories]);
 
-  if (!user?.walletAddress) {
+  if (!user?._id) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="text-center">
@@ -158,7 +158,7 @@ export default function MemoriesPage() {
                         Manage your memory system settings and data
                       </DialogDescription>
                     </DialogHeader>
-                    <MemorySettings userId={user.walletAddress} />
+                    <MemorySettings userId={user._id} />
                   </DialogContent>
                 </Dialog>
               </div>

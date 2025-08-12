@@ -2,6 +2,8 @@
 
 import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import React from 'react';
 import { ModeToggle } from '@/components/mode-toggle';
@@ -42,11 +44,41 @@ export default function LandingHeader() {
         >
           <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
             <div className="flex w-full justify-between lg:w-auto">
-              <LogoWithText
+              <Link
+                aria-label="anubis.chat Home"
+                className="inline-flex items-center gap-2"
                 href={isAuthenticated ? '/dashboard' : '/'}
-                size="md"
-                textVariant="gradient"
-              />
+              >
+                <span className="relative inline-flex items-center justify-center">
+                  {/* Subtle layered glow */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -inset-1 rounded-full blur-sm"
+                    style={{
+                      background:
+                        'radial-gradient(closest-side, rgba(16,185,129,0.10), transparent 70%)',
+                    }}
+                  />
+                  <motion.span
+                    aria-hidden
+                    className="pointer-events-none absolute -inset-0.5 rounded-full"
+                    style={{
+                      background:
+                        'radial-gradient(closest-side, rgba(16,185,129,0.08), transparent 60%)',
+                    }}
+                    animate={{ scale: [1, 1.02, 1], opacity: [0.16, 0.22, 0.16] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                  <Image
+                    alt="Anubis mark"
+                    className="relative drop-shadow-[0_0_4px_rgba(16,185,129,0.06)]"
+                    height={60}
+                    src="/assets/logoNoText.png"
+                    width={60}
+                  />
+                </span>
+                <LogoWithText asLink={false} size="md" textVariant="gradient" />
+              </Link>
 
               <button
                 aria-label={menuState === true ? 'Close Menu' : 'Open Menu'}

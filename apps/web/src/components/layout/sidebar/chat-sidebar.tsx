@@ -3,9 +3,9 @@
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
-import { Bot, MessageSquare, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Bot, MessageSquare, Plus, Sparkles, Trash2, Clock, Search, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { LoadingStates } from '@/components/data/loading-states';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,8 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const { user, isAuthenticated } = useAuthContext();
   const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -97,93 +99,146 @@ export function ChatSidebar({
     return chatDate.toLocaleDateString();
   };
 
+  // Filter chats based on search query
+  const filteredChats = useMemo(() => {
+    if (!chats || !searchQuery) return chats;
+    return chats.filter(chat => 
+      chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [chats, searchQuery]);
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-card/50 backdrop-blur-sm">
+      {/* Header */}
       <div className="flex items-center justify-between border-border border-b px-3 py-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 transition-transform hover:scale-105">
           <div className="relative">
             <Bot className="h-4 w-4 text-primary" />
-            <Sparkles className="-right-1 -top-1 absolute h-2.5 w-2.5 text-accent" />
+            <Sparkles className="-right-1 -top-1 absolute h-2.5 w-2.5 text-accent animate-pulse" />
           </div>
           <h2 className="font-semibold text-sm">Chat History</h2>
         </div>
         <Button
-          className="h-7 px-2"
+          className="h-7 px-2 shadow-sm transition-transform hover:scale-105 active:scale-95"
           disabled={isCreatingChat}
           onClick={handleCreateChat}
           size="sm"
         >
           <Plus className="h-3.5 w-3.5" />
+          <span className="ml-1 hidden lg:inline">New</span>
         </Button>
       </div>
 
+      {/* Search Bar */}
+      {chats && chats.length > 3 && (
+        <div className="border-b border-border/50 p-2 transition-all">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              className="w-full rounded-md bg-background/50 px-7 py-1.5 text-xs placeholder:text-muted-foreground focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary/50 transition-colors"
+              placeholder="Search chats..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearching(true)}
+              onBlur={() => setIsSearching(false)}
+            />
+            {searchQuery && (
+              <button
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Chat List */}
       <div className="flex-1 overflow-hidden p-2">
         {chats === undefined ? (
-          <div className="p-2">
+          <div className="p-2 animate-fade-in">
             <LoadingStates variant="skeleton" />
           </div>
         ) : chats.length === 0 ? (
-          <div className="rounded-md border border-border/50 p-4 text-center text-muted-foreground text-xs">
+          <div className="rounded-md border border-border/50 p-4 text-center text-muted-foreground text-xs animate-fade-in">
+            <MessageSquare className="mx-auto mb-2 h-8 w-8 opacity-50" />
             No conversations yet
           </div>
         ) : (
           <div className="relative flex h-full flex-col">
             {/* Fade overlay at bottom when scrollable */}
-            {chats.length > 3 && (
+            {filteredChats && filteredChats.length > 3 && (
               <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-8 bg-gradient-to-t from-background to-transparent" />
             )}
-            {/* Chat list container with fixed height for 3 items */}
+            
+            {/* Chat list container */}
             <div
               className={cn(
-                'relative space-y-2 overflow-y-auto',
-                // Calculate max height based on approximately 3 chat items
-                // Each item is roughly 60px (py-2 + content + gap)
-                'max-h-[180px]', // 3 items * ~60px with spacing
-                // Custom scrollbar will be styled by global CSS
-                // Add padding-right to account for scrollbar when present
-                chats.length > 3 && 'pr-2'
+                'relative space-y-1 overflow-y-auto',
+                'max-h-[calc(100vh-200px)]',
+                filteredChats && filteredChats.length > 3 && 'pr-2'
               )}
               style={{
-                // Ensure smooth scrolling
                 scrollBehavior: 'smooth',
-                // Hide scrollbar in Firefox
                 scrollbarWidth: 'thin',
               }}
             >
-              {chats.map((chat) => (
-                <div
-                  className={cn(
-                    'flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 transition-colors',
-                    activeChatId === chat._id
-                      ? 'bg-white/10'
-                      : 'hover:bg-white/5'
-                  )}
-                  key={chat._id}
-                  onClick={() => handleChatSelect(chat._id)}
-                >
-                  <MessageSquare className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">{chat.title}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {formatChatDate(chat._creationTime)}
-                    </p>
-                  </div>
-                  <Button
-                    className="h-6 w-6 flex-shrink-0"
-                    onClick={(e) => handleDeleteChat(chat._id, e)}
-                    size="icon"
-                    variant="ghost"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+              {filteredChats && filteredChats.length === 0 && searchQuery ? (
+                <div className="text-center text-xs text-muted-foreground py-4 animate-fade-in">
+                  No chats found
                 </div>
-              ))}
+              ) : (
+                filteredChats?.map((chat, index) => (
+                  <div
+                    key={chat._id}
+                    className={cn(
+                      'group flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 transition-all animate-fade-in',
+                      'hover:translate-x-1',
+                      activeChatId === chat._id
+                        ? 'bg-primary/10 shadow-sm ring-1 ring-primary/20'
+                        : 'hover:bg-muted/50'
+                    )}
+                    style={{
+                      animationDelay: `${index * 50}ms`
+                    }}
+                    onClick={() => handleChatSelect(chat._id)}
+                  >
+                    <MessageSquare className={cn(
+                      "h-4 w-4 flex-shrink-0 transition-colors",
+                      activeChatId === chat._id ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    <div className="min-w-0 flex-1">
+                      <p className={cn(
+                        "truncate text-sm transition-colors",
+                        activeChatId === chat._id && "font-medium"
+                      )}>{chat.title}</p>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Clock className="h-2.5 w-2.5" />
+                        <span>{formatChatDate(chat._creationTime)}</span>
+                      </div>
+                    </div>
+                    <Button
+                      className="h-6 w-6 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"
+                      onClick={(e) => handleDeleteChat(chat._id, e)}
+                      size="icon"
+                      variant="ghost"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))
+              )}
             </div>
-            {/* Show count indicator if more than 3 chats */}
-            {chats.length > 3 && (
-              <div className="mt-auto border-border/50 border-t pt-2">
+            
+            {/* Chat count indicator */}
+            {filteredChats && filteredChats.length > 5 && (
+              <div className="mt-2 border-border/50 border-t pt-2 animate-fade-in">
                 <p className="text-center text-[10px] text-muted-foreground">
-                  Scroll to see all {chats.length} chats
+                  {searchQuery 
+                    ? `Showing ${filteredChats.length} of ${chats?.length || 0} chats`
+                    : `${filteredChats.length} total chats`
+                  }
                 </p>
               </div>
             )}
