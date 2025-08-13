@@ -1,8 +1,5 @@
 {
-  "installCommand": "bun install",
-  "buildCommand": "bun run build",
-  "framework": "nextjs",
-  "env": {
-    "ENABLE_EXPERIMENTAL_COREPACK": "1"
-  }
+  "installCommand": "npx bun@latest install",
+  "buildCommand": "npx bun@latest run build",
+  "framework": "nextjs"
 }
