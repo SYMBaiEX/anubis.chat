@@ -155,7 +155,10 @@ export function LogoWithText({
   asLink = true,
   href = '/',
   animation = 'gradient',
-}: Pick<LogoProps, 'size' | 'className' | 'textVariant' | 'asLink' | 'href' | 'animation'>) {
+}: Pick<
+  LogoProps,
+  'size' | 'className' | 'textVariant' | 'asLink' | 'href' | 'animation'
+>) {
   return (
     <Logo
       animation={animation}

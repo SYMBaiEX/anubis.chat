@@ -43,7 +43,7 @@ export function HeroLogo({
     <div className={cn('flex flex-col items-center gap-4', className)}>
       <div className="space-y-2 text-center">
         <h1 className="font-extrabold font-heading text-5xl tracking-tight lg:text-7xl">
-          <span 
+          <span
             className={cn(
               'bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent',
               animation !== 'none' && getAnimationClasses()
@@ -64,10 +64,10 @@ export function HeroLogo({
 /**
  * Compact hero logo variant for smaller spaces
  */
-export function CompactHeroLogo({ 
-  className, 
-  animation = 'gradient' 
-}: { 
+export function CompactHeroLogo({
+  className,
+  animation = 'gradient',
+}: {
   className?: string;
   animation?: 'none' | 'gradient' | 'shimmer' | 'pulse' | 'typing';
 }) {
@@ -92,7 +92,7 @@ export function CompactHeroLogo({
       <LogoIcon size="lg" />
       <div>
         <h2 className="font-extrabold font-heading text-2xl">
-          <span 
+          <span
             className={cn(
               'bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent',
               animation !== 'none' && getAnimationClasses()

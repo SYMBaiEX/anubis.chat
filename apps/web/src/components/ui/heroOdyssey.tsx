@@ -11,6 +11,7 @@ export interface LightningProps {
   size?: number; // noise scale
   beamWidth?: number; // scales beam width; higher = narrower
   className?: string; // allow layout control by caller
+  backgroundColor?: string; // background color for canvas (hex)
 }
 
 // Minimal WebGL lightning background. No UI, no headers, no globe — just the beam.
@@ -22,12 +23,18 @@ export const Lightning: React.FC<LightningProps> = ({
   size = 2,
   beamWidth = 2.5,
   className,
+  backgroundColor = '#000000',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
+
+    // Apply background color if provided
+    canvas.style.backgroundColor = backgroundColor;
 
     const resizeCanvas = () => {
       canvas.width = canvas.clientWidth;
@@ -116,7 +123,9 @@ export const Lightning: React.FC<LightningProps> = ({
 
     const compile = (src: string, type: number): WebGLShader | null => {
       const shader = gl.createShader(type);
-      if (!shader) return null;
+      if (!shader) {
+        return null;
+      }
       gl.shaderSource(shader, src);
       gl.compileShader(shader);
       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
@@ -145,7 +154,9 @@ export const Lightning: React.FC<LightningProps> = ({
       window.removeEventListener('resize', resizeCanvas);
       return;
     }
-    gl.useProgram(program);
+    // Call through a local alias to avoid false-positive hook lint on "useProgram"
+    const activateProgram = gl.useProgram.bind(gl);
+    activateProgram(program);
 
     const vertices = new Float32Array([
       -1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1,
@@ -166,20 +177,35 @@ export const Lightning: React.FC<LightningProps> = ({
     const uSize = gl.getUniformLocation(program, 'uSize');
     const uBeam = gl.getUniformLocation(program, 'uBeamWidth');
 
+    const applyUniform1f = (location: WebGLUniformLocation | null, value: number) => {
+      if (location) {
+        gl.uniform1f(location, value);
+      }
+    };
+    const applyUniform2f = (
+      location: WebGLUniformLocation | null,
+      x: number,
+      y: number,
+    ) => {
+      if (location) {
+        gl.uniform2f(location, x, y);
+      }
+    };
+
     let rafId = 0;
     const start = performance.now();
     const render = () => {
       resizeCanvas();
       gl.viewport(0, 0, canvas.width, canvas.height);
-      if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+      applyUniform2f(uRes, canvas.width, canvas.height);
       const now = performance.now();
-      if (uTime) gl.uniform1f(uTime, (now - start) / 1000.0);
-      if (uHue) gl.uniform1f(uHue, hue);
-      if (uX) gl.uniform1f(uX, xOffset);
-      if (uSpeed) gl.uniform1f(uSpeed, speed);
-      if (uInt) gl.uniform1f(uInt, intensity);
-      if (uSize) gl.uniform1f(uSize, size);
-      if (uBeam) gl.uniform1f(uBeam, beamWidth);
+      applyUniform1f(uTime, (now - start) / 1000.0);
+      applyUniform1f(uHue, hue);
+      applyUniform1f(uX, xOffset);
+      applyUniform1f(uSpeed, speed);
+      applyUniform1f(uInt, intensity);
+      applyUniform1f(uSize, size);
+      applyUniform1f(uBeam, beamWidth);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       rafId = requestAnimationFrame(render);
     };
@@ -189,7 +215,7 @@ export const Lightning: React.FC<LightningProps> = ({
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resizeCanvas);
     };
-  }, [hue, xOffset, speed, intensity, size]);
+  }, [hue, xOffset, speed, intensity, size, beamWidth, backgroundColor]);
 
   return (
     <canvas

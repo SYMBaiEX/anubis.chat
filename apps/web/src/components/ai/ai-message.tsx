@@ -204,7 +204,9 @@ export function AIMessage({
             )}
 
             {/* Tool invocations - AI SDK v5 format in parts array */}
-            {(message as any).parts?.some((part: any) => part.type?.startsWith('tool-')) && (
+            {(message as any).parts?.some((part: any) =>
+              part.type?.startsWith('tool-')
+            ) && (
               <div className="mt-3 space-y-2 border-t pt-3">
                 {(message as any).parts
                   ?.filter((part: any) => part.type?.startsWith('tool-'))
@@ -222,8 +224,8 @@ export function AIMessage({
                       {tool.output && (
                         <div className="mt-1 text-muted-foreground text-xs">
                           <pre className="whitespace-pre-wrap">
-                            {typeof tool.output === 'string' 
-                              ? tool.output 
+                            {typeof tool.output === 'string'
+                              ? tool.output
                               : JSON.stringify(tool.output, null, 2)}
                           </pre>
                         </div>

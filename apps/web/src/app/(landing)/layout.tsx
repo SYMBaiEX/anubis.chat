@@ -2,7 +2,7 @@
 
 import LandingFooter from '@/components/landing/landing-footer';
 import LandingHeader from '@/components/landing/landing-header';
-import { Lightning } from '@/components/ui/hero-odyssey';
+import { Lightning } from '@/components/ui/heroOdyssey';
 
 export default function LandingLayout({
   children,

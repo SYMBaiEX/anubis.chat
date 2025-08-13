@@ -1,10 +1,15 @@
 'use client';
 
 import {
+  AnimatePresence,
+  motion,
+  useScroll,
+  useTransform,
+} from 'framer-motion';
+import {
   Calendar,
   CheckCircle2,
   ChevronDown,
-  ChevronRight,
   Clock,
   Filter,
   Grid3x3,
@@ -36,6 +41,64 @@ import SiteLinksSection from '../(landing)/components/siteLinksSection';
 
 type FeatureStatus = 'completed' | 'in-progress' | 'upcoming';
 type ViewMode = 'timeline' | 'kanban' | 'list';
+
+// Animation Variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.15,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 40, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 70,
+      damping: 14,
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.92 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 100,
+      damping: 20,
+    },
+  },
+  hover: {
+    scale: 1.02,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 400,
+      damping: 25,
+    },
+  },
+};
+
+const glowVariants = {
+  initial: { opacity: 0 },
+  animate: {
+    opacity: [0.6, 1, 0.6],
+    transition: {
+      duration: 3,
+      repeat: Number.POSITIVE_INFINITY,
+      ease: 'easeInOut',
+    },
+  },
+};
 
 interface EmptySearchStateProps {
   Icon: React.ComponentType<{ className?: string }>;
@@ -74,117 +137,186 @@ function FeatureCard({
   const FeatureIcon = feature.icon;
 
   return (
-    <Card
-      className={cn(
-        'group relative transform-gpu overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl',
-        expanded && 'scale-[1.02] shadow-xl ring-2 ring-primary'
-      )}
+    <motion.div
+      animate="visible"
+      initial="hidden"
+      layout
+      transition={{ layout: { type: 'spring', stiffness: 200, damping: 25 } }}
+      variants={cardVariants}
+      whileHover="hover"
     >
-      <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      <CardHeader className="relative pb-4">
-        <button
-          aria-expanded={expanded}
-          aria-label={`${feature.title} - ${feature.status} - Click to ${expanded ? 'collapse' : 'expand'} details`}
-          className="relative w-full rounded-lg text-left transition-all duration-200 hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          onClick={onToggle}
-          type="button"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
-              <div
-                className={cn(
-                  'rounded-lg p-2 transition-transform duration-200 group-hover:scale-110',
-                  statusConfig[feature.status].bgColor
-                )}
-              >
-                <FeatureIcon className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  {feature.title}
-                  <StatusIcon
-                    className={cn(
-                      'h-4 w-4',
-                      statusConfig[feature.status].color
-                    )}
-                  />
-                </CardTitle>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Badge
-                    className={cn('border', categoryColors[feature.category])}
-                  >
-                    {feature.category}
-                  </Badge>
-                  <Badge variant="outline">{feature.quarter}</Badge>
-                  {feature.estimatedDate && (
-                    <Badge variant="secondary">{feature.estimatedDate}</Badge>
+      <Card
+        className={cn(
+          'group relative transform-gpu overflow-hidden border-primary/10 backdrop-blur-sm',
+          expanded && 'shadow-xl ring-2 ring-primary'
+        )}
+      >
+        <motion.span
+          className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/5 to-transparent"
+          initial={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          whileHover={{ opacity: 1 }}
+        />
+        <CardHeader className="relative pb-4">
+          <button
+            aria-expanded={expanded}
+            aria-label={`${feature.title} - ${feature.status} - Click to ${expanded ? 'collapse' : 'expand'} details`}
+            className="relative w-full rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            onClick={onToggle}
+            type="button"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <motion.div
+                  className={cn(
+                    'rounded-lg p-2',
+                    statusConfig[feature.status].bgColor
                   )}
-                </div>
-              </div>
-              <div className="flex h-6 w-6 items-center justify-center">
-                {expanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </div>
-            </div>
-          </div>
-        </button>
-      </CardHeader>
-      <CardContent className="relative">
-        <p className="text-muted-foreground text-sm">{feature.description}</p>
-
-        {feature.status !== 'upcoming' && (
-          <div className="mt-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-muted-foreground text-xs">Progress</span>
-              <span className="font-medium text-xs">{feature.progress}%</span>
-            </div>
-            <Progress
-              className="h-2"
-              value={feature.progress}
-              variant={feature.progress === 100 ? 'success' : 'default'}
-            />
-          </div>
-        )}
-
-        {expanded && (
-          <div className="fade-in-0 slide-in-from-top-2 mt-4 animate-in space-y-4 duration-300">
-            {feature.details && (
-              <div>
-                <h4 className="mb-2 font-medium text-sm">Key Features:</h4>
-                <ul className="space-y-1">
-                  {feature.details.map((detail) => (
-                    <li
-                      className="flex items-start gap-2 text-muted-foreground text-sm"
-                      key={detail}
+                  transition={{ type: 'spring', stiffness: 400 }}
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                >
+                  <FeatureIcon className="h-5 w-5" />
+                </motion.div>
+                <div className="flex-1">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    {feature.title}
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{
+                        duration: 2,
+                        repeat: Number.POSITIVE_INFINITY,
+                      }}
                     >
-                      <CheckCircle2 className="mt-0.5 h-3 w-3 flex-shrink-0 text-primary" />
-                      <span>{detail}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {feature.links && (
-              <div className="flex gap-2">
-                {feature.links.map((link) => (
-                  <Link
-                    className="text-primary text-sm underline underline-offset-4 transition-colors hover:text-primary/80"
-                    href={link.href}
-                    key={link.href}
-                    onClick={(e) => e.stopPropagation()}
+                      <StatusIcon
+                        className={cn(
+                          'h-4 w-4',
+                          statusConfig[feature.status].color
+                        )}
+                      />
+                    </motion.div>
+                  </CardTitle>
+                  <motion.div
+                    animate={{ opacity: 1 }}
+                    className="mt-2 flex flex-wrap gap-2"
+                    initial={{ opacity: 0 }}
+                    transition={{ delay: 0.2 }}
                   >
-                    {link.label}
-                  </Link>
-                ))}
+                    <Badge
+                      className={cn('border', categoryColors[feature.category])}
+                    >
+                      {feature.category}
+                    </Badge>
+                    <Badge variant="outline">{feature.quarter}</Badge>
+                    {feature.estimatedDate && (
+                      <Badge variant="secondary">{feature.estimatedDate}</Badge>
+                    )}
+                  </motion.div>
+                </div>
+                <motion.div
+                  animate={{ rotate: expanded ? 180 : 0 }}
+                  className="flex h-6 w-6 items-center justify-center"
+                  transition={{ type: 'spring', stiffness: 200 }}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </motion.div>
               </div>
+            </div>
+          </button>
+        </CardHeader>
+        <CardContent className="relative">
+          <motion.p
+            animate={{ opacity: 1 }}
+            className="text-muted-foreground text-sm"
+            initial={{ opacity: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            {feature.description}
+          </motion.p>
+
+          {feature.status !== 'upcoming' && (
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4"
+              initial={{ opacity: 0, y: 10 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-muted-foreground text-xs">Progress</span>
+                <motion.span
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="font-medium text-xs"
+                  initial={{ scale: 1.5, opacity: 0 }}
+                  key={feature.progress}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                >
+                  {feature.progress}%
+                </motion.span>
+              </div>
+              <Progress
+                className="h-2"
+                value={feature.progress}
+                variant={feature.progress === 100 ? 'success' : 'default'}
+              />
+            </motion.div>
+          )}
+
+          <AnimatePresence>
+            {expanded && (
+              <motion.div
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mt-4 space-y-4"
+                exit={{ opacity: 0, height: 0 }}
+                initial={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+              >
+                {feature.details && (
+                  <motion.div
+                    animate={{ x: 0, opacity: 1 }}
+                    initial={{ x: -20, opacity: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <h4 className="mb-2 font-medium text-sm">Key Features:</h4>
+                    <ul className="space-y-1">
+                      {feature.details.map((detail, index) => (
+                        <motion.li
+                          animate={{ x: 0, opacity: 1 }}
+                          className="flex items-start gap-2 text-muted-foreground text-sm"
+                          initial={{ x: -20, opacity: 0 }}
+                          key={detail}
+                          transition={{ delay: 0.15 + index * 0.05 }}
+                        >
+                          <CheckCircle2 className="mt-0.5 h-3 w-3 flex-shrink-0 text-primary" />
+                          <span>{detail}</span>
+                        </motion.li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+                {feature.links && (
+                  <motion.div
+                    animate={{ opacity: 1 }}
+                    className="flex gap-2"
+                    initial={{ opacity: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    {feature.links.map((link) => (
+                      <Link
+                        className="text-primary text-sm underline underline-offset-4 transition-colors hover:text-primary/80"
+                        href={link.href}
+                        key={link.href}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </motion.div>
             )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -219,102 +351,215 @@ function TimelineView({
     totalProgress: Math.round(
       (features.filter((f) => f.status === 'completed').length /
         features.length) *
-      100
+        100
     ),
   };
 
   return (
-    <div className="space-y-8">
+    <motion.div
+      animate="visible"
+      className="space-y-8"
+      initial="hidden"
+      variants={containerVariants}
+    >
       {/* Overall Progress with glow */}
-      <Card className="relative overflow-hidden border-primary/20">
-        <div className="-inset-2 pointer-events-none absolute rounded-xl">
-          <div className="absolute inset-0 rounded-xl bg-[radial-gradient(50%_30%_at_50%_20%,rgba(34,197,94,0.12)_0%,rgba(34,197,94,0.06)_40%,transparent_85%)] opacity-40 blur-[6px]" />
-        </div>
-        <CardHeader className="relative">
-          <CardTitle className="flex items-center gap-2">
-            <Rocket className="h-5 w-5" />
-            Overall Roadmap Progress
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative">
-          <div className="space-y-4">
-            <Progress
-              className="h-3"
-              value={stats.totalProgress}
-              variant="success"
-            />
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div className="text-center">
-                <div className="font-bold text-2xl text-green-600 dark:text-green-400">
-                  {stats.completed}
-                </div>
-                <div className="text-muted-foreground">Completed</div>
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-2xl text-yellow-600 dark:text-yellow-400">
-                  {stats.inProgress}
-                </div>
-                <div className="text-muted-foreground">In Progress</div>
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-2xl text-gray-600 dark:text-gray-400">
-                  {stats.upcoming}
-                </div>
-                <div className="text-muted-foreground">Upcoming</div>
+      <motion.div variants={itemVariants}>
+        <Card className="relative overflow-hidden border-primary/20">
+          <motion.div
+            animate="animate"
+            className="-inset-2 pointer-events-none absolute rounded-xl"
+            initial="initial"
+            variants={glowVariants}
+          >
+            <div className="absolute inset-0 rounded-xl bg-[radial-gradient(50%_30%_at_50%_20%,rgba(34,197,94,0.12)_0%,rgba(34,197,94,0.06)_40%,transparent_85%)] blur-[6px]" />
+          </motion.div>
+          <CardHeader className="relative">
+            <CardTitle className="flex items-center gap-2">
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{
+                  duration: 20,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                }}
+              >
+                <Rocket className="h-5 w-5" />
+              </motion.div>
+              Overall Roadmap Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="relative">
+            <div className="space-y-4">
+              <motion.div
+                animate={{ scaleX: 1 }}
+                initial={{ scaleX: 0 }}
+                style={{ originX: 0 }}
+                transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
+              >
+                <Progress
+                  className="h-3"
+                  value={stats.totalProgress}
+                  variant="success"
+                />
+              </motion.div>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  <motion.div
+                    animate={{ scale: 1 }}
+                    className="font-bold text-2xl text-green-600 dark:text-green-400"
+                    initial={{ scale: 0 }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 200,
+                      delay: 0.8,
+                    }}
+                  >
+                    {stats.completed}
+                  </motion.div>
+                  <div className="text-muted-foreground">Completed</div>
+                </motion.div>
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <motion.div
+                    animate={{ scale: 1 }}
+                    className="font-bold text-2xl text-yellow-600 dark:text-yellow-400"
+                    initial={{ scale: 0 }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 200,
+                      delay: 0.9,
+                    }}
+                  >
+                    {stats.inProgress}
+                  </motion.div>
+                  <div className="text-muted-foreground">In Progress</div>
+                </motion.div>
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  transition={{ delay: 0.9 }}
+                >
+                  <motion.div
+                    animate={{ scale: 1 }}
+                    className="font-bold text-2xl text-gray-600 dark:text-gray-400"
+                    initial={{ scale: 0 }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 200,
+                      delay: 1,
+                    }}
+                  >
+                    {stats.upcoming}
+                  </motion.div>
+                  <div className="text-muted-foreground">Upcoming</div>
+                </motion.div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Timeline */}
       <div className="relative">
-        {/* Timeline Line */}
-        <div
+        {/* Animated Timeline Line */}
+        <motion.div
+          animate={{ scaleY: 1 }}
           aria-hidden="true"
           className="absolute top-0 bottom-0 left-8 w-0.5 bg-gradient-to-b from-green-500 via-yellow-500 to-gray-400"
+          initial={{ scaleY: 0 }}
+          style={{ originY: 0 }}
+          transition={{ duration: 1.5, ease: 'easeOut' }}
         />
 
         {quarters.map((quarter, qIdx) => {
           const quarterFeatures = features.filter((f) => f.quarter === quarter);
 
           return (
-            <div className="relative mb-12" key={quarter}>
+            <motion.div
+              animate={{ opacity: 1, x: 0 }}
+              className="relative mb-12"
+              initial={{ opacity: 0, x: -50 }}
+              key={quarter}
+              transition={{ delay: 0.3 + qIdx * 0.2, duration: 0.6 }}
+            >
               {/* Quarter Marker with enhanced glow */}
               <div className="mb-6 flex items-center gap-4">
                 <div className="relative">
-                  {/* Glow effect behind marker */}
-                  <div className="-inset-2 pointer-events-none absolute rounded-full">
-                    <div className="absolute inset-0 rounded-full bg-primary/20 opacity-60 blur-[8px]" />
-                  </div>
-                  <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-4 border-primary bg-background shadow-lg transition-transform duration-200 hover:scale-105">
+                  {/* Animated glow effect behind marker */}
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.6, 0.8, 0.6],
+                    }}
+                    className="-inset-2 pointer-events-none absolute rounded-full"
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: 'easeInOut',
+                    }}
+                  >
+                    <div className="absolute inset-0 rounded-full bg-primary/20 blur-[8px]" />
+                  </motion.div>
+                  <motion.div
+                    className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-4 border-primary bg-background shadow-lg"
+                    transition={{ type: 'spring', stiffness: 300 }}
+                    whileHover={{ scale: 1.1, rotate: 10 }}
+                  >
                     <Calendar className="h-6 w-6" />
-                  </div>
+                  </motion.div>
                 </div>
-                <div>
+                <motion.div
+                  animate={{ opacity: 1 }}
+                  initial={{ opacity: 0 }}
+                  transition={{ delay: 0.5 + qIdx * 0.2 }}
+                >
                   <h3 className="font-bold text-xl">{quarter}</h3>
                   <p className="text-muted-foreground text-sm">
                     {getQuarterStatus(qIdx)}
                   </p>
-                </div>
+                </motion.div>
               </div>
 
               {/* Features with enhanced spacing */}
-              <div className="ml-20 space-y-6">
-                {quarterFeatures.map((feature) => (
-                  <FeatureCard
-                    expanded={expandedCards.has(feature.id)}
-                    feature={feature}
+              <motion.div
+                animate="visible"
+                className="ml-20 space-y-6"
+                initial="hidden"
+                variants={containerVariants}
+              >
+                {quarterFeatures.map((feature, fIdx) => (
+                  <motion.div
+                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, x: -30 }}
                     key={feature.id}
-                    onToggle={() => onToggleCard(feature.id)}
-                  />
+                    transition={{
+                      delay: 0.6 + qIdx * 0.2 + fIdx * 0.1,
+                      duration: 0.5,
+                    }}
+                  >
+                    <FeatureCard
+                      expanded={expandedCards.has(feature.id)}
+                      feature={feature}
+                      onToggle={() => onToggleCard(feature.id)}
+                    />
+                  </motion.div>
                 ))}
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -328,39 +573,91 @@ function KanbanView({
   onToggleCard: (id: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <motion.div
+      animate="visible"
+      className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+      initial="hidden"
+      variants={containerVariants}
+    >
       {(['completed', 'in-progress', 'upcoming'] as FeatureStatus[]).map(
-        (status) => {
+        (status, index) => {
           const statusFeatures = features.filter((f) => f.status === status);
           const config = statusConfig[status];
           const Icon = config.icon;
 
           return (
-            <div className="space-y-4" key={status}>
-              <div className={cn('rounded-lg border p-4', config.bgColor)}>
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+              initial={{ opacity: 0, y: 50 }}
+              key={status}
+              transition={{
+                delay: index * 0.15,
+                duration: 0.6,
+                ease: 'easeOut',
+              }}
+            >
+              <motion.div
+                className={cn('rounded-lg border p-4', config.bgColor)}
+                transition={{ type: 'spring', stiffness: 400 }}
+                whileHover={{ scale: 1.02 }}
+              >
                 <h3 className="flex items-center gap-2 font-semibold">
-                  <Icon className={cn('h-5 w-5', config.color)} />
+                  <motion.div
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{
+                      duration: 4,
+                      repeat: Number.POSITIVE_INFINITY,
+                      delay: index * 0.5,
+                    }}
+                  >
+                    <Icon className={cn('h-5 w-5', config.color)} />
+                  </motion.div>
                   {config.label}
-                  <Badge className="ml-auto" variant="secondary">
-                    {statusFeatures.length}
-                  </Badge>
+                  <motion.div
+                    animate={{ scale: 1 }}
+                    initial={{ scale: 0 }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 500,
+                      delay: 0.3 + index * 0.1,
+                    }}
+                  >
+                    <Badge className="ml-auto" variant="secondary">
+                      {statusFeatures.length}
+                    </Badge>
+                  </motion.div>
                 </h3>
-              </div>
-              <div className="space-y-4">
-                {statusFeatures.map((feature) => (
-                  <FeatureCard
-                    expanded={expandedCards.has(feature.id)}
-                    feature={feature}
+              </motion.div>
+              <motion.div
+                animate="visible"
+                className="space-y-4"
+                initial="hidden"
+                variants={containerVariants}
+              >
+                {statusFeatures.map((feature, fIdx) => (
+                  <motion.div
+                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, x: -20 }}
                     key={feature.id}
-                    onToggle={() => onToggleCard(feature.id)}
-                  />
+                    transition={{
+                      delay: 0.4 + index * 0.15 + fIdx * 0.08,
+                      duration: 0.5,
+                    }}
+                  >
+                    <FeatureCard
+                      expanded={expandedCards.has(feature.id)}
+                      feature={feature}
+                      onToggle={() => onToggleCard(feature.id)}
+                    />
+                  </motion.div>
                 ))}
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           );
         }
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -374,16 +671,31 @@ function ListView({
   onToggleCard: (id: string) => void;
 }) {
   return (
-    <div className="space-y-4">
-      {features.map((feature) => (
-        <FeatureCard
-          expanded={expandedCards.has(feature.id)}
-          feature={feature}
+    <motion.div
+      animate="visible"
+      className="space-y-4"
+      initial="hidden"
+      variants={containerVariants}
+    >
+      {features.map((feature, index) => (
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 30 }}
           key={feature.id}
-          onToggle={() => onToggleCard(feature.id)}
-        />
+          transition={{
+            delay: index * 0.08,
+            duration: 0.5,
+            ease: 'easeOut',
+          }}
+        >
+          <FeatureCard
+            expanded={expandedCards.has(feature.id)}
+            feature={feature}
+            onToggle={() => onToggleCard(feature.id)}
+          />
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -394,6 +706,9 @@ export default function RoadmapPage(): ReactElement {
     'all'
   );
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const { scrollYProgress } = useScroll();
+  const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
 
   const toggleCard = (id: string): void => {
     setExpandedCards((prev) => {
@@ -428,7 +743,7 @@ export default function RoadmapPage(): ReactElement {
       <LandingHeader />
 
       <main className="relative w-full flex-1 pb-10">
-        {/* Hero */}
+        {/* Hero with enhanced animations */}
         <AnimatedSection
           allowOverlap
           className="isolate overflow-visible px-4 py-24 text-center sm:px-6 md:py-32 lg:px-8"
@@ -437,44 +752,129 @@ export default function RoadmapPage(): ReactElement {
           revealStrategy="none"
           softEdges
         >
-          <div className="relative z-10 mx-auto w-full max-w-4xl">
-            <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-orange-500/10 px-3 py-1 backdrop-blur-sm md:mb-8">
-              <Sparkles className="h-3 w-3 animate-pulse text-primary" />
+          <motion.div
+            animate="visible"
+            className="relative z-10 mx-auto w-full max-w-4xl"
+            initial="hidden"
+            style={{ opacity, scale }}
+            variants={containerVariants}
+          >
+            <motion.div
+              className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-orange-500/10 px-3 py-1 backdrop-blur-sm md:mb-8"
+              transition={{ type: 'spring', stiffness: 400 }}
+              variants={itemVariants}
+              whileHover={{
+                scale: 1.05,
+                boxShadow: '0 0 30px rgba(16, 185, 129, 0.4)',
+              }}
+            >
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{
+                  duration: 4,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                }}
+              >
+                <Sparkles className="h-3 w-3 text-primary" />
+              </motion.div>
               <span className="font-medium text-primary text-xs tracking-wide">
                 Live Updates • Community Driven
               </span>
-              <Sparkles className="h-3 w-3 animate-pulse text-primary" />
-            </div>
+              <motion.div
+                animate={{ rotate: [0, -360] }}
+                transition={{
+                  duration: 4,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                }}
+              >
+                <Sparkles className="h-3 w-3 text-primary" />
+              </motion.div>
+            </motion.div>
 
-            <h1 className="mt-2 mb-4 font-bold text-4xl transition-all delay-100 duration-700 sm:text-5xl md:mt-4 md:mb-6 md:text-6xl lg:text-7xl">
-              <span className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary">
+            <motion.h1
+              className="mt-2 mb-4 font-bold text-4xl sm:text-5xl md:mt-4 md:mb-6 md:text-6xl lg:text-7xl"
+              variants={itemVariants}
+            >
+              <motion.span
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary"
+                style={{ backgroundSize: '200% 100%' }}
+                transition={{
+                  duration: 8,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                }}
+              >
                 Interactive Product Roadmap
-              </span>
-            </h1>
+              </motion.span>
+            </motion.h1>
 
-            <p className="mx-auto mt-3 mb-10 max-w-3xl text-lg text-muted-foreground transition-all delay-200 duration-700 sm:text-xl md:mt-4 md:mb-12 md:text-2xl">
+            <motion.p
+              className="mx-auto mt-3 mb-10 max-w-3xl text-lg text-muted-foreground sm:text-xl md:mt-4 md:mb-12 md:text-2xl"
+              variants={itemVariants}
+            >
               Track our progress, explore upcoming features, and see what we're
-              building next. Click on any card to see more details.
-            </p>
-            {/* Info badges with glow background */}
-            <div className="relative mt-6">
-              {/* Glow effect behind info */}
-              <div className="-inset-4 pointer-events-none absolute rounded-xl">
-                <div className="absolute inset-0 rounded-xl bg-[radial-gradient(50%_30%_at_50%_50%,rgba(34,197,94,0.08)_0%,rgba(34,197,94,0.04)_40%,transparent_85%)] opacity-50 blur-[6px]" />
-              </div>
+              building next.{' '}
+              <motion.span
+                animate={{ scale: [1, 1.05, 1] }}
+                className="font-semibold text-primary"
+                transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY }}
+              >
+                Click on any card
+              </motion.span>{' '}
+              to see more details.
+            </motion.p>
+
+            {/* Info badges with animated glow background */}
+            <motion.div className="relative mt-6" variants={itemVariants}>
+              {/* Animated glow effect behind info */}
+              <motion.div
+                animate={{
+                  opacity: [0.5, 0.8, 0.5],
+                }}
+                className="-inset-4 pointer-events-none absolute rounded-xl"
+                transition={{
+                  duration: 3,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'easeInOut',
+                }}
+              >
+                <div className="absolute inset-0 rounded-xl bg-[radial-gradient(50%_30%_at_50%_50%,rgba(34,197,94,0.08)_0%,rgba(34,197,94,0.04)_40%,transparent_85%)] blur-[6px]" />
+              </motion.div>
 
               <div className="relative z-10 flex flex-col items-center justify-center gap-2 text-muted-foreground text-xs sm:flex-row sm:gap-4">
-                <span className="flex items-center gap-1">
+                <motion.span
+                  className="flex items-center gap-1"
+                  transition={{ type: 'spring', stiffness: 400 }}
+                  whileHover={{ scale: 1.05 }}
+                >
                   <Clock className="h-3 w-3" />
                   Last updated: {new Date().toISOString().split('T')[0]}
-                </span>
-                <Badge className="gap-1" variant="outline">
-                  <Sparkles className="h-3 w-3" />
-                  Pro+ users can vote on features
-                </Badge>
+                </motion.span>
+                <motion.div
+                  transition={{ type: 'spring', stiffness: 400 }}
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <Badge className="gap-1" variant="outline">
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{
+                        duration: 2,
+                        repeat: Number.POSITIVE_INFINITY,
+                      }}
+                    >
+                      <Sparkles className="h-3 w-3" />
+                    </motion.div>
+                    Pro+ users can vote on features
+                  </Badge>
+                </motion.div>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </AnimatedSection>
 
         {/* Controls */}
@@ -632,7 +1032,7 @@ export default function RoadmapPage(): ReactElement {
           </div>
         </AnimatedSection>
 
-        {/* Footer CTA */}
+        {/* Footer CTA with enhanced animations */}
         <AnimatedSection
           allowOverlap
           className="isolate overflow-visible px-4 py-16 text-center sm:px-6 md:py-20 lg:px-8"
@@ -642,46 +1042,138 @@ export default function RoadmapPage(): ReactElement {
           softEdges
           useSurface={false}
         >
-          <div className="relative z-10 mx-auto max-w-4xl">
-            <h3 className="mb-4 font-bold text-2xl md:text-3xl">
-              <span className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary">
+          <motion.div
+            className="relative z-10 mx-auto max-w-4xl"
+            initial={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            viewport={{ once: true, margin: '-100px' }}
+            whileInView={{ opacity: 1, y: 0 }}
+          >
+            <motion.h3
+              className="mb-4 font-bold text-2xl md:text-3xl"
+              initial={{ opacity: 0, y: 30 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              viewport={{ once: true }}
+              whileInView={{ opacity: 1, y: 0 }}
+            >
+              <motion.span
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary"
+                style={{ backgroundSize: '200% 100%' }}
+                transition={{
+                  duration: 6,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                }}
+              >
                 Have feedback or feature requests?
-              </span>
-            </h3>
-            <p className="mb-8 text-lg text-muted-foreground sm:text-xl md:mb-10">
+              </motion.span>
+            </motion.h3>
+            <motion.p
+              className="mb-8 text-lg text-muted-foreground sm:text-xl md:mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+              viewport={{ once: true }}
+              whileInView={{ opacity: 1, y: 0 }}
+            >
               We'd love to hear from you! Pro+ users can vote on upcoming
               features and influence our roadmap.
-            </p>
+            </motion.p>
 
-            {/* Glow effect behind buttons */}
-            <div className="relative">
-              <div className="-inset-8 pointer-events-none absolute rounded-2xl">
-                <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(60%_40%_at_50%_50%,rgba(34,197,94,0.10)_0%,rgba(34,197,94,0.05)_40%,transparent_85%)] opacity-60 blur-[12px]" />
-              </div>
+            {/* Animated glow effect behind buttons */}
+            <motion.div
+              className="relative"
+              initial={{ opacity: 0 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+              viewport={{ once: true }}
+              whileInView={{ opacity: 1 }}
+            >
+              <motion.div
+                animate={{
+                  opacity: [0.6, 1, 0.6],
+                  scale: [1, 1.05, 1],
+                }}
+                className="-inset-8 pointer-events-none absolute rounded-2xl"
+                transition={{
+                  duration: 4,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'easeInOut',
+                }}
+              >
+                <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(60%_40%_at_50%_50%,rgba(34,197,94,0.10)_0%,rgba(34,197,94,0.05)_40%,transparent_85%)] blur-[12px]" />
+              </motion.div>
 
               <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 md:gap-4">
-                <Button
-                  className="group relative overflow-hidden"
-                  size="lg"
-                  variant="default"
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  transition={{
+                    delay: 0.5,
+                    type: 'spring',
+                    stiffness: 200,
+                    damping: 20,
+                  }}
+                  viewport={{ once: true }}
+                  whileHover={{ scale: 1.05 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <span className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                  <Sparkles className="mr-2 h-4 w-4 transition-transform group-hover:rotate-12" />
-                  Vote on Features (Pro+)
-                </Button>
-                <Link href="/referral-info">
                   <Button
-                    className="group border-primary/20 backdrop-blur-sm hover:border-primary/40"
+                    className="group relative overflow-hidden"
                     size="lg"
-                    variant="outline"
+                    variant="default"
                   >
-                    Learn about referrals
+                    <motion.span
+                      className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent"
+                      initial={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      whileHover={{ opacity: 1 }}
+                    />
+                    <motion.div
+                      className="flex items-center"
+                      transition={{ type: 'spring', stiffness: 400 }}
+                      whileHover={{ x: 2 }}
+                    >
+                      <motion.div
+                        animate={{ rotate: [0, 360] }}
+                        transition={{
+                          duration: 3,
+                          repeat: Number.POSITIVE_INFINITY,
+                        }}
+                      >
+                        <Sparkles className="mr-2 h-4 w-4" />
+                      </motion.div>
+                      Vote on Features (Pro+)
+                    </motion.div>
                   </Button>
-                </Link>
-                {/* Removed Back to Home CTA per design update */}
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  transition={{
+                    delay: 0.6,
+                    type: 'spring',
+                    stiffness: 200,
+                    damping: 20,
+                  }}
+                  viewport={{ once: true }}
+                  whileHover={{ scale: 1.05 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link href="/referral-info">
+                    <Button
+                      className="group border-primary/20 backdrop-blur-sm hover:border-primary/40"
+                      size="lg"
+                      variant="outline"
+                    >
+                      Learn about referrals
+                    </Button>
+                  </Link>
+                </motion.div>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </AnimatedSection>
         <SiteLinksSection />
       </main>

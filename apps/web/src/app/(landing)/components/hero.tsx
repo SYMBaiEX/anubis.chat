@@ -17,9 +17,9 @@ const containerVariants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.15,
-      delayChildren: 0.2
-    }
-  }
+      delayChildren: 0.2,
+    },
+  },
 };
 
 const itemVariants = {
@@ -28,11 +28,11 @@ const itemVariants = {
     y: 0,
     opacity: 1,
     transition: {
-      type: "spring" as const,
+      type: 'spring' as const,
       stiffness: 80,
-      damping: 15
-    }
-  }
+      damping: 15,
+    },
+  },
 };
 
 function Hero() {
@@ -66,24 +66,28 @@ function Hero() {
       revealStrategy="none"
       softEdges
     >
-      <motion.div 
-        className="relative z-10 mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8"
-        variants={containerVariants}
-        initial="hidden"
+      <motion.div
         animate="visible"
+        className="relative z-10 mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8"
+        initial="hidden"
+        variants={containerVariants}
       >
-        <motion.div 
+        <motion.div
           className="mb-10 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-emerald-500/10 px-3 py-1 backdrop-blur-sm md:mb-12"
+          transition={{ type: 'spring', stiffness: 400 }}
           variants={itemVariants}
-          whileHover={{ 
+          whileHover={{
             scale: 1.05,
-            boxShadow: "0 0 30px rgba(16, 185, 129, 0.4)"
+            boxShadow: '0 0 30px rgba(16, 185, 129, 0.4)',
           }}
-          transition={{ type: "spring", stiffness: 400 }}
         >
           <motion.div
             animate={{ rotate: [0, 360] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            transition={{
+              duration: 4,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: 'linear',
+            }}
           >
             <Sparkles className="h-3 w-3 text-primary" />
           </motion.div>
@@ -92,42 +96,46 @@ function Hero() {
           </span>
           <motion.div
             animate={{ rotate: [0, -360] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            transition={{
+              duration: 4,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: 'linear',
+            }}
           >
             <Sparkles className="h-3 w-3 text-primary" />
           </motion.div>
         </motion.div>
 
-        <motion.h1 
+        <motion.h1
           className="mt-2 mb-10 font-bold text-4xl sm:text-5xl md:mt-4 md:mb-12 md:text-6xl lg:text-7xl"
-          variants={itemVariants}
           style={{ opacity, scale }}
+          variants={itemVariants}
         >
           <motion.span
+            animate={{
+              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+            }}
             className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary"
-            animate={{ 
-              backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"]
-            }}
-            transition={{ 
-              duration: 8, 
-              repeat: Infinity,
-              ease: "linear"
-            }}
             style={{ backgroundSize: '200% 100%' }}
+            transition={{
+              duration: 8,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: 'linear',
+            }}
           >
             Ancient Wisdom Meets Modern AI
           </motion.span>
         </motion.h1>
 
-        <motion.p 
+        <motion.p
           className="mx-auto mt-6 mb-16 max-w-3xl text-lg text-muted-foreground sm:text-xl md:mt-10 md:mb-20 md:text-2xl"
           variants={itemVariants}
         >
           Experience the future of AI conversation with{' '}
-          <motion.span 
-            className="font-semibold text-primary"
+          <motion.span
             animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 3, repeat: Infinity }}
+            className="font-semibold text-primary"
+            transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY }}
           >
             Solana wallet authentication
           </motion.span>
@@ -197,71 +205,69 @@ function Hero() {
       </motion.div>
 
       {/* Framed preview image with animated glow */}
-      <motion.div 
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
         className="relative mt-12 px-2 sm:mt-16 md:mt-24 xl:px-0"
         initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ 
-          delay: 0.8, 
+        transition={{
+          delay: 0.8,
           duration: 1,
-          type: "spring",
-          stiffness: 60
+          type: 'spring',
+          stiffness: 60,
         }}
       >
-        <motion.div 
+        <motion.div
           className="relative mx-auto w-full max-w-[88rem]"
+          transition={{ type: 'spring', stiffness: 300 }}
           whileHover={{ scale: 1.02 }}
-          transition={{ type: "spring", stiffness: 300 }}
         >
           {/* Animated glow background */}
-          <motion.div 
-            className="-top-24 -left-16 -right-16 -bottom-8 pointer-events-none absolute z-0 overflow-hidden rounded-2xl [filter:saturate(120%)] [mask-image:radial-gradient(120%_95%_at_50%_28%,black_60%,transparent_100%)] [mask-repeat:no-repeat]"
+          <motion.div
             animate={{
-              opacity: [0.7, 1, 0.7]
+              opacity: [0.7, 1, 0.7],
             }}
+            className="-top-24 -left-16 -right-16 -bottom-8 pointer-events-none absolute z-0 overflow-hidden rounded-2xl [filter:saturate(120%)] [mask-image:radial-gradient(120%_95%_at_50%_28%,black_60%,transparent_100%)] [mask-repeat:no-repeat]"
             transition={{
               duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut"
+              repeat: Number.POSITIVE_INFINITY,
+              ease: 'easeInOut',
             }}
           >
             <div className="absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent_0%,black_25%,black_75%,transparent_100%)] [mask-repeat:no-repeat]">
               <div className="absolute inset-0 [mask-image:linear-gradient(to_right,transparent_0%,black_5%,black_97%,transparent_100%)] [mask-repeat:no-repeat]">
-                <motion.div 
-                  className="absolute inset-0 rounded-2xl bg-[radial-gradient(90%_65%_at_50%_0%,rgba(16,185,129,0.18)_0%,rgba(16,185,129,0.10)_42%,transparent_88%)] opacity-80 blur-[14px]"
+                <motion.div
                   animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 6, repeat: Infinity }}
+                  className="absolute inset-0 rounded-2xl bg-[radial-gradient(90%_65%_at_50%_0%,rgba(16,185,129,0.18)_0%,rgba(16,185,129,0.10)_42%,transparent_88%)] opacity-80 blur-[14px]"
+                  transition={{ duration: 6, repeat: Number.POSITIVE_INFINITY }}
                 />
-                <motion.div 
-                  className="absolute inset-0 rounded-2xl bg-[radial-gradient(45%_35%_at_50%_8%,rgba(52,211,153,0.52)_0%,rgba(16,185,129,0.32)_36%,transparent_70%)] opacity-90 blur-[8px]"
+                <motion.div
                   animate={{ scale: [1.1, 1, 1.1] }}
-                  transition={{ duration: 5, repeat: Infinity }}
+                  className="absolute inset-0 rounded-2xl bg-[radial-gradient(45%_35%_at_50%_8%,rgba(52,211,153,0.52)_0%,rgba(16,185,129,0.32)_36%,transparent_70%)] opacity-90 blur-[8px]"
+                  transition={{ duration: 5, repeat: Number.POSITIVE_INFINITY }}
                 />
-                <motion.div 
-                  className="absolute inset-0 rounded-2xl bg-[radial-gradient(50%_38%_at_50%_10%,transparent_50%,rgba(110,231,183,0.45)_60%,transparent_74%)] opacity-75 blur-[12px]"
+                <motion.div
                   animate={{ opacity: [0.75, 0.85, 0.75] }}
-                  transition={{ duration: 4, repeat: Infinity }}
+                  className="absolute inset-0 rounded-2xl bg-[radial-gradient(50%_38%_at_50%_10%,transparent_50%,rgba(110,231,183,0.45)_60%,transparent_74%)] opacity-75 blur-[12px]"
+                  transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY }}
                 />
-                <div 
-                  className="absolute inset-0 rounded-2xl bg-[conic-gradient(from_210deg_at_50%_12%,rgba(16,185,129,0.2)_0deg,transparent_120deg,transparent_240deg,rgba(52,211,153,0.14)_360deg)] opacity-60 mix-blend-screen"
-                />
+                <div className="absolute inset-0 rounded-2xl bg-[conic-gradient(from_210deg_at_50%_12%,rgba(16,185,129,0.2)_0deg,transparent_120deg,transparent_240deg,rgba(52,211,153,0.14)_360deg)] opacity-60 mix-blend-screen" />
               </div>
             </div>
           </motion.div>
 
           {/* Animated content frame */}
-          <motion.div 
+          <motion.div
+            animate={{ opacity: 1, scale: 1 }}
             className="relative inset-shadow-2xs z-10 w-full overflow-hidden rounded-2xl border bg-background p-1 shadow-lg shadow-zinc-950/15 ring-1 ring-background sm:p-2 xl:p-3 dark:inset-shadow-white/20"
             initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ 
+            transition={{
               delay: 1,
               duration: 0.8,
-              type: "spring",
-              stiffness: 100
+              type: 'spring',
+              stiffness: 100,
             }}
-            whileHover={{ 
-              boxShadow: "0 20px 40px rgba(16, 185, 129, 0.15)"
+            whileHover={{
+              boxShadow: '0 20px 40px rgba(16, 185, 129, 0.15)',
             }}
           >
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl">

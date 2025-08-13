@@ -10,7 +10,7 @@ export default function LandingFooter() {
       <div className="relative mx-auto flex h-10 w-full max-w-7xl items-center justify-between px-4">
         {/* Left - Domain */}
         <div className="flex items-center">
-          <Logo 
+          <Logo
             animation="gradient"
             asLink={false}
             className="text-foreground/70"

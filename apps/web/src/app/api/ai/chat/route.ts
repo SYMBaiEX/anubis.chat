@@ -67,10 +67,8 @@ export async function POST(req: Request) {
     // Select the AI provider based on model
     const provider = model.startsWith('claude') ? anthropic : openai;
     let modelId = model;
-    if (!model.startsWith('claude')) {
-      if (model === 'gpt-4') {
-        modelId = 'gpt-4-turbo-preview';
-      }
+    if (!model.startsWith('claude') && model === 'gpt-4') {
+      modelId = 'gpt-4-turbo-preview';
     }
 
     // Stream the response

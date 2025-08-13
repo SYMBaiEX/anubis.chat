@@ -85,7 +85,12 @@ export default function LandingHeader() {
                     width={60}
                   />
                 </span>
-                <LogoWithText asLink={false} size="md" textVariant="gradient" animation="gradient" />
+                <LogoWithText
+                  animation="gradient"
+                  asLink={false}
+                  size="md"
+                  textVariant="gradient"
+                />
               </Link>
 
               <button

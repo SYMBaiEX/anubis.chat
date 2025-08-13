@@ -111,7 +111,8 @@ export const roadmapData: RoadmapFeature[] = [
   {
     id: 'tooling-integration',
     title: 'Tooling Integration',
-    description: 'Integrate key tools and services to enhance agent capabilities.',
+    description:
+      'Integrate key tools and services to enhance agent capabilities.',
     status: 'in-progress',
     progress: 55,
     category: 'MCP',

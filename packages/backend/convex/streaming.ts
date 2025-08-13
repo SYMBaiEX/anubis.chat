@@ -312,15 +312,16 @@ export const streamChat = httpAction(async (ctx, request) => {
   let aiModel;
 
   // Check premium model access (gpt-5-nano is not premium, it's an efficient nano model)
-  const isPremiumModel = [
-    // 'gpt-4o',  // REMOVED
-    // 'claude-3.5-sonnet',  // ANTHROPIC DISABLED
-    // 'claude-sonnet-4',   // ANTHROPIC DISABLED
-    'gpt-5',
-    // 'gpt-5-pro',  // REMOVED
-    // 'o3',  // REMOVED
-    'gpt-4.1-mini',
-  ].includes(modelName) || modelName === 'openrouter/openai/gpt-oss-120b';
+  const isPremiumModel =
+    [
+      // 'gpt-4o',  // REMOVED
+      // 'claude-3.5-sonnet',  // ANTHROPIC DISABLED
+      // 'claude-sonnet-4',   // ANTHROPIC DISABLED
+      'gpt-5',
+      // 'gpt-5-pro',  // REMOVED
+      // 'o3',  // REMOVED
+      'gpt-4.1-mini',
+    ].includes(modelName) || modelName === 'openrouter/openai/gpt-oss-120b';
 
   // Skip premium checks for admins - they have unlimited access
   if (isPremiumModel && !adminStatus.isAdmin) {
@@ -395,7 +396,8 @@ export const streamChat = httpAction(async (ctx, request) => {
           try {
             const url = typeof input === 'string' ? input : input.toString();
             if (
-              (url.includes('/chat/completions') || url.includes('/responses')) &&
+              (url.includes('/chat/completions') ||
+                url.includes('/responses')) &&
               init &&
               typeof init.body === 'string'
             ) {

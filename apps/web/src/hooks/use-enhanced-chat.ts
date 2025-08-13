@@ -168,10 +168,11 @@ export function useEnhancedChat({
         const lastAiMsg = aiMessages[aiMessages.length - 1];
         if (lastAiMsg.role === 'assistant') {
           // Extract content from AI SDK v5 message format
-          const content = lastAiMsg.parts
-            ?.filter((part: any) => part.type === 'text')
-            .map((part: any) => part.text)
-            .join('') || '';
+          const content =
+            lastAiMsg.parts
+              ?.filter((part: any) => part.type === 'text')
+              .map((part: any) => part.text)
+              .join('') || '';
 
           // Check if this is a new streaming message
           const isNew = !convexMsgs.some(
@@ -196,10 +197,11 @@ export function useEnhancedChat({
     // Fallback to AI SDK messages
     return aiMessages.map((msg) => {
       // Extract content from AI SDK v5 message format
-      const content = msg.parts
-        ?.filter((part: any) => part.type === 'text')
-        .map((part: any) => part.text)
-        .join('') || '';
+      const content =
+        msg.parts
+          ?.filter((part: any) => part.type === 'text')
+          .map((part: any) => part.text)
+          .join('') || '';
 
       return {
         _id: msg.id,

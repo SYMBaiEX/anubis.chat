@@ -119,7 +119,10 @@ export const OptimizedMarkdownRenderer = memo(
 
         // Blockquotes
         blockquote: ({ children, ...props }: any) => (
-          <blockquote className="my-4 border-muted-foreground/30 border-l-4 pl-4 italic last:mb-0" {...props}>
+          <blockquote
+            className="my-4 border-muted-foreground/30 border-l-4 pl-4 italic last:mb-0"
+            {...props}
+          >
             {children}
           </blockquote>
         ),
@@ -133,10 +136,14 @@ export const OptimizedMarkdownRenderer = memo(
           </div>
         ),
         thead: ({ children, ...props }: any) => (
-          <thead className="bg-muted" {...props}>{children}</thead>
+          <thead className="bg-muted" {...props}>
+            {children}
+          </thead>
         ),
         tbody: ({ children, ...props }: any) => (
-          <tbody className="divide-y divide-border" {...props}>{children}</tbody>
+          <tbody className="divide-y divide-border" {...props}>
+            {children}
+          </tbody>
         ),
         tr: ({ children, ...props }: any) => <tr {...props}>{children}</tr>,
         th: ({ children, ...props }: any) => (
@@ -145,7 +152,9 @@ export const OptimizedMarkdownRenderer = memo(
           </th>
         ),
         td: ({ children, ...props }: any) => (
-          <td className="px-3 py-2 text-sm" {...props}>{children}</td>
+          <td className="px-3 py-2 text-sm" {...props}>
+            {children}
+          </td>
         ),
 
         // Horizontal rule
@@ -153,10 +162,14 @@ export const OptimizedMarkdownRenderer = memo(
 
         // Strong and emphasis
         strong: ({ children, ...props }: any) => (
-          <strong className="font-semibold" {...props}>{children}</strong>
+          <strong className="font-semibold" {...props}>
+            {children}
+          </strong>
         ),
         em: ({ children, ...props }: any) => (
-          <em className="italic" {...props}>{children}</em>
+          <em className="italic" {...props}>
+            {children}
+          </em>
         ),
       }),
       [isStreaming]
