@@ -204,6 +204,20 @@ export const streamChat = httpAction(async (ctx, request) => {
       memoryEnabled,
       userId: user._id,
     });
+    
+    // Process attachments for RAG integration (scheduled for after message creation)
+    if (attachments && attachments.length > 0) {
+      logger.info('Attachments detected, will be processed for RAG', {
+        messageId: _userMessage._id,
+        attachmentCount: attachments.length,
+        attachmentTypes: attachments.map(a => a.mimeType).filter(Boolean),
+      });
+      // TODO: Schedule file processing after Convex compilation
+      // ctx.scheduler.runAfter(0, internal.fileProcessing.processMessageAttachments, {
+      //   messageId: _userMessage._id,
+      //   walletAddress,
+      // });
+    }
   }
 
   // Initialize context to be injected into system prompt
@@ -263,11 +277,12 @@ export const streamChat = httpAction(async (ctx, request) => {
     limit: 20,
   });
 
-  // Convert messages to AI SDK format, appending attachment references
+  // Convert messages to AI SDK format with enhanced file content for RAG
   const conversationHistory = [] as Array<{
     role: 'user' | 'assistant' | 'system';
     content: string;
   }>;
+  
   for (const msg of messages) {
     let contentWithAttachments = msg.content;
     const metas: any = (msg as any).metadata;
@@ -280,8 +295,11 @@ export const streamChat = httpAction(async (ctx, request) => {
           type?: string;
         }>
       | undefined = metas?.attachments;
+    
+    // Enhanced file handling with RAG integration
     if (att && att.length > 0) {
       const resolved: string[] = [];
+      
       for (const a of att) {
         let url = a.url;
         if (!url && a.fileId) {
@@ -292,18 +310,29 @@ export const streamChat = httpAction(async (ctx, request) => {
             if (u) {
               url = u;
             }
-          } catch (_e) {}
+          } catch (_e) {
+            logger.warn('Failed to resolve attachment URL', {
+              fileId: a.fileId,
+              error: _e,
+            });
+          }
         }
+        
         const label =
           a.type === 'image' ? 'Image' : a.type === 'video' ? 'Video' : 'File';
+        
         if (url) {
           resolved.push(`${label}: ${url}`);
+          
+          // File will be processed for RAG after message creation
         }
       }
+      
       if (resolved.length > 0) {
         contentWithAttachments += `\n\n[Attachments]\n${resolved.map((r) => `- ${r}`).join('\n')}`;
       }
     }
+    
     conversationHistory.push({
       role: msg.role as 'user' | 'assistant' | 'system',
       content: contentWithAttachments,
@@ -544,22 +573,35 @@ export const streamChat = httpAction(async (ctx, request) => {
     aiModel = openai('gpt-4o');
   }
 
-  // Combine prompts: agent prompt first (most important), then system prompt, then context
+  // Combine prompts: agent guidance + system directions + context
   const prompts = [];
 
-  // Agent prompt should always come first and be clearly delineated
+  // Agent prompt provides personality and behavioral guidance (not absolute instructions)
   if (chat.agentPrompt) {
     prompts.push(
-      `# AGENT IDENTITY AND CORE INSTRUCTIONS\n\n${chat.agentPrompt}`
+      `# AGENT PERSONALITY AND GUIDANCE\n\n${chat.agentPrompt}`
     );
   }
 
-  // User's custom system prompt comes second
+  // Always include core behavioral instructions for memory awareness
+  const coreInstructions = `# CORE BEHAVIORAL INSTRUCTIONS
+
+You are having an ongoing conversation with this user. Use the provided context below to:
+- Avoid repeating information you've already shared (like introductions, capabilities, etc.)
+- Reference previous conversations naturally when relevant
+- Build upon established context and relationships
+- Maintain conversational continuity
+
+If the relevant context shows you've already introduced yourself or explained your capabilities to this user, do not repeat these introductions. Continue the conversation naturally based on your shared history.`;
+
+  prompts.push(coreInstructions);
+
+  // User's custom system prompt provides additional specific directions
   if (chat.systemPrompt) {
-    prompts.push(`# USER SYSTEM PREFERENCES\n\n${chat.systemPrompt}`);
+    prompts.push(`# ADDITIONAL USER PREFERENCES\n\n${chat.systemPrompt}`);
   }
 
-  // RAG context comes last to provide relevant information
+  // RAG context provides conversation history and user information
   if (contextToInject) {
     prompts.push(`# RELEVANT CONTEXT\n\n${contextToInject}`);
   }

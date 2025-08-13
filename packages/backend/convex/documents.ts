@@ -399,3 +399,59 @@ export const getStats = query({
     };
   },
 });
+
+// Create document chunk (for RAG processing)
+export const createChunk = mutation({
+  args: {
+    documentId: v.id('documents'),
+    content: v.string(),
+    chunkIndex: v.number(),
+    embedding: v.array(v.number()),
+    metadata: v.optional(
+      v.object({
+        overlap: v.optional(v.number()),
+        wordCount: v.number(),
+        startOffset: v.number(),
+        endOffset: v.number(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    const chunkId = await ctx.db.insert('documentChunks', {
+      documentId: args.documentId,
+      content: args.content,
+      chunkIndex: args.chunkIndex,
+      embedding: args.embedding,
+      metadata: args.metadata || {
+        wordCount: 0,
+        startOffset: 0,
+        endOffset: 0,
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return chunkId;
+  },
+});
+
+// Delete all chunks for a document
+export const deleteChunks = mutation({
+  args: {
+    documentId: v.id('documents'),
+  },
+  handler: async (ctx, args) => {
+    const chunks = await ctx.db
+      .query('documentChunks')
+      .withIndex('by_document', (q) => q.eq('documentId', args.documentId))
+      .collect();
+
+    for (const chunk of chunks) {
+      await ctx.db.delete(chunk._id);
+    }
+
+    return { success: true, deletedCount: chunks.length };
+  },
+});
