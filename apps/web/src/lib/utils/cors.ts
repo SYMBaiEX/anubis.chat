@@ -95,12 +95,12 @@ export function addCorsHeaders(
 
   response.headers.set(
     'Access-Control-Allow-Methods',
-    corsOptions.methods?.join(', ') ?? DEFAULT_CORS_OPTIONS.methods?.join(', ')
+    corsOptions.methods?.join(', ') ?? DEFAULT_CORS_OPTIONS.methods?.join(', ') ?? 'GET, POST, PUT, DELETE, OPTIONS'
   );
 
   response.headers.set(
     'Access-Control-Allow-Headers',
-    corsOptions.headers?.join(', ') ?? DEFAULT_CORS_OPTIONS.headers?.join(', ')
+    corsOptions.headers?.join(', ') ?? DEFAULT_CORS_OPTIONS.headers?.join(', ') ?? 'Content-Type, Authorization'
   );
 
   if (corsOptions.credentials) {
@@ -182,10 +182,12 @@ export function getStreamingHeaders(
     headers['Access-Control-Allow-Origin'] = allowedOrigin;
     headers['Access-Control-Allow-Methods'] =
       corsOptions.methods?.join(', ') ??
-      DEFAULT_CORS_OPTIONS.methods?.join(', ');
+      DEFAULT_CORS_OPTIONS.methods?.join(', ') ??
+      'GET, POST, PUT, DELETE, OPTIONS';
     headers['Access-Control-Allow-Headers'] =
       corsOptions.headers?.join(', ') ??
-      DEFAULT_CORS_OPTIONS.headers?.join(', ');
+      DEFAULT_CORS_OPTIONS.headers?.join(', ') ??
+      'Content-Type, Authorization';
 
     if (corsOptions.credentials) {
       headers['Access-Control-Allow-Credentials'] = 'true';

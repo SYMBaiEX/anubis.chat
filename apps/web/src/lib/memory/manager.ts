@@ -3,7 +3,7 @@
  * Handles conversation memory, context windows, and embeddings
  */
 
-import type { CoreMessage } from 'ai';
+import type { ModelMessage, UIMessage, generateId } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
 
 // Memory Types
@@ -35,7 +35,8 @@ export interface MemoryEntry {
 // Conversation Context
 export interface ConversationContext {
   id: string;
-  messages: CoreMessage[];
+  messages: UIMessage[];
+  modelMessages?: ModelMessage[]; // For AI SDK compatibility
   summary?: string;
   topics: string[];
   entities: Entity[];
@@ -78,6 +79,7 @@ export interface MemorySearchOptions {
 // Context Window Manager
 export class ContextWindowManager {
   private maxTokens: number;
+  private compressionRatio: number;
 
   constructor(maxTokens = 128_000, compressionRatio = 0.3) {
     this.maxTokens = maxTokens;
@@ -88,9 +90,9 @@ export class ContextWindowManager {
    * Manage context window for messages
    */
   async manageContext(
-    messages: CoreMessage[],
-    newMessage?: CoreMessage
-  ): Promise<CoreMessage[]> {
+    messages: UIMessage[],
+    newMessage?: UIMessage
+  ): Promise<UIMessage[]> {
     const allMessages = newMessage ? [...messages, newMessage] : messages;
     const tokenCount = this.estimateTokens(allMessages);
 
@@ -106,8 +108,8 @@ export class ContextWindowManager {
    * Compress context using various strategies
    */
   private async compressContext(
-    messages: CoreMessage[]
-  ): Promise<CoreMessage[]> {
+    messages: UIMessage[]
+  ): Promise<UIMessage[]> {
     // Strategy 1: Remove less important messages
     const importantMessages = this.filterImportantMessages(messages);
 
@@ -129,7 +131,7 @@ export class ContextWindowManager {
   /**
    * Filter messages by importance
    */
-  private filterImportantMessages(messages: CoreMessage[]): CoreMessage[] {
+  private filterImportantMessages(messages: UIMessage[]): UIMessage[] {
     // Keep system messages and recent messages
     const systemMessages = messages.filter((m) => m.role === 'system');
     const recentMessages = messages.slice(-Math.floor(messages.length * 0.7));
@@ -141,8 +143,8 @@ export class ContextWindowManager {
    * Summarize older messages
    */
   private async summarizeOldMessages(
-    messages: CoreMessage[]
-  ): Promise<CoreMessage[]> {
+    messages: UIMessage[]
+  ): Promise<UIMessage[]> {
     const cutoff = Math.floor(messages.length * 0.3);
     const oldMessages = messages.slice(0, cutoff);
     const recentMessages = messages.slice(cutoff);
@@ -152,9 +154,13 @@ export class ContextWindowManager {
     }
 
     // Create summary of old messages
-    const summary: CoreMessage = {
+    const summary: UIMessage = {
+      id: uuidv4(),
       role: 'system',
-      content: `[Summary of previous ${oldMessages.length} messages: ${this.createSummary(oldMessages)}]`,
+      parts: [{
+        type: 'text',
+        text: `[Summary of previous ${oldMessages.length} messages: ${this.createSummary(oldMessages)}]`
+      }]
     };
 
     return [summary, ...recentMessages];
@@ -163,7 +169,7 @@ export class ContextWindowManager {
   /**
    * Apply sliding window to messages
    */
-  private applySlidingWindow(messages: CoreMessage[]): CoreMessage[] {
+  private applySlidingWindow(messages: UIMessage[]): UIMessage[] {
     const systemMessages = messages.filter((m) => m.role === 'system');
     const nonSystemMessages = messages.filter((m) => m.role !== 'system');
 
@@ -177,23 +183,18 @@ export class ContextWindowManager {
   /**
    * Create summary of messages
    */
-  private createSummary(messages: CoreMessage[]): string {
+  private createSummary(messages: UIMessage[]): string {
     // Simple summary - in production, use LLM for better summaries
     const topics = new Set<string>();
-    const _actions = new Set<string>();
 
     for (const msg of messages) {
-      const content =
-        typeof msg.content === 'string'
-          ? msg.content
-          : JSON.stringify(msg.content);
-      // Extract key phrases (simplified)
-      const words = content.split(' ').slice(0, 10);
-      for (const word of words) {
-        if (word.length > 5) {
-          topics.add(word);
-        }
-      }
+      // Extract text content from UI message parts
+      const textParts = msg.parts?.filter(part => part.type === 'text') || [];
+      const content = textParts.map((part: any) => part.text || '').join(' ');
+      
+      // Extract simple topics (words > 4 chars)
+      const words = content.toLowerCase().match(/\b\w{4,}\b/g) || [];
+      words.slice(0, 10).forEach((word) => topics.add(word));
     }
 
     return `Topics discussed: ${Array.from(topics).slice(0, 5).join(', ')}`;
@@ -202,13 +203,12 @@ export class ContextWindowManager {
   /**
    * Estimate token count for messages
    */
-  private estimateTokens(messages: CoreMessage[]): number {
+  private estimateTokens(messages: UIMessage[]): number {
     // Rough estimation: 1 token ≈ 4 characters
     const totalChars = messages.reduce((sum, msg) => {
-      const content =
-        typeof msg.content === 'string'
-          ? msg.content
-          : JSON.stringify(msg.content);
+      // Extract text content from UI message parts
+      const textParts = msg.parts?.filter(part => part.type === 'text') || [];
+      const content = textParts.map((part: any) => part.text || '').join(' ');
       return sum + content.length;
     }, 0);
 
@@ -399,11 +399,23 @@ export class MemoryManager {
   }
 
   /**
+   * Extract text content from UIMessage parts structure
+   */
+  private extractUIMessageContent(message: UIMessage): string {
+    if (!message.parts) {
+      return '';
+    }
+    
+    const textParts = message.parts.filter(part => part.type === 'text');
+    return textParts.map((part: any) => part.text || '').join(' ');
+  }
+
+  /**
    * Update conversation context
    */
   async updateConversation(
     conversationId: string,
-    messages: CoreMessage[]
+    messages: UIMessage[]
   ): Promise<ConversationContext> {
     let context = this.conversations.get(conversationId);
 
@@ -430,12 +442,18 @@ export class MemoryManager {
       messages.at(-1)
     );
 
-    // Extract topics and entities
-    context.topics = await this.extractTopics(messages);
-    context.entities = await this.extractEntities(messages);
+    // Convert UIMessages to ModelMessages for analysis functions
+    const modelMessages: ModelMessage[] = messages.map(msg => ({
+      role: msg.role,
+      content: this.extractUIMessageContent(msg),
+    }));
+
+    // Extract topics and entities using converted messages
+    context.topics = await this.extractTopics(modelMessages);
+    context.entities = await this.extractEntities(modelMessages);
 
     // Update sentiment
-    context.sentiment = await this.analyzeSentiment(messages);
+    context.sentiment = await this.analyzeSentiment(modelMessages);
 
     // Update metadata
     context.metadata.lastUpdateTime = Date.now();
@@ -443,12 +461,16 @@ export class MemoryManager {
 
     // Store important messages as memories
     for (const message of messages) {
-      if (this.isImportantMessage(message)) {
+      // Convert UIMessage to ModelMessage for importance check
+      const modelMessage: ModelMessage = {
+        role: message.role,
+        content: this.extractUIMessageContent(message),
+      };
+      
+      if (this.isImportantMessage(modelMessage)) {
         await this.storeMemory(
           'episodic',
-          typeof message.content === 'string'
-            ? message.content
-            : JSON.stringify(message.content),
+          this.extractUIMessageContent(message),
           {
             conversationId,
             importance: 0.7,
@@ -463,7 +485,7 @@ export class MemoryManager {
   /**
    * Check if a message is important
    */
-  private isImportantMessage(message: CoreMessage): boolean {
+  private isImportantMessage(message: ModelMessage): boolean {
     // Simple heuristic - in production, use more sophisticated analysis
     const content =
       typeof message.content === 'string'
@@ -479,7 +501,7 @@ export class MemoryManager {
   /**
    * Extract topics from messages
    */
-  private async extractTopics(messages: CoreMessage[]): Promise<string[]> {
+  private async extractTopics(messages: ModelMessage[]): Promise<string[]> {
     // Placeholder - integrate with NLP service
     const topics = new Set<string>();
 
@@ -489,7 +511,7 @@ export class MemoryManager {
           ? msg.content
           : JSON.stringify(msg.content);
       // Simple keyword extraction
-      const words = content.split(' ').filter((w) => w.length > 5);
+      const words = content.split(' ').filter((w: string) => w.length > 5);
       for (const word of words.slice(0, 3)) {
         topics.add(word);
       }
@@ -501,7 +523,7 @@ export class MemoryManager {
   /**
    * Extract entities from messages
    */
-  private async extractEntities(messages: CoreMessage[]): Promise<Entity[]> {
+  private async extractEntities(messages: ModelMessage[]): Promise<Entity[]> {
     // Placeholder - integrate with NER service
     const entities: Entity[] = [];
 
@@ -537,7 +559,7 @@ export class MemoryManager {
   /**
    * Analyze sentiment of messages
    */
-  private async analyzeSentiment(_messages: CoreMessage[]): Promise<number> {
+  private async analyzeSentiment(_messages: ModelMessage[]): Promise<number> {
     // Placeholder - integrate with sentiment analysis service
     // Return value between -1 (negative) and 1 (positive)
     return 0;
@@ -550,7 +572,7 @@ export class MemoryManager {
     const cutoffTime = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
     let cleared = 0;
 
-    for (const [id, memory] of this.memories) {
+    this.memories.forEach((memory, id) => {
       if (
         memory.metadata.timestamp < cutoffTime &&
         memory.metadata.importance < 0.8
@@ -558,7 +580,7 @@ export class MemoryManager {
         this.memories.delete(id);
         cleared++;
       }
-    }
+    });
 
     return cleared;
   }

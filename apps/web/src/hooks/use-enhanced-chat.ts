@@ -5,9 +5,10 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { DefaultChatTransport } from 'ai';
 import { useMutation, useQuery } from 'convex/react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useRef } from 'react';
 import type { MinimalMessage } from '@/lib/types/components';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { MemoryManager } from '@/lib/memory/manager';
 
 const log = createModuleLogger('hooks/use-enhanced-chat');
 
@@ -26,6 +27,8 @@ export function useEnhancedChat({
   walletAddress,
   onError,
 }: UseEnhancedChatOptions) {
+  // Initialize memory manager instance
+  const memoryManager = useRef(new MemoryManager()).current;
   // Get Convex deployment URL for API endpoint
   const apiEndpoint = useMemo(() => {
     const deploymentUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(
@@ -62,6 +65,77 @@ export function useEnhancedChat({
   // Manual input state for AI SDK v5
   const [input, setInput] = useState('');
 
+  // Get memory context for current conversation
+  const getMemoryContext = useCallback(async (): Promise<string> => {
+    if (!chatId) return '';
+
+    try {
+      // Retrieve recent memories related to this conversation
+      const memories = await memoryManager.retrieveMemories({
+        conversationId: chatId,
+        limit: 5,
+        minImportance: 0.5,
+      });
+
+      // Get conversation context if available
+      const conversationContext = memoryManager.exportMemories().conversations.find(
+        c => c.id === chatId
+      );
+
+      let contextParts: string[] = [];
+
+      // Add conversation summary if available
+      if (conversationContext?.summary) {
+        contextParts.push(`Previous conversation summary: ${conversationContext.summary}`);
+      }
+
+      // Add key topics if available
+      if (conversationContext?.topics && conversationContext.topics.length > 0) {
+        contextParts.push(`Key topics discussed: ${conversationContext.topics.join(', ')}`);
+      }
+
+      // Add relevant memories
+      if (memories.length > 0) {
+        const memoryTexts = memories.map(m => m.content).join('; ');
+        contextParts.push(`Relevant context: ${memoryTexts}`);
+      }
+
+      return contextParts.length > 0 
+        ? `[Memory Context: ${contextParts.join(' | ')}]` 
+        : '';
+    } catch (err) {
+      log.warn('Failed to retrieve memory context', { error: err });
+      return '';
+    }
+  }, [chatId, memoryManager]);
+
+  // Initialize memory system with existing messages
+  const initializeMemoryFromConvex = useCallback(async () => {
+    if (!chatId || !convexMessages || convexMessages.length === 0) return;
+
+    try {
+      // Convert Convex messages to UIMessage format
+      const uiMessages = convexMessages.map((msg) => ({
+        id: msg._id,
+        role: msg.role as 'user' | 'assistant' | 'system',
+        parts: [{ type: 'text' as const, text: msg.content }],
+      }));
+
+      // Update memory system with existing conversation
+      await memoryManager.updateConversation(chatId, uiMessages);
+      log.debug('Initialized memory system from Convex messages', { 
+        messageCount: uiMessages.length 
+      });
+    } catch (err) {
+      log.warn('Failed to initialize memory from Convex', { error: err });
+    }
+  }, [chatId, convexMessages, memoryManager]);
+
+  // Initialize memory when Convex messages load
+  useMemo(() => {
+    initializeMemoryFromConvex();
+  }, [initializeMemoryFromConvex]);
+
   // Use AI SDK's useChat hook with all its built-in features
   const {
     messages: aiMessages,
@@ -96,8 +170,16 @@ export function useEnhancedChat({
               usage: (message as any).metadata?.usage,
             },
           });
+
+          // Update memory system with latest conversation context
+          if (aiMessages && aiMessages.length > 0) {
+            await memoryManager.updateConversation(chatId, aiMessages);
+            log.debug('Updated memory system with conversation context', { 
+              messageCount: aiMessages.length 
+            });
+          }
         } catch (err) {
-          log.error('Failed to persist assistant message', { error: err });
+          log.error('Failed to persist assistant message or update memory', { error: err });
         }
       }
     },
@@ -127,6 +209,9 @@ export function useEnhancedChat({
       }
 
       try {
+        // Get memory context for this conversation
+        const memoryContext = await getMemoryContext();
+        
         // Persist user message to Convex first
         await createMessage({
           chatId: chatId as Id<'chats'>,
@@ -135,17 +220,28 @@ export function useEnhancedChat({
           attachments,
         });
 
+        // Create enhanced message with memory context
+        const enhancedContent = memoryContext 
+          ? `${memoryContext}\n\nUser: ${content}`
+          : content;
+
         // Use AI SDK's sendMessage for optimistic UI and streaming
         await aiSendMessage({
           role: 'user',
-          parts: [{ type: 'text', text: content }],
+          parts: [{ type: 'text', text: enhancedContent }],
+        });
+        
+        log.debug('Sent message with memory context', { 
+          hasMemoryContext: !!memoryContext,
+          originalLength: content.length,
+          enhancedLength: enhancedContent.length 
         });
       } catch (err) {
         log.error('Failed to send message', { error: err });
         throw err;
       }
     },
-    [chatId, aiSendMessage, createMessage]
+    [chatId, aiSendMessage, createMessage, getMemoryContext]
   );
 
   // Regenerate last assistant message
@@ -170,10 +266,10 @@ export function useEnhancedChat({
       // Add streaming message if currently streaming
       if (status === 'streaming' && aiMessages.length > 0) {
         const lastAiMsg = aiMessages.at(-1);
-        if (lastAiMsg.role === 'assistant') {
+        if (lastAiMsg?.role === 'assistant') {
           // Extract content from AI SDK v5 message format
           const content =
-            lastAiMsg.parts
+            lastAiMsg?.parts
               ?.filter((part: any) => part.type === 'text')
               .map((part: any) => part.text)
               .join('') || '';
