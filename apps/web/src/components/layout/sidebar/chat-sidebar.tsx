@@ -3,9 +3,18 @@
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
-import { Bot, MessageSquare, Plus, Sparkles, Trash2, Clock, Search, X } from 'lucide-react';
+import {
+  Bot,
+  Clock,
+  MessageSquare,
+  Plus,
+  Search,
+  Sparkles,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { LoadingStates } from '@/components/data/loading-states';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
@@ -101,8 +110,8 @@ export function ChatSidebar({
 
   // Filter chats based on search query
   const filteredChats = useMemo(() => {
-    if (!chats || !searchQuery) return chats;
-    return chats.filter(chat => 
+    if (!(chats && searchQuery)) return chats;
+    return chats.filter((chat) =>
       chat.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [chats, searchQuery]);
@@ -114,37 +123,37 @@ export function ChatSidebar({
         <div className="flex items-center gap-2 transition-transform hover:scale-105">
           <div className="relative">
             <Bot className="h-4 w-4 text-primary" />
-            <Sparkles className="-right-1 -top-1 absolute h-2.5 w-2.5 text-accent animate-pulse" />
+            <Sparkles className="-right-1 -top-1 absolute h-2.5 w-2.5 animate-pulse text-accent" />
           </div>
           <h2 className="font-semibold text-sm">Chat History</h2>
         </div>
         <Button
-          className="h-7 px-2 shadow-sm transition-transform hover:scale-105 active:scale-95"
+          aria-label="Start new chat"
+          className="h-6 px-1.5 shadow-sm"
           disabled={isCreatingChat}
           onClick={handleCreateChat}
           size="sm"
         >
           <Plus className="h-3.5 w-3.5" />
-          <span className="ml-1 hidden lg:inline">New</span>
         </Button>
       </div>
 
       {/* Search Bar */}
       {chats && chats.length > 3 && (
-        <div className="border-b border-border/50 p-2 transition-all">
+        <div className="border-border/50 border-b p-2 transition-all">
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Search className="-translate-y-1/2 absolute top-1/2 left-2 h-3.5 w-3.5 text-muted-foreground" />
             <input
-              className="w-full rounded-md bg-background/50 px-7 py-1.5 text-xs placeholder:text-muted-foreground focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary/50 transition-colors"
-              placeholder="Search chats..."
-              value={searchQuery}
+              className="w-full rounded-md bg-background/50 px-7 py-1.5 text-xs transition-colors placeholder:text-muted-foreground focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary/50"
+              onBlur={() => setIsSearching(false)}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearching(true)}
-              onBlur={() => setIsSearching(false)}
+              placeholder="Search chats..."
+              value={searchQuery}
             />
             {searchQuery && (
               <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="-translate-y-1/2 absolute top-1/2 right-2 text-muted-foreground transition-colors hover:text-foreground"
                 onClick={() => setSearchQuery('')}
               >
                 <X className="h-3 w-3" />
@@ -157,11 +166,11 @@ export function ChatSidebar({
       {/* Chat List */}
       <div className="flex-1 overflow-hidden p-2">
         {chats === undefined ? (
-          <div className="p-2 animate-fade-in">
+          <div className="animate-fade-in p-2">
             <LoadingStates variant="skeleton" />
           </div>
         ) : chats.length === 0 ? (
-          <div className="rounded-md border border-border/50 p-4 text-center text-muted-foreground text-xs animate-fade-in">
+          <div className="animate-fade-in rounded-md border border-border/50 p-4 text-center text-muted-foreground text-xs">
             <MessageSquare className="mx-auto mb-2 h-8 w-8 opacity-50" />
             No conversations yet
           </div>
@@ -171,7 +180,7 @@ export function ChatSidebar({
             {filteredChats && filteredChats.length > 3 && (
               <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-8 bg-gradient-to-t from-background to-transparent" />
             )}
-            
+
             {/* Chat list container */}
             <div
               className={cn(
@@ -185,41 +194,49 @@ export function ChatSidebar({
               }}
             >
               {filteredChats && filteredChats.length === 0 && searchQuery ? (
-                <div className="text-center text-xs text-muted-foreground py-4 animate-fade-in">
+                <div className="animate-fade-in py-4 text-center text-muted-foreground text-xs">
                   No chats found
                 </div>
               ) : (
                 filteredChats?.map((chat, index) => (
                   <div
-                    key={chat._id}
                     className={cn(
-                      'group flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 transition-all animate-fade-in',
+                      'group flex animate-fade-in cursor-pointer items-center gap-2 rounded-md px-2 py-2 transition-all',
                       'hover:translate-x-1',
                       activeChatId === chat._id
                         ? 'bg-primary/10 shadow-sm ring-1 ring-primary/20'
                         : 'hover:bg-muted/50'
                     )}
-                    style={{
-                      animationDelay: `${index * 50}ms`
-                    }}
+                    key={chat._id}
                     onClick={() => handleChatSelect(chat._id)}
+                    style={{
+                      animationDelay: `${index * 50}ms`,
+                    }}
                   >
-                    <MessageSquare className={cn(
-                      "h-4 w-4 flex-shrink-0 transition-colors",
-                      activeChatId === chat._id ? "text-primary" : "text-muted-foreground"
-                    )} />
+                    <MessageSquare
+                      className={cn(
+                        'h-4 w-4 flex-shrink-0 transition-colors',
+                        activeChatId === chat._id
+                          ? 'text-primary'
+                          : 'text-muted-foreground'
+                      )}
+                    />
                     <div className="min-w-0 flex-1">
-                      <p className={cn(
-                        "truncate text-sm transition-colors",
-                        activeChatId === chat._id && "font-medium"
-                      )}>{chat.title}</p>
+                      <p
+                        className={cn(
+                          'truncate text-sm transition-colors',
+                          activeChatId === chat._id && 'font-medium'
+                        )}
+                      >
+                        {chat.title}
+                      </p>
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                         <Clock className="h-2.5 w-2.5" />
                         <span>{formatChatDate(chat._creationTime)}</span>
                       </div>
                     </div>
                     <Button
-                      className="h-6 w-6 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"
+                      className="h-6 w-6 flex-shrink-0 opacity-0 transition-all group-hover:opacity-100"
                       onClick={(e) => handleDeleteChat(chat._id, e)}
                       size="icon"
                       variant="ghost"
@@ -230,15 +247,14 @@ export function ChatSidebar({
                 ))
               )}
             </div>
-            
+
             {/* Chat count indicator */}
             {filteredChats && filteredChats.length > 5 && (
-              <div className="mt-2 border-border/50 border-t pt-2 animate-fade-in">
+              <div className="mt-2 animate-fade-in border-border/50 border-t pt-2">
                 <p className="text-center text-[10px] text-muted-foreground">
-                  {searchQuery 
+                  {searchQuery
                     ? `Showing ${filteredChats.length} of ${chats?.length || 0} chats`
-                    : `${filteredChats.length} total chats`
-                  }
+                    : `${filteredChats.length} total chats`}
                 </p>
               </div>
             )}

@@ -47,12 +47,8 @@ export default function BreadcrumbSchema() {
   }
 
   return (
-    <Script
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify(breadcrumbSchema),
-      }}
-      id="breadcrumb-schema"
-      type="application/ld+json"
-    />
+    <Script id="breadcrumb-schema" type="application/ld+json">
+      {JSON.stringify(breadcrumbSchema)}
+    </Script>
   );
 }

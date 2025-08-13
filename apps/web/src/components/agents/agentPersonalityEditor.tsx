@@ -599,7 +599,7 @@ export function AgentPersonalityEditor({
               {(personality.examples || []).map((example, index) => (
                 <div
                   className="space-y-2 rounded-lg bg-muted/50 p-3"
-                  key={index}
+                  key={`${example.input}-${example.output}-${index}`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">

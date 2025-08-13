@@ -590,64 +590,60 @@ export function AgentTemplateGallery({
                       key={template.id}
                       transition={{ delay: index * 0.05 }}
                     >
-                      <Card
+                      <button
                         aria-label={`Open ${template.name} template`}
-                        className="cursor-pointer border-2 border-primary/20 transition-all hover:shadow-lg"
+                        className="text-left"
                         onClick={() => handleSelectTemplate(template)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            handleSelectTemplate(template);
-                          }
-                        }}
-                        role="button"
-                        tabIndex={0}
+                        type="button"
                       >
-                        <CardContent className="p-4">
-                          <div className="flex items-start space-x-3">
-                            <div
-                              className={cn(
-                                'flex h-12 w-12 items-center justify-center rounded-lg text-white',
-                                template.color
-                              )}
-                            >
-                              <Icon className="h-6 w-6" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <h4 className="font-medium text-sm">
-                                    {template.name}
-                                  </h4>
-                                  <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
-                                    {template.description}
-                                  </p>
-                                </div>
-                                {template.new && (
-                                  <Badge
-                                    className="ml-2 text-xs"
-                                    variant="default"
-                                  >
-                                    NEW
-                                  </Badge>
+                        <Card className="border-2 border-primary/20 transition-all hover:shadow-lg">
+                          <CardContent className="p-4">
+                            <div className="flex items-start space-x-3">
+                              <div
+                                className={cn(
+                                  'flex h-12 w-12 items-center justify-center rounded-lg text-white',
+                                  template.color
                                 )}
+                              >
+                                <Icon className="h-6 w-6" />
                               </div>
-                              <div className="mt-3 flex items-center justify-between">
-                                <div className="flex items-center space-x-3 text-muted-foreground text-xs">
-                                  <span className="flex items-center">
-                                    <Download className="mr-1 h-3 w-3" />
-                                    {template.downloads.toLocaleString()}
-                                  </span>
-                                  <span className="flex items-center">
-                                    <Star className="mr-1 h-3 w-3 text-yellow-500" />
-                                    {template.rating}
-                                  </span>
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <h4 className="font-medium text-sm">
+                                      {template.name}
+                                    </h4>
+                                    <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
+                                      {template.description}
+                                    </p>
+                                  </div>
+                                  {template.new && (
+                                    <Badge
+                                      className="ml-2 text-xs"
+                                      variant="default"
+                                    >
+                                      NEW
+                                    </Badge>
+                                  )}
                                 </div>
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                <div className="mt-3 flex items-center justify-between">
+                                  <div className="flex items-center space-x-3 text-muted-foreground text-xs">
+                                    <span className="flex items-center">
+                                      <Download className="mr-1 h-3 w-3" />
+                                      {template.downloads.toLocaleString()}
+                                    </span>
+                                    <span className="flex items-center">
+                                      <Star className="mr-1 h-3 w-3 text-yellow-500" />
+                                      {template.rating}
+                                    </span>
+                                  </div>
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                          </CardContent>
+                        </Card>
+                      </button>
                     </motion.div>
                   );
                 })}
@@ -675,72 +671,71 @@ export function AgentTemplateGallery({
                     key={template.id}
                     transition={{ delay: index * 0.02 }}
                   >
-                    <Card
+                    <button
                       aria-label={`Open ${template.name} template`}
-                      className="cursor-pointer transition-all hover:shadow-md"
+                      className="text-left"
                       onClick={() => handleSelectTemplate(template)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          handleSelectTemplate(template);
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
+                      type="button"
                     >
-                      <CardContent className="p-4">
-                        <div className="flex items-start space-x-3">
-                          <div
-                            className={cn(
-                              'flex h-10 w-10 items-center justify-center rounded-lg text-white',
-                              template.color
-                            )}
-                          >
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between">
-                              <h4 className="font-medium text-sm">
-                                {template.name}
-                              </h4>
-                              <div className="flex gap-1">
-                                {template.popular && (
-                                  <Badge
-                                    className="text-xs"
-                                    variant="secondary"
-                                  >
-                                    <Trophy className="mr-1 h-3 w-3" />
-                                    Popular
-                                  </Badge>
-                                )}
-                                {template.new && (
-                                  <Badge className="text-xs" variant="default">
-                                    NEW
-                                  </Badge>
-                                )}
+                      <Card className="transition-all hover:shadow-md">
+                        <CardContent className="p-4">
+                          <div className="flex items-start space-x-3">
+                            <div
+                              className={cn(
+                                'flex h-10 w-10 items-center justify-center rounded-lg text-white',
+                                template.color
+                              )}
+                            >
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between">
+                                <h4 className="font-medium text-sm">
+                                  {template.name}
+                                </h4>
+                                <div className="flex gap-1">
+                                  {template.popular && (
+                                    <Badge
+                                      className="text-xs"
+                                      variant="secondary"
+                                    >
+                                      <Trophy className="mr-1 h-3 w-3" />
+                                      Popular
+                                    </Badge>
+                                  )}
+                                  {template.new && (
+                                    <Badge
+                                      className="text-xs"
+                                      variant="default"
+                                    >
+                                      NEW
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
+                                {template.description}
+                              </p>
+                              <div className="mt-3 flex items-center justify-between">
+                                <span className="text-muted-foreground text-xs">
+                                  by {template.author}
+                                </span>
+                                <div className="flex items-center space-x-2 text-muted-foreground text-xs">
+                                  <span className="flex items-center">
+                                    <Download className="mr-1 h-3 w-3" />
+                                    {template.downloads.toLocaleString()}
+                                  </span>
+                                  <span className="flex items-center">
+                                    <Star className="mr-1 h-3 w-3 text-yellow-500" />
+                                    {template.rating}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                            <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
-                              {template.description}
-                            </p>
-                            <div className="mt-3 flex items-center justify-between">
-                              <span className="text-muted-foreground text-xs">
-                                by {template.author}
-                              </span>
-                              <div className="flex items-center space-x-2 text-muted-foreground text-xs">
-                                <span className="flex items-center">
-                                  <Download className="mr-1 h-3 w-3" />
-                                  {template.downloads.toLocaleString()}
-                                </span>
-                                <span className="flex items-center">
-                                  <Star className="mr-1 h-3 w-3 text-yellow-500" />
-                                  {template.rating}
-                                </span>
-                              </div>
-                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                    </button>
                   </motion.div>
                 );
               })}

@@ -1,27 +1,33 @@
 'use client';
 
+import { useChat } from '@ai-sdk/react';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
+import { DefaultChatTransport, type UIMessage } from 'ai';
+import { useMutation, useQuery } from 'convex/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { 
-  ArrowDown, 
-  Loader2, 
+import {
+  ArrowDown,
+  Bot,
+  Loader2,
   MessageSquare,
   Plus,
   Settings,
   Sparkles,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport, type UIMessage } from 'ai';
-import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
-import { useMutation, useQuery } from 'convex/react';
 import { toast } from 'sonner';
+import { useAuthContext } from '@/components/providers/auth-provider';
+import { useSolanaAgent } from '@/components/providers/solana-agent-provider';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { AgentSelectorDialog } from './agent-selector-dialog';
+import { ChatHeader } from './chat-header';
 import { EnhancedMessageBubble } from './enhanced-message-bubble';
 import { EnhancedMessageInput } from './enhanced-message-input';
+import { ModelSelector } from './model-selector';
 
 const log = createModuleLogger('components/chat/ai-chat-interface');
 
@@ -30,6 +36,10 @@ interface AIChatInterfaceProps {
   className?: string;
   onNewChat?: () => void;
   onSettingsClick?: () => void;
+  onModelSelectorClick?: () => void;
+  onAgentSelectorClick?: () => void;
+  onDeleteChat?: (chatId: string) => void;
+  onRenameChat?: (chatId: string, newTitle: string) => void;
 }
 
 /**
@@ -41,11 +51,20 @@ export function AIChatInterface({
   className,
   onNewChat,
   onSettingsClick,
+  onModelSelectorClick,
+  onAgentSelectorClick,
+  onDeleteChat,
+  onRenameChat,
 }: AIChatInterfaceProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
-  
+  const [selectedModel, setSelectedModel] = useState('gpt-5-nano');
+
+  // Get user from auth context
+  const { user } = useAuthContext();
+  const { selectedAgent } = useSolanaAgent();
+
   // Convex queries and mutations
   const messagesQuery = useQuery(
     api.messages.getByChatId,
@@ -57,64 +76,61 @@ export function AIChatInterface({
   );
   const saveMessageMutation = useMutation(api.messages.create);
   const updateChatMutation = useMutation(api.chatsAuth.updateMyChat);
+  const updateLastMessageTime = useMutation(api.chats.updateLastMessageTime);
 
   // Convert Convex messages to UI messages
-  const initialMessages: UIMessage[] = messagesQuery?.map((msg: any) => ({
-    id: msg._id,
-    role: msg.role as 'user' | 'assistant' | 'system',
-    content: msg.content,
-    createdAt: new Date(msg.createdAt || msg._creationTime),
-    parts: [
-      {
-        type: 'text' as const,
-        text: msg.content,
-      },
-    ],
-    experimental_attachments: msg.attachments?.map((att: any) => ({
-      name: att.name,
-      contentType: att.mimeType || att.type,
-      url: att.url,
-    })),
-  })) || [];
+  const initialMessages: UIMessage[] =
+    messagesQuery?.map((msg: any) => ({
+      id: msg._id,
+      role: msg.role as 'user' | 'assistant' | 'system',
+      content: msg.content,
+      createdAt: new Date(msg.createdAt || msg._creationTime),
+      parts: [
+        {
+          type: 'text' as const,
+          text: msg.content,
+        },
+      ],
+      attachments: msg.attachments?.map((att: any) => ({
+        name: att.name,
+        contentType: att.mimeType || att.type,
+        url: att.url,
+      })),
+    })) || [];
 
-  // Use AI SDK's useChat hook
-  const {
-    messages,
-    input,
-    setInput,
-    handleInputChange,
-    handleSubmit,
-    append,
-    reload,
-    stop,
-    status,
-    error,
-    setMessages,
-  } = useChat({
-    id: chatId,
+  // Use AI SDK's useChat hook (v5)
+  const { messages, sendMessage, stop, status, error, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/chat',
+      body: {
+        chatId,
+        model: selectedModel || chatQuery?.model || 'gpt-5-nano',
+      },
     }),
     messages: initialMessages,
-    body: {
-      chatId,
-      model: chatQuery?.model || 'gpt-4-turbo-preview',
-    },
-    onFinish: async (message) => {
+    onFinish: async ({ message }) => {
       // Save assistant message to Convex
-      if (chatId && message.role === 'assistant') {
+      if (chatId && message && message.role === 'assistant') {
+        const userWalletAddress = user?.walletAddress || 'anonymous';
         try {
+          // Extract content from message parts
+          const messageContent =
+            message.parts
+              ?.filter((part: any) => part.type === 'text')
+              .map((part: any) => part.text)
+              .join('') || '';
+
           await saveMessageMutation({
             chatId: chatId as Id<'chats'>,
-            content: message.content,
+            walletAddress: userWalletAddress,
+            content: messageContent,
             role: 'assistant',
-            model: chatQuery?.model || 'gpt-4-turbo-preview',
           });
-          
+
           // Update chat's last message timestamp
-          await updateChatMutation({
+          await updateLastMessageTime({
             id: chatId as Id<'chats'>,
-            lastMessageAt: Date.now(),
+            timestamp: Date.now(),
           });
         } catch (error) {
           log.error('Failed to save message', { error });
@@ -125,7 +141,6 @@ export function AIChatInterface({
       log.error('Chat error', { error: error.message });
       toast.error('Chat error: ' + error.message);
     },
-    experimental_throttle: 50,
   });
 
   // Enhanced send message with attachments
@@ -148,16 +163,23 @@ export function AIChatInterface({
         return;
       }
 
+      // Get user wallet address from auth context
+      const userWalletAddress = user?.walletAddress || 'anonymous';
+
       // Save user message to Convex first
       try {
         await saveMessageMutation({
           chatId: chatId as Id<'chats'>,
+          walletAddress: userWalletAddress,
           content,
           role: 'user',
           attachments: options?.attachments?.map((att) => ({
-            name: att.name,
-            type: (att.type.startsWith('image/') ? 'image' :
-                   att.type.startsWith('video/') ? 'video' : 'file') as 'image' | 'file' | 'video',
+            fileId: att.id, // Use the id as fileId
+            type: (att.type.startsWith('image/')
+              ? 'image'
+              : att.type.startsWith('video/')
+                ? 'video'
+                : 'file') as 'image' | 'file' | 'video',
             mimeType: att.type,
             url: att.url,
             size: att.size,
@@ -165,6 +187,8 @@ export function AIChatInterface({
         });
       } catch (error) {
         log.error('Failed to save user message', { error });
+        toast.error('Failed to save message');
+        return;
       }
 
       // Prepare message for AI SDK
@@ -174,21 +198,35 @@ export function AIChatInterface({
       };
 
       if (options?.attachments) {
-        messageToSend.experimental_attachments = options.attachments.map((att) => ({
+        messageToSend.attachments = options.attachments.map((att) => ({
           name: att.name,
           contentType: att.type,
           url: att.url,
         }));
       }
 
-      // Append message with reasoning flag if needed
-      await append(messageToSend, {
-        data: {
-          useReasoning: options?.useReasoning,
-        },
-      });
+      // Send message with reasoning flag if needed
+      if (sendMessage && typeof sendMessage === 'function') {
+        await sendMessage(messageToSend, {
+          body: {
+            chatId,
+            model: selectedModel || chatQuery?.model || 'gpt-5-nano',
+            useReasoning: options?.useReasoning,
+          },
+        });
+      } else {
+        log.error('SendMessage function not available');
+        toast.error('Chat functionality is not ready');
+      }
     },
-    [chatId, saveMessageMutation, append]
+    [
+      chatId,
+      saveMessageMutation,
+      sendMessage,
+      user,
+      selectedModel,
+      chatQuery?.model,
+    ]
   );
 
   // Regenerate last assistant message
@@ -196,24 +234,37 @@ export function AIChatInterface({
     const lastUserMessage = [...messages]
       .reverse()
       .find((m) => m.role === 'user');
-    
+
     if (lastUserMessage) {
       // Remove last assistant message
       const filteredMessages = messages.slice(0, -1);
       setMessages(filteredMessages);
-      
+
       // Resend last user message
-      append(lastUserMessage);
+      sendMessage(lastUserMessage, {
+        body: {
+          chatId,
+          model: selectedModel || chatQuery?.model || 'gpt-5-nano',
+        },
+      });
     }
-  }, [messages, setMessages, append]);
+  }, [
+    messages,
+    setMessages,
+    sendMessage,
+    chatId,
+    selectedModel,
+    chatQuery?.model,
+  ]);
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback((smooth = true) => {
     if (!scrollRef.current) return;
-    
+
     const scrollElement = scrollRef.current;
-    const targetScroll = scrollElement.scrollHeight - scrollElement.clientHeight;
-    
+    const targetScroll =
+      scrollElement.scrollHeight - scrollElement.clientHeight;
+
     if (smooth) {
       scrollElement.scrollTo({
         top: targetScroll,
@@ -222,18 +273,18 @@ export function AIChatInterface({
     } else {
       scrollElement.scrollTop = targetScroll;
     }
-    
+
     setIsAutoScrolling(true);
   }, []);
 
   // Handle scroll events
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
     const isNearBottom = distanceFromBottom < 100;
-    
+
     setShowScrollButton(!isNearBottom);
     setIsAutoScrolling(isNearBottom);
   }, []);
@@ -251,10 +302,12 @@ export function AIChatInterface({
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <MessageSquare className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <p className="text-lg font-medium">No chat selected</p>
-          <p className="text-sm text-muted-foreground">Create or select a chat to begin</p>
+          <p className="font-medium text-lg">No chat selected</p>
+          <p className="text-muted-foreground text-sm">
+            Create or select a chat to begin
+          </p>
           {onNewChat && (
-            <Button onClick={onNewChat} className="mt-4">
+            <Button className="mt-4" onClick={onNewChat}>
               <Plus className="mr-2 h-4 w-4" />
               New Chat
             </Button>
@@ -267,69 +320,135 @@ export function AIChatInterface({
   const isStreaming = status === 'streaming';
   const isLoading = status === 'submitted';
 
+  // Handle chat operations
+  const handleClearHistory = async () => {
+    // TODO: Implement clear history
+    toast.info('Clear history not yet implemented');
+  };
+
+  const handleGenerateTitle = async () => {
+    // TODO: Implement generate title
+    toast.info('Generate title not yet implemented');
+  };
+
   return (
     <div className={cn('flex h-full flex-col', className)}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-lg">
-            {chatQuery?.title || 'Chat'}
-          </h2>
-          {isStreaming && (
-            <motion.div
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="flex items-center gap-1 text-sm text-muted-foreground"
-            >
-              <Sparkles className="h-3 w-3" />
-              <span>Anubis is thinking...</span>
-            </motion.div>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {onSettingsClick && (
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={onSettingsClick}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          )}
-          {onNewChat && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onNewChat}
-            >
-              <Plus className="mr-1 h-3 w-3" />
-              New
-            </Button>
-          )}
+      <div className="border-b bg-card/50 backdrop-blur-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left side - Chat info and actions */}
+          <div className="flex flex-1 items-center gap-3">
+            {chatQuery && (
+              <ChatHeader
+                chat={{
+                  _id: chatId as Id<'chats'>,
+                  title: chatQuery.title || 'New Chat',
+                  model: selectedModel || chatQuery.model || 'gpt-5-nano',
+                  lastMessageAt: chatQuery.lastMessageAt || Date.now(),
+                  updatedAt: chatQuery.updatedAt || Date.now(),
+                  systemPrompt: chatQuery.systemPrompt,
+                  temperature: chatQuery.temperature,
+                  agentPrompt: chatQuery.agentPrompt,
+                  agentId: chatQuery.agentId,
+                }}
+                onAgentSelectorClick={() => {}}
+                onClearHistory={handleClearHistory}
+                onDelete={() => {
+                  if (chatId && onDeleteChat) {
+                    onDeleteChat(chatId);
+                  }
+                }}
+                onGenerateTitle={handleGenerateTitle}
+                onModelSelectorClick={() => {}}
+                onRename={(newTitle) => {
+                  if (chatId && onRenameChat) {
+                    onRenameChat(chatId, newTitle);
+                  }
+                }}
+                onSettingsClick={onSettingsClick || (() => {})}
+              />
+            )}
+          </div>
+
+          {/* Right side - Model, Agent, New Chat buttons */}
+          <div className="flex items-center gap-2">
+            {/* Model Selector with integrated dialog */}
+            <div className="hidden sm:block">
+              <ModelSelector
+                onValueChange={(model) => {
+                  setSelectedModel(model);
+                  // TODO: Update chat model in Convex
+                  if (chatId) {
+                    updateChatMutation({
+                      id: chatId as Id<'chats'>,
+                      model,
+                    })
+                      .then(() => {
+                        toast.success(`Switched to ${model}`);
+                      })
+                      .catch(() => {
+                        toast.error('Failed to update model');
+                      });
+                  }
+                }}
+                value={selectedModel}
+              />
+            </div>
+
+            {/* Agent Selector with integrated dialog */}
+            <div className="hidden sm:block">
+              <AgentSelectorDialog />
+            </div>
+
+            {/* Settings Button */}
+            {onSettingsClick && (
+              <Button
+                className="h-8 w-8 border-primary/20 transition-all hover:border-primary/50 hover:bg-primary/10"
+                onClick={onSettingsClick}
+                size="icon"
+                variant="outline"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            )}
+
+            {/* New Chat Button */}
+            {onNewChat && (
+              <Button
+                className="bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90"
+                onClick={onNewChat}
+                size="sm"
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                <span className="hidden sm:inline">New</span>
+                <span className="sm:hidden">+</span>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Messages area */}
       <ScrollArea
-        ref={scrollRef}
-        onScroll={handleScroll}
         className="flex-1 p-4"
+        onScroll={handleScroll}
+        ref={scrollRef}
       >
         <div className="mx-auto max-w-3xl space-y-4">
           {/* Welcome message if no messages */}
           {messages.length === 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-12"
+              className="py-12 text-center"
+              initial={{ opacity: 0, y: 20 }}
             >
               <Sparkles className="mx-auto mb-4 h-12 w-12 text-primary" />
-              <h3 className="mb-2 text-xl font-semibold">
+              <h3 className="mb-2 font-semibold text-xl">
                 Welcome to Anubis Chat
               </h3>
               <p className="text-muted-foreground">
-                I'm here to help with blockchain, Web3, and more. Ask me anything!
+                I'm here to help with blockchain, Web3, and more. Ask me
+                anything!
               </p>
             </motion.div>
           )}
@@ -338,17 +457,16 @@ export function AIChatInterface({
           <AnimatePresence mode="popLayout">
             {messages.map((message) => (
               <EnhancedMessageBubble
+                isStreaming={
+                  isStreaming && messages[messages.length - 1].id === message.id
+                }
                 key={message.id}
                 message={message}
                 onRegenerate={
-                  message.role === 'assistant' && 
+                  message.role === 'assistant' &&
                   messages[messages.length - 1].id === message.id
                     ? handleRegenerateMessage
                     : undefined
-                }
-                isStreaming={
-                  isStreaming && 
-                  messages[messages.length - 1].id === message.id
                 }
               />
             ))}
@@ -357,9 +475,9 @@ export function AIChatInterface({
           {/* Loading indicator */}
           {isLoading && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-2 text-muted-foreground"
+              initial={{ opacity: 0, y: 10 }}
             >
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-sm">Anubis is preparing a response...</span>
@@ -369,9 +487,9 @@ export function AIChatInterface({
           {/* Error message */}
           {error && (
             <motion.div
-              initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+              className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-destructive text-sm"
+              initial={{ opacity: 0 }}
             >
               {error.message}
             </motion.div>
@@ -383,11 +501,11 @@ export function AIChatInterface({
       <AnimatePresence>
         {showScrollButton && (
           <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
+            className="absolute right-4 bottom-24 rounded-full border bg-background p-2 shadow-lg"
             exit={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.8 }}
             onClick={() => scrollToBottom()}
-            className="absolute bottom-24 right-4 rounded-full bg-background border shadow-lg p-2"
           >
             <ArrowDown className="h-4 w-4" />
           </motion.button>
@@ -398,24 +516,18 @@ export function AIChatInterface({
       <div className="border-t p-4">
         <div className="mx-auto max-w-3xl">
           <EnhancedMessageInput
-            onSend={handleSendMessage}
             disabled={!chatId || isStreaming}
             isStreaming={isStreaming}
+            onSend={handleSendMessage}
             placeholder={
-              isStreaming 
-                ? 'Anubis is responding...' 
-                : 'Message Anubis...'
+              isStreaming ? 'Anubis is responding...' : 'Message Anubis...'
             }
           />
-          
+
           {/* Stop button when streaming */}
           {isStreaming && (
             <div className="mt-2 flex justify-center">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={stop}
-              >
+              <Button onClick={stop} size="sm" variant="outline">
                 Stop generating
               </Button>
             </div>

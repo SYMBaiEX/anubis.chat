@@ -16,6 +16,8 @@ interface LogoProps {
   textVariant?: 'default' | 'gradient' | 'egypt';
   /** Custom href for the logo link */
   href?: string;
+  /** Animation type for the logo text */
+  animation?: 'none' | 'gradient' | 'shimmer' | 'pulse' | 'typing';
 }
 
 const sizeMap = {
@@ -35,8 +37,25 @@ export function Logo({
   text = 'anubis.chat',
   textVariant = 'default',
   href = '/',
+  animation = 'gradient',
 }: LogoProps) {
   const dimensions = sizeMap[size];
+
+  // Animation classes
+  const getAnimationClasses = () => {
+    switch (animation) {
+      case 'gradient':
+        return 'animate-gradient-x bg-[length:200%_100%]';
+      case 'shimmer':
+        return 'animate-shimmer bg-[length:200%_100%]';
+      case 'pulse':
+        return 'animate-pulse-glow';
+      case 'typing':
+        return 'animate-typing';
+      default:
+        return '';
+    }
+  };
 
   const baseText = (
     <span
@@ -50,7 +69,8 @@ export function Logo({
           'bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent',
           textVariant === 'egypt' &&
             'from-[var(--color-egypt-gold)] via-[var(--color-foreground)] to-[var(--color-egypt-gold)]',
-          textVariant === 'default' && 'bg-none text-foreground'
+          textVariant === 'default' && 'bg-none text-foreground',
+          animation !== 'none' && getAnimationClasses()
         )}
       >
         anubis
@@ -134,9 +154,11 @@ export function LogoWithText({
   textVariant = 'default',
   asLink = true,
   href = '/',
-}: Pick<LogoProps, 'size' | 'className' | 'textVariant' | 'asLink' | 'href'>) {
+  animation = 'gradient',
+}: Pick<LogoProps, 'size' | 'className' | 'textVariant' | 'asLink' | 'href' | 'animation'>) {
   return (
     <Logo
+      animation={animation}
       asLink={asLink}
       className={className}
       href={href}

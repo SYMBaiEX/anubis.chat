@@ -190,41 +190,21 @@ export default function SchemaMarkup() {
 
   return (
     <>
-      <Script
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(organizationSchema),
-        }}
-        id="organization-schema"
-        type="application/ld+json"
-      />
-      <Script
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(softwareApplicationSchema),
-        }}
-        id="software-application-schema"
-        type="application/ld+json"
-      />
-      <Script
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(productSchema),
-        }}
-        id="product-schema"
-        type="application/ld+json"
-      />
-      <Script
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(websiteSchema),
-        }}
-        id="website-schema"
-        type="application/ld+json"
-      />
-      <Script
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(speakableSchema),
-        }}
-        id="speakable-schema"
-        type="application/ld+json"
-      />
+      <Script id="organization-schema" type="application/ld+json">
+        {JSON.stringify(organizationSchema)}
+      </Script>
+      <Script id="software-application-schema" type="application/ld+json">
+        {JSON.stringify(softwareApplicationSchema)}
+      </Script>
+      <Script id="product-schema" type="application/ld+json">
+        {JSON.stringify(productSchema)}
+      </Script>
+      <Script id="website-schema" type="application/ld+json">
+        {JSON.stringify(websiteSchema)}
+      </Script>
+      <Script id="speakable-schema" type="application/ld+json">
+        {JSON.stringify(speakableSchema)}
+      </Script>
     </>
   );
 }

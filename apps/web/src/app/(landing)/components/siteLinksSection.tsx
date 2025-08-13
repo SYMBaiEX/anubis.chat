@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
+import Link from 'next/link';
 import { LogoWithText } from '@/components/ui/logo';
 
 export default function SiteLinksSection() {
@@ -18,16 +18,16 @@ export default function SiteLinksSection() {
           {/* Left visual — logo mark with green glow */}
           <div className="relative flex items-center justify-center">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 8 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
               className="relative"
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              viewport={{ once: true }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
             >
               {/* Base ambient gradient */}
               <span
                 aria-hidden
-                className="pointer-events-none absolute -inset-2 rounded-full blur-md"
+                className="-inset-2 pointer-events-none absolute rounded-full blur-md"
                 style={{
                   background:
                     'radial-gradient(closest-side, rgba(16,185,129,0.12), transparent 70%)',
@@ -35,14 +35,18 @@ export default function SiteLinksSection() {
               />
               {/* Subtle breathing highlight */}
               <motion.span
+                animate={{ scale: [1, 1.02, 1], opacity: [0.18, 0.25, 0.18] }}
                 aria-hidden
-                className="pointer-events-none absolute -inset-1 rounded-full"
+                className="-inset-1 pointer-events-none absolute rounded-full"
                 style={{
                   background:
                     'radial-gradient(closest-side, rgba(16,185,129,0.10), transparent 60%)',
                 }}
-                animate={{ scale: [1, 1.02, 1], opacity: [0.18, 0.25, 0.18] }}
-                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                transition={{
+                  duration: 6,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'easeInOut',
+                }}
               />
               <Image
                 alt="Anubis mark"

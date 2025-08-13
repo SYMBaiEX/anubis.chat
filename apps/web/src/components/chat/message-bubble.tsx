@@ -20,7 +20,7 @@ import {
   ThumbsUp,
   User,
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -305,7 +305,10 @@ export function MessageBubble({
                   {message.content}
                 </p>
               ) : (
-                <OptimizedMarkdownRenderer content={message.content} isStreaming={false} />
+                <OptimizedMarkdownRenderer
+                  content={message.content}
+                  isStreaming={false}
+                />
               )}
             </div>
 
@@ -370,7 +373,7 @@ export function MessageBubble({
                 isUser ? 'flex justify-end' : 'flex justify-start'
               )}
             >
-              <div className="flex items-center gap-1 rounded-lg bg-background/80 backdrop-blur border p-1">
+              <div className="flex items-center gap-1 rounded-lg border bg-background/80 p-1 backdrop-blur">
                 <Button onClick={handleCopy} size="sm" variant="ghost">
                   {copied ? (
                     <Check className="h-3 w-3" />

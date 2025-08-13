@@ -1,13 +1,13 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
-import { useCallback, useEffect, useMemo } from 'react';
-import type { Id } from '@convex/_generated/dataModel';
 import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
+import { DefaultChatTransport } from 'ai';
 import { useMutation, useQuery } from 'convex/react';
-import { createModuleLogger } from '@/lib/utils/logger';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { MinimalMessage } from '@/lib/types/components';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('hooks/use-enhanced-chat');
 
@@ -32,7 +32,7 @@ export function useEnhancedChat({
       'wss://',
       'https://'
     ).replace('.convex.cloud', '.convex.site');
-    
+
     return deploymentUrl ? `${deploymentUrl}/stream-chat` : '/api/chat';
   }, []);
 
@@ -48,8 +48,8 @@ export function useEnhancedChat({
   // Convert Convex messages to AI SDK format
   const initialMessages = useMemo(() => {
     if (!convexMessages) return [];
-    
-    return convexMessages.map((msg: any) => ({
+
+    return convexMessages.map((msg) => ({
       id: msg._id,
       role: msg.role as 'user' | 'assistant' | 'system',
       content: msg.content,
@@ -57,36 +57,41 @@ export function useEnhancedChat({
     }));
   }, [convexMessages]);
 
+  // Manual input state for AI SDK v5
+  const [input, setInput] = useState('');
+
   // Use AI SDK's useChat hook with all its built-in features
   const {
     messages: aiMessages,
-    input,
-    setInput,
-    append,
-    reload,
+    sendMessage: aiSendMessage,
     stop,
     status,
     error,
-    isLoading,
   } = useChat({
     id: chatId,
     transport: new DefaultChatTransport({
       api: apiEndpoint,
     }),
-    messages: initialMessages,
-    onFinish: async (message) => {
+    onFinish: async ({ message }) => {
       log.debug('Message finished streaming', { message });
-      
+
+      // Extract content from AI SDK v5 message format
+      const content =
+        (message as any).parts
+          ?.filter((part: any) => part.type === 'text')
+          .map((part: any) => part.text)
+          .join('') || '';
+
       // Persist assistant message to Convex after streaming completes
       if (chatId && message.role === 'assistant') {
         try {
           await createMessage({
             chatId: chatId as Id<'chats'>,
-            content: message.content,
+            content,
             role: 'assistant',
             metadata: {
-              model: message.metadata?.model,
-              usage: message.metadata?.usage,
+              model: (message as any).metadata?.model,
+              usage: (message as any).metadata?.usage,
             },
           });
         } catch (err) {
@@ -115,7 +120,7 @@ export function useEnhancedChat({
         type: 'image' | 'file' | 'video';
       }>
     ) => {
-      if (!chatId || !content.trim()) return;
+      if (!(chatId && content.trim())) return;
 
       try {
         // Persist user message to Convex first
@@ -126,40 +131,30 @@ export function useEnhancedChat({
           attachments,
         });
 
-        // Use AI SDK's append for optimistic UI and streaming
-        await append(
-          {
-            role: 'user',
-            content,
-          },
-          {
-            body: {
-              chatId,
-              walletAddress,
-              model,
-              useReasoning,
-              attachments,
-            },
-          }
-        );
+        // Use AI SDK's sendMessage for optimistic UI and streaming
+        await aiSendMessage({
+          role: 'user',
+          parts: [{ type: 'text', text: content }],
+        });
       } catch (err) {
         log.error('Failed to send message', { error: err });
         throw err;
       }
     },
-    [chatId, walletAddress, append, createMessage]
+    [chatId, walletAddress, aiSendMessage, createMessage]
   );
 
   // Regenerate last assistant message
   const regenerateLastMessage = useCallback(() => {
-    reload();
-  }, [reload]);
+    // AI SDK v5 doesn't have reload - would need to implement differently
+    log.warn('Regenerate not implemented for AI SDK v5');
+  }, []);
 
   // Convert AI SDK messages to MinimalMessage format
   const formattedMessages = useMemo((): MinimalMessage[] => {
     // If we have Convex messages, prefer them as source of truth
     if (convexMessages && convexMessages.length > 0) {
-      const convexMsgs: MinimalMessage[] = convexMessages.map((msg: any) => ({
+      const convexMsgs: MinimalMessage[] = convexMessages.map((msg) => ({
         _id: msg._id,
         content: msg.content,
         role: msg.role,
@@ -172,15 +167,21 @@ export function useEnhancedChat({
       if (status === 'streaming' && aiMessages.length > 0) {
         const lastAiMsg = aiMessages[aiMessages.length - 1];
         if (lastAiMsg.role === 'assistant') {
+          // Extract content from AI SDK v5 message format
+          const content = lastAiMsg.parts
+            ?.filter((part: any) => part.type === 'text')
+            .map((part: any) => part.text)
+            .join('') || '';
+
           // Check if this is a new streaming message
           const isNew = !convexMsgs.some(
-            m => m.content === lastAiMsg.content && m.role === 'assistant'
+            (m) => m.content === content && m.role === 'assistant'
           );
-          
+
           if (isNew) {
             convexMsgs.push({
               _id: `streaming-${Date.now()}`,
-              content: lastAiMsg.content,
+              content,
               role: 'assistant',
               createdAt: Date.now(),
               isStreaming: true,
@@ -193,33 +194,44 @@ export function useEnhancedChat({
     }
 
     // Fallback to AI SDK messages
-    return aiMessages.map(msg => ({
-      _id: msg.id,
-      content: msg.content,
-      role: msg.role as 'user' | 'assistant' | 'system',
-      createdAt: msg.createdAt?.getTime() ?? Date.now(),
-    }));
+    return aiMessages.map((msg) => {
+      // Extract content from AI SDK v5 message format
+      const content = msg.parts
+        ?.filter((part: any) => part.type === 'text')
+        .map((part: any) => part.text)
+        .join('') || '';
+
+      return {
+        _id: msg.id,
+        content,
+        role: msg.role as 'user' | 'assistant' | 'system',
+        createdAt: Date.now(),
+      };
+    });
   }, [convexMessages, aiMessages, status]);
 
   return {
     // Messages
     messages: formattedMessages,
-    streamingMessage: status === 'streaming' ? formattedMessages[formattedMessages.length - 1] : null,
-    
+    streamingMessage:
+      status === 'streaming'
+        ? formattedMessages[formattedMessages.length - 1]
+        : null,
+
     // Input management
     input,
     setInput,
-    
+
     // Actions
     sendMessage,
     regenerate: regenerateLastMessage,
     stop,
-    
+
     // Status flags (much cleaner than manual state management)
     isStreaming: status === 'streaming',
-    isLoading: status === 'submitted' || isLoading,
+    isLoading: status === 'submitted',
     isReady: status === 'ready',
-    
+
     // Error handling
     error,
   };

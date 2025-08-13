@@ -37,6 +37,16 @@ import type {
   TestScenario as TestScenarioType,
 } from './types';
 
+function getBubbleClasses(role: 'user' | 'agent' | 'system'): string {
+  if (role === 'user') {
+    return 'bg-primary text-primary-foreground';
+  }
+  if (role === 'agent') {
+    return 'bg-muted';
+  }
+  return 'bg-yellow-100 dark:bg-yellow-900';
+}
+
 interface TestMessage extends Omit<TestMessageType, 'role'> {
   role: 'user' | 'agent' | 'system';
   metadata?: {
@@ -354,71 +364,11 @@ export function AgentTestingPanel({ agent }: AgentTestingPanelProps) {
                   ) : (
                     <AnimatePresence>
                       {messages.map((message, index) => (
-                        <motion.div
-                          animate={{ opacity: 1, y: 0 }}
-                          className={cn(
-                            'flex',
-                            message.role === 'user'
-                              ? 'justify-end'
-                              : 'justify-start'
-                          )}
-                          initial={{ opacity: 0, y: 10 }}
+                        <MessageItem
+                          index={index}
                           key={message.id}
-                          transition={{ delay: index * 0.05 }}
-                        >
-                          <div
-                            className={cn(
-                              'max-w-[70%] rounded-lg px-4 py-2',
-                              message.role === 'user'
-                                ? 'bg-primary text-primary-foreground'
-                                : message.role === 'agent'
-                                  ? 'bg-muted'
-                                  : 'bg-yellow-100 dark:bg-yellow-900'
-                            )}
-                          >
-                            <div className="flex items-start space-x-2">
-                              {message.role === 'agent' && (
-                                <Bot className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                              )}
-                              {message.role === 'user' && (
-                                <User className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                              )}
-                              <div className="flex-1">
-                                <p className="text-sm">{message.content}</p>
-                                {message.metadata && (
-                                  <div className="mt-2 flex flex-wrap gap-2">
-                                    {message.metadata.tokensUsed && (
-                                      <Badge
-                                        className="text-xs"
-                                        variant="secondary"
-                                      >
-                                        {message.metadata.tokensUsed} tokens
-                                      </Badge>
-                                    )}
-                                    {message.metadata.responseTime && (
-                                      <Badge
-                                        className="text-xs"
-                                        variant="secondary"
-                                      >
-                                        {message.metadata.responseTime}ms
-                                      </Badge>
-                                    )}
-                                    {message.metadata.tools &&
-                                      message.metadata.tools.length > 0 && (
-                                        <Badge
-                                          className="text-xs"
-                                          variant="secondary"
-                                        >
-                                          {message.metadata.tools.length} tools
-                                          used
-                                        </Badge>
-                                      )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
+                          message={message}
+                        />
                       ))}
                     </AnimatePresence>
                   )}
@@ -685,3 +635,61 @@ export function AgentTestingPanel({ agent }: AgentTestingPanelProps) {
 }
 
 export default AgentTestingPanel;
+function MessageItem({
+  message,
+  index,
+}: {
+  message: TestMessage;
+  index: number;
+}) {
+  return (
+    <motion.div
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        'flex',
+        message.role === 'user' ? 'justify-end' : 'justify-start'
+      )}
+      initial={{ opacity: 0, y: 10 }}
+      transition={{ delay: index * 0.05 }}
+    >
+      <div
+        className={cn(
+          'max-w-[70%] rounded-lg px-4 py-2',
+          getBubbleClasses(message.role)
+        )}
+      >
+        <div className="flex items-start space-x-2">
+          {message.role === 'agent' && (
+            <Bot className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          )}
+          {message.role === 'user' && (
+            <User className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          )}
+          <div className="flex-1">
+            <p className="text-sm">{message.content}</p>
+            {message.metadata && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {message.metadata.tokensUsed && (
+                  <Badge className="text-xs" variant="secondary">
+                    {message.metadata.tokensUsed} tokens
+                  </Badge>
+                )}
+                {message.metadata.responseTime && (
+                  <Badge className="text-xs" variant="secondary">
+                    {message.metadata.responseTime}ms
+                  </Badge>
+                )}
+                {message.metadata.tools &&
+                  message.metadata.tools.length > 0 && (
+                    <Badge className="text-xs" variant="secondary">
+                      {message.metadata.tools.length} tools used
+                    </Badge>
+                  )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}

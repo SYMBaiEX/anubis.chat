@@ -1,35 +1,15 @@
 'use client';
 
 import { Check, Copy } from 'lucide-react';
-// Import Prism.js and themes
-import Prism from 'prismjs';
 import { useMemo, useState } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  isCodeSafe,
-  sanitizeCodeHTML,
-  sanitizeText,
-} from '@/lib/security/sanitize-client';
+import { isCodeSafe, sanitizeText } from '@/lib/security/sanitize-client';
 import type { BaseComponentProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
-import 'prismjs/themes/prism-tomorrow.css';
-
-// Import common language definitions
-import 'prismjs/components/prism-typescript';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-jsx';
-import 'prismjs/components/prism-tsx';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-rust';
-import 'prismjs/components/prism-solidity';
-import 'prismjs/components/prism-json';
-import 'prismjs/components/prism-bash';
-import 'prismjs/components/prism-sql';
-import 'prismjs/components/prism-yaml';
-import 'prismjs/components/prism-toml';
-import 'prismjs/components/prism-markdown';
 
 const log = createModuleLogger('code-block');
 
@@ -57,50 +37,21 @@ export function CodeBlock({
   const [copied, setCopied] = useState(false);
   const [highlightError, setHighlightError] = useState<string | null>(null);
 
-  // Memoize the highlighted and sanitized code to prevent re-processing on every render
-  const highlightedCode = useMemo(() => {
+  // Prepare code text for rendering (no inner HTML)
+  const displayCode = useMemo(() => {
     try {
-      // First check if the code is safe
       if (!isCodeSafe(code)) {
-        log.warn(
-          'Potentially unsafe code detected, falling back to plain text',
-          {
-            language,
-            codeLength: code.length,
-          }
-        );
+        log.warn('Potentially unsafe code detected, rendering as plain text', {
+          language,
+          codeLength: code.length,
+        });
         setHighlightError('Code contains potentially unsafe content');
         return sanitizeText(code);
       }
-
-      // Highlight the code using Prism.js
-      const highlighted = Prism.highlight(
-        code,
-        Prism.languages[language] || Prism.languages.text,
-        language
-      );
-
-      // Sanitize the highlighted code to prevent XSS
-      const sanitized = sanitizeCodeHTML(highlighted);
-
-      // If sanitization returned empty string, fall back to plain text
-      if (!sanitized && code.length > 0) {
-        log.warn(
-          'Code sanitization returned empty result, falling back to plain text',
-          {
-            language,
-            originalLength: code.length,
-            highlightedLength: highlighted.length,
-          }
-        );
-        setHighlightError('Code highlighting failed, displaying as plain text');
-        return sanitizeText(code);
-      }
-
       setHighlightError(null);
-      return sanitized;
+      return code;
     } catch (error) {
-      log.error('Failed to highlight code', {
+      log.error('Failed to prepare code for rendering', {
         error: error instanceof Error ? error.message : String(error),
         language,
         codeLength: code.length,
@@ -160,8 +111,6 @@ export function CodeBlock({
     return languageMap[lang] || lang.toUpperCase();
   };
 
-  const lines = code.split('\n');
-
   return (
     <div className={cn('group relative my-4', className)}>
       {/* Header */}
@@ -205,55 +154,35 @@ export function CodeBlock({
 
       {/* Code Content */}
       <div className="relative">
-        <pre
-          className={cn(
-            'overflow-x-auto rounded-lg border border-muted bg-[#2d3748] p-4 text-sm',
-            title || language !== 'text' || highlightError
-              ? 'rounded-t-none border-t-0'
-              : ''
-          )}
-        >
-          <code
+        {highlightError ? (
+          <pre
             className={cn(
-              'block text-gray-100',
-              `language-${language}`,
-              showLineNumbers && 'grid grid-cols-[min-content_1fr] gap-4'
+              'overflow-x-auto rounded-lg border border-muted bg-[#2d3748] p-4 text-sm',
+              title || language !== 'text' ? 'rounded-t-none border-t-0' : ''
             )}
           >
-            {showLineNumbers ? (
-              // With line numbers
-              <>
-                <div className="select-none text-right text-gray-500">
-                  {lines.map((_, index) => (
-                    <div className="leading-6" key={index + 1}>
-                      {index + 1}
-                    </div>
-                  ))}
-                </div>
-                {highlightError ? (
-                  // Show plain text if there was an error
-                  <div className="whitespace-pre-wrap leading-6">{code}</div>
-                ) : (
-                  // Show highlighted/sanitized HTML
-                  <div
-                    className="leading-6"
-                    dangerouslySetInnerHTML={{ __html: highlightedCode }}
-                  />
-                )}
-              </>
-            ) : // Without line numbers
-            highlightError ? (
-              // Show plain text if there was an error
-              <div className="whitespace-pre-wrap leading-6">{code}</div>
-            ) : (
-              // Show highlighted/sanitized HTML
-              <div
-                className="leading-6"
-                dangerouslySetInnerHTML={{ __html: highlightedCode }}
-              />
-            )}
-          </code>
-        </pre>
+            <code className="block whitespace-pre-wrap text-gray-100 leading-6">
+              {displayCode}
+            </code>
+          </pre>
+        ) : (
+          <SyntaxHighlighter
+            customStyle={{
+              borderRadius:
+                title || language !== 'text' ? '0 0 0.5rem 0.5rem' : '0.5rem',
+              margin: 0,
+              background: '#2d3748',
+              border: '1px solid var(--muted)',
+              fontSize: '0.875rem',
+            }}
+            language={language}
+            PreTag="div"
+            showLineNumbers={showLineNumbers}
+            style={oneDark}
+          >
+            {displayCode}
+          </SyntaxHighlighter>
+        )}
 
         {/* Copy button (floating) - shown when no header */}
         {showCopyButton && !title && language === 'text' && !highlightError && (

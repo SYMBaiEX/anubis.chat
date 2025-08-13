@@ -1,32 +1,45 @@
 'use client';
 
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
+import type { UIMessage, UIMessagePart } from 'ai';
+import { DefaultChatTransport } from 'ai';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import type { MessageAttachment } from '@/lib/types/api';
+import { createModuleLogger } from '@/lib/utils/logger';
 
-export interface AIMessage {
-  id: string;
-  role: 'user' | 'assistant' | 'system' | 'tool';
+// Proper AI SDK v5 types
+interface TextPart {
+  type: 'text';
+  text: string;
+}
+
+interface ToolPart {
+  type: 'tool-invocation';
+  toolName: string;
+  toolCallId: string;
+  state:
+    | 'input-streaming'
+    | 'input-available'
+    | 'output-available'
+    | 'output-error';
+  input?: unknown;
+  output?: unknown;
+  errorText?: string;
+}
+
+export interface AIMessage extends Omit<UIMessage, 'content'> {
   content: string;
   attachments?: MessageAttachment[];
-  toolInvocations?: Array<{
-    toolCallId: string;
-    toolName: string;
-    args: any;
-    result?: any;
-  }>;
-  annotations?: any[];
-  createdAt?: Date;
+  createdAt?: number;
 }
 
 interface UseAIChatOptions {
   chatId?: string;
-  initialMessages?: AIMessage[];
+  initialMessages?: UIMessage[];
   onFinish?: (message: AIMessage) => void;
   onError?: (error: Error) => void;
   maxSteps?: number;
-  experimental_toolCallStreaming?: boolean;
 }
 
 export function useAIChat({
@@ -35,109 +48,99 @@ export function useAIChat({
   onFinish,
   onError,
   maxSteps = 5,
-  experimental_toolCallStreaming = true,
 }: UseAIChatOptions = {}) {
+  const log = createModuleLogger('use-ai-chat');
   const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const {
-    messages,
-    input,
-    setInput,
-    append,
-    reload,
-    stop,
-    isLoading,
-    error,
-    setMessages,
-    data,
-    addToolResult,
-  } = useChat({
-    api: '/api/ai/chat',
-    id: chatId,
-    initialMessages,
-    maxSteps,
-    experimental_toolCallStreaming,
-    body: {
-      chatId,
-      attachments,
-    },
-    onResponse: (response) => {
-      if (!response.ok) {
-        toast.error('Failed to get AI response');
-      }
-    },
-    onFinish: (message) => {
+  // AI SDK v5: Manual input state management
+  const [input, setInput] = useState('');
+
+  const { messages, sendMessage, stop, error, setMessages } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/ai/chat',
+      body: {
+        chatId,
+        attachments,
+        maxSteps,
+      },
+    }),
+    messages: initialMessages,
+    onFinish: ({ message }) => {
       setIsProcessing(false);
       onFinish?.(message as AIMessage);
-      
+
       // Clear attachments after successful send
       setAttachments([]);
     },
     onError: (err) => {
       setIsProcessing(false);
-      console.error('AI Chat Error:', err);
+      log.error('AI Chat Error', { error: err.message });
       toast.error(err.message || 'An error occurred');
       onError?.(err);
     },
   });
 
-  // Send message with attachments
-  const sendMessage = useCallback(
+  // Send message with attachments - AI SDK v5 compatible
+  const sendUserMessage = useCallback(
     async (content: string, messageAttachments?: MessageAttachment[]) => {
-      if (!content.trim() && (!messageAttachments || messageAttachments.length === 0)) {
+      if (
+        !content.trim() &&
+        (!messageAttachments || messageAttachments.length === 0)
+      ) {
         return;
       }
 
       setIsProcessing(true);
-      
+
       // Set attachments for the next message
       if (messageAttachments) {
         setAttachments(messageAttachments);
       }
 
-      // Append the message
-      await append({
+      // Send message using AI SDK v5 format with proper typing
+      const message: UIMessage = {
+        id: '',
         role: 'user',
-        content,
-        experimental_attachments: messageAttachments,
-      } as any);
+        parts: [{ type: 'text', text: content }],
+      };
+
+      await sendMessage(message);
     },
-    [append]
+    [sendMessage]
   );
 
   // Handle file uploads
-  const handleFileUpload = useCallback(
-    async (files: File[]) => {
-      const uploaded: MessageAttachment[] = [];
-      
-      for (const file of files) {
-        try {
-          // Create a temporary attachment object
-          const attachment: MessageAttachment = {
-            fileId: `temp-${Date.now()}-${file.name}`,
-            mimeType: file.type,
-            size: file.size,
-            type: file.type.startsWith('image/')
-              ? 'image'
-              : file.type.startsWith('video/')
+  const handleFileUpload = useCallback(async (files: File[]) => {
+    const uploaded: MessageAttachment[] = [];
+
+    for (const file of files) {
+      try {
+        // Create a temporary attachment object
+        const attachment: MessageAttachment = {
+          fileId: `temp-${Date.now()}-${file.name}`,
+          mimeType: file.type,
+          size: file.size,
+          type: file.type.startsWith('image/')
+            ? 'image'
+            : file.type.startsWith('video/')
               ? 'video'
               : 'file',
-            url: URL.createObjectURL(file),
-          };
-          
-          uploaded.push(attachment);
-        } catch (error) {
-          console.error('Failed to process file:', error);
-          toast.error(`Failed to upload ${file.name}`);
-        }
+          url: URL.createObjectURL(file),
+        };
+
+        uploaded.push(attachment);
+      } catch (error) {
+        log.error('Failed to process file', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        toast.error(`Failed to upload ${file.name}`);
       }
-      
-      setAttachments((prev) => [...prev, ...uploaded]);
-      return uploaded;
-    },
-    []
-  );
+    }
+
+    setAttachments((prev) => [...prev, ...uploaded]);
+    return uploaded;
+  }, []);
 
   // Remove attachment
   const removeAttachment = useCallback((fileId: string) => {
@@ -196,26 +199,41 @@ export function useAIChat({
     return [];
   }, [messages]);
 
+  // Map messages to AIMessage type safely
+  const typedMessages: AIMessage[] = messages.map((m) => {
+    // Extract text content from parts array
+    const content =
+      m.parts
+        ?.filter((part): part is TextPart => part.type === 'text')
+        .map((part) => part.text)
+        .join('') || '';
+
+    return {
+      ...m,
+      content,
+      attachments: (m as UIMessage & { attachments?: MessageAttachment[] })
+        .attachments,
+      createdAt: Date.now(),
+    } as AIMessage;
+  });
+
   return {
     // State
-    messages: messages as AIMessage[],
+    messages: typedMessages,
     input,
     attachments,
-    isLoading: isLoading || isProcessing,
+    isLoading: isProcessing, // AI SDK v5: no isLoading from useChat
     error,
-    data,
-    
+
     // Actions
     setInput,
-    sendMessage,
-    reload,
+    sendMessage: sendUserMessage, // Use our wrapped function
     stop,
     setMessages,
-    addToolResult,
     handleFileUpload,
     removeAttachment,
     clearAttachments,
-    
+
     // Utilities
     generateSuggestions,
   };

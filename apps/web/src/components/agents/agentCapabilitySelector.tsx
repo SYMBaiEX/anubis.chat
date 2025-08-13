@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { capabilities, categories } from './constants';
-import type { AgentCapability } from './types';
 
 interface AgentCapabilitySelectorProps {
   selected: string[];

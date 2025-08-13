@@ -6,8 +6,10 @@ import { streamText } from 'ai';
 import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { httpAction } from './_generated/server';
+import { createModuleLogger } from './utils/logger';
 
-// Remove direct imports to avoid TypeScript issues
+// Create logger instance for this module
+const logger = createModuleLogger('streaming');
 
 // Allowed OpenRouter model allowlist for security
 const ALLOWED_OPENROUTER_MODELS = new Set<string>([
@@ -22,9 +24,25 @@ const ALLOWED_OPENROUTER_MODELS = new Set<string>([
   'deepseek/deepseek-chat',
   'qwen/qwen2.5-coder:32b',
   'meta/llama-3.1-70b-instruct',
+  // Premium model via OpenRouter on Cerebras
+  'openai/gpt-oss-120b',
 ]);
 
 export const streamChat = httpAction(async (ctx, request) => {
+  // Handle OPTIONS preflight request
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers':
+          'Content-Type, Authorization, X-Requested-With, Accept',
+        'Access-Control-Max-Age': '86400',
+      },
+    });
+  }
+
   // Parse request body
   const body = (await request.json()) as {
     chatId: string;
@@ -173,22 +191,20 @@ export const streamChat = httpAction(async (ctx, request) => {
     attachments,
   });
 
-  // Try to kick off memory extraction for this user message
-  try {
-    if (_userMessage) {
-      await ctx.runAction(api.memoryExtraction.processNewMessage, {
-        messageId: _userMessage._id,
-      });
-    }
-  } catch (err) {
-    // Non-blocking - continue with response
-  }
-
   // Check user preferences for memory and RAG features
   const userPreferences = await ctx.runQuery(api.userPreferences.getByUserId, {
     userId: user._id,
   });
   const memoryEnabled = userPreferences?.enableMemory !== false; // Default to true
+
+  // User message created - will process memory after assistant response
+  if (_userMessage) {
+    logger.debug('User message created', {
+      messageId: _userMessage._id,
+      memoryEnabled,
+      userId: user._id,
+    });
+  }
 
   // Initialize context to be injected into system prompt
   let contextToInject = '';
@@ -304,7 +320,7 @@ export const streamChat = httpAction(async (ctx, request) => {
     // 'gpt-5-pro',  // REMOVED
     // 'o3',  // REMOVED
     'gpt-4.1-mini',
-  ].includes(modelName);
+  ].includes(modelName) || modelName === 'openrouter/openai/gpt-oss-120b';
 
   // Skip premium checks for admins - they have unlimited access
   if (isPremiumModel && !adminStatus.isAdmin) {
@@ -374,6 +390,34 @@ export const streamChat = httpAction(async (ctx, request) => {
     if (modelName.startsWith('openrouter/')) {
       const openrouter = createOpenRouter({
         apiKey: process.env.OPENROUTER_API_KEY!,
+        baseURL: 'https://openrouter.ai/api/v1',
+        fetch: async (input, init) => {
+          try {
+            const url = typeof input === 'string' ? input : input.toString();
+            if (
+              (url.includes('/chat/completions') || url.includes('/responses')) &&
+              init &&
+              typeof init.body === 'string'
+            ) {
+              const payload = JSON.parse(init.body as string);
+              if (
+                payload &&
+                typeof payload === 'object' &&
+                payload.model === 'openai/gpt-oss-120b'
+              ) {
+                payload.provider = { only: ['Cerebras'] };
+                init.body = JSON.stringify(payload);
+                if (init.headers && typeof init.headers === 'object') {
+                  (init.headers as Record<string, string>)['Content-Type'] =
+                    'application/json';
+                }
+              }
+            }
+          } catch {
+            // fall through to default fetch if anything goes wrong
+          }
+          return fetch(input as any, init as any);
+        },
       });
       const orModel = modelName.replace(/^openrouter\//, '');
 
@@ -396,6 +440,8 @@ export const streamChat = httpAction(async (ctx, request) => {
         );
       }
 
+      // For Cerebras routing, pass provider preference via per-call options if supported
+      // Otherwise rely on header above
       aiModel = openrouter(orModel);
     } else {
       // OpenAI models
@@ -525,7 +571,7 @@ export const streamChat = httpAction(async (ctx, request) => {
   }
 
   let result;
-  let finalText = '';
+  const finalText = '';
   let capturedReasoningSteps: string[] | undefined;
   const totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
@@ -534,8 +580,9 @@ export const streamChat = httpAction(async (ctx, request) => {
   const messagesConsumed = useReasoning ? 2 : 1; // Reasoning costs 2 messages, regular costs 1
 
   try {
-    if (useReasoning) {
-      const reasoningSystemPrompt = `${combinedSystemPrompt}
+    // Use unified system prompt based on reasoning mode
+    const systemPrompt = useReasoning
+      ? `${combinedSystemPrompt}
 
 When responding to the user's message, use a structured reasoning process with up to ${maxSteps} steps:
 
@@ -553,142 +600,8 @@ Step 3: [Continue as needed...]
 [Use up to ${maxSteps} steps to reach a thorough conclusion]
 </thinking>
 
-[Your final response to the user]`;
-
-      // Create a readable stream for multi-step reasoning
-      const stream = new ReadableStream({
-        async start(controller) {
-          try {
-            // Step 1: Initial reasoning
-            controller.enqueue('**🧠 Thinking through your request...**\n\n');
-
-            const reasoningResult = await streamText({
-              model: aiModel,
-              system: reasoningSystemPrompt,
-              messages: conversationHistory,
-              temperature: temperature ?? chat.temperature ?? 0.7,
-              maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
-            });
-
-            let reasoningContent = '';
-            for await (const chunk of reasoningResult.textStream) {
-              reasoningContent += chunk;
-            }
-
-            // Extract thinking section and final response
-            const thinkingMatch = reasoningContent.match(
-              /<(thinking|think)>([\s\S]*?)<\/(thinking|think)>/
-            );
-            const thinking = thinkingMatch ? thinkingMatch[2].trim() : '';
-            const finalResponse = reasoningContent
-              .replace(/<(thinking|think)>[\s\S]*?<\/(thinking|think)>/, '')
-              .trim();
-
-            if (thinking) {
-              // Stream the thinking process
-              controller.enqueue('### Reasoning Steps:\n\n');
-              const steps = thinking.split(/Step \d+:/);
-              // Persist steps for metadata (not shown inline to users unless toggled)
-              capturedReasoningSteps = steps
-                .map((s) => s.trim())
-                .filter(Boolean)
-                .slice(0, Math.min(steps.length, maxSteps + 1));
-              for (let i = 1; i < Math.min(steps.length, maxSteps + 1); i++) {
-                if (steps[i]?.trim()) {
-                  controller.enqueue(`**Step ${i}:** ${steps[i].trim()}\n\n`);
-                  // Small delay to simulate thinking time
-                  await new Promise((resolve) => setTimeout(resolve, 500));
-                }
-              }
-
-              controller.enqueue('---\n\n');
-            }
-
-            // Stream the final response
-            controller.enqueue('### Final Response:\n\n');
-            finalText = finalResponse || reasoningContent;
-
-            // Stream final response character by character for better UX
-            for (const char of finalText) {
-              controller.enqueue(char);
-              // Very small delay for streaming effect
-              await new Promise((resolve) => setTimeout(resolve, 10));
-            }
-
-            // Update usage tracking
-            const usage = await reasoningResult.usage;
-            if (usage) {
-              totalUsage.inputTokens += usage.inputTokens || 0;
-              totalUsage.outputTokens += usage.outputTokens || 0;
-              totalUsage.totalTokens =
-                totalUsage.inputTokens + totalUsage.outputTokens;
-            }
-
-            controller.close();
-          } catch (error) {
-            controller.error(error);
-          }
-        },
-      });
-
-      // Save the complete message to database
-      const completeContent = finalText || 'Multi-step reasoning completed';
-      const reasoningJoined = capturedReasoningSteps
-        ? capturedReasoningSteps
-            .map((s, idx) => `Step ${idx + 1}: ${s}`)
-            .join('\n')
-        : undefined;
-
-      const _assistantMessage = await ctx.runMutation(api.messages.create, {
-        chatId: chatId as Id<'chats'>,
-        walletAddress,
-        role: 'assistant',
-        content: completeContent,
-        metadata: {
-          model: modelName,
-          finishReason: 'stop',
-          usage: totalUsage,
-          reasoning: reasoningJoined,
-        },
-      });
-
-      // Extract memories from conversation after AI response (non-blocking)
-      if (memoryEnabled && _userMessage) {
-        // Non-blocking memory extraction
-        try {
-          await ctx.runAction(api.memoryExtraction.processNewMessage, {
-            messageId: _userMessage._id,
-          });
-        } catch (error) {
-          // Memory extraction is optional, ignore errors
-        }
-      }
-
-      // Track message usage for subscription (skip for admins) - consume appropriate number of messages
-      if (!adminStatus.isAdmin) {
-        // For reasoning mode, we need to consume 2 messages
-        for (let i = 0; i < messagesConsumed; i++) {
-          await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
-            walletAddress,
-            isPremiumModel,
-          });
-        }
-      }
-
-      // Return the custom stream
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/plain',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers':
-            'Content-Type, Authorization, X-Requested-With, Accept',
-          'Access-Control-Allow-Credentials': 'true',
-        },
-      });
-    }
-
-    const regularSystemPrompt = `${combinedSystemPrompt}
+[Your final response to the user]`
+      : `${combinedSystemPrompt}
 
 When responding to the user's message, you may use up to ${maxSteps} reasoning steps if the problem is complex enough to benefit from step-by-step thinking. For simple queries, respond directly. For more complex ones, use this format:
 
@@ -702,38 +615,79 @@ Step 3: [Third reasoning step if needed - only if really necessary]
 
 Use your judgment - only use the thinking section if the query truly benefits from multi-step reasoning.`;
 
+    // Use the same streamText approach for both reasoning and normal modes
     result = await streamText({
       model: aiModel,
-      system: regularSystemPrompt,
+      system: systemPrompt,
       messages: conversationHistory,
       temperature: temperature ?? chat.temperature ?? 0.7,
       maxOutputTokens: maxTokens ?? chat.maxTokens ?? 2000,
       onFinish: async ({ text, finishReason, usage }) => {
-        // Strip out any <thinking>/<think> content and capture reasoning
-        const thinkingMatch = (text || '').match(
-          /<(thinking|think)>([\s\S]*?)<\/(thinking|think)>/
-        );
-        const sanitizedText = (text || '')
-          .replace(/<(thinking|think)>[\s\S]*?<\/(thinking|think)>/g, '')
-          .trim();
-
-        // Optionally capture reasoning steps for metadata (not shown to users)
+        let sanitizedText = text || '';
         let reasoningSteps: string[] | undefined;
-        if (thinkingMatch && thinkingMatch[2]) {
-          const raw = thinkingMatch[2];
-          const parts = raw
-            .split(/Step \d+:/)
-            .map((p) => p.trim())
-            .filter(Boolean);
-          if (parts.length > 0) {
-            reasoningSteps = parts.slice(
-              0,
-              Math.max(1, Math.min(parts.length, 10))
+
+        if (useReasoning) {
+          // For reasoning mode, keep the thinking content but format it nicely
+          const thinkingMatch = sanitizedText.match(
+            /<(thinking|think)>([\s\S]*?)<\/(thinking|think)>/
+          );
+
+          if (thinkingMatch && thinkingMatch[2]) {
+            const raw = thinkingMatch[2];
+            const parts = raw
+              .split(/Step \d+:/)
+              .map((p) => p.trim())
+              .filter(Boolean);
+            if (parts.length > 0) {
+              reasoningSteps = parts.slice(
+                0,
+                Math.max(1, Math.min(parts.length, 10))
+              );
+            }
+
+            // Format reasoning steps for display
+            const formattedReasoning =
+              reasoningSteps && reasoningSteps.length > 0
+                ? '## Reasoning Process\n\n' +
+                  reasoningSteps
+                    .map((s, i) => `**Step ${i + 1}:** ${s}`)
+                    .join('\n\n')
+                : thinkingMatch[2];
+
+            // Replace the thinking tags with formatted reasoning
+            sanitizedText = sanitizedText.replace(
+              /<(thinking|think)>[\s\S]*?<\/(thinking|think)>/,
+              formattedReasoning + '\n\n---\n\n## Response\n\n'
             );
           }
+        } else {
+          // Only strip thinking for non-reasoning mode
+          const thinkingMatch = sanitizedText.match(
+            /<(thinking|think)>([\s\S]*?)<\/(thinking|think)>/
+          );
+
+          // Capture reasoning steps for metadata
+          if (thinkingMatch && thinkingMatch[2]) {
+            const raw = thinkingMatch[2];
+            const parts = raw
+              .split(/Step \d+:/)
+              .map((p) => p.trim())
+              .filter(Boolean);
+            if (parts.length > 0) {
+              reasoningSteps = parts.slice(
+                0,
+                Math.max(1, Math.min(parts.length, 10))
+              );
+            }
+          }
+
+          // Strip thinking tags for non-reasoning mode
+          sanitizedText = sanitizedText
+            .replace(/<(thinking|think)>[\s\S]*?<\/(thinking|think)>/g, '')
+            .trim();
         }
 
-        // Prepare reasoning text if present
+        // Prepare reasoning text for metadata
         const reasoningJoined =
           reasoningSteps && reasoningSteps.length > 0
             ? reasoningSteps.map((s, i) => `Step ${i + 1}: ${s}`).join('\n')
@@ -759,16 +713,45 @@ Use your judgment - only use the thinking section if the query truly benefits fr
           },
         });
 
-        // Extract memories from conversation after AI response (non-blocking)
-        if (memoryEnabled && _userMessage) {
-          // Non-blocking memory extraction
+        // Extract memories from conversation after AI response
+        if (memoryEnabled && _userMessage && _assistantMessage) {
+          logger.info('Starting memory extraction', {
+            userMessageId: _userMessage._id,
+            assistantMessageId: _assistantMessage._id,
+            userId: user._id,
+          });
+
+          // Process memory extraction for both messages
           try {
+            // Process user message
             await ctx.runAction(api.memoryExtraction.processNewMessage, {
               messageId: _userMessage._id,
             });
-          } catch (error) {
-            // Memory extraction is optional, ignore errors
+            logger.debug('User message memory extraction completed', {
+              messageId: _userMessage._id,
+            });
+
+            // Also process assistant message for comprehensive memory
+            await ctx.runAction(api.memoryExtraction.processNewMessage, {
+              messageId: _assistantMessage._id,
+            });
+            logger.debug('Assistant message memory extraction completed', {
+              messageId: _assistantMessage._id,
+            });
+          } catch (err) {
+            logger.error('Memory extraction failed', err, {
+              userMessageId: _userMessage._id,
+              assistantMessageId: _assistantMessage._id,
+            });
+            // Memory extraction errors shouldn't break the chat flow
           }
+        } else {
+          logger.debug('Memory extraction skipped', {
+            memoryEnabled,
+            hasUserMessage: !!_userMessage,
+            hasAssistantMessage: !!_assistantMessage,
+            userId: user._id,
+          });
         }
 
         // Track message usage for subscription (skip for admins) - consume appropriate number of messages

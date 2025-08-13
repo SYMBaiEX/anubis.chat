@@ -41,7 +41,7 @@ import { AgentSelectorDialog } from './agent-selector-dialog';
 import { ChatHeader } from './chat-header';
 import { ChatSettingsDialog } from './chat-settings-dialog';
 import { ChatWelcome } from './chat-welcome';
-import { MessageInput } from './message-input';
+import { EnhancedMessageInput } from './enhanced-message-input';
 import { MessageList } from './message-list';
 import { ModelSelector } from './model-selector';
 
@@ -108,6 +108,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   // Mobile dialog states
   const [showMobileModelSelector, setShowMobileModelSelector] = useState(false);
   const [showMobileAgentSelector, setShowMobileAgentSelector] = useState(false);
+  const [showDesktopAgentSelector, setShowDesktopAgentSelector] =
+    useState(false);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
 
@@ -288,8 +290,19 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         agentPrompt: currentChat.agentPrompt || prev.agentPrompt,
         temperature: currentChat.temperature || prev.temperature,
       }));
+
+      // Also select the agent if the chat has an agentId
+      if (currentChat.agentId && agents && selectAgent) {
+        const chatAgent = agents.find((a) => a._id === currentChat.agentId);
+        if (
+          chatAgent &&
+          (!selectedAgent || selectedAgent._id !== chatAgent._id)
+        ) {
+          selectAgent(currentChat.agentId);
+        }
+      }
     }
-  }, [currentChat]);
+  }, [currentChat, agents, selectAgent, selectedAgent]);
 
   // Update agent prompt when agent changes (keep system prompt separate)
   useEffect(() => {
@@ -298,8 +311,21 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         ...prev,
         agentPrompt: selectedAgent.systemPrompt,
       }));
+
+      // Update the current chat's agent prompt if a chat is selected
+      if (selectedChatId && isAuthenticated) {
+        updateChat({
+          id: selectedChatId as Id<'chats'>,
+          agentPrompt: selectedAgent.systemPrompt,
+          agentId: selectedAgent._id,
+        }).catch((error: any) => {
+          log.error('Failed to update chat agent', {
+            error: error?.message,
+          });
+        });
+      }
     }
-  }, [selectedAgent]);
+  }, [selectedAgent, selectedChatId, isAuthenticated, updateChat]);
 
   // Quick suggestions removed per product request
 
@@ -621,7 +647,15 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               <div className="min-w-0 flex-1">
                 <ChatHeader
                   chat={currentChat}
-                  onAgentSelectorClick={() => setShowMobileAgentSelector(true)}
+                  onAgentSelectorClick={() => {
+                    // Use desktop selector for larger screens, mobile for smaller
+                    const isMobile = window.innerWidth < 640; // sm breakpoint
+                    if (isMobile) {
+                      setShowMobileAgentSelector(true);
+                    } else {
+                      setShowDesktopAgentSelector(true);
+                    }
+                  }}
                   onClearHistory={() => {}}
                   onDelete={() => {
                     if (selectedChatId) {
@@ -643,6 +677,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     }
                   }}
                   onSettingsClick={() => setShowMobileSettings(true)}
+                  selectedAgent={selectedAgent || undefined}
                 />
               </div>
             ) : (
@@ -664,13 +699,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   onValueChange={handleModelChange}
                   value={selectedModel}
                 />
-              </div>
-            )}
-
-            {/* Agent Selector - hide on smaller screens */}
-            {isInitialized && (
-              <div className="hidden xl:block">
-                <AgentSelectorDialog />
               </div>
             )}
 
@@ -724,6 +752,17 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       role: 'user' | 'assistant' | 'system';
                       createdAt?: number;
                       _creationTime?: number;
+                      rating?: {
+                        userRating: 'like' | 'dislike';
+                        ratedAt: number;
+                        ratedBy: string;
+                      };
+                      actions?: {
+                        copiedCount?: number;
+                        sharedCount?: number;
+                        regeneratedCount?: number;
+                        lastActionAt?: number;
+                      };
                     };
                     const normalized: MinimalMessage = {
                       _id: String(doc._id),
@@ -731,6 +770,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       role: doc.role,
                       createdAt:
                         doc.createdAt ?? doc._creationTime ?? Date.now(),
+                      rating: doc.rating,
+                      actions: doc.actions,
                     };
                     return normalized;
                   })}
@@ -758,15 +799,36 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             <div className="border-border/50 border-t bg-card/30 backdrop-blur">
               <div className="p-2 sm:p-3 md:p-4">
                 <div className="mx-auto w-full max-w-full px-0 sm:max-w-6xl md:max-w-7xl lg:px-4 xl:px-8">
-                  <MessageInput
+                  <EnhancedMessageInput
                     disabled={
                       !selectedChatId ||
                       messages === undefined ||
                       isStreaming ||
                       !canSendMessage
                     }
-                    fontSize={chatSettings.fontSize}
-                    onSend={handleSendMessage}
+                    isStreaming={isStreaming}
+                    onSend={async (content, options) => {
+                      // Adapt the enhanced input format to the original handleSendMessage
+                      const mappedAttachments = options?.attachments?.map(
+                        (att) => ({
+                          fileId: att.id,
+                          url: att.url,
+                          mimeType: att.type,
+                          size: att.size,
+                          type: (att.type.startsWith('image/')
+                            ? 'image'
+                            : att.type.startsWith('video/')
+                              ? 'video'
+                              : 'file') as 'image' | 'file' | 'video',
+                        })
+                      );
+
+                      await handleSendMessage(
+                        content,
+                        options?.useReasoning,
+                        mappedAttachments
+                      );
+                    }}
                     onTyping={startTyping}
                     placeholder={
                       canSendMessage
@@ -896,6 +958,64 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       )}
 
       {/* Global command palette covers this page */}
+
+      {/* Desktop Agent Selector Dialog (reusing mobile dialog for consistency) */}
+      <Dialog
+        onOpenChange={setShowDesktopAgentSelector}
+        open={showDesktopAgentSelector}
+      >
+        <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] max-w-[680px] overflow-hidden sm:w-[90vw] md:w-auto md:max-w-3xl lg:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Select AI Agent</DialogTitle>
+            <DialogDescription>
+              Choose a specialized agent for your blockchain tasks
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto">
+            {agents && (
+              <AgentGrid
+                agents={agents}
+                columns={5}
+                onAgentSelect={async (agent) => {
+                  selectAgent(agent._id);
+                  setShowDesktopAgentSelector(false);
+
+                  // Update the current chat's agent prompt and reference
+                  if (selectedChatId && isAuthenticated) {
+                    try {
+                      await updateChat({
+                        id: selectedChatId as Id<'chats'>,
+                        agentPrompt: agent.systemPrompt,
+                        agentId: agent._id,
+                      });
+                    } catch (error: any) {
+                      log.error('Failed to update chat agent', {
+                        error: error?.message,
+                      });
+                    }
+                  }
+                }}
+                selectedAgentId={selectedAgent?._id}
+              />
+            )}
+          </div>
+
+          {/* Create New Agent Button */}
+          <div className="border-t pt-4">
+            <Link className="block" href="/agents">
+              <Button
+                className="w-full"
+                onClick={() => setShowDesktopAgentSelector(false)}
+                variant="outline"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create a New Agent
+              </Button>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Upgrade Prompt Modal */}
       {showUpgradePrompt && upgradePrompt.suggestedTier && (

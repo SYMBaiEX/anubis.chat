@@ -39,7 +39,10 @@ export function StreamingMessage({
     // Smooth character-by-character streaming
     let currentIndex = displayContent.length;
     const targetLength = content.length;
-    const charsPerFrame = Math.max(1, Math.ceil((targetLength - currentIndex) / 30));
+    const charsPerFrame = Math.max(
+      1,
+      Math.ceil((targetLength - currentIndex) / 30)
+    );
 
     const interval = setInterval(() => {
       if (currentIndex < targetLength) {
@@ -74,7 +77,7 @@ export function StreamingMessage({
       </div>
 
       {/* Message Content */}
-      <div className="flex flex-col items-start space-y-2 flex-1 min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col items-start space-y-2">
         {/* Message Header */}
         <div className="flex items-center gap-2 text-muted-foreground text-xs">
           <span className="font-medium">Assistant</span>
@@ -84,18 +87,12 @@ export function StreamingMessage({
         {/* Message Bubble */}
         <div className="relative max-w-full lg:max-w-2xl">
           <motion.div
+            animate={{ scale: 1, opacity: 1 }}
             className="rounded-2xl border bg-muted px-4 py-3 shadow-sm"
             initial={{ scale: 0.95, opacity: 0.8 }}
-            animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.2 }}
           >
-            {!displayContent ? (
-              <AIStreamingIndicator
-                type="thinking"
-                label="Generating response..."
-                className="py-2"
-              />
-            ) : (
+            {displayContent ? (
               <>
                 <OptimizedMarkdownRenderer
                   content={displayContent}
@@ -103,12 +100,21 @@ export function StreamingMessage({
                 />
                 {isTyping && (
                   <motion.span
-                    className="inline-block w-2 h-4 bg-primary/60 ml-0.5"
                     animate={{ opacity: [1, 0] }}
-                    transition={{ duration: 0.5, repeat: Infinity }}
+                    className="ml-0.5 inline-block h-4 w-2 bg-primary/60"
+                    transition={{
+                      duration: 0.5,
+                      repeat: Number.POSITIVE_INFINITY,
+                    }}
                   />
                 )}
               </>
+            ) : (
+              <AIStreamingIndicator
+                className="py-2"
+                label="Generating response..."
+                type="thinking"
+              />
             )}
           </motion.div>
         </div>

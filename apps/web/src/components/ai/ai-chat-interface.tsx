@@ -1,13 +1,17 @@
 'use client';
 
+import { useChat } from '@ai-sdk/react';
+import type { UIMessage } from 'ai';
+import { DefaultChatTransport } from 'ai';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, Bot, Sparkles } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useAIChat } from '@/hooks/use-ai-chat';
+import type { AIMessage } from '@/hooks/use-ai-chat';
 import { cn } from '@/lib/utils';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { AISuggestions } from './ai-suggestions';
 import { Composer } from './composer';
 import { Thread } from './thread';
@@ -15,11 +19,28 @@ import { Thread } from './thread';
 interface AIChatInterfaceProps {
   chatId?: string;
   className?: string;
-  initialMessages?: any[];
+  initialMessages?: UIMessage[];
   model?: string;
   maxSteps?: number;
   showSuggestions?: boolean;
   enableTools?: boolean;
+}
+
+// Helper function to convert UIMessage to AIMessage format
+function convertToAIMessage(uiMessage: UIMessage): AIMessage {
+  // Extract text content from parts array
+  const content =
+    uiMessage.parts
+      ?.filter((part: any) => part.type === 'text')
+      .map((part: any) => part.text)
+      .join('') || '';
+
+  return {
+    ...uiMessage,
+    content,
+    createdAt: Date.now(), // Add createdAt if not present
+    toolInvocations: [], // In AI SDK v5, toolInvocations are handled differently
+  } as AIMessage;
 }
 
 export function AIChatInterface({
@@ -31,69 +52,129 @@ export function AIChatInterface({
   showSuggestions = true,
   enableTools = true,
 }: AIChatInterfaceProps) {
+  const log = createModuleLogger('ai-chat-interface');
   const [selectedModel, setSelectedModel] = useState(model);
   const [showModelSelector, setShowModelSelector] = useState(false);
 
-  const {
-    messages,
-    input,
-    setInput,
-    sendMessage,
-    reload,
-    stop,
-    isLoading,
-    error,
-    attachments,
-    handleFileUpload,
-    removeAttachment,
-    clearAttachments,
-    generateSuggestions,
-  } = useAIChat({
-    chatId,
-    initialMessages,
-    maxSteps,
-    experimental_toolCallStreaming: enableTools,
-    onFinish: (message) => {
-      console.log('Message finished:', message);
+  const [input, setInput] = useState('');
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { messages, sendMessage, stop, error, setMessages } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+      body: { chatId, model: selectedModel, maxSteps },
+    }),
+    onFinish: async ({ message }) => {
+      log.info('Message finished', { id: message.id });
     },
     onError: (error) => {
-      console.error('Chat error:', error);
+      log.error('Chat error', { error: error.message });
     },
   });
+
+  const handleFileUpload = useCallback(async (files: File[]) => {
+    // Simplified file upload logic - convert to MessageAttachment format
+    const newAttachments = files.map((file) => ({
+      fileId: `${Date.now()}-${file.name}`,
+      mimeType: file.type,
+      size: file.size,
+      type: file.type.startsWith('image/')
+        ? ('image' as const)
+        : file.type.startsWith('video/')
+          ? ('video' as const)
+          : ('file' as const),
+      url: URL.createObjectURL(file),
+    }));
+    setAttachments((prev) => [...prev, ...newAttachments]);
+    return newAttachments;
+  }, []);
+
+  const removeAttachment = useCallback((fileId: string) => {
+    setAttachments((prev) => prev.filter((att) => att.fileId !== fileId));
+  }, []);
+
+  const clearAttachments = useCallback(() => {
+    setAttachments([]);
+  }, []);
+
+  const generateSuggestions = useCallback(() => {
+    if (!messages || messages.length === 0) {
+      return [
+        'What can you help me with?',
+        'Tell me about your capabilities',
+        'How do I get started?',
+        'Explain your features',
+      ];
+    }
+    return [
+      'Can you explain that in more detail?',
+      'What are the alternatives?',
+      'How can I implement this?',
+      'Show me an example',
+    ];
+  }, [messages]);
 
   const suggestions = generateSuggestions();
 
   const handleSendMessage = useCallback(
-    (content: string, messageAttachments?: any[]) => {
-      sendMessage(content, messageAttachments || attachments);
+    async (content: string, messageAttachments?: any[]) => {
+      if (!content.trim()) return;
+
+      setIsLoading(true);
+      try {
+        // Send message with AI SDK v5 format
+        await sendMessage({
+          role: 'user',
+          parts: [{ type: 'text', text: content }],
+        });
+
+        setInput('');
+        clearAttachments();
+      } catch (error) {
+        log.error('Failed to send message', { error });
+      } finally {
+        setIsLoading(false);
+      }
     },
-    [sendMessage, attachments]
+    [sendMessage, clearAttachments, log]
   );
 
   const handleSuggestionSelect = useCallback(
-    (suggestion: string) => {
+    async (suggestion: string) => {
       setInput(suggestion);
-      sendMessage(suggestion);
+      setIsLoading(true);
+      try {
+        await sendMessage({
+          role: 'user',
+          parts: [{ type: 'text', text: suggestion }],
+        });
+        setInput('');
+      } catch (error) {
+        log.error('Failed to send suggestion', { error });
+      } finally {
+        setIsLoading(false);
+      }
     },
-    [setInput, sendMessage]
+    [sendMessage, log]
   );
 
   const handleMessageRegenerate = useCallback(
     (messageId: string) => {
-      const messageIndex = messages.findIndex((m) => m.id === messageId);
-      if (messageIndex >= 0) {
-        reload();
-      }
+      // In AI SDK v5, reload is not available, we'll need to implement regeneration differently
+      // For now, just show a message that this feature needs to be implemented
+      log.info('Message regeneration requested', { messageId });
+      // TODO: Implement regeneration by finding the last user message and resending it
     },
-    [messages, reload]
+    [log]
   );
 
   const handleMessageFeedback = useCallback(
     (messageId: string, type: 'positive' | 'negative') => {
-      console.log('Feedback for message:', messageId, type);
+      log.info('Feedback for message', { messageId, type });
       // Implement feedback logic here
     },
-    []
+    [log]
   );
 
   const availableModels = [
@@ -111,16 +192,17 @@ export function AIChatInterface({
           <Bot className="h-5 w-5 text-primary" />
           <h2 className="font-semibold">AI Assistant</h2>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* Model selector */}
           <Button
-            variant="outline"
-            size="sm"
             onClick={() => setShowModelSelector(!showModelSelector)}
+            size="sm"
+            variant="outline"
           >
             <Sparkles className="mr-1 h-3 w-3" />
-            {availableModels.find((m) => m.id === selectedModel)?.name || 'Model'}
+            {availableModels.find((m) => m.id === selectedModel)?.name ||
+              'Model'}
           </Button>
         </div>
       </div>
@@ -129,26 +211,27 @@ export function AIChatInterface({
       <AnimatePresence>
         {showModelSelector && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
             className="border-b bg-muted/50"
+            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, height: 0 }}
           >
             <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
               {availableModels.map((modelOption) => (
                 <Card
-                  key={modelOption.id}
                   className={cn(
                     'cursor-pointer p-3 transition-all hover:shadow-md',
-                    selectedModel === modelOption.id && 'border-primary bg-primary/5'
+                    selectedModel === modelOption.id &&
+                      'border-primary bg-primary/5'
                   )}
+                  key={modelOption.id}
                   onClick={() => {
                     setSelectedModel(modelOption.id);
                     setShowModelSelector(false);
                   }}
                 >
-                  <div className="text-sm font-medium">{modelOption.name}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="font-medium text-sm">{modelOption.name}</div>
+                  <div className="text-muted-foreground text-xs">
                     {modelOption.provider}
                   </div>
                 </Card>
@@ -160,7 +243,7 @@ export function AIChatInterface({
 
       {/* Error display */}
       {error && (
-        <Alert variant="destructive" className="m-4">
+        <Alert className="m-4" variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error.message}</AlertDescription>
         </Alert>
@@ -169,12 +252,14 @@ export function AIChatInterface({
       {/* Messages thread */}
       <div className="flex-1 overflow-hidden">
         <Thread
-          messages={messages}
           isLoading={isLoading}
-          suggestions={showSuggestions && messages.length === 0 ? suggestions : []}
-          onSuggestionSelect={handleSuggestionSelect}
-          onMessageRegenerate={handleMessageRegenerate}
+          messages={messages.map(convertToAIMessage)}
           onMessageFeedback={handleMessageFeedback}
+          onMessageRegenerate={handleMessageRegenerate}
+          onSuggestionSelect={handleSuggestionSelect}
+          suggestions={
+            showSuggestions && messages.length === 0 ? suggestions : []
+          }
         />
       </div>
 
@@ -182,8 +267,8 @@ export function AIChatInterface({
       {showSuggestions && messages.length > 0 && suggestions.length > 0 && (
         <div className="border-t px-4 py-2">
           <AISuggestions
-            suggestions={suggestions}
             onSelect={handleSuggestionSelect}
+            suggestions={suggestions}
             variant="chip"
           />
         </div>
@@ -192,23 +277,19 @@ export function AIChatInterface({
       {/* Composer */}
       <div className="border-t p-4">
         <Composer
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSendMessage}
-          onStop={isLoading ? stop : undefined}
           attachments={attachments}
-          onAttachmentsChange={(newAttachments) => {
-            // Clear and set new attachments
-            clearAttachments();
-            newAttachments.forEach((a) => {
-              // The attachments are already in state
-            });
-          }}
-          onFileUpload={handleFileUpload}
           isLoading={isLoading}
+          onAttachmentsChange={(newAttachments) => {
+            setAttachments(newAttachments);
+          }}
+          onChange={setInput}
+          onFileUpload={handleFileUpload}
+          onStop={isLoading ? stop : undefined}
+          onSubmit={handleSendMessage}
+          onSuggestionSelect={handleSuggestionSelect}
           placeholder="Ask me anything..."
           suggestions={messages.length === 0 ? suggestions.slice(0, 2) : []}
-          onSuggestionSelect={handleSuggestionSelect}
+          value={input}
         />
       </div>
     </div>

@@ -48,19 +48,7 @@ function createOpenRouterModel(params: {
 }
 
 export const AI_MODELS: AIModel[] = [
-  // GPT-OSS-20B - Default free model
-  createOpenRouterModel({
-    id: 'openrouter/openai/gpt-oss-20b:free',
-    name: 'GPT-OSS-20B (Free) – OpenRouter',
-    description: 'OpenAI GPT-OSS-20B open-weight, free tier via OpenRouter',
-    contextWindow: 128_000,
-    maxOutput: 4096,
-    capabilities: ['coding', 'reasoning', 'general'],
-    speed: 'fast',
-    intelligence: 'advanced',
-    default: true,
-  }),
-  // GPT-5 Nano - Latest flagship nano model
+  // GPT-5 Nano - Default flagship nano model
   {
     id: 'gpt-5-nano',
     name: 'GPT-5 Nano',
@@ -73,8 +61,20 @@ export const AI_MODELS: AIModel[] = [
     speed: 'fast',
     intelligence: 'advanced',
     released: 'January 2025',
-    default: false,
+    default: true,
   },
+  // GPT-OSS-20B - Free model
+  createOpenRouterModel({
+    id: 'openrouter/openai/gpt-oss-20b:free',
+    name: 'GPT-OSS-20B (Free) – OpenRouter',
+    description: 'OpenAI GPT-OSS-20B open-weight, free tier via OpenRouter',
+    contextWindow: 128_000,
+    maxOutput: 4096,
+    capabilities: ['coding', 'reasoning', 'general'],
+    speed: 'fast',
+    intelligence: 'advanced',
+    default: false,
+  }),
   createOpenRouterModel({
     id: 'openrouter/z-ai/glm-4.5-air:free',
     name: 'GLM-4.5-Air (Free) – OpenRouter',
@@ -105,6 +105,21 @@ export const AI_MODELS: AIModel[] = [
     speed: 'medium',
     intelligence: 'advanced',
   }),
+  // GPT-OSS-120B – Premium via OpenRouter (Cerebras provider)
+  {
+    id: 'openrouter/openai/gpt-oss-120b',
+    name: 'GPT-OSS-120B (Cerebras) – OpenRouter',
+    provider: 'openrouter',
+    description:
+      'OpenAI GPT-OSS-120B via OpenRouter using Cerebras provider for high-throughput reasoning',
+    contextWindow: 32_768,
+    maxOutput: 8192,
+    pricing: { input: 0.073, output: 0.29 },
+    capabilities: ['reasoning', 'coding', 'analysis', 'tools'],
+    speed: 'medium',
+    intelligence: 'frontier',
+    released: 'August 2025',
+  },
   // OpenAI Models (August 2025)
   {
     id: 'gpt-5',

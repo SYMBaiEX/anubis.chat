@@ -779,9 +779,10 @@ export function MessageCreditsModal({
           <Button
             onClick={() =>
               window.open(
-                `https://explorer.solana.com/tx/${paymentDetails.txSignature}${solanaConfig.network !== 'mainnet-beta'
-                  ? `?cluster=${solanaConfig.network}`
-                  : ''
+                `https://explorer.solana.com/tx/${paymentDetails.txSignature}${
+                  solanaConfig.network !== 'mainnet-beta'
+                    ? `?cluster=${solanaConfig.network}`
+                    : ''
                 }`,
                 '_blank'
               )

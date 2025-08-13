@@ -22,7 +22,7 @@ export function AIStreamingIndicator({
           <Bot className="h-5 w-5 text-muted-foreground" />
           <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
         </div>
-        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-muted-foreground text-sm">{label}</span>
       </div>
     );
   }
@@ -34,15 +34,15 @@ export function AIStreamingIndicator({
         <div className="flex gap-1">
           {[0, 1, 2].map((i) => (
             <motion.div
-              key={i}
-              className="h-2 w-2 rounded-full bg-muted-foreground"
               animate={{
                 scale: [1, 1.2, 1],
                 opacity: [0.5, 1, 0.5],
               }}
+              className="h-2 w-2 rounded-full bg-muted-foreground"
+              key={i}
               transition={{
                 duration: 1.4,
-                repeat: Infinity,
+                repeat: Number.POSITIVE_INFINITY,
                 delay: i * 0.2,
               }}
             />
@@ -57,19 +57,19 @@ export function AIStreamingIndicator({
       <div className={cn('flex items-center gap-3', className)}>
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
         <div className="space-y-1">
-          <span className="text-sm font-medium">{label}</span>
+          <span className="font-medium text-sm">{label}</span>
           <div className="flex gap-1">
             {[0, 1, 2, 3].map((i) => (
               <motion.div
-                key={i}
-                className="h-1 w-8 rounded-full bg-primary/30"
                 animate={{
                   scaleX: [0.3, 1, 0.3],
                   opacity: [0.3, 1, 0.3],
                 }}
+                className="h-1 w-8 rounded-full bg-primary/30"
+                key={i}
                 transition={{
                   duration: 2,
-                  repeat: Infinity,
+                  repeat: Number.POSITIVE_INFINITY,
                   delay: i * 0.15,
                 }}
               />
@@ -87,8 +87,8 @@ export function AIStreamingIndicator({
       <div className="flex space-x-1">
         {[0, 1, 2].map((i) => (
           <span
-            key={i}
             className="inline-block h-2 w-2 animate-pulse rounded-full bg-muted-foreground"
+            key={i}
             style={{
               animationDelay: `${i * 150}ms`,
             }}
@@ -96,7 +96,7 @@ export function AIStreamingIndicator({
         ))}
       </div>
       {label && (
-        <span className="ml-2 text-sm text-muted-foreground">{label}</span>
+        <span className="ml-2 text-muted-foreground text-sm">{label}</span>
       )}
     </div>
   );

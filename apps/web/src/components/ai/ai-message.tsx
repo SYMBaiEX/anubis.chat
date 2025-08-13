@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/tooltip';
 import type { AIMessage as AIMessageType } from '@/hooks/use-ai-chat';
 import { cn } from '@/lib/utils';
+import { createModuleLogger } from '@/lib/utils/logger';
 import { OptimizedMarkdownRenderer } from '../chat/optimized-markdown-renderer';
 
 interface AIMessageProps {
@@ -41,12 +42,15 @@ export function AIMessage({
   onFeedback,
   className,
 }: AIMessageProps) {
+  const log = createModuleLogger('ai-message');
   const [copied, setCopied] = useState(false);
-  const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(null);
+  const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(
+    null
+  );
 
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
-  const isTool = message.role === 'tool';
+  const isTool = false; // UIMessage doesn't support 'tool' role in v5
 
   const handleCopy = async () => {
     try {
@@ -54,7 +58,9 @@ export function AIMessage({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      log.error('Failed to copy', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -82,7 +88,11 @@ export function AIMessage({
                 : 'bg-muted text-muted-foreground'
             )}
           >
-            {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+            {isUser ? (
+              <User className="h-4 w-4" />
+            ) : (
+              <Bot className="h-4 w-4" />
+            )}
           </AvatarFallback>
         </Avatar>
 
@@ -98,39 +108,39 @@ export function AIMessage({
             <div className="flex flex-wrap gap-2">
               {message.attachments.map((attachment, index) => (
                 <Card
-                  key={`${attachment.fileId}-${index}`}
                   className="group/attachment relative overflow-hidden"
+                  key={`${attachment.fileId}-${index}`}
                 >
                   {attachment.type === 'image' && attachment.url ? (
                     <div className="relative">
                       <img
-                        src={attachment.url}
                         alt="Attachment"
                         className="h-32 w-auto max-w-xs object-cover"
+                        src={attachment.url}
                       />
                       <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity group-hover/attachment:opacity-100">
                         <div className="flex h-full items-center justify-center gap-2">
                           <Button
+                            asChild
+                            className="h-8 w-8 text-white hover:bg-white/20"
                             size="icon"
                             variant="ghost"
-                            className="h-8 w-8 text-white hover:bg-white/20"
-                            asChild
                           >
                             <a
                               href={attachment.url}
-                              target="_blank"
                               rel="noopener noreferrer"
+                              target="_blank"
                             >
                               <Image className="h-4 w-4" />
                             </a>
                           </Button>
                           <Button
+                            asChild
+                            className="h-8 w-8 text-white hover:bg-white/20"
                             size="icon"
                             variant="ghost"
-                            className="h-8 w-8 text-white hover:bg-white/20"
-                            asChild
                           >
-                            <a href={attachment.url} download>
+                            <a download href={attachment.url}>
                               <Download className="h-4 w-4" />
                             </a>
                           </Button>
@@ -149,21 +159,21 @@ export function AIMessage({
                         )}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium">
+                        <span className="font-medium text-sm">
                           {attachment.fileId.split('/').pop() || 'File'}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-muted-foreground text-xs">
                           {formatFileSize(attachment.size)}
                         </span>
                       </div>
                       {attachment.url && (
                         <Button
+                          asChild
+                          className="ml-auto h-8 w-8"
                           size="icon"
                           variant="ghost"
-                          className="ml-auto h-8 w-8"
-                          asChild
                         >
-                          <a href={attachment.url} download>
+                          <a download href={attachment.url}>
                             <Download className="h-4 w-4" />
                           </a>
                         </Button>
@@ -193,42 +203,46 @@ export function AIMessage({
               </div>
             )}
 
-            {/* Tool invocations */}
-            {message.toolInvocations && message.toolInvocations.length > 0 && (
+            {/* Tool invocations - AI SDK v5 format in parts array */}
+            {(message as any).parts?.some((part: any) => part.type?.startsWith('tool-')) && (
               <div className="mt-3 space-y-2 border-t pt-3">
-                {message.toolInvocations.map((tool, index) => (
-                  <div
-                    key={`${tool.toolCallId}-${index}`}
-                    className="rounded-lg bg-background/50 p-2"
-                  >
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="font-medium">Tool:</span>
-                      <code className="rounded bg-muted px-1 py-0.5">
-                        {tool.toolName}
-                      </code>
-                    </div>
-                    {tool.result && (
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        <pre className="whitespace-pre-wrap">
-                          {JSON.stringify(tool.result, null, 2)}
-                        </pre>
+                {(message as any).parts
+                  ?.filter((part: any) => part.type?.startsWith('tool-'))
+                  .map((tool: any, index: number) => (
+                    <div
+                      className="rounded-lg bg-background/50 p-2"
+                      key={`${tool.toolCallId || index}`}
+                    >
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="font-medium">Tool:</span>
+                        <code className="rounded bg-muted px-1 py-0.5">
+                          {tool.toolName || tool.type?.replace('tool-', '')}
+                        </code>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {tool.output && (
+                        <div className="mt-1 text-muted-foreground text-xs">
+                          <pre className="whitespace-pre-wrap">
+                            {typeof tool.output === 'string' 
+                              ? tool.output 
+                              : JSON.stringify(tool.output, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  ))}
               </div>
             )}
 
             {/* Actions */}
             {isAssistant && (
-              <div className="absolute -bottom-8 right-0 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="-bottom-8 absolute right-0 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      size="icon"
-                      variant="ghost"
                       className="h-7 w-7"
                       onClick={handleCopy}
+                      size="icon"
+                      variant="ghost"
                     >
                       {copied ? (
                         <Check className="h-3.5 w-3.5" />
@@ -246,10 +260,10 @@ export function AIMessage({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        size="icon"
-                        variant="ghost"
                         className="h-7 w-7"
                         onClick={onRegenerate}
+                        size="icon"
+                        variant="ghost"
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
                       </Button>
@@ -263,13 +277,13 @@ export function AIMessage({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      size="icon"
-                      variant="ghost"
                       className={cn(
                         'h-7 w-7',
                         feedback === 'positive' && 'text-green-500'
                       )}
                       onClick={() => handleFeedback('positive')}
+                      size="icon"
+                      variant="ghost"
                     >
                       <ThumbsUp className="h-3.5 w-3.5" />
                     </Button>
@@ -280,13 +294,13 @@ export function AIMessage({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      size="icon"
-                      variant="ghost"
                       className={cn(
                         'h-7 w-7',
                         feedback === 'negative' && 'text-red-500'
                       )}
                       onClick={() => handleFeedback('negative')}
+                      size="icon"
+                      variant="ghost"
                     >
                       <ThumbsDown className="h-3.5 w-3.5" />
                     </Button>

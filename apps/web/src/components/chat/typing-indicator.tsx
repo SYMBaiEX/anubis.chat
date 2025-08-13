@@ -44,27 +44,27 @@ export function TypingIndicator({
         </div>
 
         {/* Enhanced Typing Animation */}
-        <motion.div 
+        <motion.div
+          animate={{ scale: 1, opacity: 1 }}
           className="max-w-16 rounded-2xl border bg-muted px-4 py-3 shadow-sm"
           initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.2 }}
         >
           <div className="flex items-center space-x-1">
             <div className="flex space-x-1">
               {[0, 1, 2].map((i) => (
                 <motion.div
-                  key={i}
-                  className="h-2 w-2 rounded-full bg-muted-foreground/60"
                   animate={{
                     y: [0, -8, 0],
                     opacity: [0.4, 1, 0.4],
                   }}
+                  className="h-2 w-2 rounded-full bg-muted-foreground/60"
+                  key={i}
                   transition={{
                     duration: 1.2,
-                    repeat: Infinity,
+                    repeat: Number.POSITIVE_INFINITY,
                     delay: i * 0.15,
-                    ease: "easeInOut",
+                    ease: 'easeInOut',
                   }}
                 />
               ))}

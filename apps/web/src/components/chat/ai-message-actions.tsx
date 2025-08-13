@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 interface AIMessageActionsProps {
   messageId: string;
@@ -35,6 +36,7 @@ export function AIMessageActions({
   className,
   isGenerating = false,
 }: AIMessageActionsProps) {
+  const log = createModuleLogger('ai-message-actions');
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(
     null
@@ -46,7 +48,9 @@ export function AIMessageActions({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      log.error('Failed to copy', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -67,10 +71,10 @@ export function AIMessageActions({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
+              className="h-7 w-7 p-0"
               onClick={handleCopy}
               size="sm"
               variant="ghost"
-              className="h-7 w-7 p-0"
             >
               {copied ? (
                 <Sparkles className="h-3.5 w-3.5 text-green-500" />
@@ -79,9 +83,7 @@ export function AIMessageActions({
               )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent>
-            {copied ? 'Copied!' : 'Copy message'}
-          </TooltipContent>
+          <TooltipContent>{copied ? 'Copied!' : 'Copy message'}</TooltipContent>
         </Tooltip>
 
         {/* Regenerate button */}
@@ -89,17 +91,14 @@ export function AIMessageActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                className="h-7 w-7 p-0"
+                disabled={isGenerating}
                 onClick={onRegenerate}
                 size="sm"
                 variant="ghost"
-                className="h-7 w-7 p-0"
-                disabled={isGenerating}
               >
                 <RefreshCw
-                  className={cn(
-                    'h-3.5 w-3.5',
-                    isGenerating && 'animate-spin'
-                  )}
+                  className={cn('h-3.5 w-3.5', isGenerating && 'animate-spin')}
                 />
               </Button>
             </TooltipTrigger>
@@ -114,13 +113,13 @@ export function AIMessageActions({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              onClick={() => handleFeedback('positive')}
-              size="sm"
-              variant="ghost"
               className={cn(
                 'h-7 w-7 p-0',
                 feedback === 'positive' && 'text-green-500'
               )}
+              onClick={() => handleFeedback('positive')}
+              size="sm"
+              variant="ghost"
             >
               <ThumbsUp className="h-3.5 w-3.5" />
             </Button>
@@ -132,13 +131,13 @@ export function AIMessageActions({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              onClick={() => handleFeedback('negative')}
-              size="sm"
-              variant="ghost"
               className={cn(
                 'h-7 w-7 p-0',
                 feedback === 'negative' && 'text-red-500'
               )}
+              onClick={() => handleFeedback('negative')}
+              size="sm"
+              variant="ghost"
             >
               <ThumbsDown className="h-3.5 w-3.5" />
             </Button>
@@ -151,9 +150,9 @@ export function AIMessageActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                className="h-7 w-7 p-0 text-orange-500"
                 size="sm"
                 variant="ghost"
-                className="h-7 w-7 p-0 text-orange-500"
               >
                 <AlertCircle className="h-3.5 w-3.5" />
               </Button>

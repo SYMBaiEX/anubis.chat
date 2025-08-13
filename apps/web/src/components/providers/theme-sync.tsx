@@ -28,22 +28,24 @@ export function ThemeSync() {
     if (!userPreferences) return;
 
     const dbTheme = userPreferences.theme;
-    
+
     // Skip if already synced to prevent loops
     if (lastSyncedTheme.current === dbTheme) return;
-    
+
     // Skip if theme is already correct
     if (theme === dbTheme) {
-      lastSyncedTheme.current = dbTheme;
+      lastSyncedTheme.current = dbTheme || null;
       return;
     }
 
     // Set theme and track it
-    setTheme(dbTheme);
-    lastSyncedTheme.current = dbTheme;
-    
+    if (dbTheme) {
+      setTheme(dbTheme);
+      lastSyncedTheme.current = dbTheme;
+    }
+
     // Store in cookie for next page load
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && dbTheme) {
       document.cookie = `theme=${dbTheme};path=/;max-age=31536000;samesite=strict`;
     }
   }, [userPreferences?.theme, theme, setTheme]);
@@ -56,8 +58,8 @@ export function ThemeSync() {
     // Check for theme cookie
     if (typeof window !== 'undefined') {
       const cookies = document.cookie.split(';');
-      const themeCookie = cookies.find(c => c.trim().startsWith('theme='));
-      
+      const themeCookie = cookies.find((c) => c.trim().startsWith('theme='));
+
       if (themeCookie) {
         const cookieTheme = themeCookie.split('=')[1];
         if (cookieTheme && ['light', 'dark', 'system'].includes(cookieTheme)) {
@@ -75,14 +77,18 @@ export function ThemeSync() {
 
     // Apply font size class to root element
     const root = document.documentElement;
-    const fontSizeClasses = ['font-size-small', 'font-size-medium', 'font-size-large'];
-    
+    const fontSizeClasses = [
+      'font-size-small',
+      'font-size-medium',
+      'font-size-large',
+    ];
+
     // Remove existing font size classes
-    fontSizeClasses.forEach(cls => root.classList.remove(cls));
-    
+    fontSizeClasses.forEach((cls) => root.classList.remove(cls));
+
     // Add new font size class
     root.classList.add(`font-size-${userPreferences.fontSize}`);
-    
+
     // Store in cookie for next page load
     if (typeof window !== 'undefined') {
       document.cookie = `fontSize=${userPreferences.fontSize};path=/;max-age=31536000;samesite=strict`;

@@ -24,43 +24,48 @@ export function useVirtualScroll<T>(
   items: T[],
   options: VirtualScrollOptions
 ): VirtualScrollResult<T> {
-  const { itemHeight, containerHeight, overscan = 3, smoothScroll = true } = options;
+  const {
+    itemHeight,
+    containerHeight,
+    overscan = 3,
+    smoothScroll = true,
+  } = options;
   const [scrollTop, setScrollTop] = useState(0);
   const scrollElementRef = useRef<HTMLElement | null>(null);
-  
+
   // Calculate visible range
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
   const endIndex = Math.min(
     items.length - 1,
     Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan
   );
-  
+
   // Get visible items
   const visibleItems = items.slice(startIndex, endIndex + 1);
-  
+
   // Calculate total height for scrollbar
   const totalHeight = items.length * itemHeight;
-  
+
   // Calculate offset for positioning visible items
   const offsetY = startIndex * itemHeight;
-  
+
   // Handle scroll events
   const handleScroll = useCallback((event: React.UIEvent<HTMLElement>) => {
     const element = event.currentTarget;
     setScrollTop(element.scrollTop);
     scrollElementRef.current = element;
   }, []);
-  
+
   // Scroll to specific index
   const scrollToIndex = useCallback(
     (index: number, smooth = smoothScroll) => {
       if (!scrollElementRef.current) return;
-      
+
       const targetScrollTop = Math.min(
         index * itemHeight,
         totalHeight - containerHeight
       );
-      
+
       if (smooth) {
         scrollElementRef.current.scrollTo({
           top: targetScrollTop,
@@ -69,12 +74,12 @@ export function useVirtualScroll<T>(
       } else {
         scrollElementRef.current.scrollTop = targetScrollTop;
       }
-      
+
       setScrollTop(targetScrollTop);
     },
     [itemHeight, totalHeight, containerHeight, smoothScroll]
   );
-  
+
   // Scroll to bottom
   const scrollToBottom = useCallback(
     (smooth = smoothScroll) => {
@@ -84,17 +89,24 @@ export function useVirtualScroll<T>(
     },
     [items.length, scrollToIndex, smoothScroll]
   );
-  
+
   // Auto-scroll to bottom when new items are added
   useEffect(() => {
-    const isNearBottom = 
+    const isNearBottom =
       scrollTop + containerHeight >= totalHeight - itemHeight * 2;
-    
+
     if (isNearBottom && items.length > 0) {
       scrollToBottom(true);
     }
-  }, [items.length, scrollTop, containerHeight, totalHeight, itemHeight, scrollToBottom]);
-  
+  }, [
+    items.length,
+    scrollTop,
+    containerHeight,
+    totalHeight,
+    itemHeight,
+    scrollToBottom,
+  ]);
+
   return {
     visibleItems,
     startIndex,

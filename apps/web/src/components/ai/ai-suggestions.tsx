@@ -32,10 +32,7 @@ export function AISuggestions({
     return (
       <div className={cn('space-y-2', className)}>
         {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-12 animate-pulse rounded-lg bg-muted/50"
-          />
+          <div className="h-12 animate-pulse rounded-lg bg-muted/50" key={i} />
         ))}
       </div>
     );
@@ -46,16 +43,16 @@ export function AISuggestions({
       <div className={cn('flex flex-wrap gap-2', className)}>
         {suggestions.map((suggestion, index) => (
           <motion.div
-            key={index}
-            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            key={index}
             transition={{ delay: index * 0.05 }}
           >
             <Button
-              variant="outline"
-              size="sm"
               className="text-xs"
               onClick={() => onSelect(suggestion)}
+              size="sm"
+              variant="outline"
             >
               <Sparkles className="mr-1 h-3 w-3" />
               {suggestion}
@@ -73,11 +70,11 @@ export function AISuggestions({
         <span className="text-muted-foreground">Try:</span>
         {suggestions.slice(0, 2).map((suggestion, index) => (
           <Button
-            key={index}
-            variant="link"
-            size="sm"
             className="h-auto p-0 text-xs"
+            key={index}
             onClick={() => onSelect(suggestion)}
+            size="sm"
+            variant="link"
           >
             "{suggestion}"
           </Button>
@@ -89,16 +86,16 @@ export function AISuggestions({
   // Default card variant
   return (
     <div className={cn('space-y-2', className)}>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-muted-foreground text-sm">
         <Sparkles className="h-4 w-4" />
         <span>Suggested prompts</span>
       </div>
-      
+
       {suggestions.map((suggestion, index) => (
         <motion.div
-          key={index}
-          initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, x: -20 }}
+          key={index}
           transition={{ delay: index * 0.05 }}
         >
           <Card
@@ -106,9 +103,9 @@ export function AISuggestions({
             onClick={() => onSelect(suggestion)}
           >
             <Button
-              variant="ghost"
-              className="w-full justify-between px-4 py-3 text-left"
               asChild
+              className="w-full justify-between px-4 py-3 text-left"
+              variant="ghost"
             >
               <div className="flex items-center justify-between">
                 <span className="flex-1 text-sm">{suggestion}</span>

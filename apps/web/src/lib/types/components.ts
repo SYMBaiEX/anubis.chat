@@ -85,6 +85,14 @@ export interface ChatHeaderProps extends BaseComponentProps {
     | 'temperature'
   > & {
     _id: string;
+    agentPrompt?: string;
+    agentId?: string;
+  };
+  selectedAgent?: {
+    _id: string;
+    name: string;
+    type: string;
+    systemPrompt?: string;
   };
   onRename?: (newTitle: string) => void;
   onClearHistory?: () => void;
@@ -107,6 +115,17 @@ export interface MinimalMessage {
   content: string;
   role: 'user' | 'assistant' | 'system';
   createdAt?: number;
+  rating?: {
+    userRating: 'like' | 'dislike';
+    ratedAt: number;
+    ratedBy: string;
+  };
+  actions?: {
+    copiedCount?: number;
+    sharedCount?: number;
+    regeneratedCount?: number;
+    lastActionAt?: number;
+  };
 }
 
 export interface MessageProps extends BaseComponentProps {

@@ -25,6 +25,7 @@ import { useAuthContext } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Logo } from '@/components/ui/logo';
 import { useWallet } from '@/hooks/useWallet';
 import { createModuleLogger } from '@/lib/utils/logger';
 
@@ -120,12 +121,12 @@ export default function AuthPage() {
               <span className="text-3xl text-muted-foreground sm:text-3xl">
                 Welcome to
               </span>
-              <span className="font-extrabold font-heading text-3xl tracking-tight sm:text-3xl">
-                <span className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
-                  anubis
-                </span>
-                <span className="text-muted-foreground">.chat</span>
-              </span>
+              <Logo 
+                animation="pulse"
+                asLink={false}
+                size="3xl"
+                textVariant="gradient"
+              />
             </div>
             <p className="px-4 text-base text-muted-foreground">
               Connect your wallet to unlock AI-powered Web3
@@ -144,12 +145,12 @@ export default function AuthPage() {
                   <span className="text-3xl text-muted-foreground xl:text-4xl">
                     Welcome to
                   </span>
-                  <span className="font-extrabold font-heading text-2xl tracking-tight xl:text-3xl 2xl:text-4xl">
-                    <span className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
-                      anubis
-                    </span>
-                    <span className="text-muted-foreground">.chat</span>
-                  </span>
+                  <Logo 
+                    animation="typing"
+                    asLink={false}
+                    size="3xl"
+                    textVariant="gradient"
+                  />
                 </div>
                 <p className="text-base text-muted-foreground sm:text-lg">
                   Connect your wallet to unlock AI-powered Web3

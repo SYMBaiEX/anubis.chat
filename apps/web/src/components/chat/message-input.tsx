@@ -1,7 +1,7 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Brain,
   FileText,
@@ -12,11 +12,11 @@ import {
   Paperclip,
   Send,
   Smile,
-  X,
   Sparkles,
+  X,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -146,7 +146,7 @@ export function MessageInput({
 
     // Set sending state for instant visual feedback
     setIsSending(true);
-    
+
     try {
       // Send message with instant feedback
       await onSend(
@@ -160,7 +160,7 @@ export function MessageInput({
           type: a.kind,
         }))
       );
-      
+
       // Clear inputs immediately for instant response
       setMessage('');
       setShowEmojiPicker(false);
@@ -172,7 +172,7 @@ export function MessageInput({
     }
   };
 
-  const handleEmojiClick = (emojiData: any) => {
+  const handleEmojiClick = (emojiData: { emoji: string }) => {
     setMessage((prev) => prev + emojiData.emoji);
     textareaRef.current?.focus();
   };
@@ -357,25 +357,27 @@ export function MessageInput({
   return (
     <TooltipProvider>
       <motion.div
+        animate={{ opacity: 1, y: 0 }}
         className={cn('flex w-full flex-col space-y-1 sm:space-y-2', className)}
         initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
         {/* Animated Character Count */}
         <AnimatePresence>
           {message.length > maxLength * 0.8 && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.2 }}
               className={cn(
                 'text-right text-muted-foreground',
                 fontSizes.characterCount
               )}
+              exit={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.2 }}
             >
-              <span className={cn(isAtMaxLength && 'text-red-500 font-semibold')}>
+              <span
+                className={cn(isAtMaxLength && 'font-semibold text-red-500')}
+              >
                 {message.length}/{maxLength}
               </span>
             </motion.div>
@@ -448,11 +450,11 @@ export function MessageInput({
             {/* Animated Attachment Preview */}
             <AnimatePresence>
               {attachments.length > 0 && (
-                <motion.div 
-                  className="mb-2 flex flex-wrap items-center gap-2 px-2"
-                  initial={{ height: 0, opacity: 0 }}
+                <motion.div
                   animate={{ height: 'auto', opacity: 1 }}
+                  className="mb-2 flex flex-wrap items-center gap-2 px-2"
                   exit={{ height: 0, opacity: 0 }}
+                  initial={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.2 }}
                 >
                   {attachments.map((a) => {
@@ -470,56 +472,56 @@ export function MessageInput({
 
                     return (
                       <motion.div
-                        className="group relative inline-flex items-center gap-2 rounded-lg border bg-muted/50 px-2.5 py-1.5 text-xs transition-colors hover:bg-muted"
-                        key={a.id}
-                        initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
+                        className="group relative inline-flex items-center gap-2 rounded-lg border bg-muted/50 px-2.5 py-1.5 text-xs transition-colors hover:bg-muted"
                         exit={{ scale: 0.8, opacity: 0 }}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        key={a.id}
                         transition={{ duration: 0.15 }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                      {/* Thumbnail or icon */}
-                      {a.preview && isImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          alt={a.name}
-                          className="h-8 w-8 rounded object-cover"
-                          src={a.preview}
-                        />
-                      ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded bg-muted-foreground/10">
-                          {fileIcon}
+                        {/* Thumbnail or icon */}
+                        {a.preview && isImage ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            alt={a.name}
+                            className="h-8 w-8 rounded object-cover"
+                            src={a.preview}
+                          />
+                        ) : (
+                          <div className="flex h-8 w-8 items-center justify-center rounded bg-muted-foreground/10">
+                            {fileIcon}
+                          </div>
+                        )}
+
+                        {/* File info */}
+                        <div className="flex flex-col">
+                          <span className="max-w-[120px] truncate font-medium">
+                            {a.name}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {formatFileSize(a.size)}
+                          </span>
                         </div>
-                      )}
 
-                      {/* File info */}
-                      <div className="flex flex-col">
-                        <span className="max-w-[120px] truncate font-medium">
-                          {a.name}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {formatFileSize(a.size)}
-                        </span>
-                      </div>
-
-                      {/* Remove button */}
-                      <button
-                        aria-label={`Remove ${a.name}`}
-                        className="ml-1 rounded-md p-1 transition-colors hover:bg-destructive/20"
-                        onClick={() => {
-                          // Clean up object URLs to prevent memory leaks
-                          if (a.preview && a.preview.startsWith('blob:')) {
-                            URL.revokeObjectURL(a.preview);
-                          }
-                          setAttachments((prev) =>
-                            prev.filter((x) => x.id !== a.id)
-                          );
-                        }}
-                        type="button"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                        {/* Remove button */}
+                        <button
+                          aria-label={`Remove ${a.name}`}
+                          className="ml-1 rounded-md p-1 transition-colors hover:bg-destructive/20"
+                          onClick={() => {
+                            // Clean up object URLs to prevent memory leaks
+                            if (a.preview && a.preview.startsWith('blob:')) {
+                              URL.revokeObjectURL(a.preview);
+                            }
+                            setAttachments((prev) =>
+                              prev.filter((x) => x.id !== a.id)
+                            );
+                          }}
+                          type="button"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       </motion.div>
                     );
                   })}
@@ -691,29 +693,38 @@ export function MessageInput({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <motion.div
-                    animate={{ 
+                    animate={{
                       scale: isMessageValid ? 1 : 0.9,
-                      opacity: isMessageValid ? 1 : 0.6
+                      opacity: isMessageValid ? 1 : 0.6,
                     }}
-                    transition={{ duration: 0.2, type: 'spring', stiffness: 500 }}
+                    transition={{
+                      duration: 0.2,
+                      type: 'spring',
+                      stiffness: 500,
+                    }}
                     whileHover={{ scale: isMessageValid ? 1.1 : 0.9 }}
                     whileTap={{ scale: isMessageValid ? 0.95 : 0.9 }}
                   >
                     <Button
                       className={cn(
-                        "h-8 w-8 p-0 sm:h-9 sm:w-9 transition-all",
-                        isMessageValid && "bg-primary hover:bg-primary/90 shadow-lg",
-                        isSending && "animate-pulse"
+                        'h-8 w-8 p-0 transition-all sm:h-9 sm:w-9',
+                        isMessageValid &&
+                          'bg-primary shadow-lg hover:bg-primary/90',
+                        isSending && 'animate-pulse'
                       )}
                       disabled={disabled || !isMessageValid || isSending}
                       onClick={handleSend}
                       size="icon"
-                      variant={isMessageValid ? "default" : "ghost"}
+                      variant={isMessageValid ? 'default' : 'ghost'}
                     >
                       {isSending ? (
                         <motion.div
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          transition={{
+                            duration: 1,
+                            repeat: Number.POSITIVE_INFINITY,
+                            ease: 'linear',
+                          }}
                         >
                           <Sparkles className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                         </motion.div>
@@ -726,13 +737,17 @@ export function MessageInput({
                           <Send className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                         </motion.div>
                       ) : (
-                        <Send className="h-4 w-4 sm:h-4.5 sm:w-4.5 opacity-50" />
+                        <Send className="h-4 w-4 opacity-50 sm:h-4.5 sm:w-4.5" />
                       )}
                     </Button>
                   </motion.div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  {isSending ? 'Sending...' : isMessageValid ? 'Send message (Enter)' : 'Type a message to send'}
+                  {isSending
+                    ? 'Sending...'
+                    : isMessageValid
+                      ? 'Send message (Enter)'
+                      : 'Type a message to send'}
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -742,26 +757,26 @@ export function MessageInput({
         {/* Animated Voice Transcription Status */}
         <AnimatePresence>
           {isListening && (
-            <motion.div 
-              className="flex items-center justify-center space-x-2 rounded-lg bg-red-50 p-2 text-red-600 dark:bg-red-900/20 dark:text-red-400"
-              initial={{ opacity: 0, y: -10 }}
+            <motion.div
               animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-center space-x-2 rounded-lg bg-red-50 p-2 text-red-600 dark:bg-red-900/20 dark:text-red-400"
               exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
               <div className="flex space-x-1">
                 {[0, 1, 2].map((i) => (
                   <motion.div
-                    key={i}
-                    className="h-2 w-2 rounded-full bg-red-500"
                     animate={{
                       scale: [1, 1.2, 1],
-                      opacity: [0.5, 1, 0.5]
+                      opacity: [0.5, 1, 0.5],
                     }}
+                    className="h-2 w-2 rounded-full bg-red-500"
+                    key={i}
                     transition={{
                       duration: 1.5,
-                      repeat: Infinity,
-                      delay: i * 0.2
+                      repeat: Number.POSITIVE_INFINITY,
+                      delay: i * 0.2,
                     }}
                   />
                 ))}

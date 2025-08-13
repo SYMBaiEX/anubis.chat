@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/tooltip';
 import type { MessageAttachment } from '@/lib/types/api';
 import { cn } from '@/lib/utils';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 interface ComposerProps {
   value: string;
@@ -60,7 +61,9 @@ export function Composer({
   enableVoice = true,
   enableAttachments = true,
 }: ComposerProps) {
-  const [localAttachments, setLocalAttachments] = useState<MessageAttachment[]>(attachments);
+  const log = createModuleLogger('composer');
+  const [localAttachments, setLocalAttachments] =
+    useState<MessageAttachment[]>(attachments);
   const [isRecording, setIsRecording] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -94,7 +97,14 @@ export function Composer({
     onSubmit(trimmedValue, localAttachments);
     setLocalAttachments([]);
     onAttachmentsChange?.([]);
-  }, [value, localAttachments, isLoading, onSubmit, onStop, onAttachmentsChange]);
+  }, [
+    value,
+    localAttachments,
+    isLoading,
+    onSubmit,
+    onStop,
+    onAttachmentsChange,
+  ]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -116,7 +126,9 @@ export function Composer({
       setLocalAttachments(newAttachments);
       onAttachmentsChange?.(newAttachments);
     } catch (error) {
-      console.error('Failed to upload files:', error);
+      log.error('Failed to upload files', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     // Reset input
@@ -148,18 +160,18 @@ export function Composer({
         {/* Suggestions */}
         {suggestions.length > 0 && value.length === 0 && !isFocused && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
             className="absolute bottom-full mb-2 flex w-full flex-wrap gap-2"
+            exit={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 10 }}
           >
             {suggestions.map((suggestion, index) => (
               <Button
-                key={index}
-                variant="outline"
-                size="sm"
                 className="text-xs"
+                key={index}
                 onClick={() => handleSuggestionClick(suggestion)}
+                size="sm"
+                variant="outline"
               >
                 <Sparkles className="mr-1 h-3 w-3" />
                 {suggestion}
@@ -173,8 +185,8 @@ export function Composer({
           <div className="mb-2 flex flex-wrap gap-2">
             {localAttachments.map((attachment) => (
               <Card
-                key={attachment.fileId}
                 className="group relative flex items-center gap-2 px-2 py-1"
+                key={attachment.fileId}
               >
                 {attachment.type === 'image' ? (
                   <Image className="h-4 w-4" />
@@ -187,10 +199,10 @@ export function Composer({
                   {attachment.fileId.split('/').pop()}
                 </span>
                 <Button
-                  size="icon"
-                  variant="ghost"
                   className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100"
                   onClick={() => removeAttachment(attachment.fileId)}
+                  size="icon"
+                  variant="ghost"
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -206,11 +218,11 @@ export function Composer({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  className="h-8 w-8 shrink-0"
+                  disabled={isLoading}
+                  onClick={() => fileInputRef.current?.click()}
                   size="icon"
                   variant="ghost"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
                 >
                   <Paperclip className="h-4 w-4" />
                 </Button>
@@ -221,17 +233,17 @@ export function Composer({
 
           {/* Textarea */}
           <Textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            placeholder={placeholder}
-            maxLength={maxLength}
-            disabled={isLoading}
             className="min-h-[40px] flex-1 resize-none border-0 bg-transparent p-0 focus-visible:ring-0"
+            disabled={isLoading}
+            maxLength={maxLength}
+            onBlur={() => setIsFocused(false)}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            ref={textareaRef}
             rows={1}
+            value={value}
           />
 
           {/* Voice button */}
@@ -239,11 +251,11 @@ export function Composer({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  className="h-8 w-8 shrink-0"
+                  disabled={isLoading}
+                  onClick={handleVoiceToggle}
                   size="icon"
                   variant={isRecording ? 'destructive' : 'ghost'}
-                  className="h-8 w-8 shrink-0"
-                  onClick={handleVoiceToggle}
-                  disabled={isLoading}
                 >
                   {isRecording ? (
                     <MicOff className="h-4 w-4" />
@@ -262,14 +274,14 @@ export function Composer({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                size="icon"
                 className="h-8 w-8 shrink-0"
-                onClick={handleSubmit}
                 disabled={
                   !isLoading &&
                   value.trim().length === 0 &&
                   localAttachments.length === 0
                 }
+                onClick={handleSubmit}
+                size="icon"
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -301,12 +313,12 @@ export function Composer({
         {/* Hidden file input */}
         {enableAttachments && (
           <input
+            accept="image/*,.pdf,.doc,.docx,.txt,.md,.json,.csv"
+            className="hidden"
+            multiple
+            onChange={handleFileSelect}
             ref={fileInputRef}
             type="file"
-            multiple
-            className="hidden"
-            onChange={handleFileSelect}
-            accept="image/*,.pdf,.doc,.docx,.txt,.md,.json,.csv"
           />
         )}
       </div>

@@ -2,6 +2,7 @@
 
 import { Github, Twitter } from 'lucide-react';
 import Link from 'next/link';
+import { Logo } from '@/components/ui/logo';
 
 export default function LandingFooter() {
   return (
@@ -9,9 +10,13 @@ export default function LandingFooter() {
       <div className="relative mx-auto flex h-10 w-full max-w-7xl items-center justify-between px-4">
         {/* Left - Domain */}
         <div className="flex items-center">
-          <span className="font-medium text-foreground/70 text-sm">
-            anubis.chat
-          </span>
+          <Logo 
+            animation="gradient"
+            asLink={false}
+            className="text-foreground/70"
+            size="sm"
+            textVariant="gradient"
+          />
         </div>
 
         {/* Center - Credit */}

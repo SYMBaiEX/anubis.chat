@@ -893,8 +893,8 @@ export function UpgradeModal({
                 </span>
                 <span className="text-muted-foreground text-sm">
                   {proratedUpgrade?.isProrated &&
-                    selectedTier === 'pro_plus' &&
-                    subscription?.tier === 'pro'
+                  selectedTier === 'pro_plus' &&
+                  subscription?.tier === 'pro'
                     ? 'Prorated upgrade'
                     : `≈ $${selectedConfig.priceUSD} USD`}
                 </span>
@@ -1782,9 +1782,10 @@ export function UpgradeModal({
           <Button
             onClick={() =>
               window.open(
-                `https://explorer.solana.com/tx/${creditsPaymentDetails.txSignature}${solanaConfig.network !== 'mainnet-beta'
-                  ? `?cluster=${solanaConfig.network}`
-                  : ''
+                `https://explorer.solana.com/tx/${creditsPaymentDetails.txSignature}${
+                  solanaConfig.network !== 'mainnet-beta'
+                    ? `?cluster=${solanaConfig.network}`
+                    : ''
                 }`,
                 '_blank'
               )

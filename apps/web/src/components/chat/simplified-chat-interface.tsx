@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { EmptyState } from '@/components/data/empty-states';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { useEnhancedChat } from '@/hooks/use-enhanced-chat';
-import { MessageList } from './message-list';
-import { MessageInput } from './message-input';
-import { ChatHeader } from './chat-header';
-import { EmptyState } from '@/components/data/empty-states';
 import { cn } from '@/lib/utils';
 import type { FontSize } from '@/lib/utils/font-sizes';
+import { createModuleLogger } from '@/lib/utils/logger';
+import { ChatHeader } from './chat-header';
+import { MessageInput } from './message-input';
+import { MessageList } from './message-list';
 
 interface SimplifiedChatInterfaceProps {
   className?: string;
@@ -20,12 +21,15 @@ interface SimplifiedChatInterfaceProps {
  * Simplified Chat Interface using AI SDK's useChat properly
  * Reduces complexity while maintaining all features
  */
-export function SimplifiedChatInterface({ className }: SimplifiedChatInterfaceProps) {
+export function SimplifiedChatInterface({
+  className,
+}: SimplifiedChatInterfaceProps) {
+  const log = createModuleLogger('simplified-chat');
   const { user, isAuthenticated } = useAuthContext();
   const searchParams = useSearchParams();
   const chatId = searchParams.get('chatId');
   const [fontSize, setFontSize] = useState<FontSize>('medium');
-  
+
   // Use the enhanced chat hook with AI SDK
   const {
     messages,
@@ -42,7 +46,7 @@ export function SimplifiedChatInterface({ className }: SimplifiedChatInterfacePr
     chatId: chatId || undefined,
     walletAddress: user?.walletAddress,
     onError: (err) => {
-      console.error('Chat error:', err);
+      log.error('Chat error', { error: err.message });
       // Handle error (show toast, etc.)
     },
   });
@@ -51,10 +55,16 @@ export function SimplifiedChatInterface({ className }: SimplifiedChatInterfacePr
   const handleSendMessage = async (
     content: string,
     useReasoning?: boolean,
-    attachments?: any[]
+    attachments?: Array<{
+      fileId: string;
+      url?: string;
+      mimeType: string;
+      size: number;
+      type: 'image' | 'file' | 'video';
+    }>
   ) => {
-    if (!isReady || !content.trim()) return;
-    
+    if (!(isReady && content.trim())) return;
+
     try {
       await sendMessage(
         content,
@@ -76,9 +86,9 @@ export function SimplifiedChatInterface({ className }: SimplifiedChatInterfacePr
     return (
       <div className="flex h-full items-center justify-center">
         <EmptyState
+          description="Please sign in to use the chat"
           icon={<MessageSquare className="h-12 w-12" />}
           title="Authentication Required"
-          description="Please sign in to use the chat"
         />
       </div>
     );
@@ -90,9 +100,14 @@ export function SimplifiedChatInterface({ className }: SimplifiedChatInterfacePr
       <div className="border-b bg-card/30 backdrop-blur">
         <div className="flex h-14 items-center justify-between px-4">
           <ChatHeader
-            chat={{ title: 'Chat', _id: chatId || '' }}
-            onGenerateTitle={() => {}}
+            chat={{
+              title: 'Chat',
+              _id: chatId || '',
+              model: 'gpt-5-nano',
+              updatedAt: Date.now(),
+            }}
             onDelete={() => {}}
+            onGenerateTitle={() => {}}
             onRename={() => {}}
           />
         </div>
@@ -101,16 +116,16 @@ export function SimplifiedChatInterface({ className }: SimplifiedChatInterfacePr
       {/* Messages */}
       <div className="flex-1 overflow-hidden">
         <MessageList
-          messages={messages}
           fontSize={fontSize}
           isTyping={false}
+          messages={messages}
           onMessageRegenerate={handleRegenerate}
         />
       </div>
 
       {/* Status indicator */}
       {isLoading && !isStreaming && (
-        <div className="border-t bg-muted/50 px-4 py-2 text-center text-sm text-muted-foreground">
+        <div className="border-t bg-muted/50 px-4 py-2 text-center text-muted-foreground text-sm">
           Sending message...
         </div>
       )}
@@ -119,23 +134,23 @@ export function SimplifiedChatInterface({ className }: SimplifiedChatInterfacePr
       <div className="border-t bg-card/30 backdrop-blur">
         <div className="mx-auto max-w-4xl p-4">
           <MessageInput
-            onSend={handleSendMessage}
             disabled={!isReady}
+            fontSize={fontSize}
+            onSend={handleSendMessage}
             placeholder={
               isStreaming
                 ? 'AI is responding...'
                 : isLoading
-                ? 'Sending...'
-                : 'Type your message...'
+                  ? 'Sending...'
+                  : 'Type your message...'
             }
-            fontSize={fontSize}
           />
         </div>
       </div>
 
       {/* Error display */}
       {error && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 rounded-lg bg-destructive/90 px-4 py-2 text-destructive-foreground">
+        <div className="-translate-x-1/2 absolute bottom-20 left-1/2 rounded-lg bg-destructive/90 px-4 py-2 text-destructive-foreground">
           {error.message}
         </div>
       )}

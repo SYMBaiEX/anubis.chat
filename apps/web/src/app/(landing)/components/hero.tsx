@@ -39,7 +39,7 @@ function Hero() {
       softEdges
     >
       <div className="relative z-10 mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-orange-500/10 px-3 py-1 backdrop-blur-sm md:mb-8">
+        <div className="mb-10 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-orange-500/10 px-3 py-1 backdrop-blur-sm md:mb-12">
           <Sparkles className="h-3 w-3 animate-pulse text-primary motion-reduce:animate-none" />
           <span className="font-medium text-primary text-xs tracking-wide">
             Powered by GPT-5, Gemini 2.5 Pro, o4-mini & Free Models
@@ -47,7 +47,7 @@ function Hero() {
           <Sparkles className="h-3 w-3 animate-pulse text-primary motion-reduce:animate-none" />
         </div>
 
-        <h1 className="mt-2 mb-4 font-bold text-4xl transition-all delay-100 duration-700 sm:text-5xl md:mt-4 md:mb-6 md:text-6xl lg:text-7xl">
+        <h1 className="mt-2 mb-10 font-bold text-4xl transition-all delay-100 duration-700 sm:text-5xl md:mt-4 md:mb-12 md:text-6xl lg:text-7xl">
           <span
             className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary"
             style={{ backgroundSize: '200% 100%' }}
@@ -56,7 +56,7 @@ function Hero() {
           </span>
         </h1>
 
-        <p className="mx-auto mt-3 mb-10 max-w-3xl text-lg text-muted-foreground transition-all delay-200 duration-700 sm:text-xl md:mt-4 md:mb-12 md:text-2xl">
+        <p className="mx-auto mt-6 mb-16 max-w-3xl text-lg text-muted-foreground transition-all delay-200 duration-700 sm:text-xl md:mt-10 md:mb-20 md:text-2xl">
           Experience the future of AI conversation with Solana wallet
           authentication, multi-model intelligence, and seamless Web3
           integration.
@@ -64,7 +64,7 @@ function Hero() {
 
         <motion.div
           animate={{ opacity: 1, y: 0 }}
-          className="mt-6 mb-8 flex flex-col items-center justify-center gap-3 sm:flex-row md:mt-8 md:mb-10 md:gap-4"
+          className="mt-12 mb-14 flex flex-col items-center justify-center gap-6 sm:flex-row md:mt-14 md:mb-16 md:gap-7"
           initial={{ opacity: 0, y: 20 }}
           transition={{
             delay: 0.6,
@@ -131,7 +131,7 @@ function Hero() {
       </div>
 
       {/* Framed preview image with glow that is always visible; content fades in */}
-      <div className="relative mt-6 px-2 sm:mt-10 md:mt-14 xl:px-0">
+      <div className="relative mt-12 px-2 sm:mt-16 md:mt-24 xl:px-0">
         <div className="relative mx-auto w-full max-w-[88rem]">
           {/* Always-on glow background (not animated) */}
           <div className="-top-24 -left-16 -right-16 -bottom-8 pointer-events-none absolute z-0 overflow-hidden rounded-2xl [filter:saturate(120%)] [mask-image:radial-gradient(120%_95%_at_50%_28%,black_60%,transparent_100%)] [mask-repeat:no-repeat]">

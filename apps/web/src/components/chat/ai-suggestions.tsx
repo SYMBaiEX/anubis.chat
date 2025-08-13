@@ -29,10 +29,7 @@ export function AISuggestions({
     return (
       <div className={cn('space-y-2', className)}>
         {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-12 animate-pulse rounded-lg bg-muted/50"
-          />
+          <div className="h-12 animate-pulse rounded-lg bg-muted/50" key={i} />
         ))}
       </div>
     );
@@ -40,21 +37,21 @@ export function AISuggestions({
 
   return (
     <div className={cn('space-y-2', className)}>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-muted-foreground text-sm">
         <Sparkles className="h-4 w-4" />
         <span>Suggested prompts</span>
       </div>
-      
+
       {suggestions.map((suggestion, index) => (
         <Card
-          key={index}
           className="group cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md"
+          key={index}
           onClick={() => onSelect(suggestion)}
         >
           <Button
-            variant="ghost"
-            className="w-full justify-between px-4 py-3 text-left"
             asChild
+            className="w-full justify-between px-4 py-3 text-left"
+            variant="ghost"
           >
             <div className="flex items-center justify-between">
               <span className="flex-1 text-sm">{suggestion}</span>

@@ -1,9 +1,9 @@
 'use client';
 
-import { Menu, X } from 'lucide-react';
-import Link from 'next/link';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { Menu, X } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React from 'react';
 import { ModeToggle } from '@/components/mode-toggle';
@@ -53,21 +53,28 @@ export default function LandingHeader() {
                   {/* Subtle layered glow */}
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute -inset-1 rounded-full blur-sm"
+                    className="-inset-1 pointer-events-none absolute rounded-full blur-sm"
                     style={{
                       background:
                         'radial-gradient(closest-side, rgba(16,185,129,0.10), transparent 70%)',
                     }}
                   />
                   <motion.span
+                    animate={{
+                      scale: [1, 1.02, 1],
+                      opacity: [0.16, 0.22, 0.16],
+                    }}
                     aria-hidden
-                    className="pointer-events-none absolute -inset-0.5 rounded-full"
+                    className="-inset-0.5 pointer-events-none absolute rounded-full"
                     style={{
                       background:
                         'radial-gradient(closest-side, rgba(16,185,129,0.08), transparent 60%)',
                     }}
-                    animate={{ scale: [1, 1.02, 1], opacity: [0.16, 0.22, 0.16] }}
-                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                    transition={{
+                      duration: 6,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: 'easeInOut',
+                    }}
                   />
                   <Image
                     alt="Anubis mark"
@@ -77,7 +84,7 @@ export default function LandingHeader() {
                     width={60}
                   />
                 </span>
-                <LogoWithText asLink={false} size="md" textVariant="gradient" />
+                <LogoWithText asLink={false} size="md" textVariant="gradient" animation="gradient" />
               </Link>
 
               <button

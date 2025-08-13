@@ -2,6 +2,7 @@
 
 import { api } from '@convex/_generated/api';
 import { useMutation, useQuery } from 'convex/react';
+import { motion } from 'framer-motion';
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,9 +16,8 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import type { ReactElement } from 'react';
@@ -48,31 +48,31 @@ const bottomItems: Array<{
   requiresAuth?: boolean;
   icon: ReactElement;
 }> = [
-    {
-      label: 'Account',
-      href: '/account',
-      requiresAuth: true,
-      icon: <User className="h-4 w-4 flex-shrink-0" />,
-    },
-    {
-      label: 'Subscription',
-      href: '/subscription',
-      requiresAuth: true,
-      icon: <Crown className="h-4 w-4 flex-shrink-0" />,
-    },
-    {
-      label: 'Settings',
-      href: '/settings',
-      requiresAuth: true,
-      icon: <Settings className="h-4 w-4 flex-shrink-0" />,
-    },
-    {
-      label: 'Wallet',
-      href: '/wallet',
-      requiresAuth: true,
-      icon: <Wallet className="h-4 w-4 flex-shrink-0" />,
-    },
-  ];
+  {
+    label: 'Account',
+    href: '/account',
+    requiresAuth: true,
+    icon: <User className="h-4 w-4 flex-shrink-0" />,
+  },
+  {
+    label: 'Subscription',
+    href: '/subscription',
+    requiresAuth: true,
+    icon: <Crown className="h-4 w-4 flex-shrink-0" />,
+  },
+  {
+    label: 'Settings',
+    href: '/settings',
+    requiresAuth: true,
+    icon: <Settings className="h-4 w-4 flex-shrink-0" />,
+  },
+  {
+    label: 'Wallet',
+    href: '/wallet',
+    requiresAuth: true,
+    icon: <Wallet className="h-4 w-4 flex-shrink-0" />,
+  },
+];
 
 export default function Sidebar() {
   const { isCollapsed, toggleCollapsed } = useSidebar();
@@ -169,24 +169,28 @@ export default function Sidebar() {
           {/* Logo with subtle glowing mark */}
           <div className="flex h-12 items-center justify-between border-sidebar-border/80 border-b bg-sidebar-background/60 px-3">
             {isCollapsed ? (
-              <div className="mx-auto relative inline-flex items-center justify-center">
+              <div className="relative mx-auto inline-flex items-center justify-center">
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute -inset-1 rounded-full blur-sm"
+                  className="-inset-1 pointer-events-none absolute rounded-full blur-sm"
                   style={{
                     background:
                       'radial-gradient(closest-side, rgba(16,185,129,0.10), transparent 70%)',
                   }}
                 />
                 <motion.span
+                  animate={{ scale: [1, 1.02, 1], opacity: [0.16, 0.22, 0.16] }}
                   aria-hidden
-                  className="pointer-events-none absolute -inset-0.5 rounded-full"
+                  className="-inset-0.5 pointer-events-none absolute rounded-full"
                   style={{
                     background:
                       'radial-gradient(closest-side, rgba(16,185,129,0.08), transparent 60%)',
                   }}
-                  animate={{ scale: [1, 1.02, 1], opacity: [0.16, 0.22, 0.16] }}
-                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                  transition={{
+                    duration: 6,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: 'easeInOut',
+                  }}
                 />
                 <Image
                   alt="Anubis mark"
@@ -197,25 +201,36 @@ export default function Sidebar() {
                 />
               </div>
             ) : (
-              <Link aria-label="Dashboard" className="inline-flex items-center gap-2" href="/dashboard">
+              <Link
+                aria-label="Dashboard"
+                className="inline-flex items-center gap-2"
+                href="/dashboard"
+              >
                 <span className="relative inline-flex items-center justify-center">
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute -inset-1 rounded-full blur-sm"
+                    className="-inset-1 pointer-events-none absolute rounded-full blur-sm"
                     style={{
                       background:
                         'radial-gradient(closest-side, rgba(16,185,129,0.10), transparent 70%)',
                     }}
                   />
                   <motion.span
+                    animate={{
+                      scale: [1, 1.02, 1],
+                      opacity: [0.16, 0.22, 0.16],
+                    }}
                     aria-hidden
-                    className="pointer-events-none absolute -inset-0.5 rounded-full"
+                    className="-inset-0.5 pointer-events-none absolute rounded-full"
                     style={{
                       background:
                         'radial-gradient(closest-side, rgba(16,185,129,0.08), transparent 60%)',
                     }}
-                    animate={{ scale: [1, 1.02, 1], opacity: [0.16, 0.22, 0.16] }}
-                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                    transition={{
+                      duration: 6,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: 'easeInOut',
+                    }}
                   />
                   <Image
                     alt="Anubis mark"
@@ -225,7 +240,14 @@ export default function Sidebar() {
                     width={42}
                   />
                 </span>
-                <Logo href="/dashboard" size="lg" text="anubis.chat" textVariant="gradient" />
+                <Logo
+                  animation="shimmer"
+                  asLink={false}
+                  href="/dashboard"
+                  size="lg"
+                  text="anubis.chat"
+                  textVariant="gradient"
+                />
               </Link>
             )}
 
@@ -409,12 +431,13 @@ export default function Sidebar() {
                   <div className="flex justify-center px-1 py-1">
                     <div className="flex flex-col items-center gap-0.5">
                       <Crown
-                        className={`h-3 w-3 ${subscription.tier === 'free'
-                          ? 'text-slate-600 dark:text-slate-400'
-                          : subscription.tier === 'pro'
-                            ? 'text-blue-600 dark:text-blue-400'
-                            : 'text-purple-600 dark:text-purple-400'
-                          }`}
+                        className={`h-3 w-3 ${
+                          subscription.tier === 'free'
+                            ? 'text-slate-600 dark:text-slate-400'
+                            : subscription.tier === 'pro'
+                              ? 'text-blue-600 dark:text-blue-400'
+                              : 'text-purple-600 dark:text-purple-400'
+                        }`}
                       />
                       {(() => {
                         const barClass =

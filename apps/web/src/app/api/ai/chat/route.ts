@@ -1,8 +1,8 @@
-import { streamText, convertToCoreMessages } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { z } from 'zod';
+import { createOpenAI } from '@ai-sdk/openai';
+import { convertToCoreMessages, streamText } from 'ai';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 // Initialize AI providers
 const openai = createOpenAI({
@@ -39,7 +39,15 @@ const tools = {
 
 export async function POST(req: Request) {
   try {
-    const { messages, chatId, attachments, model = 'gpt-4' } = await req.json();
+    const {
+      messages,
+      attachments,
+      model = 'gpt-4',
+    }: {
+      messages: unknown;
+      attachments?: Array<{ type: string; fileId: string }>;
+      model?: string;
+    } = await req.json();
 
     // Convert messages to core format
     const coreMessages = convertToCoreMessages(messages);
@@ -47,10 +55,10 @@ export async function POST(req: Request) {
     // Process attachments if present
     if (attachments && attachments.length > 0) {
       // Add attachment context to the last user message
-      const lastUserMessage = coreMessages[coreMessages.length - 1];
-      if (lastUserMessage.role === 'user') {
+      const lastUserMessage = coreMessages.at(-1);
+      if (lastUserMessage && lastUserMessage.role === 'user') {
         const attachmentContext = attachments
-          .map((a: any) => `[Attached ${a.type}: ${a.fileId}]`)
+          .map((a) => `[Attached ${a.type}: ${a.fileId}]`)
           .join('\n');
         lastUserMessage.content = `${attachmentContext}\n\n${lastUserMessage.content}`;
       }
@@ -58,11 +66,12 @@ export async function POST(req: Request) {
 
     // Select the AI provider based on model
     const provider = model.startsWith('claude') ? anthropic : openai;
-    const modelId = model.startsWith('claude') 
-      ? model 
-      : model === 'gpt-4' 
-        ? 'gpt-4-turbo-preview' 
-        : model;
+    let modelId = model;
+    if (!model.startsWith('claude')) {
+      if (model === 'gpt-4') {
+        modelId = 'gpt-4-turbo-preview';
+      }
+    }
 
     // Stream the response
     const result = await streamText({
@@ -70,17 +79,15 @@ export async function POST(req: Request) {
       messages: coreMessages,
       tools,
       maxRetries: 3,
-      onFinish: (event) => {
-        console.log('Stream finished:', event);
-      },
+      onFinish: (_event) => {},
     });
 
     // Return the streaming response
     return result.toTextStreamResponse();
   } catch (error) {
-    console.error('AI Chat Error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to process chat request' },
+      { error: 'Failed to process chat request', message },
       { status: 500 }
     );
   }

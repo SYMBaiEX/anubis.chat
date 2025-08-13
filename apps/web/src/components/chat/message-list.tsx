@@ -1,5 +1,6 @@
 'use client';
 
+import type { UIMessage } from 'ai';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown, MessageSquare } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -11,9 +12,17 @@ import type { ChatMessage, StreamingMessage } from '@/lib/types/api';
 import type { MessageListProps, MinimalMessage } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { type FontSize, getFontSizeClasses } from '@/lib/utils/font-sizes';
-import { MessageBubble } from './message-bubble';
+import { EnhancedMessageBubble } from './enhanced-message-bubble';
 import { StreamingMessage as StreamingMessageComponent } from './streaming-message';
 import { TypingIndicator } from './typing-indicator';
+
+// Normalize roles to those supported by the UI bubble component
+type UIRole = 'user' | 'assistant' | 'system';
+const toUiRole = (role: string): UIRole => {
+  if (role === 'tool' || role === 'function') return 'assistant';
+  if (role === 'user' || role === 'assistant' || role === 'system') return role;
+  return 'assistant';
+};
 
 /**
  * MessageList component - Displays conversation messages with auto-scroll
@@ -33,7 +42,7 @@ export function MessageList({
   const [lastMessageCount, setLastMessageCount] = useState(0);
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get dynamic font size classes - Applied immediately before render
   const fontSizes = useMemo(() => getFontSizeClasses(fontSize), [fontSize]);
@@ -41,79 +50,90 @@ export function MessageList({
   // Enhanced scroll-to-bottom with better performance
   const scrollToBottom = useCallback((smooth = true) => {
     if (!scrollRef.current) return;
-    
+
     const scrollElement = scrollRef.current;
-    const targetScroll = scrollElement.scrollHeight - scrollElement.clientHeight;
-    
+    const targetScroll =
+      scrollElement.scrollHeight - scrollElement.clientHeight;
+
     if (smooth) {
       // Use requestAnimationFrame for smoother scrolling
       const startScroll = scrollElement.scrollTop;
       const distance = targetScroll - startScroll;
       const duration = 300;
       let start: number | null = null;
-      
+
       const step = (timestamp: number) => {
         if (!start) start = timestamp;
         const progress = Math.min((timestamp - start) / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
-        
+        const easeProgress = 1 - (1 - progress) ** 3; // Cubic ease-out
+
         scrollElement.scrollTop = startScroll + distance * easeProgress;
-        
+
         if (progress < 1) {
           requestAnimationFrame(step);
         }
       };
-      
+
       requestAnimationFrame(step);
     } else {
       scrollElement.scrollTop = targetScroll;
     }
-    
+
     setIsAutoScrolling(true);
   }, []);
 
   // Enhanced auto-scroll with streaming support
   useEffect(() => {
     if (!messages) return;
-    
+
     const hasNewMessage = messages.length > lastMessageCount;
-    const hasStreamingMessage = messages.some(m => 
-      'isStreaming' in m && (m as StreamingMessage).isStreaming
+    const hasStreamingMessage = messages.some(
+      (m) => 'isStreaming' in m && (m as StreamingMessage).isStreaming
     );
-    
+
     // Auto-scroll conditions:
     // 1. New message arrived and auto-scrolling is enabled
     // 2. Streaming message is active
     // 3. User is not manually scrolling
-    if ((hasNewMessage || hasStreamingMessage) && isAutoScrolling && !isUserScrolling) {
+    if (
+      (hasNewMessage || hasStreamingMessage) &&
+      isAutoScrolling &&
+      !isUserScrolling
+    ) {
       // Use smooth scrolling for streaming, instant for new messages
       scrollToBottom(hasStreamingMessage);
-      
+
       if (hasNewMessage) {
         setLastMessageCount(messages.length);
       }
     }
-  }, [messages, lastMessageCount, isAutoScrolling, isUserScrolling, scrollToBottom]);
-  
+  }, [
+    messages,
+    lastMessageCount,
+    isAutoScrolling,
+    isUserScrolling,
+    scrollToBottom,
+  ]);
+
   // Auto-scroll for streaming content updates
   useEffect(() => {
     if (!messages) return;
-    
-    const streamingMessage = messages.find(m => 
-      'isStreaming' in m && (m as StreamingMessage).isStreaming
+
+    const streamingMessage = messages.find(
+      (m) => 'isStreaming' in m && (m as StreamingMessage).isStreaming
     );
-    
+
     if (streamingMessage && isAutoScrolling && !isUserScrolling) {
       // Debounce streaming scrolls for performance
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
-      
+
       scrollTimeoutRef.current = setTimeout(() => {
         scrollToBottom(true);
       }, 50);
     }
-    
+
     return () => {
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
@@ -124,20 +144,20 @@ export function MessageList({
   // Enhanced scroll handler with user scroll detection
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
     const isNearBottom = distanceFromBottom < 100;
-    
+
     // Detect if user is scrolling
-    if (!isNearBottom && !isUserScrolling) {
+    if (!(isNearBottom || isUserScrolling)) {
       setIsUserScrolling(true);
       setIsAutoScrolling(false);
     } else if (isNearBottom && isUserScrolling) {
       setIsUserScrolling(false);
       setIsAutoScrolling(true);
     }
-    
+
     // Show scroll button when not at bottom
     setShowScrollButton(!isNearBottom && messages && messages.length > 0);
   }, [messages, isUserScrolling]);
@@ -263,10 +283,10 @@ export function MessageList({
                       ) {
                         return (
                           <motion.div
-                            key={(message as StreamingMessage).id}
-                            initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
+                            initial={{ opacity: 0, y: 10 }}
+                            key={(message as StreamingMessage).id}
                             transition={{ duration: 0.2 }}
                           >
                             <StreamingMessageComponent
@@ -278,27 +298,37 @@ export function MessageList({
 
                       return (
                         <motion.div
-                          key={(message as ChatMessage | MinimalMessage)._id}
-                          initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
+                          initial={{ opacity: 0, y: 10 }}
+                          key={(message as ChatMessage | MinimalMessage)._id}
                           transition={{ duration: 0.3, ease: 'easeOut' }}
                         >
-                          <MessageBubble
-                            fontSize={fontSize}
-                            message={message as ChatMessage}
-                            onCopy={() => {
-                              navigator.clipboard.writeText(
-                                (message as ChatMessage | MinimalMessage).content
-                              );
+                          <EnhancedMessageBubble
+                            message={{
+                              ...message,
+                              id: (message as ChatMessage | MinimalMessage)._id,
+                              parts: [
+                                {
+                                  type: 'text',
+                                  text: (
+                                    message as ChatMessage | MinimalMessage
+                                  ).content,
+                                },
+                              ],
+                              role: toUiRole(
+                                String(
+                                  (message as ChatMessage | MinimalMessage).role
+                                )
+                              ),
+                              rating: (message as MinimalMessage).rating,
+                              actions: (message as MinimalMessage).actions,
                             }}
-                            onEdit={(_newContent) => {}}
                             onRegenerate={() =>
                               onMessageRegenerate?.(
                                 (message as ChatMessage | MinimalMessage)._id
                               )
                             }
-                            showActions={true}
                           />
                         </motion.div>
                       );
@@ -313,11 +343,11 @@ export function MessageList({
           <AnimatePresence>
             {isTyping && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
                 className="flex justify-start"
+                exit={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2 }}
               >
                 <div className="max-w-xs">
                   <TypingIndicator isTyping={true} />
@@ -335,10 +365,10 @@ export function MessageList({
       <AnimatePresence>
         {showScrollButton && (
           <motion.div
-            className="absolute right-4 bottom-4"
-            initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
+            className="absolute right-4 bottom-4"
             exit={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.2 }}
           >
             <Button

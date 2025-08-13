@@ -460,6 +460,23 @@ export default defineSchema({
     ),
     status: v.optional(v.string()),
     parentMessageId: v.optional(v.id('messages')),
+    // Message rating system
+    rating: v.optional(
+      v.object({
+        userRating: v.union(v.literal('like'), v.literal('dislike')),
+        ratedAt: v.number(),
+        ratedBy: v.string(), // walletAddress
+      })
+    ),
+    // Message actions tracking
+    actions: v.optional(
+      v.object({
+        copiedCount: v.optional(v.number()),
+        sharedCount: v.optional(v.number()),
+        regeneratedCount: v.optional(v.number()),
+        lastActionAt: v.optional(v.number()),
+      })
+    ),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
     editedAt: v.optional(v.number()),

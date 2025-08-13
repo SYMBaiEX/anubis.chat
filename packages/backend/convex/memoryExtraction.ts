@@ -56,6 +56,10 @@ import type { Doc, Id } from './_generated/dataModel';
 import type { ActionCtx } from './_generated/server';
 import { action, mutation, query } from './_generated/server';
 import { cosineSimilarity } from './embeddings';
+import { createModuleLogger } from './utils/logger';
+
+// Create logger instance for this module
+const logger = createModuleLogger('memoryExtraction');
 
 // Memory extraction configuration
 const MIN_MESSAGE_LENGTH = 20; // Minimum message length to create memory
@@ -93,8 +97,17 @@ function createMemoryFromMessage(
   _context: string,
   existingMemories: string[] = []
 ): MemoryExtractionResult {
+  logger.debug('Processing message', {
+    contentLength: content.length,
+    minLength: MIN_MESSAGE_LENGTH,
+    contentPreview: content.slice(0, 50) + '...',
+  });
+
   // Check if content is meaningful enough to store
   if (content.length < MIN_MESSAGE_LENGTH) {
+    logger.debug('Message too short, skipping', {
+      contentLength: content.length,
+    });
     return {
       memories: [],
       analysisReasoning: 'Message too short to create memory',
@@ -117,28 +130,38 @@ function createMemoryFromMessage(
 
   // Calculate importance based on message characteristics
   let importance = 0.4; // Base importance
-  
+
   // Boost importance for longer, more detailed messages
   if (content.length > 100) importance += 0.1;
   if (content.length > 200) importance += 0.1;
-  
+
   // Boost for personal indicators
-  const personalIndicators = ['i ', 'my ', 'i\'m ', 'i am ', 'we ', 'our '];
+  const personalIndicators = ['i ', 'my ', "i'm ", 'i am ', 'we ', 'our '];
   for (const indicator of personalIndicators) {
     if (contentLower.includes(indicator)) {
       importance += 0.05;
       break;
     }
   }
-  
+
   // Boost for question marks (indicates user is asking for help)
   if (content.includes('?')) importance += 0.1;
-  
+
   // Cap importance at 0.8 for automated extraction
   importance = Math.min(importance, 0.8);
-  
+
+  logger.debug('Calculated importance', {
+    importance,
+    threshold: MIN_IMPORTANCE_THRESHOLD,
+    willCreate: importance >= MIN_IMPORTANCE_THRESHOLD,
+  });
+
   // Only create memory if importance threshold is met
   if (importance < MIN_IMPORTANCE_THRESHOLD) {
+    logger.debug('Importance below threshold, skipping', {
+      importance,
+      threshold: MIN_IMPORTANCE_THRESHOLD,
+    });
     return {
       memories: [],
       analysisReasoning: 'Message importance below threshold',
@@ -148,17 +171,17 @@ function createMemoryFromMessage(
   // Extract simple tags from content
   const words = contentLower.split(WHITESPACE_REGEX);
   const tags: string[] = [];
-  
+
   // Add tags for common topics
   const topicKeywords = {
-    'code': ['code', 'coding', 'programming', 'developer', 'software'],
-    'work': ['work', 'job', 'project', 'task', 'meeting'],
-    'learning': ['learn', 'study', 'course', 'tutorial', 'practice'],
-    'help': ['help', 'issue', 'problem', 'error', 'bug', 'fix'],
+    code: ['code', 'coding', 'programming', 'developer', 'software'],
+    work: ['work', 'job', 'project', 'task', 'meeting'],
+    learning: ['learn', 'study', 'course', 'tutorial', 'practice'],
+    help: ['help', 'issue', 'problem', 'error', 'bug', 'fix'],
   };
-  
+
   for (const [tag, keywords] of Object.entries(topicKeywords)) {
-    if (keywords.some(keyword => contentLower.includes(keyword))) {
+    if (keywords.some((keyword) => contentLower.includes(keyword))) {
       tags.push(tag);
     }
   }
@@ -171,6 +194,13 @@ function createMemoryFromMessage(
     tags,
     reasoning: 'Direct message context for future reference',
   };
+
+  logger.debug('Creating memory', {
+    type: memory.type,
+    importance: memory.importance,
+    tags: memory.tags,
+    contentLength: memory.content.length,
+  });
 
   return {
     memories: [memory],
@@ -404,6 +434,7 @@ async function handleExtractMemoriesFromMessage(
       );
 
       if (!existingMemoryCheck) {
+        logger.debug('No duplicate found, creating new memory');
         // Create the memory
         const memoryId = (await ctx.runMutation(api.memories.create, {
           userId: args.userId,
@@ -431,6 +462,12 @@ async function handleExtractMemoriesFromMessage(
         });
       }
     }
+
+    logger.info('Memory extraction complete', {
+      memoriesExtracted: createdMemories.length,
+      totalProcessed: result.memories.length,
+      reasoning: result.analysisReasoning,
+    });
 
     return {
       success: true,
@@ -662,9 +699,7 @@ export const consolidateMemories = action({
 /**
  * Helper function to consolidate similar memory contents
  */
-function consolidateMemoryContent(
-  contents: string[]
-): string | null {
+function consolidateMemoryContent(contents: string[]): string | null {
   if (contents.length <= 1) {
     return null;
   }
@@ -672,27 +707,27 @@ function consolidateMemoryContent(
   // Simple consolidation: combine unique parts and remove duplicates
   const allWords = new Set<string>();
   const sentences: string[] = [];
-  
+
   for (const content of contents) {
     const words = content.toLowerCase().split(WHITESPACE_REGEX);
     let hasNewInfo = false;
-    
+
     for (const word of words) {
       if (word.length > 3 && !allWords.has(word)) {
         hasNewInfo = true;
         allWords.add(word);
       }
     }
-    
+
     // Only add sentence if it contains new information
     if (hasNewInfo || sentences.length === 0) {
       sentences.push(content);
     }
   }
-  
+
   // Join the unique sentences, limiting to reasonable length
   const consolidated = sentences.join('. ').slice(0, 500);
-  
+
   return consolidated.length > 20 ? consolidated : null;
 }
 
@@ -780,11 +815,19 @@ export const processNewMessage = action({
     error?: string;
     reason?: string;
   }> => {
+    logger.info('Processing new message', { messageId: args.messageId });
+
     try {
       // Get the message
       const message = (await ctx.runQuery(api.messages.getById, {
         id: args.messageId,
       })) as Doc<'messages'> | null;
+
+      logger.debug('Retrieved message', {
+        found: !!message,
+        role: message?.role,
+        contentLength: message?.content?.length,
+      });
       if (!message || message.role !== 'user') {
         return {
           success: true,
@@ -831,6 +874,8 @@ export const processNewMessage = action({
         };
       }
 
+      logger.info('Starting extraction for user', { userId: user._id });
+
       // Run memory extraction
       const result = (await ctx.runAction(
         (api as any).memoryExtraction.extractMemoriesFromMessage,
@@ -842,12 +887,21 @@ export const processNewMessage = action({
         }
       )) as ExtractMemoriesFromMessageReturn;
 
+      logger.info('Extraction result', {
+        success: result.success,
+        memoriesExtracted: result.memoriesExtracted,
+        error: result.error,
+      });
+
       return {
         success: result.success,
         memoriesExtracted: result.memoriesExtracted,
         error: result.error,
       };
     } catch (error) {
+      logger.error('Failed to process message', error, {
+        messageId: args.messageId,
+      });
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),

@@ -618,6 +618,17 @@ html {
     animation: shimmer 2s linear infinite;
   }
 
+  /* Logo Animation Utilities */
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-typing {
+    overflow: hidden;
+    white-space: nowrap;
+    animation: typing 3s steps(11, end) infinite;
+  }
+
   /* Stagger animation delays */
   .animate-delay-100 {
     animation-delay: 100ms;
@@ -732,6 +743,31 @@ html {
   }
   100% {
     background-position: 200% center;
+  }
+}
+
+/* Logo Animation Keyframes */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(var(--anubis-primary-rgb), 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(var(--anubis-primary-rgb), 0.6));
+  }
+}
+
+@keyframes typing {
+  0% {
+    width: 0;
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    width: 100%;
+    opacity: 1;
   }
 }
 

@@ -5,6 +5,7 @@ import {
   Brain,
   Check,
   Edit3,
+  Filter,
   Info,
   Loader2,
   MoreVertical,
@@ -33,6 +34,7 @@ import { cn } from '@/lib/utils';
  */
 export function ChatHeader({
   chat,
+  selectedAgent,
   onRename,
   onClearHistory,
   onDelete,
@@ -278,21 +280,51 @@ export function ChatHeader({
 
         {/* Chat Status */}
         <div className="flex items-center space-x-2 text-muted-foreground text-xs">
-          {chat.systemPrompt && (
+          {selectedAgent && (
             <span className="flex items-center space-x-1">
-              <Info className="h-3 w-3" />
-              <span>Custom prompt</span>
+              <Bot className="h-3 w-3" />
+              <span>{selectedAgent.name}</span>
             </span>
+          )}
+
+          {chat.systemPrompt && (
+            <>
+              {selectedAgent && <span>•</span>}
+              <span className="flex items-center space-x-1">
+                <Info className="h-3 w-3" />
+                <span>Custom prompt</span>
+              </span>
+            </>
           )}
 
           {chat.temperature && chat.temperature !== 0.7 && (
             <>
-              {chat.systemPrompt && <span>•</span>}
+              {(chat.systemPrompt || selectedAgent) && <span>•</span>}
               <span>Temp: {chat.temperature}</span>
             </>
           )}
         </div>
       </div>
+
+      {/* Agent Selector Button - Desktop */}
+      {onAgentSelectorClick && (
+        <div className="hidden flex-shrink-0 sm:block">
+          <Button
+            className="button-press min-w-[120px] justify-between"
+            onClick={onAgentSelectorClick}
+            size="sm"
+            variant="outline"
+          >
+            <div className="flex items-center space-x-1.5">
+              <Bot className="h-3.5 w-3.5" />
+              <span className="truncate font-medium text-xs">
+                {selectedAgent ? selectedAgent.name : 'Select Agent'}
+              </span>
+            </div>
+            <Filter className="h-3 w-3 opacity-50" />
+          </Button>
+        </div>
+      )}
 
       {/* Desktop Actions Menu - three dots */}
       <div className="hidden flex-shrink-0 sm:block">
