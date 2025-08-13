@@ -95,7 +95,7 @@ const glowVariants = {
     transition: {
       duration: 3,
       repeat: Number.POSITIVE_INFINITY,
-      ease: 'easeInOut',
+      ease: 'easeInOut' as const,
     },
   },
 };
