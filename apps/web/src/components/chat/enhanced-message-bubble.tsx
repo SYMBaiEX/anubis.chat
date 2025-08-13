@@ -357,7 +357,7 @@ export function EnhancedMessageBubble({
         );
 
       case 'file':
-        if (part.mediaType?.startsWith('image/')) {
+        if (part.mediaType?.startsWith('image/') && part.url) {
           return (
             <motion.div
               animate={{ opacity: 1, scale: 1 }}

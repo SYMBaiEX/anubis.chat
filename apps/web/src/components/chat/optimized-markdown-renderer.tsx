@@ -118,45 +118,45 @@ export const OptimizedMarkdownRenderer = memo(
         ),
 
         // Blockquotes
-        blockquote: ({ children }: { children: ReactNode }) => (
-          <blockquote className="my-4 border-muted-foreground/30 border-l-4 pl-4 italic last:mb-0">
+        blockquote: ({ children, ...props }: any) => (
+          <blockquote className="my-4 border-muted-foreground/30 border-l-4 pl-4 italic last:mb-0" {...props}>
             {children}
           </blockquote>
         ),
 
         // Tables with simple styling
-        table: ({ children }: { children: ReactNode }) => (
+        table: ({ children, ...props }: any) => (
           <div className="my-3 overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
+            <table className="min-w-full divide-y divide-border" {...props}>
               {children}
             </table>
           </div>
         ),
-        thead: ({ children }: { children: ReactNode }) => (
-          <thead className="bg-muted">{children}</thead>
+        thead: ({ children, ...props }: any) => (
+          <thead className="bg-muted" {...props}>{children}</thead>
         ),
-        tbody: ({ children }: { children: ReactNode }) => (
-          <tbody className="divide-y divide-border">{children}</tbody>
+        tbody: ({ children, ...props }: any) => (
+          <tbody className="divide-y divide-border" {...props}>{children}</tbody>
         ),
-        tr: ({ children }: { children: ReactNode }) => <tr>{children}</tr>,
-        th: ({ children }: { children: ReactNode }) => (
-          <th className="px-3 py-2 text-left font-semibold text-sm">
+        tr: ({ children, ...props }: any) => <tr {...props}>{children}</tr>,
+        th: ({ children, ...props }: any) => (
+          <th className="px-3 py-2 text-left font-semibold text-sm" {...props}>
             {children}
           </th>
         ),
-        td: ({ children }: { children: ReactNode }) => (
-          <td className="px-3 py-2 text-sm">{children}</td>
+        td: ({ children, ...props }: any) => (
+          <td className="px-3 py-2 text-sm" {...props}>{children}</td>
         ),
 
         // Horizontal rule
         hr: () => <hr className="my-4 border-border" />,
 
         // Strong and emphasis
-        strong: ({ children }: { children: ReactNode }) => (
-          <strong className="font-semibold">{children}</strong>
+        strong: ({ children, ...props }: any) => (
+          <strong className="font-semibold" {...props}>{children}</strong>
         ),
-        em: ({ children }: { children: ReactNode }) => (
-          <em className="italic">{children}</em>
+        em: ({ children, ...props }: any) => (
+          <em className="italic" {...props}>{children}</em>
         ),
       }),
       [isStreaming]

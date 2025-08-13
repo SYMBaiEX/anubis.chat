@@ -159,7 +159,7 @@ export function useEnhancedChat({
         content: msg.content,
         role: msg.role,
         createdAt: msg.createdAt ?? msg._creationTime ?? Date.now(),
-        attachments: msg.attachments,
+        attachments: (msg as any).attachments || [],
         metadata: msg.metadata,
       }));
 

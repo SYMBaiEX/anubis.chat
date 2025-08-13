@@ -1,6 +1,6 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
-import { convertToCoreMessages, streamText } from 'ai';
+import { convertToCoreMessages, streamText, type UIMessage } from 'ai';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       attachments,
       model = 'gpt-4',
     }: {
-      messages: unknown;
+      messages: UIMessage[];
       attachments?: Array<{ type: string; fileId: string }>;
       model?: string;
     } = await req.json();
