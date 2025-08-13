@@ -16,6 +16,7 @@ const menuItems = [
   { name: 'Home', href: '/' },
   { name: 'Referral Info', href: '/referral-info' },
   { name: 'Roadmap', href: '/roadmap' },
+  { name: '$ANUBIS Token', href: '/anubis-token' },
 ];
 
 export default function LandingHeader() {

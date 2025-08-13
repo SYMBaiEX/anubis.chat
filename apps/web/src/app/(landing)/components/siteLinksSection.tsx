@@ -98,6 +98,11 @@ export default function SiteLinksSection() {
                 </Link>
               </li>
               <li>
+                <Link className="hover:text-primary" href="/anubis-token">
+                  $ANUBIS Token
+                </Link>
+              </li>
+              <li>
                 <a
                   className="hover:text-primary"
                   href="mailto:hello@anubis.chat"

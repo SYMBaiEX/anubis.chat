@@ -1,10 +1,10 @@
 'use client';
 
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { api } from '@convex/_generated/api';
 import { useQuery } from 'convex/react';
 import {
   ChevronDown,
-  ChevronUp,
   Clock,
   DollarSign,
   Shield,
@@ -25,11 +25,52 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import SiteLinksSection from '../(landing)/components/siteLinksSection';
 
+// Animation Variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100,
+      damping: 10
+    }
+  }
+};
+
+const scaleVariants = {
+  hidden: { scale: 0.8, opacity: 0 },
+  visible: {
+    scale: 1,
+    opacity: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100,
+      damping: 15
+    }
+  }
+};
+
 export default function ReferralInfoPage() {
   const subscriptionStatus = useQuery(api.subscriptions.getSubscriptionStatus);
   const canCreateReferral = subscriptionStatus?.tier === 'pro_plus';
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [_mounted, setMounted] = useState(false);
+  const { scrollYProgress } = useScroll();
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
 
   // Fetch real referral statistics
   const leaderboardData = useQuery(api.referrals.getEnhancedLeaderboard, {
@@ -49,41 +90,99 @@ export default function ReferralInfoPage() {
         {/* Hero Section */}
         <AnimatedSection
           allowOverlap
-          auroraVariant="gold"
           className="isolate overflow-visible px-4 py-24 text-center sm:px-6 md:py-32 lg:px-8"
           dustIntensity="low"
-          forceAurora
           parallaxY={24}
           revealStrategy="none"
           softEdges
         >
           <div className="relative z-10 mx-auto w-full max-w-4xl">
-            <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-orange-500/10 px-3 py-1 backdrop-blur-sm md:mb-8">
-              <Sparkles className="h-3 w-3 animate-pulse text-primary" />
+            <motion.div 
+              className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-orange-500/10 px-3 py-1 backdrop-blur-sm md:mb-8"
+              initial={{ opacity: 0, y: -20, scale: 0.8 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                scale: 1,
+                boxShadow: [
+                  "0 0 20px rgba(16, 185, 129, 0.3)",
+                  "0 0 40px rgba(16, 185, 129, 0.5)",
+                  "0 0 20px rgba(16, 185, 129, 0.3)"
+                ]
+              }}
+              transition={{ 
+                duration: 0.6,
+                boxShadow: {
+                  duration: 2,
+                  repeat: Infinity
+                }
+              }}
+              whileHover={{
+                scale: 1.05,
+                transition: { type: "spring", stiffness: 400 }
+              }}
+            >
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              >
+                <Sparkles className="h-3 w-3 text-primary" />
+              </motion.div>
               <span className="font-medium text-primary text-xs tracking-wide">
                 Pro+ Exclusive • Up to 5% Commission
               </span>
-              <Sparkles className="h-3 w-3 animate-pulse text-primary" />
-            </div>
+              <motion.div
+                animate={{ rotate: [0, -360] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              >
+                <Sparkles className="h-3 w-3 text-primary" />
+              </motion.div>
+            </motion.div>
 
-            <h1 className="mt-2 mb-4 font-bold text-4xl transition-all delay-100 duration-700 sm:text-5xl md:mt-4 md:mb-6 md:text-6xl lg:text-7xl">
-              <span className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary">
+            <motion.h1 
+              className="mt-2 mb-4 font-bold text-4xl transition-all delay-100 duration-700 sm:text-5xl md:mt-4 md:mb-6 md:text-6xl lg:text-7xl"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              style={{ opacity, scale }}
+            >
+              <motion.span 
+                className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary"
+                animate={{ 
+                  backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"]
+                }}
+                transition={{ duration: 5, repeat: Infinity }}
+                style={{ backgroundSize: "200% 200%" }}
+              >
                 ANUBIS Referral Program
-              </span>
-            </h1>
+              </motion.span>
+            </motion.h1>
 
-            <p className="mx-auto mt-3 mb-10 max-w-3xl text-lg text-muted-foreground transition-all delay-200 duration-700 sm:text-xl md:mt-4 md:mb-12 md:text-2xl">
+            <motion.p 
+              className="mx-auto mt-3 mb-10 max-w-3xl text-lg text-muted-foreground transition-all delay-200 duration-700 sm:text-xl md:mt-4 md:mb-12 md:text-2xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+            >
               Earn up to{' '}
-              <span className="animate-pulse font-bold text-primary">
+              <motion.span 
+                className="font-bold text-primary"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
                 5% commission
-              </span>{' '}
+              </motion.span>{' '}
               on every payment your referrals make —
-              <span className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text font-semibold text-transparent dark:from-white dark:via-primary dark:to-primary">
+              <motion.span 
+                className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text font-semibold text-transparent dark:from-white dark:via-primary dark:to-primary"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
+              >
                 {' '}
                 forever
-              </span>
+              </motion.span>
               .
-            </p>
+            </motion.p>
 
             {/* Stats Row with Glow Background */}
             <div className="relative mb-8">
@@ -93,44 +192,85 @@ export default function ReferralInfoPage() {
                 <div className="absolute inset-0 rounded-xl bg-[radial-gradient(30%_25%_at_50%_50%,rgba(34,197,94,0.20)_0%,rgba(34,197,94,0.12)_35%,transparent_70%)] opacity-70 blur-[4px]" />
               </div>
 
-              <div className="relative z-10 flex flex-wrap justify-center gap-8 transition-all delay-300 duration-700 motion-reduce:transition-none">
+              <motion.div 
+                className="relative z-10 flex flex-wrap justify-center gap-8 transition-all delay-300 duration-700 motion-reduce:transition-none"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
                 {systemStats ? (
                   <>
-                    <div className="text-center">
-                      <div
+                    <motion.div 
+                      className="text-center"
+                      variants={scaleVariants}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <motion.div
                         aria-live="polite"
                         className="font-bold text-3xl text-primary"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
                       >
                         {systemStats.totalReferrers || 0}
-                      </div>
-                      <div className="text-muted-foreground text-sm">
+                      </motion.div>
+                      <motion.div 
+                        className="text-muted-foreground text-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                      >
                         Active Referrers
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div
+                      </motion.div>
+                    </motion.div>
+                    <motion.div 
+                      className="text-center"
+                      variants={scaleVariants}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <motion.div
                         aria-live="polite"
                         className="font-bold text-3xl text-primary"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.6, type: "spring", stiffness: 200 }}
                       >
                         {systemStats.totalPayoutsSOL
                           ? `${systemStats.totalPayoutsSOL.toFixed(2)} SOL`
                           : '0 SOL'}
-                      </div>
-                      <div className="text-muted-foreground text-sm">
+                      </motion.div>
+                      <motion.div 
+                        className="text-muted-foreground text-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.7 }}
+                      >
                         Total Paid Out
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div
+                      </motion.div>
+                    </motion.div>
+                    <motion.div 
+                      className="text-center"
+                      variants={scaleVariants}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <motion.div
                         aria-live="polite"
                         className="font-bold text-3xl text-primary"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.7, type: "spring", stiffness: 200 }}
                       >
                         {systemStats.totalReferrals || 0}
-                      </div>
-                      <div className="text-muted-foreground text-sm">
+                      </motion.div>
+                      <motion.div 
+                        className="text-muted-foreground text-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.8 }}
+                      >
                         Total Referrals
-                      </div>
-                    </div>
+                      </motion.div>
+                    </motion.div>
                   </>
                 ) : (
                   <>
@@ -154,7 +294,7 @@ export default function ReferralInfoPage() {
                     </div>
                   </>
                 )}
-              </div>
+              </motion.div>
             </div>
 
             <div className="mt-6 mb-8 flex flex-col items-center justify-center gap-3 sm:flex-row md:mt-8 md:mb-10 md:gap-4">
@@ -199,7 +339,6 @@ export default function ReferralInfoPage() {
 
         {/* Key Features */}
         <AnimatedSection
-          auroraVariant="primary"
           className="px-4 py-16 sm:px-6 md:py-20 lg:px-8"
           dustIntensity="low"
           parallaxY={12}
@@ -220,8 +359,19 @@ export default function ReferralInfoPage() {
                   : 'Join our rewarding referral program in the AI space'}
               </p>
             </div>
-            <div className="mb-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <Card className="group relative overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
+            <motion.div 
+              className="mb-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+            >
+              <motion.div
+                variants={scaleVariants}
+                whileHover={{ y: -10 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Card className="group relative h-full overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
                 <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <CardHeader className="relative">
                   <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 shadow-lg transition-transform group-hover:scale-110">
@@ -237,8 +387,14 @@ export default function ReferralInfoPage() {
                   </p>
                 </CardContent>
               </Card>
+              </motion.div>
 
-              <Card className="group relative overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
+              <motion.div
+                variants={scaleVariants}
+                whileHover={{ y: -10 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Card className="group relative h-full overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
                 <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <CardHeader className="relative">
                   <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-primary shadow-lg transition-transform group-hover:scale-110">
@@ -254,8 +410,14 @@ export default function ReferralInfoPage() {
                   </p>
                 </CardContent>
               </Card>
+              </motion.div>
 
-              <Card className="group relative overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
+              <motion.div
+                variants={scaleVariants}
+                whileHover={{ y: -10 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Card className="group relative h-full overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
                 <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <CardHeader className="relative">
                   <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 shadow-lg transition-transform group-hover:scale-110">
@@ -271,8 +433,14 @@ export default function ReferralInfoPage() {
                   </p>
                 </CardContent>
               </Card>
+              </motion.div>
 
-              <Card className="group relative overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
+              <motion.div
+                variants={scaleVariants}
+                whileHover={{ y: -10 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Card className="group relative h-full overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
                 <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <CardHeader className="relative">
                   <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg transition-transform group-hover:scale-110">
@@ -287,8 +455,14 @@ export default function ReferralInfoPage() {
                   </p>
                 </CardContent>
               </Card>
+              </motion.div>
 
-              <Card className="group relative overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
+              <motion.div
+                variants={scaleVariants}
+                whileHover={{ y: -10 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Card className="group relative h-full overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
                 <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <CardHeader className="relative">
                   <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg transition-transform group-hover:scale-110">
@@ -303,8 +477,14 @@ export default function ReferralInfoPage() {
                   </p>
                 </CardContent>
               </Card>
+              </motion.div>
 
-              <Card className="group relative overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
+              <motion.div
+                variants={scaleVariants}
+                whileHover={{ y: -10 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Card className="group relative h-full overflow-hidden border-primary/10 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
                 <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <CardHeader className="relative">
                   <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg transition-transform group-hover:scale-110">
@@ -321,28 +501,61 @@ export default function ReferralInfoPage() {
                   </p>
                 </CardContent>
               </Card>
-            </div>
+              </motion.div>
+            </motion.div>
 
             {/* Commission Tiers */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
             <Card className="relative mb-12 overflow-hidden border-primary/20">
               <CardHeader className="relative">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5">
+                <motion.div 
+                  className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
+                  whileHover={{ scale: 1.05 }}
+                >
                   <Trophy className="h-4 w-4 text-primary" />
                   <span className="font-medium text-primary text-sm">
                     Progressive Rewards
                   </span>
-                </div>
-                <CardTitle className="text-3xl">
-                  Commission Tier System
-                </CardTitle>
-                <p className="text-muted-foreground">
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <CardTitle className="text-3xl">
+                    Commission Tier System
+                  </CardTitle>
+                </motion.div>
+                <motion.p 
+                  className="text-muted-foreground"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.5 }}
+                >
                   Your commission rate increases automatically as you refer more
                   users
-                </p>
+                </motion.p>
               </CardHeader>
               <CardContent className="relative">
                 <div className="space-y-6">
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <motion.div 
+                    className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                  >
                     {[
                       { tier: 1, referrals: '1-4', rate: '3.0%' },
                       { tier: 2, referrals: '5-9', rate: '3.2%' },
@@ -356,20 +569,37 @@ export default function ReferralInfoPage() {
                       { tier: 10, referrals: '45-49', rate: '4.8%' },
                       { tier: 11, referrals: '50+', rate: '5.0%', isMax: true },
                     ].map((tier, index) => (
-                      <div
+                      <motion.div
                         className={cn(
-                          'group relative overflow-hidden rounded-xl border p-4 transition-all hover:scale-105',
+                          'group relative overflow-hidden rounded-xl border p-4',
                           tier.isMax
-                            ? 'border-primary bg-gradient-to-br from-primary/10 to-orange-500/10 shadow-lg shadow-primary/20'
-                            : 'border-border/40 bg-gradient-to-br from-background to-muted/30 hover:border-primary/40 hover:shadow-md'
+                            ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg shadow-primary/20'
+                            : 'border-border/40 bg-gradient-to-br from-background to-muted/30'
                         )}
                         key={tier.tier}
-                        style={{ animationDelay: `${index * 50}ms` }}
+                        variants={itemVariants}
+                        whileHover={{ 
+                          scale: 1.05,
+                          borderColor: tier.isMax ? undefined : "rgba(34,197,94,0.4)",
+                          transition: { type: "spring", stiffness: 300 }
+                        }}
+                        whileTap={{ scale: 0.98 }}
                       >
                         {tier.isMax && (
-                          <div className="absolute top-2 right-2">
-                            <Star className="h-4 w-4 animate-pulse text-primary" />
-                          </div>
+                          <motion.div 
+                            className="absolute top-2 right-2"
+                            animate={{ 
+                              rotate: [0, 15, -15, 0],
+                              scale: [1, 1.2, 1.2, 1]
+                            }}
+                            transition={{ 
+                              duration: 2,
+                              repeat: Infinity,
+                              repeatDelay: 3
+                            }}
+                          >
+                            <Star className="h-4 w-4 text-primary" />
+                          </motion.div>
                         )}
                         <div className="flex items-center justify-between">
                           <div>
@@ -392,7 +622,7 @@ export default function ReferralInfoPage() {
                               <span
                                 className={cn(
                                   tier.isMax
-                                    ? 'bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent'
+                                    ? 'bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent'
                                     : 'text-primary'
                                 )}
                               >
@@ -401,9 +631,9 @@ export default function ReferralInfoPage() {
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                   <div className="relative overflow-hidden rounded-xl p-6">
                     <div className="absolute inset-0 bg-grid-white/5" />
                     <p className="relative text-center font-medium">
@@ -411,7 +641,7 @@ export default function ReferralInfoPage() {
                       <span className="text-primary">0.2%</span> every{' '}
                       <span className="text-primary">5 referrals</span>, up to a
                       maximum of{' '}
-                      <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text font-bold text-transparent">
+                      <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text font-bold text-transparent">
                         5%
                       </span>{' '}
                       at 50+ referrals
@@ -420,6 +650,7 @@ export default function ReferralInfoPage() {
                 </div>
               </CardContent>
             </Card>
+            </motion.div>
 
             {/* How It Works */}
             <Card className="relative mb-12 overflow-hidden border-primary/20">
@@ -441,6 +672,7 @@ export default function ReferralInfoPage() {
                       description:
                         'Become a Pro+ member to unlock the ability to create referral codes and earn commissions.',
                       color: 'from-purple-500 to-pink-500',
+                      icon: Star,
                     },
                     {
                       step: 2,
@@ -448,6 +680,7 @@ export default function ReferralInfoPage() {
                       description:
                         'Generate a custom or auto-generated referral code from your dashboard.',
                       color: 'from-blue-500 to-cyan-500',
+                      icon: Shield,
                     },
                     {
                       step: 3,
@@ -455,6 +688,7 @@ export default function ReferralInfoPage() {
                       description:
                         'Share your unique referral link on social media, Discord, or directly with friends.',
                       color: 'from-green-500 to-emerald-500',
+                      icon: Users,
                     },
                     {
                       step: 4,
@@ -462,6 +696,7 @@ export default function ReferralInfoPage() {
                       description:
                         'Monitor your referred users and commission earnings in real-time from your dashboard.',
                       color: 'from-yellow-500 to-orange-500',
+                      icon: TrendingUp,
                     },
                     {
                       step: 5,
@@ -469,32 +704,60 @@ export default function ReferralInfoPage() {
                       description:
                         'Receive commissions on every payment your referrals make, including renewals and upgrades.',
                       color: 'from-primary to-orange-500',
+                      icon: DollarSign,
                     },
                   ].map((item, index) => (
-                    <div
+                    <motion.div
                       className="relative flex gap-4 transition-all hover:translate-x-1"
                       key={item.step}
+                      initial={{ opacity: 0, x: -50 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
                     >
-                      <div
+                      <motion.div
                         className={cn(
-                          'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-white shadow-lg transition-transform hover:scale-110',
+                          'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-white shadow-lg',
                           item.color
                         )}
+                        initial={{ scale: 0, rotate: -180 }}
+                        whileInView={{ scale: 1, rotate: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.2 + index * 0.1, type: "spring", stiffness: 200 }}
+                        whileHover={{ scale: 1.2, rotate: 10 }}
                       >
-                        <span className="font-bold">{item.step}</span>
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.4 + index * 0.1 }}
+                        >
+                          <item.icon className="h-5 w-5" />
+                        </motion.div>
                         {index < 4 && (
                           <div className="-bottom-2 -translate-x-1/2 absolute left-1/2 h-4 w-0.5 bg-gradient-to-b from-white/20 to-transparent" />
                         )}
-                      </div>
+                      </motion.div>
                       <div className="flex-1 rounded-lg p-4 transition-colors hover:bg-muted/50">
-                        <h3 className="mb-1 font-semibold text-lg">
+                        <motion.h3 
+                          className="mb-1 font-semibold text-lg"
+                          initial={{ opacity: 0 }}
+                          whileInView={{ opacity: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.3 + index * 0.1 }}
+                        >
                           {item.title}
-                        </h3>
-                        <p className="text-muted-foreground">
+                        </motion.h3>
+                        <motion.p 
+                          className="text-muted-foreground"
+                          initial={{ opacity: 0 }}
+                          whileInView={{ opacity: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.4 + index * 0.1 }}
+                        >
                           {item.description}
-                        </p>
+                        </motion.p>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </CardContent>
@@ -540,23 +803,29 @@ export default function ReferralInfoPage() {
                         "No! There's no limit to how many users you can refer. The more you refer, the higher your commission rate becomes (up to 5%).",
                     },
                   ].map((item, index) => (
-                    <button
+                    <motion.button
                       className="group w-full cursor-pointer rounded-xl border border-border/40 p-4 text-left transition-all hover:border-primary/40 hover:shadow-md"
                       key={item.question}
                       onClick={() =>
                         setExpandedFaq(expandedFaq === index ? null : index)
                       }
                       type="button"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.05, type: "spring", stiffness: 100 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
                       <div className="flex items-center justify-between">
                         <h3 className="pr-4 font-semibold">{item.question}</h3>
-                        <div className="shrink-0">
-                          {expandedFaq === index ? (
-                            <ChevronUp className="h-5 w-5 text-primary transition-transform" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform group-hover:text-primary" />
-                          )}
-                        </div>
+                        <motion.div 
+                          className="shrink-0"
+                          animate={{ rotate: expandedFaq === index ? 180 : 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <ChevronDown className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
+                        </motion.div>
                       </div>
                       <div
                         className={cn(
@@ -567,19 +836,46 @@ export default function ReferralInfoPage() {
                         )}
                       >
                         <div className="overflow-hidden">
-                          <p className="text-muted-foreground">{item.answer}</p>
+                          <motion.p 
+                            className="text-muted-foreground"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: expandedFaq === index ? 1 : 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            {item.answer}
+                          </motion.p>
                         </div>
                       </div>
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </CardContent>
             </Card>
 
             {/* CTA */}
-            <div className="mt-16 text-center">
-              <div className="relative inline-block">
-                <div className="absolute inset-0 rounded-full bg-primary/20 blur-3xl" />
+            <motion.div 
+              className="mt-16 text-center"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <motion.div 
+                className="relative inline-block"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <motion.div 
+                  className="absolute inset-0 rounded-full bg-primary/20 blur-3xl"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.5, 0.8, 0.5]
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity
+                  }}
+                />
                 {canCreateReferral ? (
                   <Link href="/referrals">
                     <Button
@@ -604,7 +900,7 @@ export default function ReferralInfoPage() {
                     </Button>
                   </Link>
                 )}
-              </div>
+              </motion.div>
               {systemStats && systemStats.totalReferrers > 0 && (
                 <p className="mt-6 text-muted-foreground">
                   Join{' '}
@@ -614,7 +910,7 @@ export default function ReferralInfoPage() {
                   active referrer{systemStats.totalReferrers !== 1 ? 's' : ''}
                 </p>
               )}
-            </div>
+            </motion.div>
           </div>
         </AnimatedSection>
         <SiteLinksSection />

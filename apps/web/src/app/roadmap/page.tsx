@@ -219,7 +219,7 @@ function TimelineView({
     totalProgress: Math.round(
       (features.filter((f) => f.status === 'completed').length /
         features.length) *
-        100
+      100
     ),
   };
 
@@ -431,7 +431,6 @@ export default function RoadmapPage(): ReactElement {
         {/* Hero */}
         <AnimatedSection
           allowOverlap
-          auroraVariant="gold"
           className="isolate overflow-visible px-4 py-24 text-center sm:px-6 md:py-32 lg:px-8"
           dustIntensity="low"
           parallaxY={24}
@@ -480,7 +479,6 @@ export default function RoadmapPage(): ReactElement {
 
         {/* Controls */}
         <AnimatedSection
-          auroraVariant="primary"
           className="px-4 py-12 sm:px-6 lg:px-8"
           dustIntensity="low"
           parallaxY={8}
@@ -637,7 +635,6 @@ export default function RoadmapPage(): ReactElement {
         {/* Footer CTA */}
         <AnimatedSection
           allowOverlap
-          auroraVariant="primary"
           className="isolate overflow-visible px-4 py-16 text-center sm:px-6 md:py-20 lg:px-8"
           dustIntensity="medium"
           parallaxY={16}
