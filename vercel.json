@@ -1,0 +1,6 @@
+{
+  "buildCommand": "turbo run build",
+  "framework": "nextjs",
+  "installCommand": "bun install",
+  "outputDirectory": "apps/web/.next"
+}
