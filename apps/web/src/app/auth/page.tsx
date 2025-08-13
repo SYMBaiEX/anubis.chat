@@ -112,19 +112,19 @@ export default function AuthPage() {
   // Track theme mounting and ensure proper hydration
   useEffect(() => {
     setMounted(true);
-    
+
     // Set initial system theme
     if (typeof window !== 'undefined') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
       setSystemTheme(mediaQuery.matches ? 'light' : 'dark');
-      
+
       // Listen for system theme changes
       const handleSystemThemeChange = (e: MediaQueryListEvent) => {
         setSystemTheme(e.matches ? 'light' : 'dark');
       };
-      
+
       mediaQuery.addEventListener('change', handleSystemThemeChange);
-      
+
       return () => {
         mediaQuery.removeEventListener('change', handleSystemThemeChange);
       };
@@ -132,20 +132,22 @@ export default function AuthPage() {
   }, []);
 
   // More robust theme detection with system preference fallback
-  const isLightMode = mounted && (() => {
-    // If we have a resolved theme, use it (most reliable)
-    if (resolvedTheme) {
-      return resolvedTheme === 'light';
-    }
-    
-    // If we have an explicit theme setting, use it
-    if (theme && theme !== 'system') {
-      return theme === 'light';
-    }
-    
-    // For system theme, use our tracked system theme state
-    return systemTheme === 'light';
-  })();
+  const isLightMode =
+    mounted &&
+    (() => {
+      // If we have a resolved theme, use it (most reliable)
+      if (resolvedTheme) {
+        return resolvedTheme === 'light';
+      }
+
+      // If we have an explicit theme setting, use it
+      if (theme && theme !== 'system') {
+        return theme === 'light';
+      }
+
+      // For system theme, use our tracked system theme state
+      return systemTheme === 'light';
+    })();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -204,13 +206,13 @@ export default function AuthPage() {
       <div className="-z-10 absolute inset-0">
         {mounted && (
           <Lightning
-            key={`lightning-${isLightMode ? 'light' : 'dark'}-${resolvedTheme || theme || 'system'}`}
+            beamWidth={isLightMode ? 3 : 2.5}
             className="h-full w-full"
             hue={162}
             intensity={isLightMode ? 0.25 : 0.7}
-            speed={isLightMode ? 0.8 : 1.2}
+            key={`lightning-${isLightMode ? 'light' : 'dark'}-${resolvedTheme || theme || 'system'}`}
             size={isLightMode ? 2.5 : 2}
-            beamWidth={isLightMode ? 3 : 2.5}
+            speed={isLightMode ? 0.8 : 1.2}
           />
         )}
         {/* Theme-aware overlay for better contrast */}

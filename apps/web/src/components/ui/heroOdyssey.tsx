@@ -177,7 +177,10 @@ export const Lightning: React.FC<LightningProps> = ({
     const uSize = gl.getUniformLocation(program, 'uSize');
     const uBeam = gl.getUniformLocation(program, 'uBeamWidth');
 
-    const applyUniform1f = (location: WebGLUniformLocation | null, value: number) => {
+    const applyUniform1f = (
+      location: WebGLUniformLocation | null,
+      value: number
+    ) => {
       if (location) {
         gl.uniform1f(location, value);
       }
@@ -185,7 +188,7 @@ export const Lightning: React.FC<LightningProps> = ({
     const applyUniform2f = (
       location: WebGLUniformLocation | null,
       x: number,
-      y: number,
+      y: number
     ) => {
       if (location) {
         gl.uniform2f(location, x, y);
