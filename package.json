@@ -1,6 +1,7 @@
 {
   "name": "anubis-chat",
   "private": true,
+  "packageManager": "bun@1.2.19",
   "engines": {
     "bun": ">=1.0.0"
   },
