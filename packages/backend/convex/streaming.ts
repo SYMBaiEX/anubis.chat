@@ -28,19 +28,46 @@ const ALLOWED_OPENROUTER_MODELS = new Set<string>([
   'openai/gpt-oss-120b',
 ]);
 
+// Configure allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'https://www.anubis.chat',
+  'https://anubis.chat',
+  'https://anubis-chat-web.vercel.app',
+  process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : null,
+  process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : null,
+].filter(Boolean) as string[];
+
+function getCorsHeaders(origin: string | null): HeadersInit {
+  // Check if origin is allowed
+  const isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+  const allowedOrigin = isAllowed ? origin : ALLOWED_ORIGINS[0];
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
+  };
+}
+
 export const streamChat = httpAction(async (ctx, request) => {
+  const origin = request.headers.get('origin');
+  
   // Handle OPTIONS preflight request
   if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers':
-          'Content-Type, Authorization, X-Requested-With, Accept',
-        'Access-Control-Max-Age': '86400',
-      },
-    });
+    // Validate pre-flight headers
+    const requestMethod = request.headers.get('Access-Control-Request-Method');
+    const requestHeaders = request.headers.get('Access-Control-Request-Headers');
+    
+    if (origin && requestMethod && requestHeaders) {
+      return new Response(null, {
+        status: 204,
+        headers: getCorsHeaders(origin),
+      });
+    }
+    
+    return new Response(null, { status: 400 });
   }
 
   // Parse request body
@@ -72,7 +99,13 @@ export const streamChat = httpAction(async (ctx, request) => {
     attachments,
   } = body;
 
-  // Get the user by wallet address first
+  // Authenticate user with proper Convex Auth
+  // Note: For HTTP actions, authentication should be handled via Authorization header
+  // with a JWT token from your auth provider
+  const authHeader = request.headers.get('Authorization');
+  
+  // For now, we'll use wallet address verification as a temporary measure
+  // TODO: Implement proper JWT validation with @convex-dev/auth
   const user = await ctx.runQuery(api.users.getUserByWallet, {
     walletAddress,
   });
@@ -84,11 +117,7 @@ export const streamChat = httpAction(async (ctx, request) => {
         status: 401,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers':
-            'Content-Type, Authorization, X-Requested-With, Accept',
-          'Access-Control-Allow-Credentials': 'true',
+          ...getCorsHeaders(origin),
         },
       }
     );
