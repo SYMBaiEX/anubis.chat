@@ -65,6 +65,5 @@
     "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
       "npx ultracite format"
     ]
-  },
-  "packageManager": "bun@1.2.18"
+  }
 }
