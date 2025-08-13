@@ -217,11 +217,10 @@ export default function AuthPage() {
         )}
         {/* Theme-aware overlay for better contrast */}
         <div
-          className={`absolute inset-0 transition-all duration-700 ${
-            isLightMode
-              ? 'bg-gradient-to-b from-white/90 via-white/85 to-white/80 backdrop-blur-[2px]'
-              : 'bg-gradient-to-b from-black/40 via-black/30 to-transparent'
-          }`}
+          className={`absolute inset-0 transition-all duration-700 ${isLightMode
+            ? 'bg-gradient-to-b from-white/90 via-white/85 to-white/80 backdrop-blur-[2px]'
+            : 'bg-gradient-to-b from-black/40 via-black/30 to-transparent'
+            }`}
         />
       </div>
 
@@ -230,11 +229,10 @@ export default function AuthPage() {
         animate={{
           backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
         }}
-        className={`absolute inset-0 transition-all duration-700 ${
-          isLightMode
-            ? 'bg-gradient-to-br from-primary/6 via-emerald-500/3 to-background/90'
-            : 'bg-gradient-to-br from-primary/10 via-emerald-500/5 to-background'
-        }`}
+        className={`absolute inset-0 transition-all duration-700 ${isLightMode
+          ? 'bg-gradient-to-br from-primary/6 via-emerald-500/3 to-background/90'
+          : 'bg-gradient-to-br from-primary/10 via-emerald-500/5 to-background'
+          }`}
         style={{ backgroundSize: '200% 200%' }}
         transition={{
           duration: 20,
@@ -245,9 +243,8 @@ export default function AuthPage() {
 
       {/* Grid Background with enhanced theme-aware opacity */}
       <div
-        className={`absolute inset-0 bg-[url('/grid.svg')] bg-center transition-opacity duration-700 ${
-          isLightMode ? 'opacity-25' : 'opacity-10'
-        } [mask-image:radial-gradient(white,transparent_70%)]`}
+        className={`absolute inset-0 bg-[url('/grid.svg')] bg-center transition-opacity duration-700 ${isLightMode ? 'opacity-25' : 'opacity-10'
+          } [mask-image:radial-gradient(white,transparent_70%)]`}
       />
 
       <LandingHeader />
@@ -665,7 +662,7 @@ export default function AuthPage() {
                                 <p className="text-muted-foreground text-xs">
                                   Balance
                                 </p>
-                                <p className="flex items-center gap-1 font-bold">
+                                <div className="flex items-center gap-1 font-bold">
                                   <motion.div
                                     animate={{ rotate: [0, 360] }}
                                     transition={{
@@ -677,7 +674,7 @@ export default function AuthPage() {
                                     <Coins className="h-4 w-4 text-yellow-500" />
                                   </motion.div>
                                   {balance?.toFixed(3)} SOL
-                                </p>
+                                </div>
                               </motion.div>
                             </div>
                           </motion.div>

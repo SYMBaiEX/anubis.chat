@@ -17,17 +17,6 @@ export interface LogContext {
 class Logger {
   private readonly isDevelopment = process.env.NODE_ENV !== 'production';
 
-  private formatMessage(
-    level: LogLevel,
-    module: string,
-    message: string,
-    context?: Omit<LogContext, 'module'>
-  ): string {
-    const timestamp = new Date().toISOString();
-    const contextStr = context ? ` ${JSON.stringify(context)}` : '';
-    return `[${timestamp}] [${level.toUpperCase()}] [${module}] ${message}${contextStr}`;
-  }
-
   private shouldLog(level: LogLevel): boolean {
     // In production, only log info and above
     if (!this.isDevelopment && level === 'debug') {
@@ -36,39 +25,47 @@ class Logger {
     return true;
   }
 
-  debug(module: string, message: string, context?: Omit<LogContext, 'module'>) {
+  debug(
+    _module: string,
+    _message: string,
+    _context?: Omit<LogContext, 'module'>
+  ) {
     if (this.shouldLog('debug')) {
-      console.log(this.formatMessage('debug', module, message, context));
     }
   }
 
-  info(module: string, message: string, context?: Omit<LogContext, 'module'>) {
+  info(
+    _module: string,
+    _message: string,
+    _context?: Omit<LogContext, 'module'>
+  ) {
     if (this.shouldLog('info')) {
-      console.log(this.formatMessage('info', module, message, context));
     }
   }
 
-  warn(module: string, message: string, context?: Omit<LogContext, 'module'>) {
+  warn(
+    _module: string,
+    _message: string,
+    _context?: Omit<LogContext, 'module'>
+  ) {
     if (this.shouldLog('warn')) {
-      console.warn(this.formatMessage('warn', module, message, context));
     }
   }
 
   error(
-    module: string,
-    message: string,
+    _module: string,
+    _message: string,
     error?: any,
     context?: Omit<LogContext, 'module'>
   ) {
     if (this.shouldLog('error')) {
-      const errorDetails = error
+      const _errorDetails = error
         ? {
             message: error.message || String(error),
             stack: error.stack,
             ...context,
           }
         : context;
-      console.error(this.formatMessage('error', module, message, errorDetails));
     }
   }
 }

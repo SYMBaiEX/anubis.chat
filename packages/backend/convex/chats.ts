@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { api } from './_generated/api';
-import type { Doc, Id } from './_generated/dataModel';
-import { action, internalMutation, mutation, query } from './_generated/server';
+import type { Doc } from './_generated/dataModel';
+import { action, mutation, query } from './_generated/server';
 
 // Type definitions
 type TitleGenerationResult =
@@ -381,7 +381,7 @@ function extractTitleFromMessage(content: string): string {
     const words = cleaned.split(' ');
     cleaned = words.slice(0, 6).join(' ');
     if (cleaned.length > 50) {
-      cleaned = cleaned.substring(0, 47) + '...';
+      cleaned = `${cleaned.substring(0, 47)}...`;
     }
   }
 
@@ -400,11 +400,11 @@ function truncateTitle(title: string, maxLength: number): string {
 
   if (lastSpace > maxLength * 0.7) {
     // If we have a reasonable word boundary, use it
-    return truncated.substring(0, lastSpace) + '...';
+    return `${truncated.substring(0, lastSpace)}...`;
   }
 
   // Otherwise just truncate
-  return truncated + '...';
+  return `${truncated}...`;
 }
 
 // Generate a title for a chat based on its messages
@@ -466,7 +466,7 @@ export const generateAndUpdateTitle = action({
 
     try {
       // Generate title using AI - we'll use a simple prompt
-      const prompt = `Generate a concise, descriptive title (3-6 words) for this conversation. The title should capture the main topic or purpose. Return only the title text, nothing else.
+      const _prompt = `Generate a concise, descriptive title (3-6 words) for this conversation. The title should capture the main topic or purpose. Return only the title text, nothing else.
 
 Conversation:
 ${conversationText}
@@ -513,7 +513,6 @@ Title:`;
 
       return { success: true, title: generatedTitle };
     } catch (error) {
-      console.error('Error generating title:', error);
       return {
         success: false,
         error:

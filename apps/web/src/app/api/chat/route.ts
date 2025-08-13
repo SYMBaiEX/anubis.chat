@@ -74,9 +74,7 @@ export async function POST(req: NextRequest) {
           temperature = chat.temperature || temperature;
           maxTokens = chat.maxTokens || maxTokens;
         }
-      } catch (error) {
-        console.error('Failed to fetch chat settings:', error);
-      }
+      } catch (_error) {}
     }
 
     // Convert UI messages to model messages
@@ -109,8 +107,6 @@ export async function POST(req: NextRequest) {
       }),
     });
   } catch (error: any) {
-    console.error('Chat API error:', error);
-
     // Return error response
     return new Response(
       JSON.stringify({

@@ -100,7 +100,7 @@ function createMemoryFromMessage(
   logger.debug('Processing message', {
     contentLength: content.length,
     minLength: MIN_MESSAGE_LENGTH,
-    contentPreview: content.slice(0, 50) + '...',
+    contentPreview: `${content.slice(0, 50)}...`,
   });
 
   // Check if content is meaningful enough to store
@@ -132,8 +132,12 @@ function createMemoryFromMessage(
   let importance = 0.4; // Base importance
 
   // Boost importance for longer, more detailed messages
-  if (content.length > 100) importance += 0.1;
-  if (content.length > 200) importance += 0.1;
+  if (content.length > 100) {
+    importance += 0.1;
+  }
+  if (content.length > 200) {
+    importance += 0.1;
+  }
 
   // Boost for personal indicators
   const personalIndicators = ['i ', 'my ', "i'm ", 'i am ', 'we ', 'our '];
@@ -145,7 +149,9 @@ function createMemoryFromMessage(
   }
 
   // Boost for question marks (indicates user is asking for help)
-  if (content.includes('?')) importance += 0.1;
+  if (content.includes('?')) {
+    importance += 0.1;
+  }
 
   // Cap importance at 0.8 for automated extraction
   importance = Math.min(importance, 0.8);
@@ -169,7 +175,7 @@ function createMemoryFromMessage(
   }
 
   // Extract simple tags from content
-  const words = contentLower.split(WHITESPACE_REGEX);
+  const _words = contentLower.split(WHITESPACE_REGEX);
   const tags: string[] = [];
 
   // Add tags for common topics

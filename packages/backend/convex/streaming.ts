@@ -289,7 +289,9 @@ export const streamChat = httpAction(async (ctx, request) => {
             const u = await ctx.storage.getUrl(
               a.fileId as unknown as Id<'_storage'>
             );
-            if (u) url = u;
+            if (u) {
+              url = u;
+            }
           } catch (_e) {}
         }
         const label =
@@ -573,9 +575,9 @@ export const streamChat = httpAction(async (ctx, request) => {
   }
 
   let result;
-  const finalText = '';
-  let capturedReasoningSteps: string[] | undefined;
-  const totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+  const _finalText = '';
+  let _capturedReasoningSteps: string[] | undefined;
+  const _totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
   // Determine maxSteps based on reasoning mode
   const maxSteps = useReasoning ? 10 : Math.floor(Math.random() * 3) + 1; // Reasoning: 10, Regular: 1-3
@@ -634,7 +636,7 @@ Use your judgment - only use the thinking section if the query truly benefits fr
             /<(thinking|think)>([\s\S]*?)<\/(thinking|think)>/
           );
 
-          if (thinkingMatch && thinkingMatch[2]) {
+          if (thinkingMatch?.[2]) {
             const raw = thinkingMatch[2];
             const parts = raw
               .split(/Step \d+:/)
@@ -659,7 +661,7 @@ Use your judgment - only use the thinking section if the query truly benefits fr
             // Replace the thinking tags with formatted reasoning
             sanitizedText = sanitizedText.replace(
               /<(thinking|think)>[\s\S]*?<\/(thinking|think)>/,
-              formattedReasoning + '\n\n---\n\n## Response\n\n'
+              `${formattedReasoning}\n\n---\n\n## Response\n\n`
             );
           }
         } else {
@@ -669,7 +671,7 @@ Use your judgment - only use the thinking section if the query truly benefits fr
           );
 
           // Capture reasoning steps for metadata
-          if (thinkingMatch && thinkingMatch[2]) {
+          if (thinkingMatch?.[2]) {
             const raw = thinkingMatch[2];
             const parts = raw
               .split(/Step \d+:/)

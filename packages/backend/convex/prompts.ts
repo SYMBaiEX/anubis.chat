@@ -6,7 +6,9 @@ export const listFolders = query({
   args: { parentId: v.optional(v.id('promptFolders')) },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user) return [];
+    if (!user) {
+      return [];
+    }
     const q = ctx.db
       .query('promptFolders')
       .withIndex('by_parent', (x) =>
@@ -24,7 +26,9 @@ export const listPrompts = query({
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user) return [];
+    if (!user) {
+      return [];
+    }
     const limit = Math.min(args.limit ?? 100, 200);
     if (args.search && args.search.trim() !== '') {
       const byTitle = await ctx.db
@@ -58,7 +62,9 @@ export const getTopPrompts = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user) return [];
+    if (!user) {
+      return [];
+    }
     const limit = Math.min(args.limit ?? 3, 10);
     return await ctx.db
       .query('prompts')
@@ -117,12 +123,22 @@ export const updatePrompt = mutation({
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
     const prompt = await ctx.db.get(args.id);
-    if (!prompt || prompt.ownerId !== user._id) throw new Error('Not found');
+    if (!prompt || prompt.ownerId !== user._id) {
+      throw new Error('Not found');
+    }
     const updates: Record<string, any> = { updatedAt: Date.now() };
-    if (args.title !== undefined) updates.title = args.title;
-    if (args.content !== undefined) updates.content = args.content;
-    if (args.folderId !== undefined) updates.folderId = args.folderId;
-    if (args.archived !== undefined) updates.isArchived = args.archived;
+    if (args.title !== undefined) {
+      updates.title = args.title;
+    }
+    if (args.content !== undefined) {
+      updates.content = args.content;
+    }
+    if (args.folderId !== undefined) {
+      updates.folderId = args.folderId;
+    }
+    if (args.archived !== undefined) {
+      updates.isArchived = args.archived;
+    }
     await ctx.db.patch(args.id, updates);
     return await ctx.db.get(args.id);
   },
@@ -133,7 +149,9 @@ export const deletePrompt = mutation({
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
     const prompt = await ctx.db.get(args.id);
-    if (!prompt || prompt.ownerId !== user._id) throw new Error('Not found');
+    if (!prompt || prompt.ownerId !== user._id) {
+      throw new Error('Not found');
+    }
     await ctx.db.delete(args.id);
     return { success: true };
   },
@@ -144,7 +162,9 @@ export const recordUsage = mutation({
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
     const prompt = await ctx.db.get(args.id);
-    if (!prompt || prompt.ownerId !== user._id) throw new Error('Not found');
+    if (!prompt || prompt.ownerId !== user._id) {
+      throw new Error('Not found');
+    }
     await ctx.db.patch(args.id, {
       usageCount: (prompt.usageCount || 0) + 1,
       lastUsedAt: Date.now(),
@@ -162,11 +182,17 @@ export const updateFolder = mutation({
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
     const folder = await ctx.db.get(args.id);
-    if (!folder || folder.ownerId !== user._id) throw new Error('Not found');
+    if (!folder || folder.ownerId !== user._id) {
+      throw new Error('Not found');
+    }
 
     const updates: Record<string, any> = { updatedAt: Date.now() };
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.parentId !== undefined) updates.parentId = args.parentId;
+    if (args.name !== undefined) {
+      updates.name = args.name;
+    }
+    if (args.parentId !== undefined) {
+      updates.parentId = args.parentId;
+    }
 
     await ctx.db.patch(args.id, updates);
     return await ctx.db.get(args.id);
@@ -178,7 +204,9 @@ export const deleteFolder = mutation({
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
     const folder = await ctx.db.get(args.id);
-    if (!folder || folder.ownerId !== user._id) throw new Error('Not found');
+    if (!folder || folder.ownerId !== user._id) {
+      throw new Error('Not found');
+    }
 
     // Check if folder has child folders
     const childFolders = await ctx.db
@@ -217,8 +245,9 @@ export const movePrompt = mutation({
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
     const prompt = await ctx.db.get(args.promptId);
-    if (!prompt || prompt.ownerId !== user._id)
+    if (!prompt || prompt.ownerId !== user._id) {
       throw new Error('Prompt not found');
+    }
 
     // If moving to a folder, verify the folder exists and belongs to user
     if (args.targetFolderId) {
@@ -239,9 +268,11 @@ export const movePrompt = mutation({
 
 export const getFolderHierarchy = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const user = await getCurrentUser(ctx);
-    if (!user) return [];
+    if (!user) {
+      return [];
+    }
 
     // Get all folders for the user
     const allFolders = await ctx.db

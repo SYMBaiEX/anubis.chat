@@ -258,7 +258,9 @@ export const updateMetadata = mutation({
         const url = await ctx.storage.getUrl(
           updates.storageId as Id<'_storage'>
         );
-        if (url) patch.url = url;
+        if (url) {
+          patch.url = url;
+        }
       } catch (_e) {}
     }
 
@@ -360,9 +362,7 @@ export const getStats = query({
 
 export const generateUploadUrl = httpAction(async (ctx) => {
   const url = await ctx.storage.generateUploadUrl();
-  return new Response(JSON.stringify({ url }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return Response.json({ url });
 });
 
 /**
@@ -419,7 +419,9 @@ export const serveStorage = httpAction(async (ctx, request) => {
     return new Response('Missing id', { status: 400 });
   }
   const blob = await ctx.storage.get(storageId as Id<'_storage'>);
-  if (!blob) return new Response('Not found', { status: 404 });
+  if (!blob) {
+    return new Response('Not found', { status: 404 });
+  }
   // Best-effort: let browser sniff if contentType unknown
   return new Response(blob);
 });
@@ -463,19 +465,16 @@ export const registerUpload = httpAction(async (ctx, request) => {
       url: url ?? undefined,
     });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        file: {
-          fileId: file?.fileId,
-          url: file?.url,
-          mimeType: file?.mimeType,
-          size: file?.size,
-          storageId: file?.storageId,
-        },
-      }),
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+    return Response.json({
+      success: true,
+      file: {
+        fileId: file?.fileId,
+        url: file?.url,
+        mimeType: file?.mimeType,
+        size: file?.size,
+        storageId: file?.storageId,
+      },
+    });
   } catch (e) {
     return new Response(
       JSON.stringify({ success: false, error: (e as Error).message }),

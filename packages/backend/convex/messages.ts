@@ -233,7 +233,6 @@ async function checkAndScheduleTitleGeneration(
     // Get the chat to check its title
     const chat = await ctx.db.get(chatId);
     if (!chat) {
-      console.warn('Chat not found for title generation:', chatId);
       return;
     }
 
@@ -262,7 +261,6 @@ async function checkAndScheduleTitleGeneration(
       .unique();
 
     if (!user) {
-      console.warn('User not found for wallet:', walletAddress);
       return;
     }
 
@@ -292,7 +290,6 @@ async function checkAndScheduleTitleGeneration(
 
       // Check if message has enough content to generate a title from
       if (!firstMessage.content || firstMessage.content.trim().length < 3) {
-        console.log('Message too short for title generation');
         return;
       }
 
@@ -302,13 +299,8 @@ async function checkAndScheduleTitleGeneration(
         chatId,
         ownerId: user._id,
       });
-
-      console.log('Scheduled title generation for chat:', chatId);
     }
-  } catch (error) {
-    // Log error but don't fail the message creation
-    console.error('Error checking for title generation:', error);
-  }
+  } catch (_error) {}
 }
 
 // Update message content (for editing)
