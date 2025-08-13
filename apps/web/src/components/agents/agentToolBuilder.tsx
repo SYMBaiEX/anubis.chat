@@ -444,10 +444,10 @@ export function AgentToolBuilder({
                         <div>
                           <Label className="text-xs">Parameters</Label>
                           <div className="mt-2 space-y-1">
-                            {tool.parameters.map((param, index) => (
+                            {tool.parameters.map((param) => (
                               <div
                                 className="flex items-center justify-between rounded bg-muted/50 px-2 py-1 text-xs"
-                                key={index}
+                                key={`${param.name}-${param.type}`}
                               >
                                 <span>
                                   <code>{param.name}</code>
@@ -749,7 +749,7 @@ export function AgentToolBuilder({
 
                 {(editingTool?.parameters || newTool.parameters || []).map(
                   (param, index) => (
-                    <Card key={index}>
+                    <Card key={`${param.name}-${index}`}>
                       <CardContent className="pt-4">
                         <div className="grid gap-3">
                           <div className="grid grid-cols-2 gap-3">

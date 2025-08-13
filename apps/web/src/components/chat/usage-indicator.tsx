@@ -113,8 +113,18 @@ export function UsageIndicator({
           <TooltipContent>
             <div className="space-y-1 text-sm">
               <p>{limits.messagesRemaining} messages remaining</p>
+              {subscription.messageCredits > 0 && (
+                <p className="text-green-600 dark:text-green-400">
+                  +{subscription.messageCredits} purchased credits
+                </p>
+              )}
               {subscription.tier !== 'free' && (
                 <p>{limits.premiumMessagesRemaining} premium messages left</p>
+              )}
+              {subscription.premiumMessageCredits > 0 && (
+                <p className="text-amber-600 dark:text-amber-400">
+                  +{subscription.premiumMessageCredits} premium credits
+                </p>
               )}
               <p>{limits.daysUntilReset} days until reset</p>
             </div>
@@ -196,9 +206,16 @@ export function UsageIndicator({
               <MessageCircle className="h-4 w-4 text-muted-foreground" />
               <span>Messages</span>
             </div>
-            <span className={getUsageColor(usagePercentage)}>
-              {subscription.messagesUsed}/{subscription.messagesLimit}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={getUsageColor(usagePercentage)}>
+                {subscription.messagesUsed}/{subscription.messagesLimit}
+              </span>
+              {subscription.messageCredits > 0 && (
+                <Badge className="text-xs" variant="secondary">
+                  +{subscription.messageCredits}
+                </Badge>
+              )}
+            </div>
           </div>
           <Progress
             className="h-2"
@@ -227,10 +244,17 @@ export function UsageIndicator({
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <span className={getUsageColor(premiumUsagePercentage)}>
-                {subscription.premiumMessagesUsed}/
-                {subscription.premiumMessagesLimit}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={getUsageColor(premiumUsagePercentage)}>
+                  {subscription.premiumMessagesUsed}/
+                  {subscription.premiumMessagesLimit}
+                </span>
+                {subscription.premiumMessageCredits > 0 && (
+                  <Badge className="text-xs" variant="secondary">
+                    +{subscription.premiumMessageCredits}
+                  </Badge>
+                )}
+              </div>
             </div>
             <Progress
               className="h-2"

@@ -52,7 +52,9 @@
     "remark-frontmatter": "^5.0.0",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
-    "tw-animate-css": "^1.3.6"
+    "serpapi": "^2.2.1",
+    "tw-animate-css": "^1.3.6",
+    "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
     "turbo": "^2.5.4",

@@ -2,18 +2,28 @@
 
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
-import { useMutation, useQuery } from 'convex/react';
-import { useCallback, useState } from 'react';
+import { useAction, useMutation, useQuery } from 'convex/react';
+import { useCallback, useEffect, useState } from 'react';
 import type { StreamingMessage as UIStreamingMessage } from '@/lib/types/api';
 import { MessageRole } from '@/lib/types/api';
+import { createModuleLogger } from '@/lib/utils/logger';
+
+const log = createModuleLogger('useConvexChat');
 
 // Avoid duplicate identifier by reusing the imported name directly
 type StreamingMessage = UIStreamingMessage;
 
+/**
+ * Convex-native chat hook with WebSocket streaming support
+ * Uses Convex's real-time subscriptions for true WebSocket communication
+ */
 export function useConvexChat(chatId: string | undefined) {
   const [streamingMessage, setStreamingMessage] =
     useState<StreamingMessage | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [sessionId, setSessionId] = useState<Id<'streamingSessions'> | null>(
+    null
+  );
   const [lastRequestAt, setLastRequestAt] = useState<number | null>(null);
 
   // Convex queries and mutations - using authenticated queries
@@ -22,9 +32,66 @@ export function useConvexChat(chatId: string | undefined) {
     chatId ? { chatId: chatId as Id<'chats'> } : 'skip'
   );
 
-  const _createMessage = useMutation(api.messagesAuth.createMyMessage);
+  const createMessage = useMutation(api.messagesAuth.createMyMessage);
+  const createSession = useMutation(api.streaming.createStreamingSession);
+  const streamWithWebSocket = useAction(api.streaming.streamWithWebSocket);
 
-  // Send message with streaming response
+  // Subscribe to streaming updates (WebSocket connection!)
+  const streamingSession = useQuery(
+    api.streaming.subscribeToStream,
+    sessionId ? { sessionId } : 'skip'
+  );
+
+  // Update streaming message when session updates
+  useEffect(() => {
+    if (streamingSession) {
+      const isActive =
+        streamingSession.status === 'streaming' ||
+        streamingSession.status === 'initializing';
+      setIsStreaming(isActive);
+
+      if (streamingSession.content || streamingSession.status === 'streaming') {
+        setStreamingMessage({
+          id: `stream-${sessionId}`,
+          content: streamingSession.content,
+          role: MessageRole.ASSISTANT as any,
+          isStreaming: streamingSession.status === 'streaming',
+          metadata:
+            streamingSession.status === 'completed'
+              ? {
+                  usage: streamingSession.tokens
+                    ? {
+                        inputTokens: streamingSession.tokens.input,
+                        outputTokens: streamingSession.tokens.output,
+                        totalTokens:
+                          streamingSession.tokens.input +
+                          streamingSession.tokens.output,
+                      }
+                    : undefined,
+                }
+              : undefined,
+        });
+      }
+
+      if (streamingSession.status === 'completed') {
+        // Clean up after completion with small delay for smooth transition
+        setTimeout(() => {
+          setStreamingMessage(null);
+          setSessionId(null);
+          setIsStreaming(false);
+        }, 100);
+      }
+
+      if (streamingSession.status === 'error') {
+        log.error('Streaming error', { error: streamingSession.error });
+        setIsStreaming(false);
+        setSessionId(null);
+        setStreamingMessage(null);
+      }
+    }
+  }, [streamingSession, sessionId]);
+
+  // Send message with WebSocket streaming
   const sendMessage = useCallback(
     async (
       content: string,
@@ -48,96 +115,56 @@ export function useConvexChat(chatId: string | undefined) {
       setLastRequestAt(Date.now());
 
       try {
-        // Get Convex deployment URL
-        const deploymentUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(
-          'wss://',
-          'https://'
-        ).replace('.convex.cloud', '.convex.site');
-
-        if (!deploymentUrl) {
-          throw new Error('Convex deployment URL not configured');
-        }
-
-        // Make request to Convex HTTP action
-        const response = await fetch(`${deploymentUrl}/stream-chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            chatId,
-            walletAddress,
-            content,
-            model, // Pass the selected model to the backend
-            useReasoning,
-            attachments,
-          }),
+        // Create user message first
+        const userMessageId = await createMessage({
+          chatId: chatId as Id<'chats'>,
+          content,
+          role: 'user',
+          attachments,
         });
 
-        if (!response.ok) {
-          // Try to get error details
-          const errorText = await response.text();
-
-          let errorMessage = `Failed to stream response: ${response.status}`;
-          try {
-            const errorData = JSON.parse(errorText);
-            if (errorData.error) {
-              errorMessage = errorData.error;
-            }
-          } catch {
-            // If not JSON, use the raw text
-            if (errorText) {
-              errorMessage = errorText;
-            }
-          }
-
-          throw new Error(errorMessage);
+        if (!userMessageId) {
+          throw new Error('Failed to create user message');
         }
 
-        if (!response.body) {
-          throw new Error('No response body');
-        }
-
-        // Create streaming message placeholder
-        const tempId = `streaming-${Date.now()}`;
-        setStreamingMessage({
-          id: tempId,
-          content: '',
-          role: MessageRole.ASSISTANT as any,
-          isStreaming: true,
+        // Create streaming session for WebSocket
+        const newSessionId = await createSession({
+          chatId: chatId as Id<'chats'>,
+          messageId: userMessageId,
         });
 
-        // Process streaming response
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let accumulatedContent = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-
-          if (done) {
-            break;
-          }
-
-          const chunk = decoder.decode(value, { stream: true });
-
-          // The response might be in plain text format
-          // Just accumulate the chunks as they come
-          accumulatedContent += chunk;
-
-          // Update streaming message
-          setStreamingMessage({
-            id: tempId,
-            content: accumulatedContent,
-            role: MessageRole.ASSISTANT as any,
-            isStreaming: true,
-          });
+        if (!newSessionId) {
+          throw new Error('Failed to create streaming session');
         }
-      } finally {
+
+        setSessionId(newSessionId);
+        log.debug('WebSocket streaming session created', {
+          sessionId: newSessionId,
+        });
+
+        // Start streaming in background (WebSocket handles real-time updates)
+        streamWithWebSocket({
+          sessionId: newSessionId,
+          chatId: chatId as Id<'chats'>,
+          content,
+          model,
+          temperature: undefined,
+          maxTokens: undefined,
+          useReasoning,
+          attachments,
+        }).catch((err) => {
+          log.error('WebSocket streaming failed', err);
+          setIsStreaming(false);
+          setStreamingMessage(null);
+          setSessionId(null);
+        });
+      } catch (error: any) {
+        log.error('Failed to send message', error);
         setIsStreaming(false);
+        throw error;
       }
     },
-    [chatId]
+    [chatId, createMessage, createSession, streamWithWebSocket]
   );
 
   // Combine regular messages with streaming message
@@ -174,5 +201,7 @@ export function useConvexChat(chatId: string | undefined) {
     sendMessage,
     isStreaming,
     streamingMessage,
+    sessionId,
+    streamingStatus: streamingSession?.status,
   };
 }

@@ -127,20 +127,18 @@ const logger: Logger =
     : pino(pinoConfig, pino.destination({ sync: false }));
 
 // Export logger interface with enhanced methods
+export type LogMeta = Record<string, unknown>;
+
 export interface AppLogger {
-  fatal(message: string, meta?: Record<string, any>): void;
-  error(message: string, meta?: Record<string, any>): void;
-  warn(message: string, meta?: Record<string, any>): void;
-  info(message: string, meta?: Record<string, any>): void;
-  debug(message: string, meta?: Record<string, any>): void;
-  trace(message: string, meta?: Record<string, any>): void;
-  apiRequest(event: string, meta?: Record<string, any>): void;
-  dbOperation(event: string, meta?: Record<string, any>): void;
-  auth(
-    message: string,
-    walletAddress?: string,
-    meta?: Record<string, any>
-  ): void;
+  fatal(message: string, meta?: LogMeta): void;
+  error(message: string, meta?: LogMeta): void;
+  warn(message: string, meta?: LogMeta): void;
+  info(message: string, meta?: LogMeta): void;
+  debug(message: string, meta?: LogMeta): void;
+  trace(message: string, meta?: LogMeta): void;
+  apiRequest(event: string, meta?: LogMeta): void;
+  dbOperation(event: string, meta?: LogMeta): void;
+  auth(message: string, walletAddress?: string, meta?: LogMeta): void;
 }
 
 // Enhanced logger wrapper with additional functionality
@@ -151,7 +149,7 @@ class EnhancedLogger implements AppLogger {
     this.pino = pinoLogger;
   }
 
-  fatal(message: string, meta?: Record<string, any>): void {
+  fatal(message: string, meta?: LogMeta): void {
     if (meta) {
       this.pino.fatal(meta, message);
     } else {
@@ -159,7 +157,7 @@ class EnhancedLogger implements AppLogger {
     }
   }
 
-  error(message: string, meta?: Record<string, any>): void {
+  error(message: string, meta?: LogMeta): void {
     if (meta) {
       this.pino.error(meta, message);
     } else {
@@ -167,7 +165,7 @@ class EnhancedLogger implements AppLogger {
     }
   }
 
-  warn(message: string, meta?: Record<string, any>): void {
+  warn(message: string, meta?: LogMeta): void {
     if (meta) {
       this.pino.warn(meta, message);
     } else {
@@ -175,7 +173,7 @@ class EnhancedLogger implements AppLogger {
     }
   }
 
-  info(message: string, meta?: Record<string, any>): void {
+  info(message: string, meta?: LogMeta): void {
     if (meta) {
       this.pino.info(meta, message);
     } else {
@@ -183,7 +181,7 @@ class EnhancedLogger implements AppLogger {
     }
   }
 
-  debug(message: string, meta?: Record<string, any>): void {
+  debug(message: string, meta?: LogMeta): void {
     if (meta) {
       this.pino.debug(meta, message);
     } else {
@@ -191,7 +189,7 @@ class EnhancedLogger implements AppLogger {
     }
   }
 
-  trace(message: string, meta?: Record<string, any>): void {
+  trace(message: string, meta?: LogMeta): void {
     if (meta) {
       this.pino.trace(meta, message);
     } else {
@@ -199,7 +197,7 @@ class EnhancedLogger implements AppLogger {
     }
   }
 
-  apiRequest(event: string, meta?: Record<string, any>): void {
+  apiRequest(event: string, meta?: LogMeta): void {
     this.pino.info(
       {
         logType: 'api_request',
@@ -210,7 +208,7 @@ class EnhancedLogger implements AppLogger {
     );
   }
 
-  dbOperation(event: string, meta?: Record<string, any>): void {
+  dbOperation(event: string, meta?: LogMeta): void {
     this.pino.debug(
       {
         logType: 'db_operation',
@@ -221,11 +219,7 @@ class EnhancedLogger implements AppLogger {
     );
   }
 
-  auth(
-    message: string,
-    walletAddress?: string,
-    meta?: Record<string, any>
-  ): void {
+  auth(message: string, walletAddress?: string, meta?: LogMeta): void {
     this.pino.info(
       {
         logType: 'auth',
@@ -249,8 +243,7 @@ export function createModuleLogger(module: string): AppLogger {
 // Export default logger
 export default appLogger;
 
-// Re-export pino for direct use if needed
-export { pino };
+// Intentionally do not re-export imported modules to satisfy style rules
 
 // Usage examples:
 // import logger from '@/lib/utils/logger';

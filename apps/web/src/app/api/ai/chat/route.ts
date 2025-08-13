@@ -77,7 +77,9 @@ export async function POST(req: Request) {
       messages: coreMessages,
       tools,
       maxRetries: 3,
-      onFinish: (_event) => {},
+      onFinish: () => {
+        // no-op
+      },
     });
 
     // Return the streaming response

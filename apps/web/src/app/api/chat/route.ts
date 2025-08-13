@@ -7,8 +7,14 @@ import { convertToModelMessages, streamText, type UIMessage } from 'ai';
 import { ConvexHttpClient } from 'convex/browser';
 import type { NextRequest } from 'next/server';
 
-// Initialize Convex client
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+// Lazy initializer to avoid non-null assertions and ensure clear errors
+function getConvexClient(): ConvexHttpClient {
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!url) {
+    throw new Error('Missing NEXT_PUBLIC_CONVEX_URL');
+  }
+  return new ConvexHttpClient(url);
+}
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -50,7 +56,7 @@ export async function POST(req: NextRequest) {
       messages: UIMessage[];
       model?: string;
       chatId?: string;
-      data?: any;
+      data?: unknown;
     } = await req.json();
 
     // Get chat settings from Convex if chatId is provided
@@ -61,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     if (chatId) {
       try {
-        const chat = await convex.query(api.chats.getById, {
+        const chat = await getConvexClient().query(api.chats.getById, {
           id: chatId as Id<'chats'>,
         });
 
@@ -74,14 +80,17 @@ export async function POST(req: NextRequest) {
           temperature = chat.temperature || temperature;
           maxTokens = chat.maxTokens || maxTokens;
         }
-      } catch (_error) {}
+      } catch (_error) {
+        // Intentionally ignore errors fetching chat settings; defaults will be used
+      }
     }
 
     // Convert UI messages to model messages
     const modelMessages = convertToModelMessages(messages);
 
     // Check if enhanced reasoning is requested
-    const useReasoning = data?.useReasoning === true;
+    const useReasoning =
+      (data as { useReasoning?: boolean })?.useReasoning === true;
 
     // Stream the response
     const result = streamText({
@@ -106,11 +115,14 @@ export async function POST(req: NextRequest) {
         chatId,
       }),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Return error response
     return new Response(
       JSON.stringify({
-        error: error.message || 'An error occurred during chat processing',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'An error occurred during chat processing',
       }),
       {
         status: 500,

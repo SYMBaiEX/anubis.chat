@@ -1,3 +1,4 @@
+import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
@@ -27,6 +28,178 @@ export const getByChatId = query({
 
     // Return in chronological order (oldest first)
     return messages.reverse();
+  },
+});
+
+/**
+ * Edit a message content
+ */
+export const editMessage = mutation({
+  args: {
+    messageId: v.id('messages'),
+    content: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Get authenticated user
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error('Not authenticated');
+    }
+
+    // Get the message
+    const message = await ctx.db.get(args.messageId);
+    if (!message) {
+      throw new Error('Message not found');
+    }
+
+    // Get the chat to verify ownership
+    const chat = await ctx.db.get(message.chatId);
+    if (!chat || chat.ownerId !== userId) {
+      throw new Error('Not authorized to edit this message');
+    }
+
+    // Only allow editing user messages
+    if (message.role !== 'user') {
+      throw new Error('Can only edit user messages');
+    }
+
+    // Update the message
+    await ctx.db.patch(args.messageId, {
+      content: args.content,
+      metadata: {
+        ...message.metadata,
+        edited: true as any,
+        editedAt: Date.now() as any,
+      } as any,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Regenerate the last assistant message in a chat
+ */
+/**
+ * Add or remove a reaction to a message
+ */
+export const toggleReaction = mutation({
+  args: {
+    messageId: v.id('messages'),
+    reaction: v.union(
+      v.literal('like'),
+      v.literal('dislike'),
+      v.literal('love'),
+      v.literal('celebrate'),
+      v.literal('insightful')
+    ),
+  },
+  handler: async (ctx, args) => {
+    // Get authenticated user
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error('Not authenticated');
+    }
+
+    // Get the message
+    const message = await ctx.db.get(args.messageId);
+    if (!message) {
+      throw new Error('Message not found');
+    }
+
+    // Get the chat to verify access
+    const chat = await ctx.db.get(message.chatId);
+    if (!chat || chat.ownerId !== userId) {
+      throw new Error('Not authorized to react to this message');
+    }
+
+    // Get or initialize reactions
+    const reactions = (message.metadata as any)?.reactions || {};
+    const userReactions = reactions[userId] || [];
+
+    // Toggle the reaction
+    const reactionIndex = userReactions.indexOf(args.reaction);
+    if (reactionIndex > -1) {
+      // Remove reaction
+      userReactions.splice(reactionIndex, 1);
+    } else {
+      // Add reaction (max 3 reactions per user per message)
+      if (userReactions.length >= 3) {
+        throw new Error('Maximum reactions reached for this message');
+      }
+      userReactions.push(args.reaction);
+    }
+
+    // Update reactions
+    if (userReactions.length > 0) {
+      reactions[userId] = userReactions;
+    } else {
+      delete reactions[userId];
+    }
+
+    // Update the message
+    await ctx.db.patch(args.messageId, {
+      metadata: {
+        ...message.metadata,
+        reactions: reactions as any,
+        lastReactionAt: Date.now() as any,
+      } as any,
+    });
+
+    return {
+      success: true,
+      added: reactionIndex === -1,
+      reaction: args.reaction,
+    };
+  },
+});
+
+export const regenerateLastAssistant = mutation({
+  args: {
+    chatId: v.id('chats'),
+  },
+  handler: async (ctx, args) => {
+    // Get authenticated user
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error('Not authenticated');
+    }
+
+    // Verify chat ownership
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.ownerId !== userId) {
+      throw new Error('Chat not found or access denied');
+    }
+
+    // Get the last assistant message
+    const messages = await ctx.db
+      .query('messages')
+      .withIndex('by_chat', (q) => q.eq('chatId', args.chatId))
+      .order('desc')
+      .take(10); // Get last 10 messages to find the assistant one
+
+    const lastAssistantMessage = messages.find((m) => m.role === 'assistant');
+
+    if (!lastAssistantMessage) {
+      throw new Error('No assistant message found to regenerate');
+    }
+
+    // Mark the old message as regenerated
+    await ctx.db.patch(lastAssistantMessage._id, {
+      metadata: {
+        ...lastAssistantMessage.metadata,
+        regenerated: true as any,
+        regeneratedAt: Date.now() as any,
+      } as any,
+    });
+
+    // Delete the old assistant message
+    await ctx.db.delete(lastAssistantMessage._id);
+
+    return {
+      success: true,
+      deletedMessageId: lastAssistantMessage._id,
+    };
   },
 });
 

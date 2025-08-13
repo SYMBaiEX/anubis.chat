@@ -1,6 +1,6 @@
 'use client';
 
-import type { Id } from '@convex/_generated/dataModel';
+import type { Doc, Id } from '@convex/_generated/dataModel';
 import type { Edge, Node } from '@xyflow/react';
 import {
   AlertTriangle,
@@ -357,7 +357,7 @@ function WorkflowsContent() {
         if (viewMode === 'grid') {
           return (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {workflows.map((workflow) => (
+              {workflows.map((workflow: Doc<'workflows'>) => (
                 <Card className="p-6" key={workflow._id}>
                   <div className="mb-4 flex items-start justify-between">
                     <div>
@@ -370,8 +370,9 @@ function WorkflowsContent() {
                   </div>
                   <div className="mb-3 text-muted-foreground text-xs">
                     <div>
-                      {workflow.nodeCount || 0} nodes, {workflow.edgeCount || 0}{' '}
-                      connections
+                      {workflow.category
+                        ? `Category: ${workflow.category}`
+                        : 'No category'}
                     </div>
                     <div>
                       Updated:{' '}
@@ -414,7 +415,7 @@ function WorkflowsContent() {
         }
         return (
           <div className="space-y-2">
-            {workflows.map((workflow) => (
+            {workflows.map((workflow: Doc<'workflows'>) => (
               <Card className="p-4" key={workflow._id}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -422,8 +423,7 @@ function WorkflowsContent() {
                     <div>
                       <h3 className="font-semibold">{workflow.name}</h3>
                       <p className="text-muted-foreground text-sm">
-                        {workflow.description || 'No description'} •{' '}
-                        {workflow.nodeCount || 0} nodes • Updated:{' '}
+                        {workflow.description || 'No description'} • Updated:{' '}
                         {new Date(workflow.updatedAt).toLocaleDateString()}
                       </p>
                     </div>

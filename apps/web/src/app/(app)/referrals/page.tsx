@@ -385,15 +385,28 @@ export default function ReferralsPage() {
                   <CardContent>
                     {referredUsers ? (
                       <MyReferralsDisplay
-                        referredUsers={referredUsers.referredUsers.map((u) => ({
-                          userId: u.userId,
-                          displayName: u.displayName,
-                          avatar: u.avatar,
-                          referredAt: u.referredAt ?? Date.now(),
-                          totalCommissionsEarned: u.totalCommissionsEarned,
-                          isActive: u.isActive,
-                          subscriptionTier: u.subscriptionTier,
-                        }))}
+                        referredUsers={referredUsers.referredUsers.map(
+                          (u: {
+                            userId: string;
+                            displayName: string;
+                            avatar?: string;
+                            walletAddress?: string;
+                            referredAt?: number;
+                            subscriptionTier: string;
+                            totalPayments: number;
+                            totalCommissionsEarned: number;
+                            lastActiveAt?: number;
+                            isActive: boolean;
+                          }) => ({
+                            userId: u.userId,
+                            displayName: u.displayName,
+                            avatar: u.avatar,
+                            referredAt: u.referredAt ?? Date.now(),
+                            totalCommissionsEarned: u.totalCommissionsEarned,
+                            isActive: u.isActive,
+                            subscriptionTier: u.subscriptionTier,
+                          })
+                        )}
                       />
                     ) : (
                       <div className="py-6 text-center text-muted-foreground">

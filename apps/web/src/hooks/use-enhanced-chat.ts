@@ -3,12 +3,12 @@
 import { useChat } from '@ai-sdk/react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
-import { DefaultChatTransport } from 'ai';
-import { useMutation, useQuery } from 'convex/react';
-import { useCallback, useMemo, useState, useRef } from 'react';
+import { TextStreamChatTransport } from 'ai';
+import { useAction, useMutation, useQuery } from 'convex/react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MemoryManager } from '@/lib/memory/manager';
 import type { MinimalMessage } from '@/lib/types/components';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { MemoryManager } from '@/lib/memory/manager';
 
 const log = createModuleLogger('hooks/use-enhanced-chat');
 
@@ -19,8 +19,8 @@ interface UseEnhancedChatOptions {
 }
 
 /**
- * Enhanced chat hook that properly leverages AI SDK's useChat
- * Simplifies streaming, optimistic updates, and message management
+ * Enhanced chat hook that integrates AI SDK with Convex WebSocket streaming
+ * Provides seamless real-time updates with optimistic UI patterns
  */
 export function useEnhancedChat({
   chatId,
@@ -29,13 +29,31 @@ export function useEnhancedChat({
 }: UseEnhancedChatOptions) {
   // Initialize memory manager instance
   const memoryManager = useRef(new MemoryManager()).current;
-  // Get Convex deployment URL for API endpoint
+
+  // WebSocket streaming session state
+  const [sessionId, setSessionId] = useState<Id<'streamingSessions'> | null>(
+    null
+  );
+  const [isWebSocketStreaming, setIsWebSocketStreaming] = useState(false);
+
+  // Convex WebSocket streaming actions
+  const createSession = useMutation(api.streaming.createStreamingSession);
+  const streamWithWebSocket = useAction(api.streaming.streamWithWebSocket);
+
+  // Subscribe to streaming updates (real-time WebSocket!)
+  const streamingSession = useQuery(
+    api.streaming.subscribeToStream,
+    sessionId ? { sessionId } : 'skip'
+  );
+
+  // Get Convex deployment URL for fallback HTTP endpoint
   const apiEndpoint = useMemo(() => {
     const deploymentUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(
       'wss://',
       'https://'
     ).replace('.convex.cloud', '.convex.site');
 
+    // Fallback HTTP endpoint if WebSocket fails
     return deploymentUrl ? `${deploymentUrl}/stream-chat` : '/api/chat';
   }, []);
 
@@ -78,30 +96,37 @@ export function useEnhancedChat({
       });
 
       // Get conversation context if available
-      const conversationContext = memoryManager.exportMemories().conversations.find(
-        c => c.id === chatId
-      );
+      const conversationContext = memoryManager
+        .exportMemories()
+        .conversations.find((c) => c.id === chatId);
 
-      let contextParts: string[] = [];
+      const contextParts: string[] = [];
 
       // Add conversation summary if available
       if (conversationContext?.summary) {
-        contextParts.push(`Previous conversation summary: ${conversationContext.summary}`);
+        contextParts.push(
+          `Previous conversation summary: ${conversationContext.summary}`
+        );
       }
 
       // Add key topics if available
-      if (conversationContext?.topics && conversationContext.topics.length > 0) {
-        contextParts.push(`Key topics discussed: ${conversationContext.topics.join(', ')}`);
+      if (
+        conversationContext?.topics &&
+        conversationContext.topics.length > 0
+      ) {
+        contextParts.push(
+          `Key topics discussed: ${conversationContext.topics.join(', ')}`
+        );
       }
 
       // Add relevant memories
       if (memories.length > 0) {
-        const memoryTexts = memories.map(m => m.content).join('; ');
+        const memoryTexts = memories.map((m) => m.content).join('; ');
         contextParts.push(`Relevant context: ${memoryTexts}`);
       }
 
-      return contextParts.length > 0 
-        ? `[Memory Context: ${contextParts.join(' | ')}]` 
+      return contextParts.length > 0
+        ? `[Memory Context: ${contextParts.join(' | ')}]`
         : '';
     } catch (err) {
       log.warn('Failed to retrieve memory context', { error: err });
@@ -111,7 +136,7 @@ export function useEnhancedChat({
 
   // Initialize memory system with existing messages
   const initializeMemoryFromConvex = useCallback(async () => {
-    if (!chatId || !convexMessages || convexMessages.length === 0) return;
+    if (!(chatId && convexMessages) || convexMessages.length === 0) return;
 
     try {
       // Convert Convex messages to UIMessage format
@@ -123,8 +148,8 @@ export function useEnhancedChat({
 
       // Update memory system with existing conversation
       await memoryManager.updateConversation(chatId, uiMessages);
-      log.debug('Initialized memory system from Convex messages', { 
-        messageCount: uiMessages.length 
+      log.debug('Initialized memory system from Convex messages', {
+        messageCount: uiMessages.length,
       });
     } catch (err) {
       log.warn('Failed to initialize memory from Convex', { error: err });
@@ -136,20 +161,61 @@ export function useEnhancedChat({
     initializeMemoryFromConvex();
   }, [initializeMemoryFromConvex]);
 
-  // Use AI SDK's useChat hook with all its built-in features
+  // Track WebSocket streaming message
+  const [webSocketMessage, setWebSocketMessage] =
+    useState<MinimalMessage | null>(null);
+
+  // Update message from WebSocket streaming session
+  useEffect(() => {
+    if (streamingSession && isWebSocketStreaming) {
+      const isActive =
+        streamingSession.status === 'streaming' ||
+        streamingSession.status === 'initializing';
+
+      if (streamingSession.content || streamingSession.status === 'streaming') {
+        setWebSocketMessage({
+          _id: `stream-${sessionId}`,
+          content: streamingSession.content,
+          role: 'assistant',
+          createdAt: Date.now(),
+          isStreaming: streamingSession.status === 'streaming',
+        } as MinimalMessage);
+      }
+
+      if (streamingSession.status === 'completed') {
+        // Clear streaming state after completion
+        setTimeout(() => {
+          setWebSocketMessage(null);
+          setSessionId(null);
+          setIsWebSocketStreaming(false);
+        }, 100);
+      }
+
+      if (streamingSession.status === 'error') {
+        log.error('WebSocket streaming error', {
+          error: streamingSession.error,
+        });
+        setIsWebSocketStreaming(false);
+        setSessionId(null);
+        onError?.(new Error(streamingSession.error || 'Streaming failed'));
+      }
+    }
+  }, [streamingSession, sessionId, isWebSocketStreaming, onError]);
+
+  // Use AI SDK's useChat hook for fallback HTTP streaming
   const {
     messages: aiMessages,
     sendMessage: aiSendMessage,
     stop,
-    status,
+    status: aiStatus,
     error,
   } = useChat({
     id: chatId,
-    transport: new DefaultChatTransport({
+    transport: new TextStreamChatTransport({
       api: apiEndpoint,
     }),
     onFinish: async ({ message }) => {
-      log.debug('Message finished streaming', { message });
+      log.debug('HTTP streaming finished', { message });
 
       // Extract content from AI SDK v5 message format
       const content =
@@ -159,7 +225,7 @@ export function useEnhancedChat({
           .join('') || '';
 
       // Persist assistant message to Convex after streaming completes
-      if (chatId && message.role === 'assistant') {
+      if (chatId && message.role === 'assistant' && !isWebSocketStreaming) {
         try {
           await createMessage({
             chatId: chatId as Id<'chats'>,
@@ -174,28 +240,35 @@ export function useEnhancedChat({
           // Update memory system with latest conversation context
           if (aiMessages && aiMessages.length > 0) {
             await memoryManager.updateConversation(chatId, aiMessages);
-            log.debug('Updated memory system with conversation context', { 
-              messageCount: aiMessages.length 
+            log.debug('Updated memory system with conversation context', {
+              messageCount: aiMessages.length,
             });
           }
         } catch (err) {
-          log.error('Failed to persist assistant message or update memory', { error: err });
+          log.error('Failed to persist assistant message or update memory', {
+            error: err,
+          });
         }
       }
     },
     onError: (err) => {
-      log.error('Chat error', { error: err });
-      onError?.(err);
+      log.error('HTTP streaming error', { error: err });
+      if (!isWebSocketStreaming) {
+        onError?.(err);
+      }
     },
     experimental_throttle: 50, // Smooth streaming updates
   });
 
-  // Enhanced send function with proper AI SDK integration
+  // Determine active streaming status
+  const status = isWebSocketStreaming ? 'streaming' : aiStatus;
+
+  // Enhanced send function with WebSocket streaming support
   const sendMessage = useCallback(
     async (
       content: string,
-      _model?: string,
-      _useReasoning?: boolean,
+      model?: string,
+      useReasoning?: boolean,
       attachments?: Array<{
         fileId: string;
         url?: string;
@@ -211,37 +284,103 @@ export function useEnhancedChat({
       try {
         // Get memory context for this conversation
         const memoryContext = await getMemoryContext();
-        
+
         // Persist user message to Convex first
-        await createMessage({
+        const userMessageId = await createMessage({
           chatId: chatId as Id<'chats'>,
           content,
           role: 'user',
           attachments,
         });
 
-        // Create enhanced message with memory context
-        const enhancedContent = memoryContext 
-          ? `${memoryContext}\n\nUser: ${content}`
-          : content;
+        if (!userMessageId) {
+          throw new Error('Failed to create user message');
+        }
 
-        // Use AI SDK's sendMessage for optimistic UI and streaming
-        await aiSendMessage({
-          role: 'user',
-          parts: [{ type: 'text', text: enhancedContent }],
-        });
-        
-        log.debug('Sent message with memory context', { 
+        // Try WebSocket streaming first (preferred)
+        try {
+          setIsWebSocketStreaming(true);
+          setWebSocketMessage(null);
+
+          // Create streaming session
+          const newSessionId = await createSession({
+            chatId: chatId as Id<'chats'>,
+            messageId: userMessageId,
+          });
+
+          if (!newSessionId) {
+            throw new Error('Failed to create streaming session');
+          }
+
+          setSessionId(newSessionId);
+          log.debug('WebSocket streaming session created', {
+            sessionId: newSessionId,
+          });
+
+          // Start WebSocket streaming (runs in background)
+          streamWithWebSocket({
+            sessionId: newSessionId,
+            chatId: chatId as Id<'chats'>,
+            content: memoryContext
+              ? `${memoryContext}\n\nUser: ${content}`
+              : content,
+            model,
+            temperature: undefined,
+            maxTokens: undefined,
+            useReasoning,
+            attachments,
+          }).catch((err) => {
+            log.error('WebSocket streaming failed, falling back to HTTP', err);
+            setIsWebSocketStreaming(false);
+
+            // Fallback to HTTP streaming
+            const enhancedContent = memoryContext
+              ? `${memoryContext}\n\nUser: ${content}`
+              : content;
+
+            aiSendMessage({
+              role: 'user',
+              parts: [{ type: 'text', text: enhancedContent }],
+            });
+          });
+        } catch (wsError) {
+          log.warn('WebSocket unavailable, using HTTP streaming', {
+            error: wsError,
+          });
+          setIsWebSocketStreaming(false);
+
+          // Fallback to HTTP streaming
+          const enhancedContent = memoryContext
+            ? `${memoryContext}\n\nUser: ${content}`
+            : content;
+
+          await aiSendMessage({
+            role: 'user',
+            parts: [{ type: 'text', text: enhancedContent }],
+          });
+        }
+
+        log.debug('Sent message', {
           hasMemoryContext: !!memoryContext,
-          originalLength: content.length,
-          enhancedLength: enhancedContent.length 
+          streamingMethod: isWebSocketStreaming ? 'websocket' : 'http',
+          model,
+          useReasoning,
         });
       } catch (err) {
         log.error('Failed to send message', { error: err });
+        setIsWebSocketStreaming(false);
         throw err;
       }
     },
-    [chatId, aiSendMessage, createMessage, getMemoryContext]
+    [
+      chatId,
+      aiSendMessage,
+      createMessage,
+      getMemoryContext,
+      createSession,
+      streamWithWebSocket,
+      isWebSocketStreaming,
+    ]
   );
 
   // Regenerate last assistant message
@@ -263,8 +402,12 @@ export function useEnhancedChat({
         metadata: msg.metadata,
       }));
 
-      // Add streaming message if currently streaming
-      if (status === 'streaming' && aiMessages.length > 0) {
+      // Add WebSocket streaming message if active
+      if (webSocketMessage) {
+        convexMsgs.push(webSocketMessage);
+      }
+      // Otherwise add HTTP streaming message if active
+      else if (aiStatus === 'streaming' && aiMessages.length > 0) {
         const lastAiMsg = aiMessages.at(-1);
         if (lastAiMsg?.role === 'assistant') {
           // Extract content from AI SDK v5 message format
@@ -310,12 +453,14 @@ export function useEnhancedChat({
         createdAt: Date.now(),
       };
     });
-  }, [convexMessages, aiMessages, status]);
+  }, [convexMessages, aiMessages, aiStatus, webSocketMessage]);
 
   return {
     // Messages
     messages: formattedMessages,
-    streamingMessage: status === 'streaming' ? formattedMessages.at(-1) : null,
+    streamingMessage:
+      (isWebSocketStreaming && webSocketMessage) ||
+      (aiStatus === 'streaming' ? formattedMessages.at(-1) : null),
 
     // Input management
     input,
@@ -324,12 +469,13 @@ export function useEnhancedChat({
     // Actions
     sendMessage,
     regenerate: regenerateLastMessage,
-    stop,
+    stop: isWebSocketStreaming ? () => setIsWebSocketStreaming(false) : stop,
 
-    // Status flags (much cleaner than manual state management)
-    isStreaming: status === 'streaming',
-    isLoading: status === 'submitted',
-    isReady: status === 'ready',
+    // Status flags
+    isStreaming: isWebSocketStreaming || aiStatus === 'streaming',
+    isLoading: aiStatus === 'submitted',
+    isReady: !isWebSocketStreaming && aiStatus === 'ready',
+    streamingMethod: isWebSocketStreaming ? 'websocket' : 'http',
 
     // Error handling
     error,

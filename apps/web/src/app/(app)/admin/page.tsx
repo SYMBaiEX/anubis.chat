@@ -126,6 +126,17 @@ type ListedUser = {
   };
 };
 
+type AdminListItem = {
+  _id: string;
+  walletAddress?: string;
+  role: 'moderator' | 'admin' | 'super_admin';
+  permissions?: string[];
+  isActive?: boolean;
+  lastActiveAt?: number;
+  createdAt?: number;
+  updatedAt?: number;
+};
+
 function UserRow({
   listedUser,
   onUpdate,
@@ -192,7 +203,7 @@ function UserRow({
         {listedUser.walletAddress && listedUser.subscription && (
           <div className="flex gap-2">
             <Select
-              onValueChange={(v) =>
+              onValueChange={(v: string) =>
                 onUpdate(
                   listedUser.walletAddress as string,
                   v as 'free' | 'pro' | 'pro_plus'
@@ -346,7 +357,7 @@ function AdminDashboardContent() {
               />
             </div>
             <Select
-              onValueChange={(v) =>
+              onValueChange={(v: string) =>
                 setTierFilter(v as 'all' | 'free' | 'pro' | 'pro_plus')
               }
               value={tierFilter}
@@ -428,7 +439,7 @@ function AdminDashboardContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {admins.map((admin) => (
+                  {admins.map((admin: AdminListItem) => (
                     <TableRow key={admin._id}>
                       <TableCell>
                         {admin.walletAddress ? (

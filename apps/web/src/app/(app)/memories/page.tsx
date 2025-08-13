@@ -1,6 +1,7 @@
 'use client';
 
 import { api } from '@convex/_generated/api';
+import type { Doc } from '@convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import {
   Brain,
@@ -95,7 +96,7 @@ export default function MemoriesPage() {
     }
 
     return memories.reduce(
-      (groups, memory) => {
+      (groups: Record<string, Doc<'memories'>[]>, memory: Doc<'memories'>) => {
         const type = memory.type;
         if (!groups[type]) {
           groups[type] = [];
@@ -182,7 +183,7 @@ export default function MemoriesPage() {
                   setSelectedType('all');
                 }}
                 onSearch={setSearchTerm}
-                onSelectType={(v) => setSelectedType(v)}
+                onSelectType={(v: MemoryType | 'all') => setSelectedType(v)}
                 onSortChange={(sb, so) => {
                   setSortBy(sb);
                   setSortOrder(so);
@@ -272,8 +273,11 @@ export default function MemoriesPage() {
                   const count = typeMemories.length;
                   const avgImportance =
                     count > 0
-                      ? typeMemories.reduce((sum, m) => sum + m.importance, 0) /
-                        count
+                      ? typeMemories.reduce(
+                          (sum: number, m: Doc<'memories'>) =>
+                            sum + m.importance,
+                          0
+                        ) / count
                       : 0;
 
                   return (
@@ -333,7 +337,7 @@ export default function MemoriesPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {memories.slice(0, 5).map((memory) => {
+                      {memories.slice(0, 5).map((memory: Doc<'memories'>) => {
                         const typeConfig = getMemoryTypeConfig(memory.type);
                         return (
                           <div

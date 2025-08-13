@@ -1893,7 +1893,9 @@ export function UpgradeModal({
         <div className="mt-6">
           <Tabs
             className="w-full"
-            onValueChange={(v) => setActiveTab(v as 'subscription' | 'credits')}
+            onValueChange={(v: string) =>
+              setActiveTab(v as 'subscription' | 'credits')
+            }
             value={activeTab}
           >
             <TabsList className="grid w-full grid-cols-2">

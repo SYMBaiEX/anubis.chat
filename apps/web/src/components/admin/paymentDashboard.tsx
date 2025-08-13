@@ -223,50 +223,62 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {alerts.slice(0, 5).map((alert, alertIndex) => {
-              const severityConfig = {
-                critical: 'bg-red-100 text-red-800 border-red-200',
-                error: 'bg-red-50 text-red-700 border-red-100',
-                warning: 'bg-yellow-50 text-yellow-700 border-yellow-100',
-              };
+            {alerts
+              .slice(0, 5)
+              .map(
+                (
+                  alert: {
+                    eventType: string;
+                    severity: string;
+                    timestamp: number;
+                    message: string;
+                  },
+                  alertIndex: number
+                ) => {
+                  const severityConfig = {
+                    critical: 'bg-red-100 text-red-800 border-red-200',
+                    error: 'bg-red-50 text-red-700 border-red-100',
+                    warning: 'bg-yellow-50 text-yellow-700 border-yellow-100',
+                  };
 
-              return (
-                <Alert
-                  className={
-                    severityConfig[
-                      alert.severity as keyof typeof severityConfig
-                    ]
-                  }
-                  key={`${alert.timestamp}-${alertIndex}`}
-                >
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">
-                          {alert.eventType.replace('_', ' ')}
+                  return (
+                    <Alert
+                      className={
+                        severityConfig[
+                          alert.severity as keyof typeof severityConfig
+                        ]
+                      }
+                      key={`${alert.timestamp}-${alertIndex}`}
+                    >
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">
+                              {alert.eventType.replace('_', ' ')}
+                            </div>
+                            <div className="text-xs opacity-90">
+                              {alert.message}
+                            </div>
+                            <div className="mt-1 text-xs opacity-75">
+                              {new Date(alert.timestamp).toLocaleString()}
+                            </div>
+                          </div>
+                          <Badge
+                            variant={
+                              alert.severity === 'critical'
+                                ? 'destructive'
+                                : 'secondary'
+                            }
+                          >
+                            {alert.severity}
+                          </Badge>
                         </div>
-                        <div className="text-xs opacity-90">
-                          {alert.message}
-                        </div>
-                        <div className="mt-1 text-xs opacity-75">
-                          {new Date(alert.timestamp).toLocaleString()}
-                        </div>
-                      </div>
-                      <Badge
-                        variant={
-                          alert.severity === 'critical'
-                            ? 'destructive'
-                            : 'secondary'
-                        }
-                      >
-                        {alert.severity}
-                      </Badge>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              );
-            })}
+                      </AlertDescription>
+                    </Alert>
+                  );
+                }
+              )}
           </div>
         </CardContent>
       </Card>
@@ -293,50 +305,64 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {data.map((hour, hourIndex) => {
-              const hourlySuccessRate = hour.successRate;
-              const total = hour.successful + hour.failed;
-              const time = new Date(`${hour.hour}:00`).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              });
+            {data.map(
+              (
+                hour: {
+                  hour: string;
+                  successful: number;
+                  failed: number;
+                  successRate: number;
+                  avgProcessingTime: number;
+                },
+                hourIndex: number
+              ) => {
+                const hourlySuccessRate = hour.successRate;
+                const total = hour.successful + hour.failed;
+                const time = new Date(`${hour.hour}:00`).toLocaleTimeString(
+                  [],
+                  {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }
+                );
 
-              // Helper function to get success rate color
-              const getSuccessRateColor = (rate: number): string => {
-                if (rate >= 95) {
-                  return 'text-green-600';
-                }
-                if (rate >= 80) {
-                  return 'text-yellow-600';
-                }
-                return 'text-red-600';
-              };
+                // Helper function to get success rate color
+                const getSuccessRateColor = (rate: number): string => {
+                  if (rate >= 95) {
+                    return 'text-green-600';
+                  }
+                  if (rate >= 80) {
+                    return 'text-yellow-600';
+                  }
+                  return 'text-red-600';
+                };
 
-              return (
-                <div className="space-y-2" key={`${hour.hour}-${hourIndex}`}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{time}</span>
-                    <div className="flex items-center space-x-4">
-                      <span className="text-muted-foreground">
-                        {total} payments
-                      </span>
-                      <span
-                        className={cn(
-                          'font-medium',
-                          getSuccessRateColor(hourlySuccessRate)
-                        )}
-                      >
-                        {hourlySuccessRate.toFixed(1)}%
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {hour.avgProcessingTime}ms
-                      </span>
+                return (
+                  <div className="space-y-2" key={`${hour.hour}-${hourIndex}`}>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{time}</span>
+                      <div className="flex items-center space-x-4">
+                        <span className="text-muted-foreground">
+                          {total} payments
+                        </span>
+                        <span
+                          className={cn(
+                            'font-medium',
+                            getSuccessRateColor(hourlySuccessRate)
+                          )}
+                        >
+                          {hourlySuccessRate.toFixed(1)}%
+                        </span>
+                        <span className="text-muted-foreground text-xs">
+                          {hour.avgProcessingTime}ms
+                        </span>
+                      </div>
                     </div>
+                    <Progress className="h-2" value={hourlySuccessRate} />
                   </div>
-                  <Progress className="h-2" value={hourlySuccessRate} />
-                </div>
-              );
-            })}
+                );
+              }
+            )}
           </div>
         </CardContent>
       </Card>
@@ -349,7 +375,10 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
     }
 
     const errorTypes = Object.entries(metrics.metrics.errorDistribution);
-    const totalErrors = errorTypes.reduce((sum, [_, count]) => sum + count, 0);
+    const totalErrors = errorTypes.reduce(
+      (sum: number, [_, count]: [string, unknown]) => sum + (count as number),
+      0
+    );
 
     if (totalErrors === 0) {
       return (
@@ -380,8 +409,11 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {errorTypes.map(([errorCode, count]) => {
-              const percentage = ((count / totalErrors) * 100).toFixed(1);
+            {errorTypes.map(([errorCode, count]: [string, unknown]) => {
+              const percentage = (
+                ((count as number) / totalErrors) *
+                100
+              ).toFixed(1);
 
               return (
                 <div className="space-y-2" key={errorCode}>
@@ -391,7 +423,7 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
                     </span>
                     <div className="flex items-center space-x-2">
                       <span className="text-muted-foreground">
-                        {count} errors
+                        {count as number} errors
                       </span>
                       <span className="font-medium">{percentage}%</span>
                     </div>

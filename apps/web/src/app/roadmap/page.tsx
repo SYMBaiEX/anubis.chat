@@ -957,7 +957,7 @@ export default function RoadmapPage(): ReactElement {
 
             {/* View Tabs */}
             <Tabs
-              onValueChange={(v) => setViewMode(v as ViewMode)}
+              onValueChange={(v: string) => setViewMode(v as ViewMode)}
               value={viewMode}
             >
               <TabsList className="mb-2 grid w-full max-w-md grid-cols-3">

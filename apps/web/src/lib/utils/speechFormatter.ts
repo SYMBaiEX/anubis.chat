@@ -178,7 +178,7 @@ export function getVoiceCommands(): {
 } {
   return {
     punctuation: PUNCTUATION_PHRASES.map(([phrase]) => phrase).filter(
-      (v, i, a) => a.indexOf(v) === i
+      (v: string, i: number, a: string[]) => a.indexOf(v) === i
     ),
     formatting: Object.keys(FORMATTING_COMMANDS).sort(),
     special: Object.keys(SPECIAL_COMMANDS).sort(),

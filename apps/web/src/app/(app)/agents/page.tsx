@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
+import type { Doc, Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import {
   Bot,
@@ -246,7 +246,7 @@ export default function AgentsPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-2.5">
-            {agents.map((agent) => {
+            {agents.map((agent: Doc<'agents'>) => {
               const typeInfo = getAgentTypeInfo(agent.type);
               const _TypeIcon = typeInfo.icon;
 

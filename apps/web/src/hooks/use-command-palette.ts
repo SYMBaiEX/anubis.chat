@@ -250,7 +250,7 @@ export function useCommandPalette({
         toast.error(`Unknown command: ${commandId}`);
       }
     },
-[commandHandlers]
+    [commandHandlers]
   );
 
   // Build keyboard shortcuts object - memoized and only for enabled commands with valid shortcuts

@@ -35,6 +35,7 @@ export function MessageList({
   messages,
   loading = false,
   onMessageRegenerate,
+  onArtifactClick,
   isTyping = false,
   className,
   children,
@@ -336,7 +337,9 @@ export function MessageList({
                               ),
                               rating: (message as MinimalMessage).rating,
                               actions: (message as MinimalMessage).actions,
+                              toolCalls: (message as any).toolCalls,
                             }}
+                            onArtifactClick={onArtifactClick}
                             onRegenerate={() =>
                               onMessageRegenerate?.(
                                 (message as ChatMessage | MinimalMessage)._id

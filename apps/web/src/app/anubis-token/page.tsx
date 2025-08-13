@@ -176,7 +176,7 @@ function FloatingParticles() {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {[...new Array(20)].map((_, i) => (
+      {Array.from({ length: 20 }).map((_, i) => (
         <motion.div
           animate={{
             y: -100,
@@ -187,7 +187,7 @@ function FloatingParticles() {
             x: Math.random() * windowSize.width,
             y: windowSize.height + 100,
           }}
-          key={i}
+          key={`particle-${i}`}
           transition={{
             duration: Math.random() * 10 + 10,
             repeat: Number.POSITIVE_INFINITY,
@@ -206,13 +206,15 @@ function FloatingParticles() {
               ease: 'linear',
             }}
           >
-            {i % 3 === 0 ? (
-              <Coins className="h-6 w-6 text-primary/30" />
-            ) : i % 3 === 1 ? (
-              <Star className="h-4 w-4 text-emerald-400/30" />
-            ) : (
-              <Sparkles className="h-5 w-5 text-primary/30" />
-            )}
+            {(() => {
+              if (i % 3 === 0) {
+                return <Coins className="h-6 w-6 text-primary/30" />;
+              }
+              if (i % 3 === 1) {
+                return <Star className="h-4 w-4 text-emerald-400/30" />;
+              }
+              return <Sparkles className="h-5 w-5 text-primary/30" />;
+            })()}
           </motion.div>
         </motion.div>
       ))}
@@ -233,7 +235,9 @@ export default function AnubisTokenPage() {
       await navigator.clipboard.writeText(tokenAddress);
       setCopiedAddress(true);
       setTimeout(() => setCopiedAddress(false), 2000);
-    } catch (_err) {}
+    } catch (_err) {
+      // ignore clipboard errors
+    }
   };
 
   return (
@@ -562,14 +566,14 @@ export default function AnubisTokenPage() {
 
                     {/* Animated particles */}
                     <div className="pointer-events-none absolute inset-0">
-                      {[...new Array(8)].map((_, i) => (
+                      {Array.from({ length: 8 }).map((_, i) => (
                         <motion.div
                           animate={{
                             y: [-10, 10, -10],
                             opacity: [0.3, 0.8, 0.3],
                           }}
                           className="absolute h-2 w-2 rounded-full bg-primary"
-                          key={i}
+                          key={`dot-${i}`}
                           style={{
                             left: `${Math.random() * 100}%`,
                             top: `${Math.random() * 100}%`,

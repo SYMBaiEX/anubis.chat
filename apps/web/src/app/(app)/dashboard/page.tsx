@@ -1,6 +1,7 @@
 'use client';
 
 import { api } from '@convex/_generated/api';
+import type { Doc } from '@convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { Bot, Calendar, MessageSquare, TrendingUp, Zap } from 'lucide-react';
 import Link from 'next/link';
@@ -108,9 +109,9 @@ export default function DashboardPage() {
 
   const recentPurchases: RecentPurchaseItem[] = useMemo(() => {
     const subRows: RecentPurchaseItem[] = (subscriptionPayments || []).map(
-      (p) => ({
+      (p: Doc<'subscriptionPayments'>) => ({
         kind: 'subscription',
-        id: p.id as string,
+        id: p._id as string,
         title: `${String(p.tier).toUpperCase()} plan`,
         amountSol: p.amountSol as number,
         status: p.status as RecentPurchaseItem['status'],
@@ -118,9 +119,9 @@ export default function DashboardPage() {
       })
     );
     const creditRows: RecentPurchaseItem[] = (purchases || []).map(
-      (purchase) => ({
+      (purchase: Doc<'messageCreditPurchases'>) => ({
         kind: 'credits',
-        id: purchase.id as string,
+        id: purchase._id as string,
         title: 'Message credits',
         amountSol: purchase.priceSOL as number,
         status: purchase.status as RecentPurchaseItem['status'],

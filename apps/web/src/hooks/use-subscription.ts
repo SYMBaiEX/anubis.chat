@@ -112,15 +112,22 @@ export function useSubscription() {
       };
     }
 
-    const messagesRemaining = Math.max(
+    // Include both monthly allowance and purchased credits
+    const monthlyMessagesRemaining = Math.max(
       0,
       normalizedSubscription.messagesLimit - normalizedSubscription.messagesUsed
     );
-    const premiumMessagesRemaining = Math.max(
+    const messagesRemaining =
+      monthlyMessagesRemaining + (normalizedSubscription.messageCredits || 0);
+
+    const monthlyPremiumRemaining = Math.max(
       0,
       normalizedSubscription.premiumMessagesLimit -
         normalizedSubscription.premiumMessagesUsed
     );
+    const premiumMessagesRemaining =
+      monthlyPremiumRemaining +
+      (normalizedSubscription.premiumMessageCredits || 0);
     const msUntilReset = normalizedSubscription.currentPeriodEnd - Date.now();
     const daysUntilReset = Math.max(
       0,
@@ -128,9 +135,13 @@ export function useSubscription() {
     );
 
     return {
-      canSendMessage: messagesRemaining > 0,
+      canSendMessage:
+        messagesRemaining > 0 ||
+        (normalizedSubscription.messageCredits || 0) > 0,
       canUsePremiumModel:
-        premiumMessagesRemaining > 0 && normalizedSubscription.tier !== 'free',
+        (premiumMessagesRemaining > 0 ||
+          (normalizedSubscription.premiumMessageCredits || 0) > 0) &&
+        normalizedSubscription.tier !== 'free',
       canUploadLargeFiles: normalizedSubscription.tier === 'pro_plus',
       canAccessAdvancedFeatures: normalizedSubscription.tier === 'pro_plus',
       canUseAPI: normalizedSubscription.tier === 'pro_plus',

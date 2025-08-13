@@ -20,7 +20,7 @@ export function createAPIResponse<T>(
   data: T,
   options?: {
     requestId?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }
 ): APIResponse<T> {
   return {
@@ -39,7 +39,7 @@ export function createErrorResponse(
   code: APIErrorCode,
   message: string,
   options?: {
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
     requestId?: string;
     status?: number;
   }
@@ -77,7 +77,7 @@ export function createPaginatedResponse<T>(
   },
   options?: {
     requestId?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }
 ): PaginatedResponse<T> {
   return {
@@ -202,7 +202,7 @@ export function notFoundResponse(
 
 export function validationErrorResponse(
   message = 'Validation error',
-  details?: Record<string, any>,
+  details?: Record<string, unknown>,
   requestId?: string
 ): NextResponse {
   return createErrorResponse(APIErrorCode.VALIDATION_ERROR, message, {

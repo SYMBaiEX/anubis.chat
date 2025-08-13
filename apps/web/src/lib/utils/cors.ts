@@ -95,12 +95,16 @@ export function addCorsHeaders(
 
   response.headers.set(
     'Access-Control-Allow-Methods',
-    corsOptions.methods?.join(', ') ?? DEFAULT_CORS_OPTIONS.methods?.join(', ') ?? 'GET, POST, PUT, DELETE, OPTIONS'
+    corsOptions.methods?.join(', ') ??
+      DEFAULT_CORS_OPTIONS.methods?.join(', ') ??
+      'GET, POST, PUT, DELETE, OPTIONS'
   );
 
   response.headers.set(
     'Access-Control-Allow-Headers',
-    corsOptions.headers?.join(', ') ?? DEFAULT_CORS_OPTIONS.headers?.join(', ') ?? 'Content-Type, Authorization'
+    corsOptions.headers?.join(', ') ??
+      DEFAULT_CORS_OPTIONS.headers?.join(', ') ??
+      'Content-Type, Authorization'
   );
 
   if (corsOptions.credentials) {
@@ -109,7 +113,7 @@ export function addCorsHeaders(
 
   response.headers.set(
     'Access-Control-Max-Age',
-    (corsOptions.maxAge ?? DEFAULT_CORS_OPTIONS.maxAge!).toString()
+    String(corsOptions.maxAge ?? DEFAULT_CORS_OPTIONS.maxAge ?? 0)
   );
 
   return response;
@@ -204,7 +208,7 @@ export function getStreamingHeaders(
 /**
  * Higher-order function to wrap API handlers with CORS support
  */
-export function withCors<T extends any[]>(
+export function withCors<T extends unknown[]>(
   handler: (...args: T) => Promise<NextResponse>,
   corsOptions: CorsOptions = {}
 ) {

@@ -163,11 +163,11 @@ export function toTuple<T, E>(
  * Validates a value and returns a Result
  */
 export function validate<T, E>(
-  value: T,
-  validator: (value: T) => E | null
+  inputValue: T,
+  validator: (candidate: T) => E | null
 ): Result<T, E> {
-  const error = validator(value);
-  return error ? err(error) : ok(value);
+  const error = validator(inputValue);
+  return error ? err(error) : ok(inputValue);
 }
 
 /**

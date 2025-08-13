@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 /**
  * File Processing for RAG Integration
@@ -17,24 +17,31 @@ const logger = createModuleLogger('file-processing');
 const SUPPORTED_MIME_TYPES = {
   text: ['text/plain', 'text/markdown', 'text/csv', 'text/xml', 'text/html'],
   pdf: ['application/pdf'],
-  image: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'],
+  image: [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/bmp',
+    'image/webp',
+  ],
   code: ['application/json', 'text/javascript', 'application/javascript'],
 };
 
 // File size limits by type (in bytes)
 const FILE_SIZE_LIMITS = {
   text: 10 * 1024 * 1024, // 10MB
-  pdf: 50 * 1024 * 1024,  // 50MB
+  pdf: 50 * 1024 * 1024, // 50MB
   image: 20 * 1024 * 1024, // 20MB
   default: 25 * 1024 * 1024, // 25MB
 };
 
 // Processing timeouts by file type (in milliseconds)
 const PROCESSING_TIMEOUTS = {
-  text: 10000,   // 10 seconds
-  pdf: 60000,    // 60 seconds  
-  image: 120000, // 120 seconds (OCR can be slow)
-  default: 30000, // 30 seconds
+  text: 10_000, // 10 seconds
+  pdf: 60_000, // 60 seconds
+  image: 120_000, // 120 seconds (OCR can be slow)
+  default: 30_000, // 30 seconds
 };
 
 /**
@@ -51,14 +58,14 @@ export const processFileForRAG = action({
   },
   handler: async (ctx, args) => {
     const startTime = Date.now();
-    
+
     try {
       // Validate file parameters
       const validationResult = validateFileForProcessing(args);
       if (!validationResult.isValid) {
-        logger.warn('File validation failed', { 
+        logger.warn('File validation failed', {
           fileId: args.fileId,
-          error: validationResult.error 
+          error: validationResult.error,
         });
         return { success: false, error: validationResult.error };
       }
@@ -69,21 +76,24 @@ export const processFileForRAG = action({
           fileId: args.fileId,
           walletAddress: args.walletAddress,
         }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('File retrieval timeout')), 30000)
-        )
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('File retrieval timeout')), 30_000)
+        ),
       ]);
 
       if (!file) {
-        logger.warn('File not found for RAG processing', { fileId: args.fileId });
+        logger.warn('File not found for RAG processing', {
+          fileId: args.fileId,
+        });
         return { success: false, error: 'File not found' };
       }
 
       // Validate file size (if available)
-      if (file.size && file.size > 50 * 1024 * 1024) { // 50MB limit
-        logger.warn('File too large for processing', { 
+      if (file.size && file.size > 50 * 1024 * 1024) {
+        // 50MB limit
+        logger.warn('File too large for processing', {
           fileId: args.fileId,
-          size: file.size 
+          size: file.size,
         });
         return { success: false, error: 'File size exceeds 50MB limit' };
       }
@@ -91,42 +101,57 @@ export const processFileForRAG = action({
       // Extract text content based on file type with timeout
       let extractedText = '';
       const extractionTimeout = getExtractionTimeout(args.mimeType);
-      
+
       try {
         extractedText = await Promise.race([
           extractContentByType(ctx, file, args),
-          new Promise<string>((_, reject) => 
-            setTimeout(() => reject(new Error('Content extraction timeout')), extractionTimeout)
-          )
+          new Promise<string>((_, reject) =>
+            setTimeout(
+              () => reject(new Error('Content extraction timeout')),
+              extractionTimeout
+            )
+          ),
         ]);
       } catch (extractionError) {
         // Log the error but continue with metadata-only processing
-        logger.error('Content extraction failed, using metadata only', extractionError, {
-          fileId: args.fileId,
-          mimeType: args.mimeType,
-        });
-        
+        logger.error(
+          'Content extraction failed, using metadata only',
+          extractionError,
+          {
+            fileId: args.fileId,
+            mimeType: args.mimeType,
+          }
+        );
+
         extractedText = `File: ${args.fileName} (${args.mimeType})\nContent extraction failed: ${extractionError instanceof Error ? extractionError.message : 'Unknown error'}`;
       }
 
       // For images, we expect empty text since they're handled visually
       const isImage = args.mimeType.startsWith('image/');
       if (!extractedText.trim()) {
-        logger.info(isImage ? 'Image will be handled visually by multi-modal models' : 'No extractable text content from file', {
-          fileId: args.fileId,
-          mimeType: args.mimeType,
-          isImage,
-        });
+        logger.info(
+          isImage
+            ? 'Image will be handled visually by multi-modal models'
+            : 'No extractable text content from file',
+          {
+            fileId: args.fileId,
+            mimeType: args.mimeType,
+            isImage,
+          }
+        );
         return { success: true, textExtracted: false };
       }
 
       // Validate extracted text length
-      if (extractedText.length > 1000000) { // 1MB text limit
+      if (extractedText.length > 1_000_000) {
+        // 1MB text limit
         logger.warn('Extracted text too long, truncating', {
           fileId: args.fileId,
           originalLength: extractedText.length,
         });
-        extractedText = extractedText.substring(0, 1000000) + '\n\n[Text truncated due to size limit]';
+        extractedText =
+          extractedText.substring(0, 1_000_000) +
+          '\n\n[Text truncated due to size limit]';
       }
 
       // Create document record for the file
@@ -150,19 +175,20 @@ export const processFileForRAG = action({
           documentId,
           fileId: args.fileId,
         });
-        
+
         // Document was created but chunking failed - still partial success
         return {
           success: true,
           documentId,
           textExtracted: true,
           textLength: extractedText.length,
-          warning: 'Text extracted but chunking failed - document may not be searchable',
+          warning:
+            'Text extracted but chunking failed - document may not be searchable',
         };
       }
 
       const processingTime = Date.now() - startTime;
-      
+
       logger.info('File processed for RAG successfully', {
         fileId: args.fileId,
         documentId,
@@ -179,7 +205,7 @@ export const processFileForRAG = action({
       };
     } catch (error) {
       const processingTime = Date.now() - startTime;
-      
+
       logger.error('Failed to process file for RAG', error, {
         fileId: args.fileId,
         messageId: args.messageId,
@@ -240,7 +266,7 @@ async function extractPDFContent(ctx: any, file: any): Promise<string> {
   try {
     // Use UnPDF for serverless PDF text extraction
     const { extractText, getDocumentProxy } = await import('unpdf');
-    
+
     let pdfBuffer: Uint8Array | null = null;
 
     // Get PDF data as Uint8Array
@@ -271,24 +297,24 @@ async function extractPDFContent(ctx: any, file: any): Promise<string> {
 
     // Create PDF document proxy
     const pdf = await getDocumentProxy(pdfBuffer);
-    
+
     // Extract text with merged pages
     const { totalPages, text } = await extractText(pdf, { mergePages: true });
-    
+
     // Clean extracted text
     const extractedText = text.trim();
-    
+
     if (!extractedText) {
-      logger.info('No text found in PDF', { 
-        fileId: file.fileId, 
-        pages: totalPages 
+      logger.info('No text found in PDF', {
+        fileId: file.fileId,
+        pages: totalPages,
       });
       return `PDF Document: ${file.fileName}\nPages: ${totalPages}\nNo extractable text content found.`;
     }
 
     // Add metadata header
     const metadata = `PDF Document: ${file.fileName}\nTotal Pages: ${totalPages}\nText Length: ${extractedText.length} characters\n\n`;
-    
+
     logger.info('PDF text extracted successfully with UnPDF', {
       fileId: file.fileId,
       pages: totalPages,
@@ -300,7 +326,7 @@ async function extractPDFContent(ctx: any, file: any): Promise<string> {
     logger.error('Failed to extract PDF content with UnPDF', error, {
       fileId: file.fileId,
     });
-    
+
     // Return basic metadata on error
     return `PDF Document: ${file.fileName}\nError: Unable to extract text content - ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
@@ -309,17 +335,23 @@ async function extractPDFContent(ctx: any, file: any): Promise<string> {
 /**
  * Handle image files - skip text extraction since images are handled visually by multi-modal models
  */
-async function extractImageContent(ctx: any, file: any, fileName: string): Promise<string> {
-  logger.info('Skipping text extraction for image - will be handled visually by multi-modal models', { 
-    fileId: file.fileId,
-    fileName 
-  });
-  
+async function extractImageContent(
+  ctx: any,
+  file: any,
+  fileName: string
+): Promise<string> {
+  logger.info(
+    'Skipping text extraction for image - will be handled visually by multi-modal models',
+    {
+      fileId: file.fileId,
+      fileName,
+    }
+  );
+
   // Return empty string to indicate no text content to process for RAG
   // The image will be available visually to the AI model through the attachment system
   return '';
 }
-
 
 /**
  * Create document record for the uploaded file
@@ -338,8 +370,12 @@ const createFileDocument = mutation({
 
     // Determine document type based on MIME type
     const fileCategory = getFileTypeCategory(args.mimeType);
-    const docType = fileCategory === 'text' ? 'text' : 
-                   fileCategory === 'pdf' ? 'pdf' : 'text'; // fallback to text
+    const docType =
+      fileCategory === 'text'
+        ? 'text'
+        : fileCategory === 'pdf'
+          ? 'pdf'
+          : 'text'; // fallback to text
 
     const documentId = await ctx.db.insert('documents', {
       ownerId: args.walletAddress,
@@ -353,7 +389,9 @@ const createFileDocument = mutation({
         messageId: args.messageId,
         mimeType: args.mimeType,
         category: fileCategory,
-        wordCount: args.extractedText.split(/\s+/).filter(word => word.length > 0).length,
+        wordCount: args.extractedText
+          .split(/\s+/)
+          .filter((word) => word.length > 0).length,
         characterCount: args.extractedText.length,
       },
       createdAt: now,
@@ -408,7 +446,7 @@ export const processMessageAttachments = action({
         });
       }
 
-      const successCount = results.filter(r => r.success).length;
+      const successCount = results.filter((r) => r.success).length;
 
       logger.info('Batch processed message attachments', {
         messageId: args.messageId,
@@ -443,7 +481,7 @@ function validateFileForProcessing(args: {
   mimeType: string;
 }): { isValid: boolean; error?: string } {
   // Validate required fields
-  if (!args.fileId || !args.fileName || !args.mimeType) {
+  if (!(args.fileId && args.fileName && args.mimeType)) {
     return { isValid: false, error: 'Missing required file parameters' };
   }
 
@@ -454,12 +492,16 @@ function validateFileForProcessing(args: {
 
   // Check for potentially dangerous file names
   const dangerousPatterns = [/\.\.\//, /^\//, /\\/, /\0/];
-  if (dangerousPatterns.some(pattern => pattern.test(args.fileName))) {
+  if (dangerousPatterns.some((pattern) => pattern.test(args.fileName))) {
     return { isValid: false, error: 'Invalid file name format' };
   }
 
   // Validate MIME type format
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/.test(args.mimeType)) {
+  if (
+    !/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-^_.]*$/.test(
+      args.mimeType
+    )
+  ) {
     return { isValid: false, error: 'Invalid MIME type format' };
   }
 
@@ -472,46 +514,61 @@ function validateFileForProcessing(args: {
 function getExtractionTimeout(mimeType: string): number {
   if (mimeType.startsWith('text/') || mimeType.startsWith('application/json')) {
     return PROCESSING_TIMEOUTS.text;
-  } else if (mimeType === 'application/pdf') {
+  }
+  if (mimeType === 'application/pdf') {
     return PROCESSING_TIMEOUTS.pdf;
-  } else if (mimeType.startsWith('image/')) {
+  }
+  if (mimeType.startsWith('image/')) {
     return PROCESSING_TIMEOUTS.image;
   }
-  
+
   return PROCESSING_TIMEOUTS.default;
 }
 
 /**
  * Extract content by file type with unified error handling
  */
-async function extractContentByType(ctx: any, file: any, args: {
-  fileName: string;
-  mimeType: string;
-}): Promise<string> {
-  if (args.mimeType.startsWith('text/') || args.mimeType.startsWith('application/json')) {
-    return await extractTextContent(ctx, file);
-  } else if (args.mimeType === 'application/pdf') {
-    return await extractPDFContent(ctx, file);
-  } else if (args.mimeType.startsWith('image/')) {
-    return await extractImageContent(ctx, file, args.fileName);
-  } else {
-    // For unsupported file types, return metadata
-    return `File: ${args.fileName} (${args.mimeType})\nUnsupported file type for content extraction.`;
+async function extractContentByType(
+  ctx: any,
+  file: any,
+  args: {
+    fileName: string;
+    mimeType: string;
   }
+): Promise<string> {
+  if (
+    args.mimeType.startsWith('text/') ||
+    args.mimeType.startsWith('application/json')
+  ) {
+    return await extractTextContent(ctx, file);
+  }
+  if (args.mimeType === 'application/pdf') {
+    return await extractPDFContent(ctx, file);
+  }
+  if (args.mimeType.startsWith('image/')) {
+    return await extractImageContent(ctx, file, args.fileName);
+  }
+  // For unsupported file types, return metadata
+  return `File: ${args.fileName} (${args.mimeType})\nUnsupported file type for content extraction.`;
 }
 
 /**
  * Get file type category for processing
  */
 function getFileTypeCategory(mimeType: string): string {
-  if (SUPPORTED_MIME_TYPES.text.includes(mimeType) || SUPPORTED_MIME_TYPES.code.includes(mimeType)) {
+  if (
+    SUPPORTED_MIME_TYPES.text.includes(mimeType) ||
+    SUPPORTED_MIME_TYPES.code.includes(mimeType)
+  ) {
     return 'text';
-  } else if (SUPPORTED_MIME_TYPES.pdf.includes(mimeType)) {
+  }
+  if (SUPPORTED_MIME_TYPES.pdf.includes(mimeType)) {
     return 'pdf';
-  } else if (SUPPORTED_MIME_TYPES.image.includes(mimeType)) {
+  }
+  if (SUPPORTED_MIME_TYPES.image.includes(mimeType)) {
     return 'image';
   }
-  
+
   return 'unknown';
 }
 

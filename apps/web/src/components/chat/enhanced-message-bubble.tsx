@@ -61,8 +61,23 @@ interface EnhancedMessageBubbleProps {
       contentType?: string;
       url?: string;
     }>;
+    toolCalls?: Array<{
+      type: string;
+      name?: string;
+      result?: any;
+    }>;
   };
   onRegenerate?: () => void;
+  onArtifactClick?: (artifact: {
+    id?: string;
+    title: string;
+    content?: string;
+    code?: string;
+    type: 'document' | 'code' | 'markdown';
+    language?: string;
+    framework?: string;
+    description?: string;
+  }) => void;
   isStreaming?: boolean;
   className?: string;
 }
@@ -74,6 +89,7 @@ interface EnhancedMessageBubbleProps {
 export function EnhancedMessageBubble({
   message,
   onRegenerate,
+  onArtifactClick,
   isStreaming = false,
   className,
 }: EnhancedMessageBubbleProps) {
@@ -492,6 +508,97 @@ export function EnhancedMessageBubble({
             <div className="space-y-2">
               {message.parts.map((part, index) => renderPart(part, index))}
             </div>
+
+            {/* Tool Calls */}
+            {message.toolCalls && message.toolCalls.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {message.toolCalls.map((toolCall, index) => {
+                  // Handle different tool types
+                  if (
+                    toolCall.name === 'webSearch' &&
+                    toolCall.result?.data?.results
+                  ) {
+                    return (
+                      <div
+                        className="rounded-lg border bg-background/50 p-3"
+                        key={index}
+                      >
+                        <div className="mb-2 flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          <span className="font-medium text-sm">
+                            Web Search Results
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {toolCall.result.data.results
+                            .slice(0, 3)
+                            .map((result: any, idx: number) => (
+                              <div className="text-sm" key={idx}>
+                                <a
+                                  className="font-medium text-primary hover:underline"
+                                  href={result.link}
+                                  rel="noopener noreferrer"
+                                  target="_blank"
+                                >
+                                  {result.title}
+                                </a>
+                                <p className="mt-1 text-muted-foreground text-xs">
+                                  {result.snippet}
+                                </p>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (
+                    (toolCall.name === 'createDocument' ||
+                      toolCall.name === 'generateCode') &&
+                    toolCall.result?.data?.document
+                  ) {
+                    const artifact = toolCall.result.data.document;
+                    return (
+                      <div
+                        className="rounded-lg border bg-background/50 p-3"
+                        key={index}
+                      >
+                        <button
+                          className="-m-1 flex w-full items-center gap-2 rounded p-1 text-left transition-colors hover:bg-accent/50"
+                          onClick={() => onArtifactClick?.(artifact)}
+                        >
+                          <FileText className="h-4 w-4 text-primary" />
+                          <div className="flex-1">
+                            <span className="font-medium text-sm">
+                              {artifact.title || 'Generated Document'}
+                            </span>
+                            <p className="text-muted-foreground text-xs">
+                              Click to view{' '}
+                              {artifact.type === 'code' ? 'code' : 'document'}
+                            </p>
+                          </div>
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  // Default tool call display
+                  return (
+                    <div
+                      className="rounded-lg border bg-background/50 p-2"
+                      key={index}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground text-xs">
+                          Tool: {toolCall.name}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Streaming indicator */}
             {isStreaming && isAssistant && (

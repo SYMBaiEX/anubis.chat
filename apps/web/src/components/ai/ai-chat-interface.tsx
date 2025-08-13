@@ -30,9 +30,9 @@ interface AIChatInterfaceProps {
 function convertToAIMessage(uiMessage: UIMessage): AIMessage {
   // Extract text content from parts array
   const content =
-    uiMessage.parts
-      ?.filter((part: any) => part.type === 'text')
-      .map((part: any) => part.text)
+    (uiMessage.parts as Array<{ type?: string; text?: string }> | undefined)
+      ?.filter((part) => part.type === 'text' && typeof part.text === 'string')
+      .map((part) => part.text as string)
       .join('') || '';
 
   return {
@@ -57,35 +57,47 @@ export function AIChatInterface({
   const [showModelSelector, setShowModelSelector] = useState(false);
 
   const [input, setInput] = useState('');
-  const [attachments, setAttachments] = useState<any[]>([]);
+  const [attachments, setAttachments] = useState<
+    Array<{
+      fileId: string;
+      mimeType: string;
+      size: number;
+      type: 'image' | 'video' | 'file';
+      url: string;
+    }>
+  >([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { messages, sendMessage, stop, error, setMessages } = useChat({
+  const { messages, sendMessage, stop, error: chatError } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/chat',
       body: { chatId, model: selectedModel, maxSteps },
     }),
-    onFinish: async ({ message }) => {
+    onFinish: ({ message }) => {
       log.info('Message finished', { id: message.id });
     },
-    onError: (error) => {
-      log.error('Chat error', { error: error.message });
+    onError: (err) => {
+      log.error('Chat error', { error: err.message });
     },
   });
 
   const handleFileUpload = useCallback(async (files: File[]) => {
     // Simplified file upload logic - convert to MessageAttachment format
-    const newAttachments = files.map((file) => ({
-      fileId: `${Date.now()}-${file.name}`,
-      mimeType: file.type,
-      size: file.size,
-      type: file.type.startsWith('image/')
-        ? ('image' as const)
-        : file.type.startsWith('video/')
-          ? ('video' as const)
-          : ('file' as const),
-      url: URL.createObjectURL(file),
-    }));
+    const newAttachments = files.map((file) => {
+      let type: 'image' | 'video' | 'file' = 'file';
+      if (file.type.startsWith('image/')) {
+        type = 'image';
+      } else if (file.type.startsWith('video/')) {
+        type = 'video';
+      }
+      return {
+        fileId: `${Date.now()}-${file.name}`,
+        mimeType: file.type,
+        size: file.size,
+        type,
+        url: URL.createObjectURL(file),
+      };
+    });
     setAttachments((prev) => [...prev, ...newAttachments]);
     return newAttachments;
   }, []);
@@ -118,7 +130,10 @@ export function AIChatInterface({
   const suggestions = generateSuggestions();
 
   const handleSendMessage = useCallback(
-    async (content: string, _messageAttachments?: any[]) => {
+    async (
+      content: string,
+      _messageAttachments?: Array<{ fileId: string; url?: string }>
+    ) => {
       if (!content.trim()) {
         return;
       }
@@ -244,10 +259,10 @@ export function AIChatInterface({
       </AnimatePresence>
 
       {/* Error display */}
-      {error && (
+      {chatError && (
         <Alert className="m-4" variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error.message}</AlertDescription>
+          <AlertDescription>{chatError.message}</AlertDescription>
         </Alert>
       )}
 
@@ -282,7 +297,14 @@ export function AIChatInterface({
           attachments={attachments}
           isLoading={isLoading}
           onAttachmentsChange={(newAttachments) => {
-            setAttachments(newAttachments);
+            // Filter out attachments without URLs and type them properly
+            const validAttachments = newAttachments
+              .filter((attachment) => attachment.url != null)
+              .map((attachment) => ({
+                ...attachment,
+                url: attachment.url as string,
+              }));
+            setAttachments(validAttachments);
           }}
           onChange={setInput}
           onFileUpload={handleFileUpload}

@@ -107,6 +107,16 @@ export interface MessageListProps extends BaseComponentProps {
   messages: Array<ChatMessage | StreamingMessage | MinimalMessage>;
   loading?: boolean;
   onMessageRegenerate?: (messageId: string) => void;
+  onArtifactClick?: (artifact: {
+    id?: string;
+    title: string;
+    content?: string;
+    code?: string;
+    type: 'document' | 'code' | 'markdown';
+    language?: string;
+    framework?: string;
+    description?: string;
+  }) => void;
 }
 
 // Minimal message shape to support Convex docs in UI without tight coupling

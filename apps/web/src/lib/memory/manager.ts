@@ -3,7 +3,7 @@
  * Handles conversation memory, context windows, and embeddings
  */
 
-import type { ModelMessage, UIMessage, generateId } from 'ai';
+import type { generateId, ModelMessage, UIMessage } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
 
 // Memory Types
@@ -107,9 +107,7 @@ export class ContextWindowManager {
   /**
    * Compress context using various strategies
    */
-  private async compressContext(
-    messages: UIMessage[]
-  ): Promise<UIMessage[]> {
+  private async compressContext(messages: UIMessage[]): Promise<UIMessage[]> {
     // Strategy 1: Remove less important messages
     const importantMessages = this.filterImportantMessages(messages);
 
@@ -157,10 +155,12 @@ export class ContextWindowManager {
     const summary: UIMessage = {
       id: uuidv4(),
       role: 'system',
-      parts: [{
-        type: 'text',
-        text: `[Summary of previous ${oldMessages.length} messages: ${this.createSummary(oldMessages)}]`
-      }]
+      parts: [
+        {
+          type: 'text',
+          text: `[Summary of previous ${oldMessages.length} messages: ${this.createSummary(oldMessages)}]`,
+        },
+      ],
     };
 
     return [summary, ...recentMessages];
@@ -189,9 +189,9 @@ export class ContextWindowManager {
 
     for (const msg of messages) {
       // Extract text content from UI message parts
-      const textParts = msg.parts?.filter(part => part.type === 'text') || [];
+      const textParts = msg.parts?.filter((part) => part.type === 'text') || [];
       const content = textParts.map((part: any) => part.text || '').join(' ');
-      
+
       // Extract simple topics (words > 4 chars)
       const words = content.toLowerCase().match(/\b\w{4,}\b/g) || [];
       words.slice(0, 10).forEach((word) => topics.add(word));
@@ -207,7 +207,7 @@ export class ContextWindowManager {
     // Rough estimation: 1 token ≈ 4 characters
     const totalChars = messages.reduce((sum, msg) => {
       // Extract text content from UI message parts
-      const textParts = msg.parts?.filter(part => part.type === 'text') || [];
+      const textParts = msg.parts?.filter((part) => part.type === 'text') || [];
       const content = textParts.map((part: any) => part.text || '').join(' ');
       return sum + content.length;
     }, 0);
@@ -405,8 +405,8 @@ export class MemoryManager {
     if (!message.parts) {
       return '';
     }
-    
-    const textParts = message.parts.filter(part => part.type === 'text');
+
+    const textParts = message.parts.filter((part) => part.type === 'text');
     return textParts.map((part: any) => part.text || '').join(' ');
   }
 
@@ -443,7 +443,7 @@ export class MemoryManager {
     );
 
     // Convert UIMessages to ModelMessages for analysis functions
-    const modelMessages: ModelMessage[] = messages.map(msg => ({
+    const modelMessages: ModelMessage[] = messages.map((msg) => ({
       role: msg.role,
       content: this.extractUIMessageContent(msg),
     }));
@@ -466,7 +466,7 @@ export class MemoryManager {
         role: message.role,
         content: this.extractUIMessageContent(message),
       };
-      
+
       if (this.isImportantMessage(modelMessage)) {
         await this.storeMemory(
           'episodic',

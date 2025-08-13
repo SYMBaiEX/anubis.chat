@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
+import type { Doc, Id } from '@convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import {
   ChevronDown,
@@ -502,7 +502,8 @@ export function ExplorerPanel(props: {
                 <Folder className="h-4 w-4 text-blue-500" />
                 <span className="flex-1">All Prompts</span>
                 <span className="text-muted-foreground text-xs">
-                  {visiblePrompts?.filter((p) => !p.folderId).length || 0}
+                  {visiblePrompts?.filter((p: PromptNode) => !p.folderId)
+                    .length || 0}
                 </span>
               </button>
 
@@ -546,12 +547,12 @@ export function ExplorerPanel(props: {
                 ) : (
                   visiblePrompts
                     .filter(
-                      (p) =>
+                      (p: PromptNode) =>
                         debouncedQuery ||
                         !selectedFolderId ||
                         p.folderId === selectedFolderId
                     )
-                    .map((prompt) => (
+                    .map((prompt: PromptNode) => (
                       <PromptListItem
                         key={prompt._id}
                         onCopy={onCopyPrompt}
@@ -576,7 +577,7 @@ export function ExplorerPanel(props: {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-1">
-                  {topPrompts.map((p) => (
+                  {topPrompts?.map((p: Doc<'prompts'>) => (
                     <TopPromptButton
                       content={p.content as string}
                       id={p._id as Id<'prompts'>}

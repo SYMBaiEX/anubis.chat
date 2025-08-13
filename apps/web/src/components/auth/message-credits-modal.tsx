@@ -562,7 +562,14 @@ export function MessageCreditsModal({
         <Card className="p-4">
           <h5 className="mb-3 font-medium">Recent Purchases</h5>
           <div className="space-y-2">
-            {purchaseHistory.slice(0, 3).map((purchase) => (
+            {purchaseHistory.slice(0, 3).map((purchase: { 
+              id: string; 
+              standardCredits: number; 
+              premiumCredits: number; 
+              createdAt: number; 
+              priceSOL: number; 
+              status: string; 
+            }) => (
               <div
                 className="flex items-center justify-between border-b pb-2 text-sm"
                 key={purchase.id}

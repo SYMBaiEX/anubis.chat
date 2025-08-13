@@ -1,3 +1,4 @@
+import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { api } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
@@ -542,5 +543,48 @@ export const updateTitle = mutation({
     });
 
     return await ctx.db.get(args.chatId);
+  },
+});
+
+/**
+ * Clear all messages from a chat (keeps the chat itself)
+ */
+export const clearHistory = mutation({
+  args: {
+    chatId: v.id('chats'),
+  },
+  handler: async (ctx, args) => {
+    // Get authenticated user
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error('Not authenticated');
+    }
+
+    // Verify chat ownership
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.ownerId !== userId) {
+      throw new Error('Chat not found or access denied');
+    }
+
+    // Get all messages for this chat
+    const messages = await ctx.db
+      .query('messages')
+      .withIndex('by_chat', (q) => q.eq('chatId', args.chatId))
+      .collect();
+
+    // Delete all messages
+    await Promise.all(messages.map((message) => ctx.db.delete(message._id)));
+
+    // Update chat's last message time
+    await ctx.db.patch(args.chatId, {
+      lastMessageAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    return {
+      success: true,
+      deletedCount: messages.length,
+      chatId: args.chatId,
+    };
   },
 });

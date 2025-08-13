@@ -119,7 +119,7 @@ export function CommandsOfMaatModal({
 
           {/* Category Tabs */}
           <Tabs
-            onValueChange={(v) =>
+            onValueChange={(v: string) =>
               setActiveCategory(v as keyof typeof MAAT_CATEGORIES | 'all')
             }
             value={activeCategory}

@@ -279,12 +279,7 @@ export class WorkflowEngine {
     context.history.push(node.id);
 
     // Check for timeout
-    if (workflow.timeout) {
-      const elapsed = Date.now() - context.startTime;
-      if (elapsed > workflow.timeout) {
-        throw new Error('Workflow timeout exceeded');
-      }
-    }
+    this.checkWorkflowTimeout(context, workflow);
 
     // Execute based on node type
     const executor = this.nodeExecutors.get(node.type);
@@ -292,37 +287,8 @@ export class WorkflowEngine {
       throw new Error(`No executor for node type: ${node.type}`);
     }
 
-    let retries = 0;
-    const retryPolicy = node.retryPolicy || { maxRetries: 0 };
-    let lastError: Error | undefined;
-
-    while (retries <= retryPolicy.maxRetries) {
-      try {
-        await executor.execute(node, context, this.agents);
-        break; // Success
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        retries++;
-
-        if (retries <= retryPolicy.maxRetries) {
-          // Calculate backoff
-          const backoff = retryPolicy.backoffMs || 1000;
-          const multiplier = retryPolicy.backoffMultiplier || 2;
-          const maxBackoff = retryPolicy.maxBackoffMs || 30_000;
-          const delay = Math.min(
-            backoff * multiplier ** (retries - 1),
-            maxBackoff
-          );
-
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-      }
-    }
-
-    if (lastError) {
-      context.errors.set(node.id, lastError);
-      throw lastError;
-    }
+    // Execute with retry policy
+    await this.runExecutorWithRetry(executor, node, context);
 
     // Determine next node(s)
     if (node.type === 'end') {
@@ -330,12 +296,79 @@ export class WorkflowEngine {
     }
 
     const nextNodes = this.determineNextNodes(node, context, workflow);
-    for (const nextNodeId of nextNodes) {
-      const nextNode = workflow.nodes.find((n) => n.id === nextNodeId);
-      if (nextNode) {
-        await this.executeNode(nextNode, context, workflow);
-      }
+    await this.executeNextNodes(nextNodes, context, workflow);
+  }
+
+  /**
+   * Enforce workflow timeout if configured
+   */
+  private checkWorkflowTimeout(
+    context: WorkflowContext,
+    workflow: WorkflowDefinition
+  ): void {
+    if (!workflow.timeout) {
+      return;
     }
+    const elapsedMs = Date.now() - context.startTime;
+    if (elapsedMs > workflow.timeout) {
+      throw new Error('Workflow timeout exceeded');
+    }
+  }
+
+  /**
+   * Execute a node's executor honoring retry policy without await-in-loop
+   */
+  private runExecutorWithRetry(
+    executor: NodeExecutor,
+    node: WorkflowNode,
+    context: WorkflowContext
+  ): Promise<void> {
+    const retryPolicy: RetryPolicy = node.retryPolicy || { maxRetries: 0 };
+
+    const attempt = async (attemptIndex: number): Promise<void> => {
+      try {
+        await executor.execute(node, context, this.agents);
+      } catch (rawError) {
+        const error =
+          rawError instanceof Error ? rawError : new Error(String(rawError));
+
+        const hasRetriesRemaining = attemptIndex < retryPolicy.maxRetries;
+        if (!hasRetriesRemaining) {
+          context.errors.set(node.id, error);
+          throw error;
+        }
+
+        const baseBackoff = retryPolicy.backoffMs ?? 1000;
+        const multiplier = retryPolicy.backoffMultiplier ?? 2;
+        const maxBackoff = retryPolicy.maxBackoffMs ?? 30_000;
+        const delayMs = Math.min(
+          baseBackoff * multiplier ** attemptIndex,
+          maxBackoff
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        return attempt(attemptIndex + 1);
+      }
+    };
+
+    return attempt(0);
+  }
+
+  /**
+   * Execute all next nodes without await-in-loop
+   */
+  private async executeNextNodes(
+    nextNodeIds: string[],
+    context: WorkflowContext,
+    workflow: WorkflowDefinition
+  ): Promise<void> {
+    const nextNodes = nextNodeIds
+      .map((id) => workflow.nodes.find((n) => n.id === id))
+      .filter((n): n is WorkflowNode => Boolean(n));
+
+    await Promise.all(
+      nextNodes.map((n) => this.executeNode(n, context, workflow))
+    );
   }
 
   /**

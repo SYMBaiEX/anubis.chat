@@ -1,11 +1,13 @@
 // import { createAnthropic } from '@ai-sdk/anthropic'; // DISABLED FOR NOW
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
+import { getAuthUserId } from '@convex-dev/auth/server';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText } from 'ai';
+import { v } from 'convex/values';
 import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
-import { httpAction } from './_generated/server';
+import { action, httpAction, mutation, query } from './_generated/server';
 import { createModuleLogger } from './utils/logger';
 
 // Create logger instance for this module
@@ -37,36 +39,551 @@ const ALLOWED_ORIGINS = [
   process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : null,
 ].filter(Boolean) as string[];
 
+// =============================================================================
+// WebSocket Streaming via Convex Real-time Subscriptions
+// =============================================================================
+
+/**
+ * Create a streaming session for real-time updates
+ */
+export const createStreamingSession = mutation({
+  args: {
+    chatId: v.id('chats'),
+    messageId: v.id('messages'),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+
+    // Verify chat ownership
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.ownerId !== userId) {
+      throw new Error('Chat not found or access denied');
+    }
+
+    // Create streaming session
+    const sessionId = await ctx.db.insert('streamingSessions', {
+      chatId: args.chatId,
+      messageId: args.messageId,
+      userId,
+      status: 'initializing',
+      content: '',
+      tokens: { input: 0, output: 0 },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    return sessionId;
+  },
+});
+
+/**
+ * Subscribe to streaming updates (real-time WebSocket)
+ */
+export const subscribeToStream = query({
+  args: {
+    sessionId: v.id('streamingSessions'),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || session.userId !== userId) {
+      return null;
+    }
+
+    return session;
+  },
+});
+
+/**
+ * Update streaming content (called by the streaming action)
+ */
+export const updateStreamingContent = mutation({
+  args: {
+    sessionId: v.id('streamingSessions'),
+    content: v.string(),
+    tokens: v.optional(
+      v.object({
+        input: v.number(),
+        output: v.number(),
+      })
+    ),
+    status: v.optional(
+      v.union(
+        v.literal('streaming'),
+        v.literal('completed'),
+        v.literal('error')
+      )
+    ),
+    error: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId);
+    if (!session) throw new Error('Session not found');
+
+    await ctx.db.patch(args.sessionId, {
+      content: args.content,
+      status: args.status || session.status,
+      tokens: args.tokens || session.tokens,
+      error: args.error,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Update stream with artifact content (documents, code, etc.)
+ */
+export const updateStreamArtifact = mutation({
+  args: {
+    sessionId: v.id('streamingSessions'),
+    artifact: v.object({
+      type: v.union(v.literal('document'), v.literal('code'), v.literal('markdown')),
+      data: v.any(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId);
+    if (!session) throw new Error('Session not found');
+
+    await ctx.db.patch(args.sessionId, {
+      artifact: args.artifact,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Stream AI response with real-time WebSocket updates
+ */
+export const streamWithWebSocket = action({
+  args: {
+    sessionId: v.id('streamingSessions'),
+    chatId: v.id('chats'),
+    content: v.string(),
+    model: v.optional(v.string()),
+    temperature: v.optional(v.number()),
+    maxTokens: v.optional(v.number()),
+    useReasoning: v.optional(v.boolean()),
+    attachments: v.optional(
+      v.array(
+        v.object({
+          fileId: v.string(),
+          url: v.optional(v.string()),
+          mimeType: v.string(),
+          size: v.number(),
+          type: v.union(
+            v.literal('image'),
+            v.literal('file'),
+            v.literal('video')
+          ),
+        })
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Update status to streaming
+      await ctx.runMutation(api.streaming.updateStreamingContent, {
+        sessionId: args.sessionId,
+        content: '',
+        status: 'streaming',
+      });
+
+      // Get chat and user for context
+      const chat = await ctx.runQuery(api.chats.getById, {
+        id: args.chatId,
+      });
+
+      if (!chat) {
+        throw new Error('Chat not found');
+      }
+
+      // Get user directly from database
+      const user = await ctx.runQuery(api.users.getCurrentUserProfile, {});
+
+      // Process attachments for RAG if provided
+      if (args.attachments && args.attachments.length > 0) {
+        logger.info('Processing attachments for WebSocket streaming', {
+          attachmentCount: args.attachments.length,
+        });
+
+        for (const attachment of args.attachments) {
+          try {
+            await ctx.runAction(api.fileProcessing.processFileForRAG, {
+              messageId: args.sessionId as unknown as Id<'messages'>, // Use sessionId temporarily
+              fileId: attachment.fileId,
+              walletAddress: user?.walletAddress || '',
+              fileName: attachment.fileId,
+              mimeType: attachment.mimeType,
+            });
+          } catch (err) {
+            logger.warn('Failed to process attachment for RAG', {
+              error: err,
+              fileId: attachment.fileId,
+            });
+          }
+        }
+      }
+
+      // Get conversation history
+      const messages = await ctx.runQuery(api.messages.getByChatId, {
+        chatId: args.chatId,
+        limit: 20,
+      });
+
+      // Get user preferences for memory
+      let contextToInject = '';
+      if (user) {
+        const userPreferences = await ctx.runQuery(
+          api.userPreferences.getByUserId,
+          {
+            userId: chat.ownerId,
+          }
+        );
+
+        if (userPreferences?.enableMemory !== false) {
+          try {
+            const ragContext = await ctx.runAction(api.rag.retrieveContext, {
+              userId: chat.ownerId,
+              query: args.content,
+              chatId: args.chatId,
+              tokenBudget: 3000,
+              includeMemories: true,
+              includeMessages: true,
+              includeDocuments: true,
+              minRelevanceScore: 0.4,
+              useCache: true,
+            });
+
+            if (ragContext.items.length > 0) {
+              contextToInject = await ctx.runAction(
+                api.rag.formatContextForLLM,
+                {
+                  context: ragContext,
+                  includeMetadata: false,
+                }
+              );
+            }
+          } catch (error) {
+            logger.warn('RAG context retrieval failed', { error });
+          }
+        }
+      }
+
+      // Prepare AI model
+      const modelName =
+        args.model || chat.model || 'openrouter/openai/gpt-oss-20b:free';
+      const aiModel = await prepareAIModel(modelName);
+
+      if (!aiModel) {
+        throw new Error('Model not available');
+      }
+
+      // Build system prompt
+      const systemPrompt = buildSystemPrompt(
+        chat,
+        contextToInject,
+        args.useReasoning
+      );
+
+      // Convert messages for AI SDK
+      const conversationHistory = messages.map((msg) => ({
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content,
+      }));
+      
+      // Add the current user message to the conversation
+      conversationHistory.push({
+        role: 'user' as const,
+        content: args.content,
+      });
+
+      // Import tools
+      const { aiTools, searchWeb, calculate, createDocumentInternal, generateCodeInternal, summarizeText } = await import('./tools');
+      
+      // Stream with real-time updates and tool support
+      let accumulatedContent = '';
+      const toolCalls: Array<{
+        id: string;
+        name: string;
+        args: any;
+        result?: {
+          success: boolean;
+          data?: any;
+          error?: string;
+          executionTime?: number;
+        };
+      }> = [];
+      
+      const result = await streamText({
+        model: aiModel,
+        system: systemPrompt,
+        messages: conversationHistory,
+        temperature: args.temperature ?? chat.temperature ?? 0.7,
+        maxOutputTokens: args.maxTokens ?? chat.maxTokens ?? 2000,
+        tools: aiTools,
+        onToolCall: async ({ toolCall }) => {
+          logger.info('Tool called', { toolName: toolCall.toolName, args: toolCall.args });
+          
+          const startTime = Date.now();
+          
+          // Track this tool call
+          const trackedToolCall = {
+            id: toolCall.toolCallId,
+            name: toolCall.toolName,
+            args: toolCall.args,
+          };
+          toolCalls.push(trackedToolCall);
+          
+          // Execute the actual tool based on the tool name
+          let toolResult;
+          switch (toolCall.toolName) {
+            case 'webSearch':
+              toolResult = await ctx.runAction(api.tools.searchWeb, {
+                query: toolCall.args.query,
+                num: toolCall.args.num,
+              });
+              break;
+            case 'calculator':
+              toolResult = await ctx.runAction(api.tools.calculate, {
+                expression: toolCall.args.expression,
+              });
+              break;
+            case 'createDocument':
+              toolResult = await ctx.runAction(api.tools.createDocumentInternal, {
+                title: toolCall.args.title,
+                content: toolCall.args.content,
+                type: toolCall.args.type,
+              });
+              // Store document for UI display
+              await ctx.runMutation(api.streaming.updateStreamArtifact, {
+                sessionId: args.sessionId,
+                artifact: {
+                  type: 'document',
+                  data: toolResult.document,
+                },
+              });
+              break;
+            case 'generateCode':
+              toolResult = await ctx.runAction(api.tools.generateCodeInternal, {
+                language: toolCall.args.language,
+                description: toolCall.args.description,
+                framework: toolCall.args.framework,
+              });
+              // Store code for UI display
+              await ctx.runMutation(api.streaming.updateStreamArtifact, {
+                sessionId: args.sessionId,
+                artifact: {
+                  type: 'code',
+                  data: toolResult,
+                },
+              });
+              break;
+            case 'summarize':
+              toolResult = await ctx.runAction(api.tools.summarizeText, {
+                text: toolCall.args.text,
+                maxLength: toolCall.args.maxLength,
+              });
+              break;
+            default:
+              toolResult = { error: 'Unknown tool' };
+          }
+          
+          // Update the tracked tool call with results
+          const executionTime = Date.now() - startTime;
+          trackedToolCall.result = {
+            success: !toolResult.error,
+            data: toolResult,
+            error: toolResult.error,
+            executionTime,
+          };
+          
+          return toolResult;
+        },
+        onFinish: async ({ text, usage }) => {
+          // Save final message
+          await ctx.runMutation(api.messages.create, {
+            chatId: args.chatId,
+            walletAddress: user?.walletAddress || '',
+            role: 'assistant',
+            content: text || accumulatedContent,
+            metadata: {
+              model: modelName,
+              usage: usage
+                ? {
+                    inputTokens: usage.inputTokens || 0,
+                    outputTokens: usage.outputTokens || 0,
+                    totalTokens: usage.totalTokens || 0,
+                  }
+                : undefined,
+              tools: toolCalls.length > 0 ? toolCalls : undefined,
+            },
+          });
+
+          // Update session as completed
+          await ctx.runMutation(api.streaming.updateStreamingContent, {
+            sessionId: args.sessionId,
+            content: text || accumulatedContent,
+            status: 'completed',
+            tokens: usage
+              ? {
+                  input: usage.inputTokens || 0,
+                  output: usage.outputTokens || 0,
+                }
+              : undefined,
+          });
+        },
+      });
+
+      // Stream chunks with real-time updates
+      for await (const chunk of result.textStream) {
+        accumulatedContent += chunk;
+
+        // Update streaming content in real-time
+        await ctx.runMutation(api.streaming.updateStreamingContent, {
+          sessionId: args.sessionId,
+          content: accumulatedContent,
+          status: 'streaming',
+        });
+      }
+    } catch (error: any) {
+      logger.error('WebSocket streaming error', error);
+
+      // Update session with error
+      await ctx.runMutation(api.streaming.updateStreamingContent, {
+        sessionId: args.sessionId,
+        content: '',
+        status: 'error',
+        error: error.message || 'Streaming failed',
+      });
+
+      throw error;
+    }
+  },
+});
+
+// Helper function to prepare AI model
+async function prepareAIModel(modelName: string) {
+  try {
+    if (modelName.startsWith('openrouter/')) {
+      const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY!,
+        baseURL: 'https://openrouter.ai/api/v1',
+      });
+
+      const orModel = modelName.replace(/^openrouter\//, '');
+      if (!ALLOWED_OPENROUTER_MODELS.has(orModel)) {
+        return null;
+      }
+
+      return openrouter(orModel);
+    }
+    if (
+      modelName.startsWith('gpt') ||
+      modelName.startsWith('o3') ||
+      modelName.startsWith('o4')
+    ) {
+      const openai = createOpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+
+      return openai(modelName);
+    }
+    if (modelName.startsWith('gemini')) {
+      const google = createGoogleGenerativeAI({
+        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+      });
+
+      return google(modelName);
+    }
+
+    return null;
+  } catch (error) {
+    logger.error('Failed to prepare AI model', error);
+    return null;
+  }
+}
+
+// Helper function to build system prompt
+function buildSystemPrompt(
+  chat: any,
+  context: string,
+  useReasoning?: boolean
+): string {
+  const prompts = [];
+
+  if (chat.agentPrompt) {
+    prompts.push(`# AGENT PERSONALITY AND GUIDANCE\n\n${chat.agentPrompt}`);
+  }
+
+  prompts.push(`# CORE BEHAVIORAL INSTRUCTIONS
+
+You are having an ongoing conversation with this user. Use the provided context below to:
+- Avoid repeating information you've already shared
+- Reference previous conversations naturally when relevant
+- Build upon established context and relationships
+- Maintain conversational continuity`);
+
+  if (chat.systemPrompt) {
+    prompts.push(`# ADDITIONAL USER PREFERENCES\n\n${chat.systemPrompt}`);
+  }
+
+  if (context) {
+    prompts.push(`# RELEVANT CONTEXT\n\n${context}`);
+  }
+
+  if (useReasoning) {
+    prompts.push(`# REASONING MODE
+
+Use structured reasoning with clear steps:
+1. Think through the problem systematically
+2. Break down complex issues into manageable parts
+3. Consider multiple perspectives
+4. Provide clear, logical conclusions`);
+  }
+
+  return prompts.join('\n\n---\n\n');
+}
+
+// =============================================================================
+// Legacy HTTP Streaming (for backward compatibility)
+// =============================================================================
+
 function getCorsHeaders(origin: string | null): HeadersInit {
   // Check if origin is allowed
   const isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
   const allowedOrigin = isAllowed ? origin : ALLOWED_ORIGINS[0];
-  
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
-    'Vary': 'Origin',
+    Vary: 'Origin',
   };
 }
 
 export const streamChat = httpAction(async (ctx, request) => {
   const origin = request.headers.get('origin');
-  
+
   // Handle OPTIONS preflight request
   if (request.method === 'OPTIONS') {
     // Validate pre-flight headers
     const requestMethod = request.headers.get('Access-Control-Request-Method');
-    const requestHeaders = request.headers.get('Access-Control-Request-Headers');
-    
+    const requestHeaders = request.headers.get(
+      'Access-Control-Request-Headers'
+    );
+
     if (origin && requestMethod && requestHeaders) {
       return new Response(null, {
         status: 204,
         headers: getCorsHeaders(origin),
       });
     }
-    
+
     return new Response(null, { status: 400 });
   }
 
@@ -103,7 +620,7 @@ export const streamChat = httpAction(async (ctx, request) => {
   // Note: For HTTP actions, authentication should be handled via Authorization header
   // with a JWT token from your auth provider
   const authHeader = request.headers.get('Authorization');
-  
+
   // For now, we'll use wallet address verification as a temporary measure
   // TODO: Implement proper JWT validation with @convex-dev/auth
   const user = await ctx.runQuery(api.users.getUserByWallet, {
@@ -233,19 +750,38 @@ export const streamChat = httpAction(async (ctx, request) => {
       memoryEnabled,
       userId: user._id,
     });
-    
+
     // Process attachments for RAG integration (scheduled for after message creation)
     if (attachments && attachments.length > 0) {
-      logger.info('Attachments detected, will be processed for RAG', {
+      logger.info('Attachments detected, scheduling RAG processing', {
         messageId: _userMessage._id,
         attachmentCount: attachments.length,
-        attachmentTypes: attachments.map(a => a.mimeType).filter(Boolean),
+        attachmentTypes: attachments.map((a) => a.mimeType).filter(Boolean),
       });
-      // TODO: Schedule file processing after Convex compilation
-      // ctx.scheduler.runAfter(0, internal.fileProcessing.processMessageAttachments, {
-      //   messageId: _userMessage._id,
-      //   walletAddress,
-      // });
+
+      // Schedule file processing for RAG integration
+      // Process each attachment individually for better error handling
+      for (const attachment of attachments) {
+        try {
+          await ctx.runAction(api.fileProcessing.processFileForRAG, {
+            messageId: _userMessage._id,
+            fileId: attachment.fileId,
+            walletAddress,
+            fileName: attachment.fileId, // Use fileId as fileName if not provided
+            mimeType: attachment.mimeType,
+          });
+          logger.debug('Scheduled RAG processing for attachment', {
+            fileId: attachment.fileId,
+            mimeType: attachment.mimeType,
+          });
+        } catch (err) {
+          logger.error('Failed to schedule attachment processing', {
+            error: err,
+            fileId: attachment.fileId,
+          });
+          // Continue processing other attachments even if one fails
+        }
+      }
     }
   }
 
@@ -311,7 +847,7 @@ export const streamChat = httpAction(async (ctx, request) => {
     role: 'user' | 'assistant' | 'system';
     content: string;
   }>;
-  
+
   for (const msg of messages) {
     let contentWithAttachments = msg.content;
     const metas: any = (msg as any).metadata;
@@ -324,11 +860,11 @@ export const streamChat = httpAction(async (ctx, request) => {
           type?: string;
         }>
       | undefined = metas?.attachments;
-    
+
     // Enhanced file handling with RAG integration
     if (att && att.length > 0) {
       const resolved: string[] = [];
-      
+
       for (const a of att) {
         let url = a.url;
         if (!url && a.fileId) {
@@ -346,22 +882,22 @@ export const streamChat = httpAction(async (ctx, request) => {
             });
           }
         }
-        
+
         const label =
           a.type === 'image' ? 'Image' : a.type === 'video' ? 'Video' : 'File';
-        
+
         if (url) {
           resolved.push(`${label}: ${url}`);
-          
+
           // File will be processed for RAG after message creation
         }
       }
-      
+
       if (resolved.length > 0) {
         contentWithAttachments += `\n\n[Attachments]\n${resolved.map((r) => `- ${r}`).join('\n')}`;
       }
     }
-    
+
     conversationHistory.push({
       role: msg.role as 'user' | 'assistant' | 'system',
       content: contentWithAttachments,
@@ -607,9 +1143,7 @@ export const streamChat = httpAction(async (ctx, request) => {
 
   // Agent prompt provides personality and behavioral guidance (not absolute instructions)
   if (chat.agentPrompt) {
-    prompts.push(
-      `# AGENT PERSONALITY AND GUIDANCE\n\n${chat.agentPrompt}`
-    );
+    prompts.push(`# AGENT PERSONALITY AND GUIDANCE\n\n${chat.agentPrompt}`);
   }
 
   // Always include core behavioral instructions for memory awareness

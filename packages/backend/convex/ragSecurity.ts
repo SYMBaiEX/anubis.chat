@@ -3,8 +3,8 @@
  * Provides prompt injection protection, context sanitization, and user data isolation
  */
 
-import { createModuleLogger } from './utils/logger';
 import type { Doc, Id } from './_generated/dataModel';
+import { createModuleLogger } from './utils/logger';
 
 const logger = createModuleLogger('ragSecurity');
 
@@ -14,40 +14,40 @@ const INJECTION_PATTERNS = [
   /ignore\s+(previous|all|above)\s+(instructions?|rules?|prompts?)/i,
   /disregard\s+(previous|all|above)\s+(instructions?|rules?|prompts?)/i,
   /forget\s+(everything|all|previous)\s+(instructions?|rules?|prompts?)/i,
-  
+
   // Role manipulation attempts
   /you\s+are\s+now\s+[a-z\s]+/i,
   /act\s+as\s+[a-z\s]+/i,
   /pretend\s+to\s+be\s+[a-z\s]+/i,
   /roleplay\s+as\s+[a-z\s]+/i,
-  
+
   // System prompt extraction attempts
   /show\s+me\s+(your|the)\s+(system\s+)?prompts?/i,
   /what\s+(are|is)\s+your\s+(instructions?|prompts?|rules?)/i,
   /reveal\s+(your|the)\s+(instructions?|prompts?|configuration)/i,
   /print\s+(your|the)\s+(instructions?|prompts?|rules?)/i,
-  
+
   // Data exfiltration attempts
   /show\s+me\s+all\s+(user|chat|message|data)/i,
   /list\s+all\s+(users?|chats?|messages?|documents?)/i,
   /dump\s+(database|data|users?|chats?)/i,
-  
+
   // Command injection patterns
   /\$\{.*\}/g, // Template literals
   /\{\{.*\}\}/g, // Mustache templates
   /<script.*?>.*?<\/script>/gi, // Script tags
   /javascript:/gi, // JavaScript protocol
-  
+
   // SQL-like patterns (in case of confusion)
   /;\s*(DROP|DELETE|UPDATE|INSERT|ALTER)\s+/i,
   /--\s*$/gm, // SQL comments
-  
+
   // Special characters that might break out of context
   /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, // Control characters
 ];
 
 // Maximum context size to prevent overflow attacks
-const MAX_CONTEXT_SIZE = 32000; // ~8k tokens
+const MAX_CONTEXT_SIZE = 32_000; // ~8k tokens
 const MAX_DOCUMENT_CHUNKS = 10;
 const MAX_CITATION_LENGTH = 500;
 
@@ -62,7 +62,7 @@ export function sanitizeUserInput(input: string): {
   const threats: string[] = [];
   let sanitized = input;
   let blocked = false;
-  
+
   // Check for injection patterns
   for (const pattern of INJECTION_PATTERNS) {
     if (pattern.test(input)) {
@@ -74,7 +74,7 @@ export function sanitizeUserInput(input: string): {
       });
     }
   }
-  
+
   // If injection detected, sanitize aggressively
   if (blocked) {
     // Remove all suspicious patterns
@@ -90,13 +90,13 @@ export function sanitizeUserInput(input: string): {
       .replace(/\n{4,}/g, '\n\n\n') // Limit excessive newlines
       .trim();
   }
-  
+
   // Check for suspicious length (possible DoS)
-  if (input.length > 10000) {
+  if (input.length > 10_000) {
     threats.push('Excessively long input');
-    sanitized = sanitized.slice(0, 10000);
+    sanitized = sanitized.slice(0, 10_000);
   }
-  
+
   return {
     sanitized,
     threats,
@@ -118,7 +118,7 @@ export function sanitizeRAGContext(
   const warnings: string[] = [];
   let sanitized = context;
   let truncated = false;
-  
+
   // Remove any potential prompt instructions in the context
   const instructionPatterns = [
     /###\s*Instructions?:/gi,
@@ -126,32 +126,32 @@ export function sanitizeRAGContext(
     /You\s+must\s+[^.]+\./gi,
     /Your\s+task\s+is\s+to\s+[^.]+\./gi,
   ];
-  
+
   for (const pattern of instructionPatterns) {
     if (pattern.test(context)) {
       warnings.push('Removed potential instructions from context');
       sanitized = sanitized.replace(pattern, '[CONTENT REMOVED]');
     }
   }
-  
+
   // Escape special delimiters that might break out of context
   sanitized = sanitized
     .replace(/```/g, '\\`\\`\\`') // Escape code blocks
     .replace(/^#{1,3}\s/gm, '') // Remove markdown headers
     .replace(/\*\*\*/g, '\\*\\*\\*'); // Escape bold markers
-  
+
   // Truncate if too long
   if (sanitized.length > MAX_CONTEXT_SIZE) {
     sanitized = sanitized.slice(0, MAX_CONTEXT_SIZE) + '\n[CONTEXT TRUNCATED]';
     truncated = true;
     warnings.push('Context truncated due to size');
   }
-  
+
   // Add source attribution to prevent confusion
   if (sourceDocumentId) {
     sanitized = `[SOURCE: Document ${sourceDocumentId}]\n${sanitized}\n[END SOURCE]`;
   }
-  
+
   return {
     sanitized,
     truncated,
@@ -164,7 +164,11 @@ export function sanitizeRAGContext(
  */
 export function createIsolatedContext(
   userQuery: string,
-  ragContexts: Array<{ content: string; documentId: Id<'documents'>; score: number }>
+  ragContexts: Array<{
+    content: string;
+    documentId: Id<'documents'>;
+    score: number;
+  }>
 ): {
   prompt: string;
   metadata: {
@@ -175,11 +179,12 @@ export function createIsolatedContext(
 } {
   // Sanitize user query first
   const { sanitized: sanitizedQuery, blocked } = sanitizeUserInput(userQuery);
-  
+
   if (blocked) {
     // Return a safe response for blocked queries
     return {
-      prompt: 'I cannot process this request as it contains potentially harmful content.',
+      prompt:
+        'I cannot process this request as it contains potentially harmful content.',
       metadata: {
         contextCount: 0,
         totalTokens: 0,
@@ -187,36 +192,38 @@ export function createIsolatedContext(
       },
     };
   }
-  
+
   // Build isolated context with clear boundaries
   const contextParts: string[] = [];
   let totalTokens = 0;
   let truncated = false;
-  
+
   // Add system boundary
   contextParts.push('=== BEGIN CONTEXT ===');
   contextParts.push('The following information is from your knowledge base:');
   contextParts.push('');
-  
+
   // Add RAG contexts with isolation
   const relevantContexts = ragContexts
     .slice(0, MAX_DOCUMENT_CHUNKS)
-    .filter(ctx => ctx.score > 0.7); // Only high-relevance content
-  
+    .filter((ctx) => ctx.score > 0.7); // Only high-relevance content
+
   for (const context of relevantContexts) {
     const { sanitized, truncated: ctxTruncated } = sanitizeRAGContext(
       context.content,
       context.documentId
     );
-    
-    contextParts.push(`--- Document ${context.documentId} (Relevance: ${context.score.toFixed(2)}) ---`);
+
+    contextParts.push(
+      `--- Document ${context.documentId} (Relevance: ${context.score.toFixed(2)}) ---`
+    );
     contextParts.push(sanitized);
     contextParts.push('');
-    
+
     totalTokens += Math.ceil(sanitized.length / 4); // Rough token estimate
     if (ctxTruncated) truncated = true;
   }
-  
+
   // Add clear boundary before user query
   contextParts.push('=== END CONTEXT ===');
   contextParts.push('');
@@ -224,8 +231,10 @@ export function createIsolatedContext(
   contextParts.push(sanitizedQuery);
   contextParts.push('=== END USER QUERY ===');
   contextParts.push('');
-  contextParts.push('Please answer the user query based on the provided context. If the context doesn\'t contain relevant information, say so.');
-  
+  contextParts.push(
+    "Please answer the user query based on the provided context. If the context doesn't contain relevant information, say so."
+  );
+
   return {
     prompt: contextParts.join('\n'),
     metadata: {
@@ -244,7 +253,7 @@ export function sanitizeCitations(
   userOwnedDocumentIds: Set<string>
 ): string[] {
   return citations
-    .filter(citation => {
+    .filter((citation) => {
       // Only allow citations from user's own documents
       const docIdMatch = citation.match(/Document\s+([a-zA-Z0-9]+)/);
       if (docIdMatch && !userOwnedDocumentIds.has(docIdMatch[1])) {
@@ -256,7 +265,7 @@ export function sanitizeCitations(
       }
       return true;
     })
-    .map(citation => {
+    .map((citation) => {
       // Truncate long citations
       if (citation.length > MAX_CITATION_LENGTH) {
         return citation.slice(0, MAX_CITATION_LENGTH) + '...';
@@ -277,7 +286,7 @@ export async function verifyDocumentOwnership(
   try {
     const doc = await ctx.db.get(documentId);
     if (!doc) return false;
-    
+
     // Check if document owner matches user
     return doc.ownerId === userId;
   } catch (error) {
@@ -293,7 +302,7 @@ export function filterSearchResultsByOwnership<T extends { ownerId: string }>(
   results: T[],
   userId: string
 ): T[] {
-  return results.filter(result => result.ownerId === userId);
+  return results.filter((result) => result.ownerId === userId);
 }
 
 /**
@@ -317,7 +326,7 @@ CONTEXT BOUNDARIES:
 - Only reference information explicitly provided in the context.
 - Do not make up or hallucinate information not in the context.
 `;
-  
+
   return `${securityInstructions}\n\n${basePrompt}`;
 }
 
@@ -333,7 +342,7 @@ export function logSecurityEvent(
     timestamp: Date.now(),
     ...details,
   });
-  
+
   // In production, this should also:
   // 1. Send to security monitoring service
   // 2. Trigger alerts for critical events
@@ -347,10 +356,10 @@ const ragQueryCounts = new Map<string, { count: number; resetAt: number }>();
 
 export function checkRAGRateLimit(userId: string): boolean {
   const now = Date.now();
-  const limit = { queries: 100, window: 60000 }; // 100 queries per minute
-  
+  const limit = { queries: 100, window: 60_000 }; // 100 queries per minute
+
   const current = ragQueryCounts.get(userId);
-  
+
   if (!current || current.resetAt <= now) {
     ragQueryCounts.set(userId, {
       count: 1,
@@ -358,12 +367,12 @@ export function checkRAGRateLimit(userId: string): boolean {
     });
     return true;
   }
-  
+
   if (current.count >= limit.queries) {
     logger.warn('RAG rate limit exceeded', { userId, count: current.count });
     return false;
   }
-  
+
   current.count++;
   return true;
 }

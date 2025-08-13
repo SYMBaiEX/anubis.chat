@@ -85,7 +85,7 @@ describe('Result utilities', () => {
     });
 
     it('should handle empty array', () => {
-      const results: any[] = [];
+      const results: ReturnType<typeof success<string>>[] = [];
       const combined = all(results);
 
       expect(isSuccess(combined)).toBe(true);

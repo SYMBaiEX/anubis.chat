@@ -13,10 +13,11 @@ const logger = createModuleLogger('httpAuth');
 // Rate limiting configuration
 const RATE_LIMITS = {
   // Per endpoint limits (requests per minute)
-  '/stream-chat': { requests: 60, window: 60000 }, // 60 req/min
-  '/generateUploadUrl': { requests: 10, window: 60000 }, // 10 uploads/min
-  '/verify-payment': { requests: 5, window: 60000 }, // 5 payments/min
-  default: { requests: 100, window: 60000 }, // 100 req/min default
+  '/stream-chat': { requests: 60, window: 60_000 }, // 60 req/min (legacy)
+  '/generateUploadUrl': { requests: 10, window: 60_000 }, // 10 uploads/min
+  '/verify-payment': { requests: 5, window: 60_000 }, // 5 payments/min
+  default: { requests: 100, window: 60_000 }, // 100 req/min default
+  // Note: WebSocket streaming uses Convex's built-in rate limiting
 };
 
 // In-memory rate limit store (use Redis in production)
@@ -33,7 +34,7 @@ export async function authenticateHttpRequest(
   try {
     // Extract bearer token from Authorization header
     const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!(authHeader && authHeader.startsWith('Bearer '))) {
       logger.warn('Missing or invalid Authorization header');
       return null;
     }
@@ -51,14 +52,14 @@ export async function authenticateHttpRequest(
       return await db.get(userId);
     });
 
-    if (!user || !user.isActive) {
+    if (!(user && user.isActive)) {
       logger.warn('User not found or inactive', { userId });
       return null;
     }
 
-    logger.info('HTTP request authenticated', { 
+    logger.info('HTTP request authenticated', {
       userId: user._id,
-      walletAddress: user.walletAddress 
+      walletAddress: user.walletAddress,
     });
 
     return user as Doc<'users'>;
@@ -93,7 +94,11 @@ export function checkRateLimit(
 
   // Check if limit exceeded
   if (current.count >= limit.requests) {
-    logger.warn('Rate limit exceeded', { endpoint, identifier, count: current.count });
+    logger.warn('Rate limit exceeded', {
+      endpoint,
+      identifier,
+      count: current.count,
+    });
     return false;
   }
 
@@ -136,7 +141,9 @@ export function getRateLimitHeaders(
 
   return {
     'X-RateLimit-Limit': String(limit.requests),
-    'X-RateLimit-Remaining': String(Math.max(0, limit.requests - current.count)),
+    'X-RateLimit-Remaining': String(
+      Math.max(0, limit.requests - current.count)
+    ),
     'X-RateLimit-Reset': String(current.resetAt),
   };
 }
@@ -166,17 +173,17 @@ export function createAuthenticatedResponse(
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Vary': 'Origin',
+    Vary: 'Origin',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
     ...rateLimitHeaders,
   };
 
-  return new Response(
-    typeof body === 'string' ? body : JSON.stringify(body),
-    { status, headers }
-  );
+  return new Response(typeof body === 'string' ? body : JSON.stringify(body), {
+    status,
+    headers,
+  });
 }
 
 /**
@@ -197,41 +204,41 @@ export function validateRequestBody<T>(
   }
 
   const validated: any = {};
-  
+
   for (const [key, config] of Object.entries(schema)) {
     const value = (body as any)[key];
-    
+
     // Check required fields
     if (config.required && value === undefined) {
       logger.warn('Missing required field', { field: key });
       return null;
     }
-    
+
     // Skip optional undefined fields
     if (value === undefined) {
       continue;
     }
-    
+
     // Type validation
     const actualType = Array.isArray(value) ? 'array' : typeof value;
     if (actualType !== config.type) {
-      logger.warn('Invalid field type', { 
-        field: key, 
-        expected: config.type, 
-        actual: actualType 
+      logger.warn('Invalid field type', {
+        field: key,
+        expected: config.type,
+        actual: actualType,
       });
       return null;
     }
-    
+
     // Custom validation
     if (config.validator && !config.validator(value)) {
       logger.warn('Field validation failed', { field: key });
       return null;
     }
-    
+
     validated[key] = value;
   }
-  
+
   return validated as T;
 }
 

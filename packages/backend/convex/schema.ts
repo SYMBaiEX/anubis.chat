@@ -186,6 +186,22 @@ export default defineSchema({
   ...authTables,
 
   // =============================================================================
+  // Token Price Cache
+  // =============================================================================
+  tokenPrices: defineTable({
+    symbol: v.string(), // e.g., 'SOL', 'USDC'
+    priceUsd: v.number(),
+    priceChange24h: v.optional(v.number()),
+    marketCap: v.optional(v.number()),
+    volume24h: v.optional(v.number()),
+    mintAddress: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_symbol', ['symbol'])
+    .index('by_updated', ['updatedAt']),
+
+  // =============================================================================
   // Extended User Profile & Admin Control
   // =============================================================================
 
@@ -2418,4 +2434,35 @@ export default defineSchema({
     .index('by_severity_timestamp', ['severity', 'timestamp'])
     .index('by_event_type', ['eventType', 'timestamp'])
     .index('by_user', ['userId', 'timestamp']),
+
+  // =============================================================================
+  // Streaming Sessions for Real-time WebSocket Updates
+  // =============================================================================
+  streamingSessions: defineTable({
+    chatId: v.id('chats'),
+    messageId: v.id('messages'),
+    userId: v.id('users'),
+    status: v.union(
+      v.literal('initializing'),
+      v.literal('streaming'),
+      v.literal('completed'),
+      v.literal('error')
+    ),
+    content: v.string(),
+    tokens: v.object({
+      input: v.number(),
+      output: v.number(),
+    }),
+    artifacts: v.optional(v.array(v.object({
+      type: v.union(v.literal('document'), v.literal('code'), v.literal('markdown')),
+      data: v.any(),
+    }))),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_chat', ['chatId'])
+    .index('by_status', ['status'])
+    .index('by_created', ['createdAt']),
 });

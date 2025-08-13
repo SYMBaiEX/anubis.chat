@@ -124,37 +124,62 @@ export const createMyMessage = mutation({
       throw new Error('Chat not found or access denied');
     }
 
-    // For user messages, check subscription limits
+    // For user messages, check subscription limits and consume credits
     if (args.role === 'user' && user.subscription) {
       const { subscription } = user;
-      const overLimit =
-        (subscription.messagesUsed ?? 0) >= (subscription.messagesLimit ?? 0);
-      if (overLimit) {
-        throw new Error(
-          'Message limit reached. Please upgrade your subscription.'
-        );
-      }
-
       const model = args.metadata?.model || chat.model;
       const premiumModels = ['gpt-4o', 'claude-3.5-sonnet', 'gemini-1.5-pro'];
       const isPremium = premiumModels.includes(model);
-      const overPremium =
-        (subscription.premiumMessagesUsed ?? 0) >=
-        (subscription.premiumMessagesLimit ?? 0);
-      if (isPremium && overPremium) {
-        throw new Error(
-          'Premium message limit reached. Please upgrade to Pro Plus.'
-        );
+      
+      // Calculate available resources
+      const monthlyMessagesRemaining = (subscription.messagesLimit ?? 0) - (subscription.messagesUsed ?? 0);
+      const monthlyPremiumRemaining = (subscription.premiumMessagesLimit ?? 0) - (subscription.premiumMessagesUsed ?? 0);
+      const purchasedCredits = subscription.messageCredits ?? 0;
+      const purchasedPremiumCredits = subscription.premiumMessageCredits ?? 0;
+      
+      // Check if user has enough resources for this message
+      if (isPremium) {
+        const totalPremiumAvailable = monthlyPremiumRemaining + purchasedPremiumCredits;
+        if (totalPremiumAvailable <= 0) {
+          throw new Error(
+            'Premium message limit reached. Please purchase more credits or upgrade to Pro Plus.'
+          );
+        }
+      } else {
+        const totalStandardAvailable = monthlyMessagesRemaining + purchasedCredits;
+        if (totalStandardAvailable <= 0) {
+          throw new Error(
+            'Message limit reached. Please purchase more credits or upgrade your subscription.'
+          );
+        }
       }
 
-      const updates: Record<string, unknown> = {
-        'subscription.messagesUsed': (subscription.messagesUsed ?? 0) + 1,
-      };
+      // Consume credits in the correct order: monthly first, then purchased
+      const updatedSubscription = { ...subscription };
+      
       if (isPremium) {
-        updates['subscription.premiumMessagesUsed'] =
-          (subscription.premiumMessagesUsed ?? 0) + 1;
+        // Consume premium message
+        if (monthlyPremiumRemaining > 0) {
+          // Use monthly premium allowance first
+          updatedSubscription.premiumMessagesUsed = (subscription.premiumMessagesUsed ?? 0) + 1;
+        } else {
+          // Use purchased premium credits
+          updatedSubscription.premiumMessageCredits = (subscription.premiumMessageCredits ?? 0) - 1;
+        }
       }
-      await ctx.db.patch(user._id, updates);
+      
+      // Always consume a standard message (even for premium)
+      if (monthlyMessagesRemaining > 0) {
+        // Use monthly allowance first
+        updatedSubscription.messagesUsed = (subscription.messagesUsed ?? 0) + 1;
+      } else {
+        // Use purchased credits
+        updatedSubscription.messageCredits = (subscription.messageCredits ?? 0) - 1;
+      }
+      
+      await ctx.db.patch(user._id, {
+        subscription: updatedSubscription,
+      });
     }
 
     const now = Date.now();
@@ -201,7 +226,8 @@ export const createMyMessage = mutation({
 
     await ctx.db.patch(args.chatId, updateData);
 
-    return await ctx.db.get(messageId);
+    // Return just the message ID for compatibility with streaming session
+    return messageId;
   },
 });
 

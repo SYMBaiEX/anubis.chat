@@ -35,22 +35,25 @@ export const processDocument = action({
 
       // Split content into chunks
       const chunks = splitIntoChunks(content, CHUNK_SIZE, CHUNK_OVERLAP);
-      
+
       let chunksCreated = 0;
 
       // Process each chunk
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
-        
+
         if (chunk.length < MIN_CHUNK_SIZE) {
           continue; // Skip very small chunks
         }
 
         try {
           // Generate embedding for the chunk
-          const embedding = await ctx.runAction(api.embeddings.generateEmbedding, {
-            text: chunk,
-          });
+          const embedding = await ctx.runAction(
+            api.embeddings.generateEmbedding,
+            {
+              text: chunk,
+            }
+          );
 
           // Create document chunk with embedding
           await ctx.runMutation(api.documents.createChunk, {
@@ -113,12 +116,12 @@ function splitIntoChunks(
 
   while (start < text.length) {
     let end = start + chunkSize;
-    
+
     // Don't split in the middle of a word if possible
     if (end < text.length) {
       const nextSpace = text.indexOf(' ', end);
       const prevSpace = text.lastIndexOf(' ', end);
-      
+
       // If we can find a space within reasonable distance, use it
       if (nextSpace !== -1 && nextSpace - end < 100) {
         end = nextSpace;
@@ -134,7 +137,7 @@ function splitIntoChunks(
 
     // Move start position considering overlap
     start = Math.max(start + chunkSize - overlap, start + 1);
-    
+
     // Prevent infinite loop
     if (start >= text.length) {
       break;
@@ -166,7 +169,7 @@ export const reprocessAllDocuments = action({
   handler: async (ctx, args) => {
     try {
       const limit = args.limit || 50;
-      
+
       // Get documents to reprocess
       const documents = await ctx.runQuery(api.documents.getByOwner, {
         ownerId: args.ownerId || '',
@@ -185,7 +188,7 @@ export const reprocessAllDocuments = action({
 
           // Get document content (this would need to be implemented based on your document storage)
           const content = await getDocumentContent(ctx, doc);
-          
+
           if (content) {
             const result = await ctx.runAction(processDocument, {
               documentId: doc._id,
@@ -226,7 +229,10 @@ export const reprocessAllDocuments = action({
  * Get document content for reprocessing
  * This is a placeholder - implement based on your document storage strategy
  */
-async function getDocumentContent(ctx: any, document: any): Promise<string | null> {
+async function getDocumentContent(
+  ctx: any,
+  document: any
+): Promise<string | null> {
   try {
     // This would depend on how documents are stored
     // For file uploads, you might need to fetch from storage

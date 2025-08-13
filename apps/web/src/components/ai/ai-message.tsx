@@ -6,13 +6,14 @@ import {
   Copy,
   Download,
   FileText,
-  Image,
+  Image as ImageIcon,
   Paperclip,
   RefreshCw,
   ThumbsDown,
   ThumbsUp,
   User,
 } from 'lucide-react';
+import NextImage from 'next/image';
 import { useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -112,11 +113,15 @@ export function AIMessage({
                 >
                   {attachment.type === 'image' && attachment.url ? (
                     <div className="relative">
-                      <img
-                        alt="Attachment"
-                        className="h-32 w-auto max-w-xs object-cover"
-                        src={attachment.url}
-                      />
+                      <div className="relative h-32 w-32 max-w-xs">
+                        <NextImage
+                          alt="Attachment"
+                          className="object-cover"
+                          fill
+                          sizes="128px"
+                          src={attachment.url}
+                        />
+                      </div>
                       <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity group-hover/attachment:opacity-100">
                         <div className="flex h-full items-center justify-center gap-2">
                           <Button
@@ -130,7 +135,7 @@ export function AIMessage({
                               rel="noopener noreferrer"
                               target="_blank"
                             >
-                              <Image className="h-4 w-4" />
+                              <ImageIcon className="h-4 w-4" />
                             </a>
                           </Button>
                           <Button
@@ -150,7 +155,7 @@ export function AIMessage({
                     <div className="flex items-center gap-3 px-3 py-2">
                       <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
                         {attachment.type === 'image' ? (
-                          <Image className="h-5 w-5" />
+                          <ImageIcon className="h-5 w-5" />
                         ) : attachment.mimeType === 'application/pdf' ? (
                           <FileText className="h-5 w-5" />
                         ) : (
@@ -203,36 +208,57 @@ export function AIMessage({
             )}
 
             {/* Tool invocations - AI SDK v5 format in parts array */}
-            {(message as any).parts?.some((part: any) =>
-              part.type?.startsWith('tool-')
-            ) && (
-              <div className="mt-3 space-y-2 border-t pt-3">
-                {(message as any).parts
-                  ?.filter((part: any) => part.type?.startsWith('tool-'))
-                  .map((tool: any, index: number) => (
-                    <div
-                      className="rounded-lg bg-background/50 p-2"
-                      key={`${tool.toolCallId || index}`}
-                    >
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="font-medium">Tool:</span>
-                        <code className="rounded bg-muted px-1 py-0.5">
-                          {tool.toolName || tool.type?.replace('tool-', '')}
-                        </code>
-                      </div>
-                      {tool.output && (
-                        <div className="mt-1 text-muted-foreground text-xs">
-                          <pre className="whitespace-pre-wrap">
-                            {typeof tool.output === 'string'
-                              ? tool.output
-                              : JSON.stringify(tool.output, null, 2)}
-                          </pre>
+            {Array.isArray(
+              (message as unknown as { parts?: unknown[] }).parts
+            ) &&
+              (
+                message as unknown as { parts?: Array<{ type?: string }> }
+              ).parts?.some(
+                (part) =>
+                  typeof part?.type === 'string' &&
+                  part.type.startsWith('tool-')
+              ) && (
+                <div className="mt-3 space-y-2 border-t pt-3">
+                  {(
+                    message as unknown as {
+                      parts?: Array<{
+                        type?: string;
+                        toolCallId?: string;
+                        toolName?: string;
+                        output?: unknown;
+                      }>;
+                    }
+                  ).parts
+                    ?.filter(
+                      (part) =>
+                        typeof part?.type === 'string' &&
+                        part.type.startsWith('tool-')
+                    )
+                    .map((tool, index: number) => (
+                      <div
+                        className="rounded-lg bg-background/50 p-2"
+                        key={`${tool.toolCallId || index}`}
+                      >
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="font-medium">Tool:</span>
+                          <code className="rounded bg-muted px-1 py-0.5">
+                            {tool.toolName || tool.type?.replace('tool-', '')}
+                          </code>
                         </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            )}
+                        {tool.output !== undefined && tool.output !== null && (
+                          <div className="mt-1 text-muted-foreground text-xs">
+                            <pre className="whitespace-pre-wrap">
+                              {typeof tool.output === 'string'
+                                ? tool.output
+                                : JSON.stringify(tool.output, null, 2) ||
+                                  'No output'}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
 
             {/* Actions */}
             {isAssistant && (

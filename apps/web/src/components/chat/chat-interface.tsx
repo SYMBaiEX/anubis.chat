@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
+import type { Doc, Id } from '@convex/_generated/dataModel';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { MessageSquare, Plus, Sidebar } from 'lucide-react';
 import Link from 'next/link';
@@ -37,6 +37,7 @@ import type { Chat, StreamingMessage } from '@/lib/types/api';
 import type { MinimalMessage } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { ArtifactView } from './artifact-view';
 import { ChatHeader } from './chat-header';
 import { ChatSettingsDialog } from './chat-settings-dialog';
 import { ChatWelcome } from './chat-welcome';
@@ -111,6 +112,20 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     useState(false);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [_showSearchDialog, _setShowSearchDialog] = useState(false);
+
+  // Artifact state for tool outputs
+  const [currentArtifact, setCurrentArtifact] = useState<{
+    id?: string;
+    title: string;
+    content?: string;
+    code?: string;
+    type: 'document' | 'code' | 'markdown';
+    language?: string;
+    framework?: string;
+    description?: string;
+    createdAt?: string;
+  } | null>(null);
+  const [showArtifact, setShowArtifact] = useState(false);
 
   // Theme hook from next-themes
   const { theme, setTheme } = useTheme();
@@ -463,7 +478,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         id: chatId as Id<'chats'>,
       });
       if (selectedChatId === chatId) {
-        const remainingChats = chats?.filter((chat) => chat._id !== chatId);
+        const remainingChats = chats?.filter((chat: Doc<'chats'>) => chat._id !== chatId);
         setSelectedChatId(remainingChats?.[0]?._id);
       }
     } catch (error: any) {
@@ -615,8 +630,13 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     <div
       className={cn('flex h-full min-h-0 w-full overflow-hidden', className)}
     >
-      {/* Main Chat Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* Main Chat Area - Adjust width when artifact is shown on desktop */}
+      <div
+        className={cn(
+          'flex min-h-0 flex-col overflow-hidden transition-all duration-300',
+          showArtifact ? 'lg:w-1/2' : 'flex-1'
+        )}
+      >
         {/* Top Bar */}
         <div className="flex h-14 min-h-[3.5rem] items-center justify-between border-border/50 border-b bg-card/30 px-2 backdrop-blur sm:px-3 md:px-4 lg:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2 md:gap-3">
@@ -764,8 +784,21 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                         regeneratedCount?: number;
                         lastActionAt?: number;
                       };
+                      metadata?: {
+                        tools?: Array<{
+                          id: string;
+                          name: string;
+                          args: any;
+                          result?: {
+                            success: boolean;
+                            data?: any;
+                            error?: string;
+                            executionTime?: number;
+                          };
+                        }>;
+                      };
                     };
-                    const normalized: MinimalMessage = {
+                    const normalized: MinimalMessage & { toolCalls?: any[] } = {
                       _id: String(doc._id),
                       content: doc.content,
                       role: doc.role,
@@ -773,9 +806,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                         doc.createdAt ?? doc._creationTime ?? Date.now(),
                       rating: doc.rating,
                       actions: doc.actions,
+                      toolCalls: doc.metadata?.tools || [],
                     };
                     return normalized;
                   })}
+                  onArtifactClick={(artifact) => {
+                    setCurrentArtifact(artifact);
+                    setShowArtifact(true);
+                  }}
                   onMessageRegenerate={handleRegenerateMessage}
                 />
               )}
@@ -1026,6 +1064,17 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           variant="modal"
         />
       )}
+
+      {/* Artifact View - Split view on desktop, overlay on mobile */}
+      <ArtifactView
+        artifact={currentArtifact}
+        className="lg:border-l"
+        isOpen={showArtifact}
+        onClose={() => {
+          setShowArtifact(false);
+          setCurrentArtifact(null);
+        }}
+      />
     </div>
   );
 }
