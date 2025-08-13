@@ -129,7 +129,10 @@ export function useCommandPalette({
           toast.success('Previous chat opened');
         } else if (currentIndex === 0) {
           // Wrap to last chamber
-          onSelectChat?.(chats.at(-1).id);
+          const lastChat = chats.at(-1);
+          if (lastChat) {
+            onSelectChat?.(lastChat.id);
+          }
           toast.success('Wrapped to last chat');
         }
       }
@@ -247,7 +250,7 @@ export function useCommandPalette({
         toast.error(`Unknown command: ${commandId}`);
       }
     },
-    [commandHandlers[commandId]]
+[commandHandlers]
   );
 
   // Build keyboard shortcuts object - memoized and only for enabled commands with valid shortcuts

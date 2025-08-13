@@ -189,7 +189,7 @@ export function useAIChat({
     }
 
     const lastMessage = messages.at(-1);
-    if (lastMessage.role === 'assistant') {
+    if (lastMessage?.role === 'assistant') {
       // Context-aware suggestions based on last response
       return [
         'Can you explain that in more detail?',

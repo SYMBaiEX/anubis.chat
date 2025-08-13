@@ -460,12 +460,12 @@ export function AIChatInterface({
           <AnimatePresence mode="popLayout">
             {messages.map((message) => (
               <EnhancedMessageBubble
-                isStreaming={isStreaming && messages.at(-1).id === message.id}
+                isStreaming={isStreaming && messages.at(-1)?.id === message.id}
                 key={message.id}
                 message={message}
                 onRegenerate={
                   message.role === 'assistant' &&
-                  messages.at(-1).id === message.id
+                  messages.at(-1)?.id === message.id
                     ? handleRegenerateMessage
                     : undefined
                 }

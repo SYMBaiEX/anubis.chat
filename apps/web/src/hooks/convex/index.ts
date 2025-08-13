@@ -32,7 +32,7 @@ export {
   unwrap,
   unwrapOr,
 } from '@/lib/utils/result';
-export * from './useAuth';
+// export * from './useAuth'; // Temporarily disabled - no exports available
 export * from './useChats';
 // Performance hooks
 export * from './useConvexPerformance';
