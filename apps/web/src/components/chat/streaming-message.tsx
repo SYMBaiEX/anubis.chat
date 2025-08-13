@@ -56,7 +56,7 @@ export function StreamingMessage({
     }, 16); // ~60fps for smooth animation
 
     return () => clearInterval(interval);
-  }, [content]);
+  }, [content, displayContent.length]);
 
   // Auto-scroll as content streams
   useEffect(() => {

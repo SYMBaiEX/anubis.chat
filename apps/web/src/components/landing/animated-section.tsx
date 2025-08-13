@@ -2,7 +2,7 @@
 
 import { motion, useScroll, useTransform } from 'framer-motion';
 import type React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AnubisAurora from '@/components/anubisAurora';
 import { TombBackground } from '@/components/landing/tomb-background';
 
@@ -233,7 +233,9 @@ function getParallaxStyle(
 }
 
 function getEdgeMaskStyle(edgeMask: boolean): React.CSSProperties | undefined {
-  if (!edgeMask) return;
+  if (!edgeMask) {
+    return;
+  }
   const mask =
     'radial-gradient(circle at 50% 50%, transparent 0 55%, white 75%)';
   return { WebkitMaskImage: mask, maskImage: mask };
@@ -255,8 +257,14 @@ function decideAuroraVisibility(args: {
     useInViewReveal,
     useScrollReveal,
   } = args;
-  if (forceAurora) return true;
-  if (!motionEnabled) return false;
-  if (auroraVariant === undefined) return false;
+  if (forceAurora) {
+    return true;
+  }
+  if (!motionEnabled) {
+    return false;
+  }
+  if (auroraVariant === undefined) {
+    return false;
+  }
   return hasScrolled || useInViewReveal || useScrollReveal;
 }

@@ -8,7 +8,6 @@ import { useMutation, useQuery } from 'convex/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowDown,
-  Bot,
   Loader2,
   MessageSquare,
   Plus,
@@ -139,7 +138,7 @@ export function AIChatInterface({
     },
     onError: (error) => {
       log.error('Chat error', { error: error.message });
-      toast.error('Chat error: ' + error.message);
+      toast.error(`Chat error: ${error.message}`);
     },
   });
 
@@ -259,7 +258,9 @@ export function AIChatInterface({
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback((smooth = true) => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current) {
+      return;
+    }
 
     const scrollElement = scrollRef.current;
     const targetScroll =
@@ -279,7 +280,9 @@ export function AIChatInterface({
 
   // Handle scroll events
   const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current) {
+      return;
+    }
 
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
@@ -457,14 +460,12 @@ export function AIChatInterface({
           <AnimatePresence mode="popLayout">
             {messages.map((message) => (
               <EnhancedMessageBubble
-                isStreaming={
-                  isStreaming && messages[messages.length - 1].id === message.id
-                }
+                isStreaming={isStreaming && messages.at(-1).id === message.id}
                 key={message.id}
                 message={message}
                 onRegenerate={
                   message.role === 'assistant' &&
-                  messages[messages.length - 1].id === message.id
+                  messages.at(-1).id === message.id
                     ? handleRegenerateMessage
                     : undefined
                 }

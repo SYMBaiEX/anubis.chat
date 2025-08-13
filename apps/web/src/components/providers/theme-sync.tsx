@@ -25,12 +25,16 @@ export function ThemeSync() {
 
   // Sync theme from database to next-themes
   useEffect(() => {
-    if (!userPreferences) return;
+    if (!userPreferences) {
+      return;
+    }
 
     const dbTheme = userPreferences.theme;
 
     // Skip if already synced to prevent loops
-    if (lastSyncedTheme.current === dbTheme) return;
+    if (lastSyncedTheme.current === dbTheme) {
+      return;
+    }
 
     // Skip if theme is already correct
     if (theme === dbTheme) {
@@ -48,11 +52,13 @@ export function ThemeSync() {
     if (typeof window !== 'undefined' && dbTheme) {
       document.cookie = `theme=${dbTheme};path=/;max-age=31536000;samesite=strict`;
     }
-  }, [userPreferences?.theme, theme, setTheme]);
+  }, [userPreferences?.theme, theme, setTheme, userPreferences]);
 
   // Set initial theme from cookie on mount
   useEffect(() => {
-    if (hasInitialized.current) return;
+    if (hasInitialized.current) {
+      return;
+    }
     hasInitialized.current = true;
 
     // Check for theme cookie
@@ -73,7 +79,9 @@ export function ThemeSync() {
 
   // Sync font size preference
   useEffect(() => {
-    if (!userPreferences?.fontSize) return;
+    if (!userPreferences?.fontSize) {
+      return;
+    }
 
     // Apply font size class to root element
     const root = document.documentElement;

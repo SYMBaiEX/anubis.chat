@@ -18,7 +18,6 @@ import {
   Loader,
   Plus,
   Wallet,
-  Zap,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -33,12 +32,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useSubscription } from '@/hooks/use-subscription';
-import { paymentConfig, solanaConfig } from '@/lib/env';
+import { solanaConfig } from '@/lib/env';
 import {
   createPaymentTransaction,
   processPaymentTransaction,
 } from '@/lib/solana';
-import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('message-credits-modal');
@@ -75,7 +73,7 @@ export function MessageCreditsModal({
   // User data and subscriptions
   const { subscription } = useSubscription();
   const user = useQuery(api.users.getCurrentUserProfile);
-  const purchaseMessageCredits = useMutation(
+  const _purchaseMessageCredits = useMutation(
     api.subscriptions.purchaseMessageCredits
   );
 

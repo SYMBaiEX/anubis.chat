@@ -170,11 +170,13 @@ function FloatingParticles() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  if (windowSize.width === 0) return null;
+  if (windowSize.width === 0) {
+    return null;
+  }
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {[...Array(20)].map((_, i) => (
+      {[...new Array(20)].map((_, i) => (
         <motion.div
           animate={{
             y: -100,
@@ -221,8 +223,8 @@ function FloatingParticles() {
 export default function AnubisTokenPage() {
   const [copiedAddress, setCopiedAddress] = useState(false);
   const { scrollYProgress } = useScroll();
-  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
+  const _opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const _scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
 
   const tokenAddress = 'Coming Soon - Launching on Pump.Fun';
 
@@ -231,9 +233,7 @@ export default function AnubisTokenPage() {
       await navigator.clipboard.writeText(tokenAddress);
       setCopiedAddress(true);
       setTimeout(() => setCopiedAddress(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy: ', err);
-    }
+    } catch (_err) {}
   };
 
   return (
@@ -562,7 +562,7 @@ export default function AnubisTokenPage() {
 
                     {/* Animated particles */}
                     <div className="pointer-events-none absolute inset-0">
-                      {[...Array(8)].map((_, i) => (
+                      {[...new Array(8)].map((_, i) => (
                         <motion.div
                           animate={{
                             y: [-10, 10, -10],

@@ -5,7 +5,7 @@ import type { UIMessage } from 'ai';
 import { DefaultChatTransport } from 'ai';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, Bot, Sparkles } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -90,7 +90,7 @@ export function AIChatInterface({
     return newAttachments;
   }, []);
 
-  const removeAttachment = useCallback((fileId: string) => {
+  const _removeAttachment = useCallback((fileId: string) => {
     setAttachments((prev) => prev.filter((att) => att.fileId !== fileId));
   }, []);
 
@@ -118,8 +118,10 @@ export function AIChatInterface({
   const suggestions = generateSuggestions();
 
   const handleSendMessage = useCallback(
-    async (content: string, messageAttachments?: any[]) => {
-      if (!content.trim()) return;
+    async (content: string, _messageAttachments?: any[]) => {
+      if (!content.trim()) {
+        return;
+      }
 
       setIsLoading(true);
       try {

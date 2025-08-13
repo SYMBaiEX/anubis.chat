@@ -1,6 +1,5 @@
 'use client';
 
-import type { UIMessage } from 'ai';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown, MessageSquare } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -19,8 +18,12 @@ import { TypingIndicator } from './typing-indicator';
 // Normalize roles to those supported by the UI bubble component
 type UIRole = 'user' | 'assistant' | 'system';
 const toUiRole = (role: string): UIRole => {
-  if (role === 'tool' || role === 'function') return 'assistant';
-  if (role === 'user' || role === 'assistant' || role === 'system') return role;
+  if (role === 'tool' || role === 'function') {
+    return 'assistant';
+  }
+  if (role === 'user' || role === 'assistant' || role === 'system') {
+    return role;
+  }
   return 'assistant';
 };
 
@@ -49,7 +52,9 @@ export function MessageList({
 
   // Enhanced scroll-to-bottom with better performance
   const scrollToBottom = useCallback((smooth = true) => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current) {
+      return;
+    }
 
     const scrollElement = scrollRef.current;
     const targetScroll =
@@ -63,7 +68,9 @@ export function MessageList({
       let start: number | null = null;
 
       const step = (timestamp: number) => {
-        if (!start) start = timestamp;
+        if (!start) {
+          start = timestamp;
+        }
         const progress = Math.min((timestamp - start) / duration, 1);
         const easeProgress = 1 - (1 - progress) ** 3; // Cubic ease-out
 
@@ -84,7 +91,9 @@ export function MessageList({
 
   // Enhanced auto-scroll with streaming support
   useEffect(() => {
-    if (!messages) return;
+    if (!messages) {
+      return;
+    }
 
     const hasNewMessage = messages.length > lastMessageCount;
     const hasStreamingMessage = messages.some(
@@ -117,7 +126,9 @@ export function MessageList({
 
   // Auto-scroll for streaming content updates
   useEffect(() => {
-    if (!messages) return;
+    if (!messages) {
+      return;
+    }
 
     const streamingMessage = messages.find(
       (m) => 'isStreaming' in m && (m as StreamingMessage).isStreaming
@@ -143,7 +154,9 @@ export function MessageList({
 
   // Enhanced scroll handler with user scroll detection
   const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current) {
+      return;
+    }
 
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;

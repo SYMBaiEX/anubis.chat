@@ -183,7 +183,9 @@ export function useReferralAttribution() {
   const autoAssignIfEligible = useCallback(
     async (walletAddress: string) => {
       const referralCode = getStoredReferralCode();
-      if (!referralCode) return { success: false } as const;
+      if (!referralCode) {
+        return { success: false } as const;
+      }
       try {
         const res = await attributeReferral({ referralCode, walletAddress });
         if (res?.success && (res.attributed || res.assigned)) {

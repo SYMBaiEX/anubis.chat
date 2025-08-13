@@ -42,7 +42,9 @@ const log = createModuleLogger('message-input');
 
 // Helper function to format file sizes
 const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) {
+    return '0 B';
+  }
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -136,7 +138,7 @@ export function MessageInput({
 
   useEffect(() => {
     adjustTextareaHeight();
-  }, [message, adjustTextareaHeight]);
+  }, [adjustTextareaHeight]);
 
   const handleSend = async () => {
     const trimmedMessage = message.trim();
@@ -230,7 +232,9 @@ export function MessageInput({
             'wss://',
             'https://'
           ).replace('.convex.cloud', '.convex.site');
-          if (!convexSite) throw new Error('Convex URL not configured');
+          if (!convexSite) {
+            throw new Error('Convex URL not configured');
+          }
 
           const presign = await fetch(`${convexSite}/generateUploadUrl`, {
             method: 'POST',
@@ -245,7 +249,9 @@ export function MessageInput({
               'Content-Type': file.type || 'application/octet-stream',
             },
           });
-          if (!put.ok) throw new Error('Upload failed');
+          if (!put.ok) {
+            throw new Error('Upload failed');
+          }
           const { storageId } = (await put.json()) as { storageId: string };
 
           // Get the public URL for the uploaded file
@@ -301,7 +307,9 @@ export function MessageInput({
             'wss://',
             'https://'
           ).replace('.convex.cloud', '.convex.site');
-          if (!convexSite) throw new Error('Convex URL not configured');
+          if (!convexSite) {
+            throw new Error('Convex URL not configured');
+          }
 
           const presign = await fetch(`${convexSite}/generateUploadUrl`, {
             method: 'POST',
@@ -315,7 +323,9 @@ export function MessageInput({
               'Content-Type': file.type || 'image/jpeg',
             },
           });
-          if (!put.ok) throw new Error('Upload failed');
+          if (!put.ok) {
+            throw new Error('Upload failed');
+          }
           const { storageId } = (await put.json()) as { storageId: string };
 
           // Get the public URL for the uploaded image
@@ -511,7 +521,7 @@ export function MessageInput({
                           className="ml-1 rounded-md p-1 transition-colors hover:bg-destructive/20"
                           onClick={() => {
                             // Clean up object URLs to prevent memory leaks
-                            if (a.preview && a.preview.startsWith('blob:')) {
+                            if (a.preview?.startsWith('blob:')) {
                               URL.revokeObjectURL(a.preview);
                             }
                             setAttachments((prev) =>

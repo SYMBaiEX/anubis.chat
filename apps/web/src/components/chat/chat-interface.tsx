@@ -37,7 +37,6 @@ import type { Chat, StreamingMessage } from '@/lib/types/api';
 import type { MinimalMessage } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { AgentSelectorDialog } from './agent-selector-dialog';
 import { ChatHeader } from './chat-header';
 import { ChatSettingsDialog } from './chat-settings-dialog';
 import { ChatWelcome } from './chat-welcome';
@@ -111,7 +110,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const [showDesktopAgentSelector, setShowDesktopAgentSelector] =
     useState(false);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
-  const [showSearchDialog, setShowSearchDialog] = useState(false);
+  const [_showSearchDialog, _setShowSearchDialog] = useState(false);
 
   // Theme hook from next-themes
   const { theme, setTheme } = useTheme();
@@ -383,7 +382,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   };
 
-  const handleChatSelect = (chatId: string) => {
+  const _handleChatSelect = (chatId: string) => {
     setSelectedChatId(chatId);
     router.push(`/chat?chatId=${chatId}`);
   };
@@ -473,7 +472,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   };
 
   const handleGenerateTitle = () => {
-    if (!(selectedChatId && user?._id)) return;
+    if (!(selectedChatId && user?._id)) {
+      return;
+    }
 
     toast.promise(
       generateTitle({

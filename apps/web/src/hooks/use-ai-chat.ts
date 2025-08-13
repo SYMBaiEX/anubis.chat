@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import type { UIMessage, UIMessagePart } from 'ai';
+import type { UIMessage } from 'ai';
 import { DefaultChatTransport } from 'ai';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -111,36 +111,39 @@ export function useAIChat({
   );
 
   // Handle file uploads
-  const handleFileUpload = useCallback(async (files: File[]) => {
-    const uploaded: MessageAttachment[] = [];
+  const handleFileUpload = useCallback(
+    async (files: File[]) => {
+      const uploaded: MessageAttachment[] = [];
 
-    for (const file of files) {
-      try {
-        // Create a temporary attachment object
-        const attachment: MessageAttachment = {
-          fileId: `temp-${Date.now()}-${file.name}`,
-          mimeType: file.type,
-          size: file.size,
-          type: file.type.startsWith('image/')
-            ? 'image'
-            : file.type.startsWith('video/')
-              ? 'video'
-              : 'file',
-          url: URL.createObjectURL(file),
-        };
+      for (const file of files) {
+        try {
+          // Create a temporary attachment object
+          const attachment: MessageAttachment = {
+            fileId: `temp-${Date.now()}-${file.name}`,
+            mimeType: file.type,
+            size: file.size,
+            type: file.type.startsWith('image/')
+              ? 'image'
+              : file.type.startsWith('video/')
+                ? 'video'
+                : 'file',
+            url: URL.createObjectURL(file),
+          };
 
-        uploaded.push(attachment);
-      } catch (error) {
-        log.error('Failed to process file', {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        toast.error(`Failed to upload ${file.name}`);
+          uploaded.push(attachment);
+        } catch (error) {
+          log.error('Failed to process file', {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          toast.error(`Failed to upload ${file.name}`);
+        }
       }
-    }
 
-    setAttachments((prev) => [...prev, ...uploaded]);
-    return uploaded;
-  }, []);
+      setAttachments((prev) => [...prev, ...uploaded]);
+      return uploaded;
+    },
+    [log.error]
+  );
 
   // Remove attachment
   const removeAttachment = useCallback((fileId: string) => {
@@ -185,7 +188,7 @@ export function useAIChat({
       ];
     }
 
-    const lastMessage = messages[messages.length - 1];
+    const lastMessage = messages.at(-1);
     if (lastMessage.role === 'assistant') {
       // Context-aware suggestions based on last response
       return [

@@ -59,7 +59,9 @@ export function useVirtualScroll<T>(
   // Scroll to specific index
   const scrollToIndex = useCallback(
     (index: number, smooth = smoothScroll) => {
-      if (!scrollElementRef.current) return;
+      if (!scrollElementRef.current) {
+        return;
+      }
 
       const targetScrollTop = Math.min(
         index * itemHeight,

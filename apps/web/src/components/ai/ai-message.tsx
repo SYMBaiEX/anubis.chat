@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import {
   Bot,
   Check,
@@ -15,7 +14,7 @@ import {
   User,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -50,7 +49,7 @@ export function AIMessage({
 
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
-  const isTool = false; // UIMessage doesn't support 'tool' role in v5
+  const _isTool = false; // UIMessage doesn't support 'tool' role in v5
 
   const handleCopy = async () => {
     try {
@@ -319,7 +318,9 @@ export function AIMessage({
 }
 
 function formatFileSize(bytes: number): string {
-  if (!bytes || bytes === 0) return '0 B';
+  if (!bytes || bytes === 0) {
+    return '0 B';
+  }
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));

@@ -5,7 +5,7 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { DefaultChatTransport } from 'ai';
 import { useMutation, useQuery } from 'convex/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { MinimalMessage } from '@/lib/types/components';
 import { createModuleLogger } from '@/lib/utils/logger';
 
@@ -46,8 +46,10 @@ export function useEnhancedChat({
   const createMessage = useMutation(api.messagesAuth.createMyMessage);
 
   // Convert Convex messages to AI SDK format
-  const initialMessages = useMemo(() => {
-    if (!convexMessages) return [];
+  const _initialMessages = useMemo(() => {
+    if (!convexMessages) {
+      return [];
+    }
 
     return convexMessages.map((msg) => ({
       id: msg._id,
@@ -110,8 +112,8 @@ export function useEnhancedChat({
   const sendMessage = useCallback(
     async (
       content: string,
-      model?: string,
-      useReasoning?: boolean,
+      _model?: string,
+      _useReasoning?: boolean,
       attachments?: Array<{
         fileId: string;
         url?: string;
@@ -120,7 +122,9 @@ export function useEnhancedChat({
         type: 'image' | 'file' | 'video';
       }>
     ) => {
-      if (!(chatId && content.trim())) return;
+      if (!(chatId && content.trim())) {
+        return;
+      }
 
       try {
         // Persist user message to Convex first
@@ -141,7 +145,7 @@ export function useEnhancedChat({
         throw err;
       }
     },
-    [chatId, walletAddress, aiSendMessage, createMessage]
+    [chatId, aiSendMessage, createMessage]
   );
 
   // Regenerate last assistant message
@@ -165,7 +169,7 @@ export function useEnhancedChat({
 
       // Add streaming message if currently streaming
       if (status === 'streaming' && aiMessages.length > 0) {
-        const lastAiMsg = aiMessages[aiMessages.length - 1];
+        const lastAiMsg = aiMessages.at(-1);
         if (lastAiMsg.role === 'assistant') {
           // Extract content from AI SDK v5 message format
           const content =
@@ -215,10 +219,7 @@ export function useEnhancedChat({
   return {
     // Messages
     messages: formattedMessages,
-    streamingMessage:
-      status === 'streaming'
-        ? formattedMessages[formattedMessages.length - 1]
-        : null,
+    streamingMessage: status === 'streaming' ? formattedMessages.at(-1) : null,
 
     // Input management
     input,

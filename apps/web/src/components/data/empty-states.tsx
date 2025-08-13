@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import type { EmptyStateProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';

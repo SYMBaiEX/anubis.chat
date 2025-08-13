@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, MessageSquare } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { forwardRef, useEffect, useRef } from 'react';
 import { EmptyState } from '@/components/data/empty-states';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -44,7 +44,7 @@ export const Thread = forwardRef<HTMLDivElement, ThreadProps>(
       if (bottomRef.current) {
         bottomRef.current.scrollIntoView({ behavior: 'smooth' });
       }
-    }, [messages]);
+    }, []);
 
     if (!messages || messages.length === 0) {
       return (
@@ -171,7 +171,7 @@ function groupMessagesByDate(messages: AIMessageType[]) {
       ? new Date(message.createdAt).toDateString()
       : new Date().toDateString();
 
-    const lastGroup = groups[groups.length - 1];
+    const lastGroup = groups.at(-1);
     if (lastGroup && lastGroup.date === date) {
       lastGroup.messages.push(message);
     } else {

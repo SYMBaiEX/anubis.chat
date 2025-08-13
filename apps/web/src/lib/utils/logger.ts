@@ -14,8 +14,12 @@ const isBrowser = typeof window !== 'undefined';
 
 // Pino configuration
 const getLogLevel = (): string => {
-  if (isDevelopment) return 'debug';
-  if (isProduction) return 'info';
+  if (isDevelopment) {
+    return 'debug';
+  }
+  if (isProduction) {
+    return 'info';
+  }
   return 'warn';
 };
 

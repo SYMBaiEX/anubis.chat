@@ -599,7 +599,7 @@ export default function ReferralInfoPage() {
                           rate: '5.0%',
                           isMax: true,
                         },
-                      ].map((tier, index) => (
+                      ].map((tier, _index) => (
                         <motion.div
                           className={cn(
                             'group relative overflow-hidden rounded-xl border p-4',

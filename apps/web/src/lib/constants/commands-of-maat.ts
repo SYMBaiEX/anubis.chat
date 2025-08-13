@@ -45,7 +45,9 @@ export interface MaatCommand {
 
 // Platform-specific key mappings
 export const getPlatformKey = () => {
-  if (typeof window === 'undefined') return 'Cmd';
+  if (typeof window === 'undefined') {
+    return 'Cmd';
+  }
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   return isMac ? 'Cmd' : 'Ctrl';
 };

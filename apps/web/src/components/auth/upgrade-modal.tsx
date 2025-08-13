@@ -17,7 +17,6 @@ import {
   Crown,
   ExternalLink,
   Loader,
-  Plus,
   Shield,
   Wallet,
   Zap,
@@ -171,7 +170,7 @@ export function UpgradeModal({
   );
 
   // Message credits queries and mutations
-  const purchaseMessageCredits = useMutation(
+  const _purchaseMessageCredits = useMutation(
     api.subscriptions.purchaseMessageCredits
   );
   const checkCreditsPurchaseStatus = useQuery(

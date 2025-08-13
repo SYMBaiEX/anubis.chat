@@ -1,20 +1,12 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  BookOpen,
-  FileText,
-  Keyboard,
-  Navigation,
-  Settings,
-  Zap,
-} from 'lucide-react';
+import { BookOpen, FileText, Navigation, Settings, Zap } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -173,7 +165,9 @@ export function CommandsOfMaatModal({
                               categoryKey as keyof typeof categoryIcons
                             ];
 
-                          if (commands.length === 0) return null;
+                          if (commands.length === 0) {
+                            return null;
+                          }
 
                           return (
                             <motion.div

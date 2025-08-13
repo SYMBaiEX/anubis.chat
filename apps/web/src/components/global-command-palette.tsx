@@ -46,10 +46,18 @@ export function globalCommandPalette() {
 
   // Exclude specific routes: landing, referral info, roadmap
   const shouldRender = useMemo(() => {
-    if (!pathname) return false;
-    if (pathname === '/') return false;
-    if (pathname.startsWith('/referral-info')) return false;
-    if (pathname.startsWith('/roadmap')) return false;
+    if (!pathname) {
+      return false;
+    }
+    if (pathname === '/') {
+      return false;
+    }
+    if (pathname.startsWith('/referral-info')) {
+      return false;
+    }
+    if (pathname.startsWith('/roadmap')) {
+      return false;
+    }
     return true;
   }, [pathname]);
 
@@ -67,7 +75,9 @@ export function globalCommandPalette() {
 
   // Register global Ctrl+K (mod+k) to toggle the palette on supported pages
   useEffect(() => {
-    if (!shouldRender) return;
+    if (!shouldRender) {
+      return;
+    }
     const onKeyDown = (e: KeyboardEvent) => {
       const isMod = e.ctrlKey || e.metaKey;
       if (isMod && (e.key === 'k' || e.key === 'K')) {
@@ -272,7 +282,9 @@ export function globalCommandPalette() {
     },
   ];
 
-  if (!shouldRender) return null;
+  if (!shouldRender) {
+    return null;
+  }
 
   return (
     <>

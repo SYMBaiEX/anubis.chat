@@ -79,7 +79,9 @@ export function ChatHeader({
   };
 
   const handleGenerateTitle = async () => {
-    if (!onGenerateTitle || isGeneratingTitle) return;
+    if (!onGenerateTitle || isGeneratingTitle) {
+      return;
+    }
 
     setIsGeneratingTitle(true);
     try {

@@ -4,14 +4,12 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import type { UIMessage } from 'ai';
 import { useMutation } from 'convex/react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Check,
-  CheckCheck,
   Copy,
   Download,
   FileText,
-  Heart,
   Image,
   Loader2,
   RefreshCw,
@@ -158,7 +156,9 @@ export function EnhancedMessageBubble({
 
   // Handle share message
   const handleShare = async () => {
-    if (!message.parts?.length) return;
+    if (!message.parts?.length) {
+      return;
+    }
 
     setSharing(true);
     try {
@@ -193,7 +193,7 @@ export function EnhancedMessageBubble({
           });
         }
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to share message');
     } finally {
       setSharing(false);

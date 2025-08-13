@@ -2,26 +2,16 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  AlertCircle, // Unused - reasoning mode disabled
-  Brain, // Unused - reasoning mode disabled
   FileText,
   Image,
   Loader2,
-  Mic,
-  MicOff,
   Paperclip,
   Send,
-  Smile,
   Sparkles,
   X,
 } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'; // Unused - reasoning mode disabled
 import { Textarea } from '@/components/ui/textarea';
 import {
   Tooltip,
@@ -128,7 +118,9 @@ export function EnhancedMessageInput({
 
   // Handle file selection
   const handleFileSelect = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      return;
+    }
 
     const newAttachments: Attachment[] = [];
 

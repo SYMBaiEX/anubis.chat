@@ -8,9 +8,7 @@ import {
   ChevronRight,
   Crown,
   Menu,
-  Moon,
   Settings,
-  Sun,
   User,
   Wallet,
   X,
@@ -32,7 +30,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Logo, LogoIcon } from '@/components/ui/logo';
+import { Logo } from '@/components/ui/logo';
 import { Progress } from '@/components/ui/progress';
 import { WalletConnectButton } from '@/components/wallet/wallet-connect-button';
 import type { NavItem } from '@/constants/navigation';
@@ -77,14 +75,14 @@ const bottomItems: Array<{
 export default function Sidebar() {
   const { isCollapsed, toggleCollapsed } = useSidebar();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [_mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { isAuthenticated, user } = useAuthContext();
   const subscription = useSubscriptionStatus();
   const limits = useSubscriptionLimits();
   const { isOpen, openModal, closeModal, suggestedTier } = useUpgradeModal();
-  const updateUserPreferences = useMutation(
+  const _updateUserPreferences = useMutation(
     api.userPreferences.updateUserPreferences
   );
   const usagePercent =

@@ -1,6 +1,5 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { memo, useMemo } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
@@ -25,9 +24,13 @@ export const OptimizedMarkdownRenderer = memo(
   }: OptimizedMarkdownRendererProps) {
     // Pre-process content to avoid re-parsing
     const processedContent = useMemo(() => {
-      if (!content) return '';
+      if (!content) {
+        return '';
+      }
       // For streaming, return content as-is to avoid re-processing
-      if (isStreaming) return content;
+      if (isStreaming) {
+        return content;
+      }
       // For complete messages, we can do more processing
       return content;
     }, [content, isStreaming]);
@@ -37,9 +40,7 @@ export const OptimizedMarkdownRenderer = memo(
       () => ({
         // Simple code rendering without heavy syntax highlighting
         code: ({ className: codeClassName, children }) => {
-          const inline = !(
-            codeClassName && codeClassName.startsWith('language-')
-          );
+          const inline = !codeClassName?.startsWith('language-');
           const match = /language-(\w+)/.exec(codeClassName || '');
           const language = match ? match[1] : '';
 

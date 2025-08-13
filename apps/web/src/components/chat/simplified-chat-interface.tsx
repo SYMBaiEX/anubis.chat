@@ -2,7 +2,7 @@
 
 import { MessageSquare } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { EmptyState } from '@/components/data/empty-states';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { useEnhancedChat } from '@/hooks/use-enhanced-chat';
@@ -28,7 +28,7 @@ export function SimplifiedChatInterface({
   const { user, isAuthenticated } = useAuthContext();
   const searchParams = useSearchParams();
   const chatId = searchParams.get('chatId');
-  const [fontSize, setFontSize] = useState<FontSize>('medium');
+  const [fontSize, _setFontSize] = useState<FontSize>('medium');
 
   // Use the enhanced chat hook with AI SDK
   const {
@@ -63,7 +63,9 @@ export function SimplifiedChatInterface({
       type: 'image' | 'file' | 'video';
     }>
   ) => {
-    if (!(isReady && content.trim())) return;
+    if (!(isReady && content.trim())) {
+      return;
+    }
 
     try {
       await sendMessage(
@@ -72,13 +74,13 @@ export function SimplifiedChatInterface({
         useReasoning,
         attachments
       );
-    } catch (err) {
+    } catch (_err) {
       // Error is already logged in the hook
     }
   };
 
   // Handle regenerate
-  const handleRegenerate = (messageId: string) => {
+  const handleRegenerate = (_messageId: string) => {
     regenerate();
   };
 

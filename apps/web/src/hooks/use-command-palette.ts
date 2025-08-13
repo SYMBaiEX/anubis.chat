@@ -129,7 +129,7 @@ export function useCommandPalette({
           toast.success('Previous chat opened');
         } else if (currentIndex === 0) {
           // Wrap to last chamber
-          onSelectChat?.(chats[chats.length - 1].id);
+          onSelectChat?.(chats.at(-1).id);
           toast.success('Wrapped to last chat');
         }
       }
@@ -236,7 +236,9 @@ export function useCommandPalette({
   const executeCommand = useCallback(
     (commandId: string) => {
       const command = getCommandById(commandId);
-      if (!command) return;
+      if (!command) {
+        return;
+      }
 
       const handler = commandHandlers[commandId];
       if (handler) {
@@ -245,34 +247,7 @@ export function useCommandPalette({
         toast.error(`Unknown command: ${commandId}`);
       }
     },
-    [
-      router,
-      resolvedTheme,
-      setTheme,
-      isCommandPaletteOpen,
-      onNewChat,
-      onSelectChat,
-      onSelectAgent,
-      onSelectModel,
-      onOpenSettings,
-      onToggleSidebar,
-      onSearchConversations,
-      onClearChat,
-      onDeleteChat,
-      onRenameChat,
-      onDuplicateChat,
-      onExportChat,
-      onFocusInput,
-      onScrollToBottom,
-      onScrollToTop,
-      onToggleReasoning,
-      onQuickSelectClaude,
-      onQuickSelectGPT,
-      onUploadFile,
-      onOpenPreferences,
-      currentChatId,
-      chats,
-    ]
+    [commandHandlers[commandId]]
   );
 
   // Build keyboard shortcuts object - memoized and only for enabled commands with valid shortcuts

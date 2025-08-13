@@ -81,7 +81,7 @@ export function Composer({
       const scrollHeight = textareaRef.current.scrollHeight;
       textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
     }
-  }, [value]);
+  }, []);
 
   const handleSubmit = useCallback(() => {
     if (isLoading && onStop) {
@@ -118,7 +118,9 @@ export function Composer({
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length === 0 || !onFileUpload) return;
+    if (files.length === 0 || !onFileUpload) {
+      return;
+    }
 
     try {
       const uploaded = await onFileUpload(files);

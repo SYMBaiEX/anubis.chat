@@ -33,7 +33,7 @@ export function ChatSidebar({
   const { user, isAuthenticated } = useAuthContext();
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [_isSearching, setIsSearching] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -110,7 +110,9 @@ export function ChatSidebar({
 
   // Filter chats based on search query
   const filteredChats = useMemo(() => {
-    if (!(chats && searchQuery)) return chats;
+    if (!(chats && searchQuery)) {
+      return chats;
+    }
     return chats.filter((chat) =>
       chat.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
