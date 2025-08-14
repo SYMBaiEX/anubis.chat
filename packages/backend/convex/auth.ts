@@ -325,12 +325,10 @@ export const createWalletChallenge = mutation({
     const nonce =
       Math.random().toString(36).substring(2, 15) +
       Math.random().toString(36).substring(2, 15);
-    // SIWS-style human-readable message
     const domain = args.domain || (process.env.SITE_URL || 'anubis.chat');
     const host = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const issuedAt = now;
-    const statement = 'Sign in to Anubis Chat';
-    const challenge = `anubis.chat wants you to sign in with your Solana account:\n${args.publicKey}\n\n${statement}\n\nDomain: ${host}\nNonce: ${nonce}\nIssued At: ${new Date(issuedAt).toISOString()}\nExpiration Time: ${new Date(expiresAt).toISOString()}`;
+    const challenge = buildSiwsChallenge(domain, args.publicKey, nonce, issuedAt, expiresAt);
 
     // Clean up any existing challenges for this public key
     const existingChallenges = await ctx.db
