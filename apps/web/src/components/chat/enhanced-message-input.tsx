@@ -291,7 +291,7 @@ export function EnhancedMessageInput({
 
             {/* Textarea */}
             <Textarea
-              className="chat-input min-h-[40px] resize-none border-0 bg-transparent p-0 text-base focus-visible:ring-0"
+              className="min-h-[40px] resize-none border-0 bg-transparent p-0 text-base focus-visible:ring-0"
               disabled={disabled || isStreaming}
               onChange={(e) => {
                 setMessage(e.target.value);
