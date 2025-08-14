@@ -869,7 +869,7 @@ export default function RoadmapPage(): ReactElement {
                     >
                       <Sparkles className="h-3 w-3" />
                     </motion.div>
-                    Pro+ users can vote on features
+                    Pro+ Voting Coming Soon
                   </Badge>
                 </motion.div>
               </div>
@@ -1078,8 +1078,7 @@ export default function RoadmapPage(): ReactElement {
               viewport={{ once: true }}
               whileInView={{ opacity: 1, y: 0 }}
             >
-              We'd love to hear from you! Pro+ users can vote on upcoming
-              features and influence our roadmap.
+              We'd love to hear from you! Pro+ Voting Coming Soon.
             </motion.p>
 
             {/* Animated glow effect behind buttons */}
@@ -1144,7 +1143,7 @@ export default function RoadmapPage(): ReactElement {
                       >
                         <Sparkles className="mr-2 h-4 w-4" />
                       </motion.div>
-                      Vote on Features (Pro+)
+                      Vote on Features Coming Soon (Pro+)
                     </motion.div>
                   </Button>
                 </motion.div>
