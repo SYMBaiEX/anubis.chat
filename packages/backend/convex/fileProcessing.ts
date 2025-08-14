@@ -279,75 +279,29 @@ async function extractTextContent(ctx: any, file: any): Promise<string> {
 }
 
 /**
- * Extract text content from PDF files using pdf-parse
+ * Extract text content from PDF files
+ * NOTE: PDF text extraction temporarily disabled - unpdf package removed due to Vercel deployment issues
+ * TODO: Implement alternative PDF processing solution (e.g., pdf-parse, pdfjs-dist without canvas)
  */
-async function extractPDFContent(ctx: any, file: any): Promise<string> {
+async function extractPDFContent(_ctx: any, file: any): Promise<string> {
   try {
-    // Use UnPDF for serverless PDF text extraction
-    const { extractText, getDocumentProxy } = await import('unpdf');
-
-    let pdfBuffer: Uint8Array | null = null;
-
-    // Get PDF data as Uint8Array
-    if (file.url) {
-      // Fetch PDF from URL
-      const response = await fetch(file.url);
-      if (response.ok) {
-        const arrayBuffer = await response.arrayBuffer();
-        pdfBuffer = new Uint8Array(arrayBuffer);
-      }
-    } else if (file.data) {
-      // Decode base64 PDF data
-      const buffer = Buffer.from(file.data, 'base64');
-      pdfBuffer = new Uint8Array(buffer);
-    } else if (file.storageId) {
-      // Get PDF from Convex storage
-      const blob = await ctx.storage.get(file.storageId as Id<'_storage'>);
-      if (blob) {
-        const arrayBuffer = await blob.arrayBuffer();
-        pdfBuffer = new Uint8Array(arrayBuffer);
-      }
-    }
-
-    if (!pdfBuffer) {
-      logger.warn('Unable to retrieve PDF data', { fileId: file.fileId });
-      return `PDF Document: ${file.fileName}\nUnable to retrieve PDF data for processing.`;
-    }
-
-    // Create PDF document proxy
-    const pdf = await getDocumentProxy(pdfBuffer);
-
-    // Extract text with merged pages
-    const { totalPages, text } = await extractText(pdf, { mergePages: true });
-
-    // Clean extracted text
-    const extractedText = text.trim();
-
-    if (!extractedText) {
-      logger.info('No text found in PDF', {
-        fileId: file.fileId,
-        pages: totalPages,
-      });
-      return `PDF Document: ${file.fileName}\nPages: ${totalPages}\nNo extractable text content found.`;
-    }
-
-    // Add metadata header
-    const metadata = `PDF Document: ${file.fileName}\nTotal Pages: ${totalPages}\nText Length: ${extractedText.length} characters\n\n`;
-
-    logger.info('PDF text extracted successfully with UnPDF', {
+    // Temporary placeholder implementation
+    // PDF files will be stored but text extraction is disabled
+    
+    logger.info('PDF text extraction temporarily disabled', {
       fileId: file.fileId,
-      pages: totalPages,
-      textLength: extractedText.length,
+      fileName: file.fileName,
     });
 
-    return metadata + extractedText;
+    // Return metadata indicating PDF processing is temporarily unavailable
+    return `PDF Document: ${file.fileName}\n\nNote: PDF text extraction is temporarily unavailable. The PDF file has been stored and will be accessible for viewing, but text-based search and RAG features are currently disabled for PDF documents.\n\nPlease use text, markdown, or other supported file formats for searchable content.`;
   } catch (error) {
-    logger.error('Failed to extract PDF content with UnPDF', error, {
+    logger.error('Failed to process PDF', error, {
       fileId: file.fileId,
     });
 
     // Return basic metadata on error
-    return `PDF Document: ${file.fileName}\nError: Unable to extract text content - ${error instanceof Error ? error.message : 'Unknown error'}`;
+    return `PDF Document: ${file.fileName}\nError: Unable to process PDF - ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
 }
 
