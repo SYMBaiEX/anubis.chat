@@ -80,6 +80,35 @@ describe('solanaAuth helpers', () => {
     expect(() => validateChallengeRecord(stored, 'c', 'n', Date.now())).toThrow('expired');
   });
 
+  it('throws for domain mismatch', () => {
+    const now = Date.now();
+    const challenge = buildSiwsChallenge('https://anubis.chat', 'pk', 'n', now, now + 60_000);
+    const stored: StoredChallengeRecord = {
+      publicKey: 'pk',
+      nonce: 'n',
+      challenge,
+      expiresAt: now + 60_000,
+      createdAt: now,
+      used: false,
+      domain: 'other.example',
+      issuedAt: now,
+    };
+    expect(() => validateChallengeRecord(stored, challenge, 'n', now)).toThrow(/domain mismatch/i);
+  });
+
+  it('throws for message mismatch', () => {
+    const now = Date.now();
+    const stored: StoredChallengeRecord = {
+      publicKey: 'pk',
+      nonce: 'n',
+      challenge: 'c1',
+      expiresAt: now + 60_000,
+      createdAt: now,
+      used: false,
+    };
+    expect(() => validateChallengeRecord(stored, 'c2', 'n', now)).toThrow(/message mismatch/i);
+  });
+
   it('throws for reused challenge', () => {
     const now = Date.now();
     const stored: StoredChallengeRecord = {
