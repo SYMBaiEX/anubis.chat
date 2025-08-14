@@ -1,5 +1,8 @@
 {
   "buildCommand": "bunx turbo run build --filter=web",
-  "installCommand": "bun install",
-  "framework": "nextjs"
+  "installCommand": "TAILWIND_DISABLE_OXIDE=1 bun install --verbose",
+  "framework": "nextjs",
+  "env": {
+    "TAILWIND_DISABLE_OXIDE": "1"
+  }
 }
