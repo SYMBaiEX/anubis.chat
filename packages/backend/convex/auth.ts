@@ -322,9 +322,7 @@ export const createWalletChallenge = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const expiresAt = now + 5 * 60 * 1000; // 5 minutes
-    const nonce =
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15);
+    const nonce = crypto.randomUUID();
     const domain = args.domain || (process.env.SITE_URL || 'anubis.chat');
     const host = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const issuedAt = now;
