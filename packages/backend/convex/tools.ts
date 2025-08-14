@@ -255,7 +255,7 @@ export const summarizeText = internalAction({
   },
 });
 
-// Export tool definitions for AI SDK
+// Export tool definitions for AI SDK - now delegated to registry for consistency
 export const aiTools = {
   webSearch: tool({
     description: 'Search the web for current information',

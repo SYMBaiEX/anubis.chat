@@ -155,22 +155,27 @@ export const create = mutation({
 export const update = mutation({
   args: {
     id: v.id('memories'),
-    content: v.optional(v.string()),
-    type: v.optional(
-      v.union(
-        v.literal('fact'),
-        v.literal('preference'),
-        v.literal('skill'),
-        v.literal('goal'),
-        v.literal('context')
-      )
-    ),
-    importance: v.optional(v.number()),
-    embedding: v.optional(v.array(v.number())),
-    tags: v.optional(v.array(v.string())),
+    updates: v.object({
+      content: v.optional(v.string()),
+      type: v.optional(
+        v.union(
+          v.literal('fact'),
+          v.literal('preference'),
+          v.literal('skill'),
+          v.literal('goal'),
+          v.literal('context')
+        )
+      ),
+      importance: v.optional(v.number()),
+      embedding: v.optional(v.array(v.number())),
+      tags: v.optional(v.array(v.string())),
+      lastSeenAt: v.optional(v.number()),
+      accessCount: v.optional(v.number()),
+      lastAccessed: v.optional(v.number()),
+    }),
   },
   handler: async (ctx, args) => {
-    const { id, ...updates } = args;
+    const { id, updates } = args;
     const updateData: Partial<Doc<'memories'>> = { ...updates };
 
     if (Object.keys(updateData).length > 0) {

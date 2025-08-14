@@ -1,17 +1,39 @@
-// import { createAnthropic } from '@ai-sdk/anthropic'; // DISABLED FOR NOW
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText } from 'ai';
 import { v } from 'convex/values';
-import { api, internal } from './_generated/api';
+import { api } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { action, httpAction, mutation, query } from './_generated/server';
 import { createModuleLogger } from './utils/logger';
 
 // Create logger instance for this module
 const logger = createModuleLogger('streaming');
+
+/**
+ * Estimate token usage for tool executions
+ * This is a simple heuristic - in production, you'd use a proper tokenizer
+ */
+function estimateTokenUsage(input: any, output: any): {
+  input: number;
+  output: number;
+  total: number;
+} {
+  // Simple token estimation: ~4 characters per token on average
+  const inputStr = typeof input === 'string' ? input : JSON.stringify(input);
+  const outputStr = typeof output === 'string' ? output : JSON.stringify(output);
+  
+  const inputTokens = Math.ceil(inputStr.length / 4);
+  const outputTokens = Math.ceil(outputStr.length / 4);
+  
+  return {
+    input: inputTokens,
+    output: outputTokens,
+    total: inputTokens + outputTokens
+  };
+}
 
 // Type definitions for tool calls
 interface ToolCallWithInput {
@@ -335,15 +357,45 @@ export const streamWithWebSocket = action({
         content: args.content,
       });
 
-      // Import tools
-      const {
-        aiTools,
-        searchWeb,
-        calculate,
-        createDocumentInternal,
-        generateCodeInternal,
-        summarizeText,
-      } = await import('./tools');
+      // Import tool registry system and MCP integration
+      const { getToolsForAgent, executeToolByName } = await import('./toolRegistry');
+      const { shouldRouteThroughMcp, getEnhancedCapabilities } = await import('./mcpIntegration');
+      
+      // Get agent and determine available tools
+      let availableCapabilities: string[] = ['webSearch', 'calculator', 'createDocument', 'generateCode', 'summarizeText'];
+      let agent;
+      
+      if (chat.agentId) {
+        try {
+          agent = await ctx.runQuery(api.agents.getById, { id: chat.agentId });
+          if (agent?.capabilities && agent.capabilities.length > 0) {
+            availableCapabilities = agent.capabilities;
+          }
+
+          // Add MCP capabilities if configured
+          if (agent?.mcpServers && agent.mcpServers.length > 0) {
+            // Get enhanced capabilities including MCP tools
+            availableCapabilities = getEnhancedCapabilities(
+              availableCapabilities,
+              agent.mcpServers
+            );
+
+            logger.info('MCP capabilities added for agent', {
+              agentId: chat.agentId,
+              mcpServerCount: agent.mcpServers.filter(s => s.enabled).length,
+              enhancedCapabilities: availableCapabilities.length
+            });
+          }
+        } catch (error) {
+          // Fallback to default tools if agent lookup fails
+          logger.warn('Agent lookup failed, using default capabilities', {
+            error: String(error)
+          });
+        }
+      }
+      
+      // Get tools for this agent's capabilities (including MCP tools)
+      const { aiTools } = getToolsForAgent(availableCapabilities);
 
       // Stream with real-time updates and tool support
       let accumulatedContent = '';
@@ -373,9 +425,11 @@ export const streamWithWebSocket = action({
       // Handle tool calls if any - await the promises for text and usage
       const text = await result.text;
       const usage = await result.usage;
-      
+
       // In AI SDK v5, toolCalls is also a Promise
-      const resultToolCalls = result.toolCalls ? await result.toolCalls : undefined;
+      const resultToolCalls = result.toolCalls
+        ? await result.toolCalls
+        : undefined;
 
       // Process any tool calls that occurred
       if (resultToolCalls && Array.isArray(resultToolCalls)) {
@@ -385,104 +439,127 @@ export const streamWithWebSocket = action({
             argsString: JSON.stringify(toolCall.input),
           });
 
-          const startTime = Date.now();
-
           // Track this tool call
           const trackedToolCall: TrackedToolCall = {
             id: toolCall.toolCallId,
             name: toolCall.toolName,
-            args: toolCall.input as Record<string, string | number | boolean | null>,
+            args: toolCall.input as Record<
+              string,
+              string | number | boolean | null
+            >,
           };
           toolCalls.push(trackedToolCall);
 
-          // Execute the actual tool based on the tool name
-          let toolResult: unknown;
-          const toolArgs = toolCall.input;
-          switch (toolCall.toolName) {
-            case 'webSearch':
-              toolResult = await ctx.runAction(internal.tools.searchWeb, {
-                query: toolArgs.query as string,
-                num: toolArgs.num as number,
+          // Determine if this is an MCP tool and get the server ID
+          const mcpServer = agent?.mcpServers?.find(server => 
+            server.enabled && shouldRouteThroughMcp(toolCall.toolName, [server])
+          );
+          const toolType = mcpServer ? 'mcp' : 'regular';
+          const serverId = mcpServer?.name;
+
+          // Track execution context
+          const executionContext = {
+            sessionId: args.sessionId,
+            chatId: args.chatId,
+            messageId: undefined, // Will be set after message creation
+            agentId: agent?._id || chat.agentId || ('default-agent' as Id<'agents'>),
+            userId: user?.walletAddress || 'anonymous',
+            model: args.model,
+            temperature: args.temperature,
+          };
+
+          // Start tracking the execution
+          const executionId = await ctx.runAction(api.executionTracking.trackExecution, {
+            context: executionContext,
+            toolName: toolCall.toolName,
+            input: toolCall.input,
+            toolType,
+            serverId,
+          });
+
+          // Check if tool should be routed through MCP servers
+          let toolResult;
+          
+          try {
+            if (agent?.mcpServers && shouldRouteThroughMcp(toolCall.toolName, agent.mcpServers)) {
+              // Execute through MCP server
+              logger.info('Routing tool through MCP server', {
+                toolName: toolCall.toolName,
+                agentId: chat.agentId,
+                executionId
               });
-              break;
-            case 'calculator':
-              toolResult = await ctx.runAction(internal.tools.calculate, {
-                expression: toolArgs.expression as string,
-              });
-              break;
-            case 'createDocument':
-              toolResult = await ctx.runAction(
-                internal.tools.createDocumentInternal,
-                {
-                  title: toolArgs.title as string,
-                  content: toolArgs.content as string,
-                  type: toolArgs.type as 'markdown' | 'code' | 'document',
-                }
+              
+              // For now, fall back to regular tool execution
+              // MCP integration will be enabled after Convex codegen
+              logger.info('MCP server routing temporarily disabled, using regular tools');
+              toolResult = await executeToolByName(
+                toolCall.toolName, 
+                toolCall.input, 
+                { ctx, sessionId: args.sessionId }
               );
-              // Store document for UI display
+            } else {
+              // Execute through regular tool registry system
+              toolResult = await executeToolByName(
+                toolCall.toolName, 
+                toolCall.input, 
+                { ctx, sessionId: args.sessionId }
+              );
+            }
+
+            // Estimate token usage for tracking
+            const tokenUsage = estimateTokenUsage(
+              toolCall.input,
+              toolResult.data || toolResult
+            );
+
+            // Complete the tracked execution
+            await ctx.runAction(api.executionTracking.completeTrackedExecution, {
+              executionId,
+              output: toolResult.data || toolResult,
+              tokenUsage,
+            });
+          } catch (error) {
+            // Fail the tracked execution
+            await ctx.runAction(api.executionTracking.failTrackedExecution, {
+              executionId,
+              error: {
+                code: 'TOOL_EXECUTION_ERROR',
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+              },
+            });
+            
+            // Re-throw the error
+            throw error;
+          }
+
+          // Handle artifact storage for specific tool types
+          if (toolResult.success && toolResult.data) {
+            if (toolCall.toolName === 'createDocument' && 'document' in toolResult.data) {
               await ctx.runMutation(api.streaming.updateStreamArtifact, {
                 sessionId: args.sessionId,
                 artifact: {
                   type: 'document',
-                  data: (toolResult as { document: unknown }).document,
+                  data: toolResult.data.document,
                 },
               });
-              break;
-            case 'generateCode':
-              toolResult = await ctx.runAction(
-                internal.tools.generateCodeInternal,
-                {
-                  language: toolArgs.language as string,
-                  description: toolArgs.description as string,
-                  framework: toolArgs.framework as string | undefined,
-                }
-              );
-              // Store code for UI display
+            } else if (toolCall.toolName === 'generateCode') {
               await ctx.runMutation(api.streaming.updateStreamArtifact, {
                 sessionId: args.sessionId,
                 artifact: {
                   type: 'code',
-                  data: toolResult,
+                  data: toolResult.data,
                 },
               });
-              break;
-            case 'summarize':
-              toolResult = await ctx.runAction(internal.tools.summarizeText, {
-                text: toolArgs.text as string,
-                maxLength: toolArgs.maxLength as number | undefined,
-              });
-              break;
-            default:
-              toolResult = { error: 'Unknown tool' };
+            }
           }
 
-          // Update the tracked tool call with results
-          const executionTime = Date.now() - startTime;
-          const hasError =
-            toolResult &&
-            typeof toolResult === 'object' &&
-            'error' in toolResult;
-          // Format the result data properly
-          let formattedData: Record<string, string | number | boolean | null> | undefined;
-          if (toolResult && typeof toolResult === 'object') {
-            // Convert the object to the expected format
-            formattedData = Object.entries(toolResult).reduce((acc, [key, value]) => {
-              if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-                acc[key] = value;
-              } else {
-                acc[key] = JSON.stringify(value);
-              }
-              return acc;
-            }, {} as Record<string, string | number | boolean | null>);
-          } else if (toolResult !== undefined) {
-            formattedData = { result: String(toolResult) };
-          }
-          
+          // Update the tracked tool call with results from registry
           trackedToolCall.result = {
-            success: !hasError,
-            data: formattedData,
-            error: hasError ? (toolResult as { error: string }).error : undefined,
-            executionTime,
+            success: toolResult.success,
+            data: toolResult.data,
+            error: toolResult.error,
+            executionTime: toolResult.executionTime,
           };
         }
       }
@@ -519,8 +596,12 @@ export const streamWithWebSocket = action({
           : undefined,
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Streaming failed';
-      logger.error('WebSocket streaming error', error instanceof Error ? error : new Error(String(error)));
+      const errorMessage =
+        error instanceof Error ? error.message : 'Streaming failed';
+      logger.error(
+        'WebSocket streaming error',
+        error instanceof Error ? error : new Error(String(error))
+      );
 
       // Update session with error
       await ctx.runMutation(api.streaming.updateStreamingContent, {
@@ -591,18 +672,43 @@ function buildSystemPrompt(
 
   prompts.push(`# CORE BEHAVIORAL INSTRUCTIONS
 
-You are having an ongoing conversation with this user. Use the provided context below to:
-- Avoid repeating information you've already shared
-- Reference previous conversations naturally when relevant
+You are having an ongoing conversation with this user. CRITICAL RULES FOR NATURAL CONVERSATION:
+
+## ANTI-REPETITION GUIDELINES
+- NEVER repeat information you've already shared in this or previous conversations
+- NEVER re-introduce yourself if you've already done so with this user
+- NEVER re-explain your capabilities if already discussed
+- NEVER use the same phrases or explanations multiple times
+- If you've answered a question before, acknowledge this and build upon your previous answer
+
+## CONVERSATION AWARENESS
+- Carefully review the provided context and message history
+- Recognize when topics have already been discussed
+- Reference previous conversations naturally: "As we discussed...", "Building on what I mentioned..."
+- If asked the same question again, acknowledge it: "As I mentioned earlier..." then provide NEW insights
+- Track the conversation flow and avoid circular discussions
+
+## CONTEXTUAL CONTINUITY
 - Build upon established context and relationships
-- Maintain conversational continuity`);
+- Remember the user's preferences, goals, and previous requests
+- Maintain consistency with your previous responses
+- Evolve the conversation forward rather than repeating past exchanges
+- Use varied vocabulary and phrasing to keep responses fresh
+
+## RESPONSE DIVERSITY
+- Vary your sentence structures and word choices
+- Avoid formulaic or template-like responses
+- Bring new perspectives or deeper insights when revisiting topics
+- If you must reference something said before, add new value or context`);
 
   if (chat.systemPrompt) {
     prompts.push(`# ADDITIONAL USER PREFERENCES\n\n${chat.systemPrompt}`);
   }
 
   if (context) {
-    prompts.push(`# RELEVANT CONTEXT\n\n${context}`);
+    prompts.push(
+      `# RELEVANT CONTEXT FROM MEMORY\n\n${context}\n\nUSE THIS CONTEXT to avoid repetition and maintain continuity. This shows what you've discussed before.`
+    );
   }
 
   if (useReasoning) {
@@ -612,7 +718,9 @@ Use structured reasoning with clear steps:
 1. Think through the problem systematically
 2. Break down complex issues into manageable parts
 3. Consider multiple perspectives
-4. Provide clear, logical conclusions`);
+4. Provide clear, logical conclusions
+5. Ensure your reasoning doesn't repeat previous analyses
+6. Build upon prior reasoning when applicable`);
   }
 
   return prompts.join('\n\n---\n\n');
@@ -687,23 +795,45 @@ export const streamChat = httpAction(async (ctx, request) => {
   } = body;
 
   // Authenticate user with proper Convex Auth
-  // Note: For HTTP actions, authentication should be handled via Authorization header
-  // with a JWT token from your auth provider
-  const _authHeader = request.headers.get('Authorization');
-
-  // For now, we'll use wallet address verification as a temporary measure
-  // TODO: Implement proper JWT validation with @convex-dev/auth
-  const user = await ctx.runQuery(api.users.getUserByWallet, {
-    walletAddress,
-  });
+  const authHeader = request.headers.get('Authorization');
+  
+  // Extract JWT token from Bearer auth header
+  const token = authHeader?.startsWith('Bearer ') 
+    ? authHeader.substring(7) 
+    : null;
+    
+  // First try to authenticate with JWT token if available
+  let user = null;
+  
+  if (token) {
+    try {
+      // Verify JWT token and get user from Convex Auth
+      const userId = await getAuthUserId(ctx);
+      if (userId) {
+        user = await ctx.runQuery(api.users.getUserById, { userId: userId as Id<'users'> });
+      }
+    } catch (authError) {
+      logger.warn('JWT authentication failed, falling back to wallet address', {
+        error: String(authError)
+      });
+    }
+  }
+  
+  // Fallback to wallet address verification if JWT auth fails or not provided
+  if (!user && walletAddress) {
+    user = await ctx.runQuery(api.users.getUserByWallet, {
+      walletAddress,
+    });
+  }
 
   if (!user) {
     return new Response(
-      JSON.stringify({ error: 'User not found. Please sign in.' }),
+      JSON.stringify({ error: 'Authentication required. Please sign in.' }),
       {
         status: 401,
         headers: {
           'Content-Type': 'application/json',
+          'WWW-Authenticate': 'Bearer realm="ANUBIS Chat"',
           ...getCorsHeaders(origin),
         },
       }
@@ -1132,33 +1262,15 @@ export const streamChat = httpAction(async (ctx, request) => {
     modelName === 'claude-opus-4.1' ||
     modelName === 'claude-sonnet-4'
   ) {
-    // Anthropic models - DISABLED FOR NOW
-    /*
-    const anthropic = createAnthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
-
-    // Map our custom model IDs to actual API model names
-    let apiModelName = modelName;
-    if (modelName === 'claude-opus-4.1') {
-      // Claude Opus 4.1 might not be available yet
-      apiModelName = 'claude-3-opus-20240229';
-      console.warn(`Model ${modelName} not yet available, using claude-3-opus`);
-    } else if (modelName === 'claude-sonnet-4') {
-      apiModelName = 'claude-3-5-sonnet-20241022';
-    } else if (modelName === 'claude-3.5-sonnet') {
-      apiModelName = 'claude-3-5-sonnet-20241022';
-    } else if (modelName === 'claude-3.5-haiku') {
-      apiModelName = 'claude-3-haiku-20240307';
-    }
-
-    aiModel = anthropic(apiModelName);
-    */
+    // Anthropic models are not supported - use OpenRouter or Google AI instead
     return new Response(
       JSON.stringify({
-        error: 'Anthropic models are temporarily disabled',
-        code: 'MODEL_DISABLED',
-        details: { model: modelName },
+        error: 'Anthropic models are not supported. Please use OpenRouter or Google AI providers.',
+        code: 'MODEL_NOT_SUPPORTED',
+        details: { 
+          model: modelName,
+          supportedProviders: ['openrouter', 'google', 'openai']
+        },
       }),
       {
         status: 400,
@@ -1239,17 +1351,13 @@ If the relevant context shows you've already introduced yourself or explained yo
   const combinedSystemPrompt = prompts.join('\n\n---\n\n');
 
   // Log for debugging
-  if (chat.agentPrompt) {
-    // Debug logging for agent prompt (placeholder)
-  }
-  if (chat.systemPrompt) {
-    // Debug logging for system prompt (placeholder)
-  }
+  // Agent and system prompts are already included in the messages array above
 
   let result;
-  const _finalText = '';
-  let _capturedReasoningSteps: string[] | undefined;
-  const _totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+  // TODO: Add reasoning step capture and usage tracking
+  // const finalText = '';
+  // let capturedReasoningSteps: string[] | undefined;
+  // const totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
   // Determine maxSteps based on reasoning mode
   const maxSteps = useReasoning ? 10 : Math.floor(Math.random() * 3) + 1; // Reasoning: 10, Regular: 1-3

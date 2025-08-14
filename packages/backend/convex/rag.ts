@@ -173,11 +173,11 @@ export const retrieveContext = action({
       // Step 5: Ensure diversity in retrieved content
       const diversifiedItems = ensureDiversity(recencyFiltered, maxItems);
 
+      // Step 5.5: Remove redundant/duplicate items
+      const dedupedItems = removeDuplicateContent(diversifiedItems);
+
       // Step 6: Format context while respecting token budget
-      const assembledContext = await formatForPrompt(
-        diversifiedItems,
-        tokenBudget
-      );
+      const assembledContext = await formatForPrompt(dedupedItems, tokenBudget);
 
       // Step 7: Cache the result
       if (useCache) {
@@ -455,6 +455,74 @@ function filterByRecency(items: RetrievedItem[]): RetrievedItem[] {
     ...medium.slice(0, mediumTake),
     ...older.slice(0, olderTake),
   ];
+}
+
+/**
+ * Remove duplicate or highly similar content items
+ */
+function removeDuplicateContent(items: RetrievedItem[]): RetrievedItem[] {
+  const seen = new Set<string>();
+  const dedupedItems: RetrievedItem[] = [];
+
+  for (const item of items) {
+    const content = getContentFromItem(item).toLowerCase();
+    const words = content.split(/\s+/);
+
+    // Create a content signature for comparison
+    const signature = words
+      .filter((word) => word.length > 3) // Skip short words
+      .sort()
+      .slice(0, 10) // Use first 10 significant words
+      .join('-');
+
+    // Check for exact duplicates or very similar content
+    let isDuplicate = false;
+
+    // Check exact signature match
+    if (seen.has(signature)) {
+      isDuplicate = true;
+    }
+
+    // Check for substring relationships with existing items
+    if (!isDuplicate) {
+      for (const existingItem of dedupedItems) {
+        const existingContent = getContentFromItem(existingItem).toLowerCase();
+
+        // Skip if one contains the other (with some tolerance)
+        if (content.length > 50 && existingContent.length > 50) {
+          // Calculate similarity
+          const contentWords = new Set(words);
+          const existingWords = new Set(existingContent.split(/\s+/));
+          const intersection = new Set(
+            [...contentWords].filter((x) => existingWords.has(x))
+          );
+          const similarity =
+            intersection.size / Math.min(contentWords.size, existingWords.size);
+
+          // If >80% similar, consider it a duplicate
+          if (similarity > 0.8) {
+            // Keep the one with higher score
+            if (item.score <= existingItem.score) {
+              isDuplicate = true;
+              break;
+            }
+            // Replace the existing item with this better one
+            const index = dedupedItems.indexOf(existingItem);
+            dedupedItems[index] = item;
+            isDuplicate = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!isDuplicate) {
+      seen.add(signature);
+      dedupedItems.push(item);
+    }
+  }
+
+  return dedupedItems;
 }
 
 /**

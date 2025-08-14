@@ -1471,6 +1471,52 @@ export default defineSchema({
     .index('by_user', ['userId', 'createdAt'])
     .index('by_success', ['success', 'createdAt']),
 
+  // Agent Tool Execution Tracking
+  agentToolExecutions: defineTable({
+    sessionId: v.string(),
+    chatId: v.id('chats'),
+    messageId: v.optional(v.id('messages')),
+    agentId: v.id('agents'),
+    userId: v.string(), // walletAddress
+    toolName: v.string(),
+    input: v.string(), // JSON stringified
+    output: v.optional(v.string()), // JSON stringified
+    status: v.union(
+      v.literal('pending'),
+      v.literal('executing'),
+      v.literal('completed'),
+      v.literal('failed'),
+      v.literal('cancelled')
+    ),
+    executionTimeMs: v.optional(v.number()),
+    error: v.optional(v.string()), // JSON stringified error object
+    metadata: v.optional(
+      v.object({
+        executionId: v.string(),
+        toolType: v.union(v.literal('regular'), v.literal('mcp'), v.literal('builtin')),
+        serverId: v.optional(v.string()),
+        startTime: v.number(),
+        endTime: v.optional(v.number()),
+        tokenUsage: v.optional(
+          v.object({
+            input: v.number(),
+            output: v.number(),
+            total: v.number(),
+          })
+        ),
+        retryCount: v.optional(v.number()),
+        parentExecutionId: v.optional(v.string()),
+      })
+    ),
+    createdAt: v.number(),
+  })
+    .index('by_session', ['sessionId', 'createdAt'])
+    .index('by_chat', ['chatId', 'createdAt'])
+    .index('by_agent', ['agentId', 'createdAt'])
+    .index('by_user', ['userId', 'createdAt'])
+    .index('by_status', ['status', 'createdAt'])
+    .index('by_tool', ['toolName', 'createdAt']),
+
   // =============================================================================
   // NEW TABLES FOR V2 API ENDPOINTS
   // =============================================================================

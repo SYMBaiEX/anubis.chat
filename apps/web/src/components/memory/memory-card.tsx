@@ -101,7 +101,7 @@ export function MemoryCard({
     try {
       await updateMemory({
         id: memory._id,
-        ...editData,
+        updates: editData,
       });
       // Regenerate embedding after content changes to keep RAG accurate
       if (editData.content && editData.content !== memory.content) {

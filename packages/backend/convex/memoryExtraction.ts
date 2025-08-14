@@ -271,6 +271,43 @@ export const checkSimilarMemory = query({
 });
 
 /**
+ * Merge two similar memory contents intelligently
+ */
+function mergeMemoryContents(existing: string, new_: string): string {
+  // If one contains the other, use the longer one
+  if (existing.includes(new_)) return existing;
+  if (new_.includes(existing)) return new_;
+
+  // Otherwise, combine them intelligently
+  const existingLower = existing.toLowerCase();
+  const newLower = new_.toLowerCase();
+
+  // Find the common part
+  const existingWords = existingLower.split(/\s+/);
+  const newWords = newLower.split(/\s+/);
+  const commonWords = existingWords.filter((word) => newWords.includes(word));
+
+  // If high overlap, use the longer one
+  if (
+    commonWords.length / Math.min(existingWords.length, newWords.length) >
+    0.7
+  ) {
+    return existing.length > new_.length ? existing : new_;
+  }
+
+  // Otherwise, combine them with a connector
+  return `${existing}. Additionally: ${new_}`;
+}
+
+/**
+ * Merge tag arrays, removing duplicates
+ */
+function mergeTags(existing: string[], new_: string[]): string[] {
+  const tagSet = new Set([...existing, ...new_]);
+  return Array.from(tagSet);
+}
+
+/**
  * Calculate importance score based on keywords, context, and repetition
  */
 function _calculateImportanceBoost(
@@ -429,18 +466,79 @@ async function handleExtractMemoriesFromMessage(
 
     const createdMemories: Array<{ id: Id<'memories'> } & ExtractedMemory> = [];
 
-    // Process each extracted memory
+    // Process each extracted memory with enhanced deduplication
     for (const memory of result.memories) {
-      // Check for duplicates before creating
-      // For now, we'll do a simple content check - the checkSimilarMemory function can be called separately
-      const existingMemoryCheck = existingContents.find(
-        (existing) =>
-          existing.toLowerCase().includes(memory.content.toLowerCase()) ||
-          memory.content.toLowerCase().includes(existing.toLowerCase())
+      // Use the sophisticated checkSimilarMemory function for better deduplication
+      const similarityCheck = await ctx.runQuery(
+        api.memoryExtraction.checkSimilarMemory,
+        {
+          userId: args.userId,
+          content: memory.content,
+          type: memory.type,
+          similarityThreshold: 0.75, // Lower threshold to catch more potential duplicates
+        }
       );
 
-      if (!existingMemoryCheck) {
-        logger.debug('No duplicate found, creating new memory');
+      if (similarityCheck.hasSimilar && similarityCheck.similarMemory) {
+        logger.debug('Similar memory found, updating existing', {
+          similarity: similarityCheck.similarity,
+          existingId: similarityCheck.similarMemory._id,
+        });
+
+        // If very similar (>85%), just update importance and timestamp
+        if (similarityCheck.similarity > 0.85) {
+          // Update the existing memory's importance and last seen timestamp
+          await ctx.runMutation(api.memories.update, {
+            id: similarityCheck.similarMemory._id,
+            updates: {
+              importance: Math.max(
+                similarityCheck.similarMemory.importance || 0,
+                memory.importance
+              ),
+              lastSeenAt: Date.now(),
+              accessCount: (similarityCheck.similarMemory.accessCount || 0) + 1,
+            },
+          });
+
+          logger.debug('Updated existing memory importance and access count');
+        } else {
+          // If somewhat similar (75-85%), merge the contents
+          const mergedContent = mergeMemoryContents(
+            similarityCheck.similarMemory.content,
+            memory.content
+          );
+
+          await ctx.runMutation(api.memories.update, {
+            id: similarityCheck.similarMemory._id,
+            updates: {
+              content: mergedContent,
+              importance: Math.max(
+                similarityCheck.similarMemory.importance || 0,
+                memory.importance
+              ),
+              lastSeenAt: Date.now(),
+              accessCount: (similarityCheck.similarMemory.accessCount || 0) + 1,
+              tags: mergeTags(
+                similarityCheck.similarMemory.tags || [],
+                memory.tags
+              ),
+            },
+          });
+
+          // Update embedding for merged content
+          const embeddingResult = await ctx.runAction(
+            api.embeddings.generateEmbedding,
+            { text: mergedContent }
+          );
+          await ctx.runMutation(api.embeddings.setMemoryEmbedding, {
+            memoryId: similarityCheck.similarMemory._id,
+            embedding: (embeddingResult as { embedding: number[] }).embedding,
+          });
+
+          logger.debug('Merged similar memories');
+        }
+      } else {
+        logger.debug('No similar memory found, creating new');
         // Create the memory
         const memoryId = (await ctx.runMutation(api.memories.create, {
           userId: args.userId,

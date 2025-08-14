@@ -946,3 +946,68 @@ export const getAgentStats = query({
     };
   },
 });
+
+// =============================================================================
+// Tool Registry Integration
+// =============================================================================
+
+/**
+ * Get agent capabilities for tool registry integration
+ */
+export const getAgentCapabilities = query({
+  args: { 
+    agentId: v.id('agents') 
+  },
+  handler: async (ctx, args) => {
+    const agent = await ctx.db.get(args.agentId);
+    if (!agent) {
+      return {
+        success: false,
+        error: 'Agent not found',
+        capabilities: [],
+      };
+    }
+
+    return {
+      success: true,
+      capabilities: agent.capabilities || [],
+      agentName: agent.name,
+      agentType: agent.type,
+    };
+  },
+});
+
+/**
+ * Update agent capabilities
+ */
+export const updateCapabilities = mutation({
+  args: {
+    agentId: v.id('agents'),
+    capabilities: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    
+    const agent = await ctx.db.get(args.agentId);
+    if (!agent) {
+      throw new Error('Agent not found');
+    }
+
+    // Check ownership or admin permissions
+    const actualUserId = typeof userId === 'string' ? userId : userId.userId;
+    
+    if (agent.createdBy !== actualUserId && !agent.isPublic) {
+      throw new Error('Access denied: Cannot modify this agent');
+    }
+
+    await ctx.db.patch(args.agentId, {
+      capabilities: args.capabilities,
+      updatedAt: Date.now(),
+    });
+
+    return {
+      success: true,
+      message: 'Agent capabilities updated successfully',
+    };
+  },
+});

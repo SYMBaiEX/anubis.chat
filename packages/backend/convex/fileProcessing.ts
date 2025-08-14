@@ -287,7 +287,7 @@ async function extractPDFContent(_ctx: any, file: any): Promise<string> {
   try {
     // Temporary placeholder implementation
     // PDF files will be stored but text extraction is disabled
-    
+
     logger.info('PDF text extraction temporarily disabled', {
       fileId: file.fileId,
       fileName: file.fileName,
