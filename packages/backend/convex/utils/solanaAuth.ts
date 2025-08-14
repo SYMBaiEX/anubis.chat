@@ -18,10 +18,14 @@ export const verifySolanaSignature = (
   signatureBase58: string,
   message: string
 ): boolean => {
-  const publicKeyBytes = new PublicKey(publicKeyBase58).toBytes();
-  const signatureBytes = bs58.decode(signatureBase58);
-  const messageBytes = new TextEncoder().encode(message);
-  return nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
+  try {
+    const publicKeyBytes = new PublicKey(publicKeyBase58).toBytes();
+    const signatureBytes = bs58.decode(signatureBase58);
+    const messageBytes = new TextEncoder().encode(message);
+    return nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
+  } catch {
+    return false;
+  }
 };
 
 export const buildSiwsChallenge = (
