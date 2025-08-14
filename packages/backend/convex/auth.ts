@@ -205,9 +205,8 @@ export const verifyAndSignIn = internalMutation({
     } catch (_e) {
       throw new Error('Signature verification failed');
     }
-    // Only now mark challenge as used
-    await ctx.db.patch(storedChallenge._id, { used: true });
-
+    // Only now invalidate the challenge (atomic single-use)
+    await ctx.db.delete(storedChallenge._id);
     // Check if user already exists
     const existingUser = await ctx.db
       .query('users')
