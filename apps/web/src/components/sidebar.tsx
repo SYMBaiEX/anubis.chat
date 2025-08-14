@@ -466,7 +466,7 @@ export default function Sidebar() {
       {/* Main Content Offset */}
       <div
         className={cn(
-          'lg:transition-all lg:duration-300',
+          'main-content lg:transition-all lg:duration-300',
           isCollapsed ? 'lg:ml-14' : 'lg:ml-56'
         )}
       />

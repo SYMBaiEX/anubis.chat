@@ -866,13 +866,13 @@ html {
 /* Tablet-Specific Breakpoints */
 @media (min-width: 768px) and (max-width: 1024px) {
   /* iPad and similar tablets - Only apply to expanded sidebar */
-  aside:not(.sidebar-collapsed) {
-    width: 280px;
+  aside.sidebar-content:not(.sidebar-collapsed) {
+    width: 280px !important;
   }
   
   /* Adjust main content offset only when sidebar is expanded */
-  body:has(aside:not(.sidebar-collapsed)) .main-content,
-  .main-content:has(~ aside:not(.sidebar-collapsed)) {
+  body:has(aside.sidebar-content:not(.sidebar-collapsed)) .main-content,
+  .main-content:has(~ aside.sidebar-content:not(.sidebar-collapsed)) {
     margin-left: 280px;
   }
   
@@ -885,13 +885,13 @@ html {
 
 @media (min-width: 1024px) and (max-width: 1366px) {
   /* iPad Pro and larger tablets - Only apply to expanded sidebar */
-  aside:not(.sidebar-collapsed) {
-    width: 320px;
+  aside.sidebar-content:not(.sidebar-collapsed) {
+    width: 320px !important;
   }
   
   /* Adjust main content offset only when sidebar is expanded */
-  body:has(aside:not(.sidebar-collapsed)) .main-content,
-  .main-content:has(~ aside:not(.sidebar-collapsed)) {
+  body:has(aside.sidebar-content:not(.sidebar-collapsed)) .main-content,
+  .main-content:has(~ aside.sidebar-content:not(.sidebar-collapsed)) {
     margin-left: 320px;
   }
   
