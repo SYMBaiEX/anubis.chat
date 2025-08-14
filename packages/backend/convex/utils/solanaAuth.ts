@@ -32,8 +32,14 @@ export const buildSiwsChallenge = (
   expiresAtMs: number,
   statement = 'Sign in to Anubis Chat'
 ): string => {
-  const host = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  return `anubis.chat wants you to sign in with your Solana account:\n${publicKey}\n\n${statement}\n\nDomain: ${host}\nNonce: ${nonce}\nIssued At: ${new Date(issuedAtMs).toISOString()}\nExpiration Time: ${new Date(expiresAtMs).toISOString()}`;
+  let host: string;
+  try {
+    host = new URL(domain).host; // includes port if present
+  } catch {
+    host = domain.replace(/^https?:\/\//, '').split('/')[0];
+  }
+  const header = `${host} wants you to sign in with your Solana account:`;
+  return `${header}\n${publicKey}\n\n${statement}\n\nDomain: ${host}\nNonce: ${nonce}\nIssued At: ${new Date(issuedAtMs).toISOString()}\nExpiration Time: ${new Date(expiresAtMs).toISOString()}`;
 };
 
 export const validateChallengeRecord = (
