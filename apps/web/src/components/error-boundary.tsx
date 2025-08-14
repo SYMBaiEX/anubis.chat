@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { logErrorToService, ErrorSeverity } from '@/lib/error-reporting';
 
 // Initialize logger
 const log = createModuleLogger('error-boundary');
@@ -64,6 +65,9 @@ export class ErrorBoundary extends Component<Props, State> {
         },
         type: 'uncaught_error',
       });
+      
+      // Report to error service
+      logErrorToService(error, errorInfo);
     }
   }
 

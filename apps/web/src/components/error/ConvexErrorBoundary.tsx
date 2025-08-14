@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { logErrorToService, reportConvexError } from '@/lib/error-reporting';
 
 // Initialize logger
 const log = createModuleLogger('convex-error-boundary');
@@ -78,6 +79,13 @@ export class ConvexErrorBoundary extends Component<Props, State> {
       errorDetails: (error as ConvexError).details,
       operation: 'error_boundary_catch',
     });
+    
+    // Report to error service
+    if (error.code) {
+      reportConvexError(error, 'error_boundary');
+    } else {
+      logErrorToService(error, errorInfo);
+    }
   }
 
   componentWillUnmount() {
