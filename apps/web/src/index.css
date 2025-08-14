@@ -962,6 +962,7 @@ html {
   /* Responsive message content based on container width */
   @container message (min-width: 400px) {
     .message-content {
+      display: grid;
       grid-template-columns: 60px 1fr;
       gap: 1rem;
     }
