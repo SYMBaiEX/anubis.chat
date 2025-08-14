@@ -49,7 +49,7 @@ export default function LandingFooter() {
           <Link
             aria-label="GitHub"
             className="text-foreground/60 transition-colors duration-200 hover:text-primary"
-            href="https://github.com"
+            href="https://github.com/SYMBaiEX/anubis.chat"
             rel="noopener noreferrer"
             target="_blank"
           >
