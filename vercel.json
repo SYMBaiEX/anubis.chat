@@ -1,5 +1,5 @@
 {
   "buildCommand": "bunx turbo run build --filter=web",
-  "installCommand": "bun install --frozen-lockfile",
+  "installCommand": "bun install --production",
   "framework": "nextjs"
 }
