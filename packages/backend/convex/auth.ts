@@ -181,25 +181,30 @@ export const verifyAndSignIn = internalMutation({
       }
     }
 
+    // Quick sanity checks to avoid throwing deep in crypto
+    const publicKeyBytes = new PublicKey(publicKey).toBytes();
+    const signatureBytes = bs58.decode(signature);
+    if (signatureBytes.length !== nacl.sign.signatureLength) {
+      throw new Error('Invalid signature length');
+    }
+    if (publicKeyBytes.length !== nacl.sign.publicKeyLength) {
+      throw new Error('Invalid public key length');
+    }
+
     // Verify ed25519 signature BEFORE marking challenge as used
     try {
-      const publicKeyBytes = new PublicKey(publicKey).toBytes();
-      const signatureBytes = bs58.decode(signature);
       const messageBytes = new TextEncoder().encode(message);
-
       const isValid = nacl.sign.detached.verify(
         messageBytes,
         signatureBytes,
         publicKeyBytes
       );
-
       if (!isValid) {
         throw new Error('Invalid signature for provided message and public key');
       }
     } catch (_e) {
       throw new Error('Signature verification failed');
     }
-
     // Only now mark challenge as used
     await ctx.db.patch(storedChallenge._id, { used: true });
 
