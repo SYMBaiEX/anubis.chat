@@ -1,6 +1,6 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
-import { convertToCoreMessages, streamText, type UIMessage } from 'ai';
+import { convertToCoreMessages, streamText, tool, type UIMessage } from 'ai';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -13,28 +13,46 @@ const anthropic = createAnthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// Tool definitions
+// Tool definitions with AI SDK v5 format
 const tools = {
-  search: {
+  search: tool({
     description: 'Search for information on a topic',
-    parameters: z.object({
+    inputSchema: z.object({
       query: z.string().describe('The search query'),
       limit: z.number().optional().default(5).describe('Number of results'),
     }),
-  },
-  calculate: {
+    execute: async ({ query, limit }) => {
+      // Implementation would go here
+      return { query, limit, results: [] };
+    },
+  }),
+  calculate: tool({
     description: 'Perform mathematical calculations',
-    parameters: z.object({
+    inputSchema: z.object({
       expression: z.string().describe('Mathematical expression to evaluate'),
     }),
-  },
-  analyzeImage: {
+    execute: async ({ expression }) => {
+      // Implementation would go here
+      try {
+        // This is a simple example - in production use a safe math parser
+        const result = eval(expression);
+        return { expression, result };
+      } catch (error) {
+        return { expression, error: 'Invalid expression' };
+      }
+    },
+  }),
+  analyzeImage: tool({
     description: 'Analyze an uploaded image',
-    parameters: z.object({
+    inputSchema: z.object({
       imageUrl: z.string().describe('URL of the image to analyze'),
       prompt: z.string().optional().describe('Specific analysis prompt'),
     }),
-  },
+    execute: async ({ imageUrl, prompt }) => {
+      // Implementation would go here
+      return { imageUrl, prompt, analysis: 'Image analysis placeholder' };
+    },
+  }),
 };
 
 export async function POST(req: Request) {
