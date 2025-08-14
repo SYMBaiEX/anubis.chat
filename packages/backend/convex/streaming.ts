@@ -13,6 +13,26 @@ import { createModuleLogger } from './utils/logger';
 // Create logger instance for this module
 const logger = createModuleLogger('streaming');
 
+// Type definitions for tool calls
+interface ToolCallWithInput {
+  toolCallId: string;
+  toolName: string;
+  input: Record<string, unknown>;
+}
+
+// Tool call tracking with proper types for messages.create mutation
+interface TrackedToolCall {
+  id: string;
+  name: string;
+  args: Record<string, string | number | boolean | null>;
+  result?: {
+    success: boolean;
+    data?: Record<string, string | number | boolean | null>;
+    error?: string;
+    executionTime?: number;
+  };
+}
+
 // Allowed OpenRouter model allowlist for security
 const ALLOWED_OPENROUTER_MODELS = new Set<string>([
   // Newly requested free models
@@ -327,17 +347,7 @@ export const streamWithWebSocket = action({
 
       // Stream with real-time updates and tool support
       let accumulatedContent = '';
-      const toolCalls: Array<{
-        id: string;
-        name: string;
-        args: any;
-        result?: {
-          success: boolean;
-          data?: any;
-          error?: string;
-          executionTime?: number;
-        };
-      }> = [];
+      const toolCalls: TrackedToolCall[] = [];
 
       const result = await streamText({
         model: aiModel,
@@ -369,44 +379,44 @@ export const streamWithWebSocket = action({
 
       // Process any tool calls that occurred
       if (resultToolCalls && Array.isArray(resultToolCalls)) {
-        for (const toolCall of resultToolCalls) {
+        for (const toolCall of resultToolCalls as ToolCallWithInput[]) {
           logger.info('Tool called', {
             toolName: toolCall.toolName,
-            args: toolCall.args,
+            argsString: JSON.stringify(toolCall.input),
           });
 
           const startTime = Date.now();
 
           // Track this tool call
-          const trackedToolCall = {
-            id: toolCall.toolCallId || toolCall.id,
+          const trackedToolCall: TrackedToolCall = {
+            id: toolCall.toolCallId,
             name: toolCall.toolName,
-            args: toolCall.args,
+            args: toolCall.input as Record<string, string | number | boolean | null>,
           };
           toolCalls.push(trackedToolCall);
 
           // Execute the actual tool based on the tool name
-          let toolResult;
-          const toolArgs = toolCall.args as any;
+          let toolResult: unknown;
+          const toolArgs = toolCall.input;
           switch (toolCall.toolName) {
             case 'webSearch':
               toolResult = await ctx.runAction(internal.tools.searchWeb, {
-                query: toolArgs.query,
-                num: toolArgs.num,
+                query: toolArgs.query as string,
+                num: toolArgs.num as number,
               });
               break;
             case 'calculator':
               toolResult = await ctx.runAction(internal.tools.calculate, {
-                expression: toolArgs.expression,
+                expression: toolArgs.expression as string,
               });
               break;
             case 'createDocument':
               toolResult = await ctx.runAction(
                 internal.tools.createDocumentInternal,
                 {
-                  title: toolArgs.title,
-                  content: toolArgs.content,
-                  type: toolArgs.type,
+                  title: toolArgs.title as string,
+                  content: toolArgs.content as string,
+                  type: toolArgs.type as 'markdown' | 'code' | 'document',
                 }
               );
               // Store document for UI display
@@ -414,7 +424,7 @@ export const streamWithWebSocket = action({
                 sessionId: args.sessionId,
                 artifact: {
                   type: 'document',
-                  data: toolResult.document,
+                  data: (toolResult as { document: unknown }).document,
                 },
               });
               break;
@@ -422,9 +432,9 @@ export const streamWithWebSocket = action({
               toolResult = await ctx.runAction(
                 internal.tools.generateCodeInternal,
                 {
-                  language: toolArgs.language,
-                  description: toolArgs.description,
-                  framework: toolArgs.framework,
+                  language: toolArgs.language as string,
+                  description: toolArgs.description as string,
+                  framework: toolArgs.framework as string | undefined,
                 }
               );
               // Store code for UI display
@@ -438,8 +448,8 @@ export const streamWithWebSocket = action({
               break;
             case 'summarize':
               toolResult = await ctx.runAction(internal.tools.summarizeText, {
-                text: toolArgs.text,
-                maxLength: toolArgs.maxLength,
+                text: toolArgs.text as string,
+                maxLength: toolArgs.maxLength as number | undefined,
               });
               break;
             default:
@@ -452,10 +462,26 @@ export const streamWithWebSocket = action({
             toolResult &&
             typeof toolResult === 'object' &&
             'error' in toolResult;
-          (trackedToolCall as any).result = {
+          // Format the result data properly
+          let formattedData: Record<string, string | number | boolean | null> | undefined;
+          if (toolResult && typeof toolResult === 'object') {
+            // Convert the object to the expected format
+            formattedData = Object.entries(toolResult).reduce((acc, [key, value]) => {
+              if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                acc[key] = value;
+              } else {
+                acc[key] = JSON.stringify(value);
+              }
+              return acc;
+            }, {} as Record<string, string | number | boolean | null>);
+          } else if (toolResult !== undefined) {
+            formattedData = { result: String(toolResult) };
+          }
+          
+          trackedToolCall.result = {
             success: !hasError,
-            data: toolResult,
-            error: hasError ? (toolResult as any).error : undefined,
+            data: formattedData,
+            error: hasError ? (toolResult as { error: string }).error : undefined,
             executionTime,
           };
         }
@@ -492,15 +518,16 @@ export const streamWithWebSocket = action({
             }
           : undefined,
       });
-    } catch (error: any) {
-      logger.error('WebSocket streaming error', error);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Streaming failed';
+      logger.error('WebSocket streaming error', error instanceof Error ? error : new Error(String(error)));
 
       // Update session with error
       await ctx.runMutation(api.streaming.updateStreamingContent, {
         sessionId: args.sessionId,
         content: '',
         status: 'error',
-        error: error.message || 'Streaming failed',
+        error: errorMessage,
       });
 
       throw error;
@@ -552,7 +579,7 @@ async function prepareAIModel(modelName: string) {
 
 // Helper function to build system prompt
 function buildSystemPrompt(
-  chat: any,
+  chat: Doc<'chats'>,
   context: string,
   useReasoning?: boolean
 ): string {
@@ -899,16 +926,7 @@ export const streamChat = httpAction(async (ctx, request) => {
 
   for (const msg of messages) {
     let contentWithAttachments = msg.content;
-    const metas: any = (msg as any).metadata;
-    const att:
-      | Array<{
-          fileId: string;
-          url?: string;
-          mimeType?: string;
-          size?: number;
-          type?: string;
-        }>
-      | undefined = metas?.attachments;
+    const att = msg.metadata?.attachments;
 
     // Enhanced file handling with RAG integration
     if (att && att.length > 0) {
@@ -1063,7 +1081,7 @@ export const streamChat = httpAction(async (ctx, request) => {
           } catch {
             // fall through to default fetch if anything goes wrong
           }
-          return fetch(input as any, init as any);
+          return fetch(input as RequestInfo | URL, init as RequestInit);
         },
       });
       const orModel = modelName.replace(/^openrouter\//, '');
