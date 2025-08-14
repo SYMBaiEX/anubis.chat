@@ -1,0 +1,94 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+.pnp.yaml
+
+# Testing
+coverage
+*.lcov
+.nyc_output
+
+# Next.js
+.next
+out
+dist
+build
+
+# Turbo
+.turbo
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun-debug.log*
+.pnpm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Version control
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+*.md
+LICENSE
+docs
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.temp
+
+# Logs
+logs
+*.log
+
+# Cache
+.cache
+.parcel-cache
+.rollup.cache
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Convex
+.convex
+convex.json
+
+# Build artifacts
+*.tsbuildinfo
+.vercel
+.netlify
+
+# Package manager files (except lock files)
+.npmrc
+.yarnrc
+.pnpmfile.cjs

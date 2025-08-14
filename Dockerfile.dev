@@ -1,0 +1,36 @@
+# =============================================================================
+# Development Dockerfile with hot-reload support
+# =============================================================================
+FROM oven/bun:1.2.18-alpine AS dev
+
+# Install dependencies for node-gyp and other native modules
+RUN apk add --no-cache python3 make g++ cairo-dev jpeg-dev pango-dev giflib-dev
+
+WORKDIR /app
+
+# Copy package files for dependency installation
+COPY package.json bun.lockb ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/backend/package.json ./packages/backend/
+COPY turbo.json ./
+
+# Install all dependencies including devDependencies
+RUN bun install
+
+# Copy all source files
+COPY . .
+
+# Set development environment
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Expose ports
+EXPOSE 3001
+EXPOSE 3210
+
+# Health check for development
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD bun --eval "fetch('http://localhost:3001/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+
+# Start development server with hot-reload
+CMD ["bun", "dev:web"]

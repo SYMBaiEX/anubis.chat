@@ -1,0 +1,106 @@
+# Development Docker Compose Configuration
+# Usage: docker-compose -f docker-compose.dev.yml up
+
+services:
+  # Next.js Web Application (Development)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: anubis-chat:dev
+    container_name: anubis-web-dev
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_CONVEX_URL=${CONVEX_URL:-http://localhost:3210}
+      - CONVEX_DEPLOYMENT=${CONVEX_DEPLOYMENT:-development}
+      - NEXT_PUBLIC_APP_URL=${APP_URL:-http://localhost:3001}
+      - WATCHPACK_POLLING=true  # Enable polling for file changes in Docker
+    volumes:
+      # Mount source code for hot-reload
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+      - /app/packages/backend/node_modules
+    networks:
+      - anubis-dev-network
+    command: bun dev:web
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Convex Backend (Development)
+  convex:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: anubis-chat:dev
+    container_name: anubis-convex-dev
+    restart: unless-stopped
+    ports:
+      - "3210:3210"
+    environment:
+      - NODE_ENV=development
+      - CONVEX_DEPLOYMENT=development
+    volumes:
+      # Mount source code for hot-reload
+      - .:/app
+      - /app/node_modules
+      - /app/packages/backend/node_modules
+    networks:
+      - anubis-dev-network
+    command: bun dev:server
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3210"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Redis Cache (Development)
+  redis:
+    image: redis:7-alpine
+    container_name: anubis-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    command: redis-server --appendonly yes --loglevel debug
+    networks:
+      - anubis-dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Development Tools Container (optional)
+  tools:
+    image: node:20-alpine
+    container_name: anubis-tools-dev
+    working_dir: /app
+    volumes:
+      - .:/app
+    networks:
+      - anubis-dev-network
+    command: tail -f /dev/null  # Keep container running
+    profiles:
+      - tools  # Only start when explicitly requested
+
+# Networks
+networks:
+  anubis-dev-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  redis_dev_data:
+    driver: local
