@@ -157,8 +157,10 @@ export default function Sidebar() {
       <aside
         className={cn(
           'fixed top-0 left-0 z-40 h-[calc(100vh-2.5rem)] overflow-hidden border-sidebar-border border-r bg-sidebar-background/95 backdrop-blur transition-all duration-300 supports-[backdrop-filter]:bg-sidebar-background/80',
-          isCollapsed ? 'w-14' : 'w-56',
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          isCollapsed ? 'w-14' : 'w-56 md:w-64 lg:w-56',
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          // Add container query support
+          'sidebar-content'
         )}
       >
         <div className="flex h-full flex-col">
