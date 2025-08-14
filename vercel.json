@@ -1,7 +1,6 @@
 {
-  "buildCommand": "cd apps/web && bun run build",
-  "installCommand": "bun install",
+  "buildCommand": "cd apps/web && bunx next build",
+  "installCommand": "bun install --no-optional",
   "framework": "nextjs",
-  "outputDirectory": "apps/web/.next",
-  "rootDirectory": "."
+  "outputDirectory": "apps/web/.next"
 }
