@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import type { ChatMessage, StreamingMessage } from '@/lib/types/api';
 import type { MessageListProps, MinimalMessage } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
-import { type FontSize, getFontSizeClasses } from '@/lib/utils/font-sizes';
+import { type FontSize, getFontSizeClasses } from '@/lib/utils/fontSizes';
 import { EnhancedMessageBubble } from './enhanced-message-bubble';
 import { StreamingMessage as StreamingMessageComponent } from './streaming-message';
 import { TypingIndicator } from './typing-indicator';

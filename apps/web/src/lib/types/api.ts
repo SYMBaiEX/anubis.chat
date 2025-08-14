@@ -99,24 +99,26 @@ export interface UserProfile {
 // Type alias for convenience
 export type User = UserProfile;
 
-export enum Theme {
-  LIGHT = 'light',
-  DARK = 'dark',
-  SYSTEM = 'system',
-}
+export const Theme = {
+  LIGHT: 'light',
+  DARK: 'dark',
+  SYSTEM: 'system',
+} as const;
+export type Theme = (typeof Theme)[keyof typeof Theme];
 
-export enum Language {
-  EN = 'en',
-  ES = 'es',
-  FR = 'fr',
-  DE = 'de',
-  ZH = 'zh',
-  JA = 'ja',
-  KO = 'ko',
-  PT = 'pt',
-  RU = 'ru',
-  AR = 'ar',
-}
+export const Language = {
+  EN: 'en',
+  ES: 'es',
+  FR: 'fr',
+  DE: 'de',
+  ZH: 'zh',
+  JA: 'ja',
+  KO: 'ko',
+  PT: 'pt',
+  RU: 'ru',
+  AR: 'ar',
+} as const;
+export type Language = (typeof Language)[keyof typeof Language];
 
 export interface UserPreferences {
   theme: Theme;
@@ -137,27 +139,31 @@ export interface UserPreferences {
   defaultModel?: string;
 }
 
-export enum SubscriptionTier {
-  FREE = 'free',
-  STARTER = 'starter',
-  PRO = 'pro',
-  TEAM = 'team',
-  ENTERPRISE = 'enterprise',
-}
+export const SubscriptionTier = {
+  FREE: 'free',
+  STARTER: 'starter',
+  PRO: 'pro',
+  TEAM: 'team',
+  ENTERPRISE: 'enterprise',
+} as const;
+export type SubscriptionTier =
+  (typeof SubscriptionTier)[keyof typeof SubscriptionTier];
 
-export enum SubscriptionFeature {
-  BASIC_CHAT = 'basic_chat',
-  DOCUMENT_UPLOAD = 'document_upload',
-  ADVANCED_MODELS = 'advanced_models',
-  UNLIMITED_TOKENS = 'unlimited_tokens',
-  PRIORITY_SUPPORT = 'priority_support',
-  CUSTOM_TOOLS = 'custom_tools',
-  TEAM_COLLABORATION = 'team_collaboration',
-  API_ACCESS = 'api_access',
-  WEBHOOK_INTEGRATION = 'webhook_integration',
-  CUSTOM_BRANDING = 'custom_branding',
-  AUDIT_LOGS = 'audit_logs',
-}
+export const SubscriptionFeature = {
+  BASIC_CHAT: 'basic_chat',
+  DOCUMENT_UPLOAD: 'document_upload',
+  ADVANCED_MODELS: 'advanced_models',
+  UNLIMITED_TOKENS: 'unlimited_tokens',
+  PRIORITY_SUPPORT: 'priority_support',
+  CUSTOM_TOOLS: 'custom_tools',
+  TEAM_COLLABORATION: 'team_collaboration',
+  API_ACCESS: 'api_access',
+  WEBHOOK_INTEGRATION: 'webhook_integration',
+  CUSTOM_BRANDING: 'custom_branding',
+  AUDIT_LOGS: 'audit_logs',
+} as const;
+export type SubscriptionFeature =
+  (typeof SubscriptionFeature)[keyof typeof SubscriptionFeature];
 
 export interface UserSubscription {
   tier: SubscriptionTier;
@@ -191,23 +197,25 @@ export interface Chat {
   lastMessageAt?: number;
 }
 
-export enum MessageRole {
-  USER = 'user',
-  ASSISTANT = 'assistant',
-  SYSTEM = 'system',
-  TOOL = 'tool',
-  FUNCTION = 'function',
-}
+export const MessageRole = {
+  USER: 'user',
+  ASSISTANT: 'assistant',
+  SYSTEM: 'system',
+  TOOL: 'tool',
+  FUNCTION: 'function',
+} as const;
+export type MessageRole = (typeof MessageRole)[keyof typeof MessageRole];
 
-export enum MessageStatus {
-  PENDING = 'pending',
-  SENDING = 'sending',
-  SENT = 'sent',
-  DELIVERED = 'delivered',
-  READ = 'read',
-  FAILED = 'failed',
-  DELETED = 'deleted',
-}
+export const MessageStatus = {
+  PENDING: 'pending',
+  SENDING: 'sending',
+  SENT: 'sent',
+  DELIVERED: 'delivered',
+  READ: 'read',
+  FAILED: 'failed',
+  DELETED: 'deleted',
+} as const;
+export type MessageStatus = (typeof MessageStatus)[keyof typeof MessageStatus];
 
 export interface MessageAttachment {
   fileId: string;
@@ -283,33 +291,37 @@ export interface ToolCallResult {
 // AI Integration Types
 // =============================================================================
 
-export enum AIProvider {
-  OPENAI = 'openai',
-  ANTHROPIC = 'anthropic',
-  DEEPSEEK = 'deepseek',
-  GOOGLE = 'google',
-  MISTRAL = 'mistral',
-  COHERE = 'cohere',
-  HUGGINGFACE = 'huggingface',
-}
+export const AIProvider = {
+  OPENAI: 'openai',
+  ANTHROPIC: 'anthropic',
+  DEEPSEEK: 'deepseek',
+  GOOGLE: 'google',
+  MISTRAL: 'mistral',
+  COHERE: 'cohere',
+  HUGGINGFACE: 'huggingface',
+} as const;
+export type AIProvider = (typeof AIProvider)[keyof typeof AIProvider];
 
-export enum AICostTier {
-  FREE = 'free',
-  BUDGET = 'budget',
-  STANDARD = 'standard',
-  PREMIUM = 'premium',
-  ENTERPRISE = 'enterprise',
-}
+export const AICostTier = {
+  FREE: 'free',
+  BUDGET: 'budget',
+  STANDARD: 'standard',
+  PREMIUM: 'premium',
+  ENTERPRISE: 'enterprise',
+} as const;
+export type AICostTier = (typeof AICostTier)[keyof typeof AICostTier];
 
-export enum AIModelCapability {
-  TEXT_GENERATION = 'text_generation',
-  CODE_GENERATION = 'code_generation',
-  REASONING = 'reasoning',
-  VISION = 'vision',
-  FUNCTION_CALLING = 'function_calling',
-  STREAMING = 'streaming',
-  EMBEDDINGS = 'embeddings',
-}
+export const AIModelCapability = {
+  TEXT_GENERATION: 'text_generation',
+  CODE_GENERATION: 'code_generation',
+  REASONING: 'reasoning',
+  VISION: 'vision',
+  FUNCTION_CALLING: 'function_calling',
+  STREAMING: 'streaming',
+  EMBEDDINGS: 'embeddings',
+} as const;
+export type AIModelCapability =
+  (typeof AIModelCapability)[keyof typeof AIModelCapability];
 
 export interface AIModel {
   id: string;
@@ -363,15 +375,16 @@ export interface ToolParameterProperty {
   properties?: Record<string, ToolParameterProperty>;
 }
 
-export enum ToolCategory {
-  DATA_RETRIEVAL = 'data_retrieval',
-  COMPUTATION = 'computation',
-  COMMUNICATION = 'communication',
-  FILE_SYSTEM = 'file_system',
-  WEB_API = 'web_api',
-  BLOCKCHAIN = 'blockchain',
-  CUSTOM = 'custom',
-}
+export const ToolCategory = {
+  DATA_RETRIEVAL: 'data_retrieval',
+  COMPUTATION: 'computation',
+  COMMUNICATION: 'communication',
+  FILE_SYSTEM: 'file_system',
+  WEB_API: 'web_api',
+  BLOCKCHAIN: 'blockchain',
+  CUSTOM: 'custom',
+} as const;
+export type ToolCategory = (typeof ToolCategory)[keyof typeof ToolCategory];
 
 export interface StreamingResponse {
   id: string;
@@ -410,13 +423,14 @@ export type {
 // Search Types
 // =============================================================================
 
-export enum SearchType {
-  SEMANTIC = 'semantic',
-  HYBRID = 'hybrid',
-  KEYWORD = 'keyword',
-  FUZZY = 'fuzzy',
-  VECTOR = 'vector',
-}
+export const SearchType = {
+  SEMANTIC: 'semantic',
+  HYBRID: 'hybrid',
+  KEYWORD: 'keyword',
+  FUZZY: 'fuzzy',
+  VECTOR: 'vector',
+} as const;
+export type SearchType = (typeof SearchType)[keyof typeof SearchType];
 
 export interface SearchRequest {
   query: string;
@@ -450,13 +464,15 @@ export interface DateRange {
   timezone?: string;
 }
 
-export enum SearchResultType {
-  MESSAGE = 'message',
-  DOCUMENT = 'document',
-  CHAT = 'chat',
-  USER = 'user',
-  AGENT = 'agent',
-}
+export const SearchResultType = {
+  MESSAGE: 'message',
+  DOCUMENT: 'document',
+  CHAT: 'chat',
+  USER: 'user',
+  AGENT: 'agent',
+} as const;
+export type SearchResultType =
+  (typeof SearchResultType)[keyof typeof SearchResultType];
 
 export interface SearchResult {
   id: string;
@@ -525,18 +541,20 @@ export interface WebhookEvent {
   version?: string;
 }
 
-export enum WebhookEventType {
-  CHAT_CREATED = 'chat.created',
-  CHAT_UPDATED = 'chat.updated',
-  CHAT_DELETED = 'chat.deleted',
-  MESSAGE_SENT = 'message.sent',
-  MESSAGE_RECEIVED = 'message.received',
-  USER_CREATED = 'user.created',
-  USER_UPDATED = 'user.updated',
-  SUBSCRIPTION_CHANGED = 'subscription.changed',
-  TOKEN_LIMIT_REACHED = 'token_limit.reached',
-  ERROR_OCCURRED = 'error.occurred',
-}
+export const WebhookEventType = {
+  CHAT_CREATED: 'chat.created',
+  CHAT_UPDATED: 'chat.updated',
+  CHAT_DELETED: 'chat.deleted',
+  MESSAGE_SENT: 'message.sent',
+  MESSAGE_RECEIVED: 'message.received',
+  USER_CREATED: 'user.created',
+  USER_UPDATED: 'user.updated',
+  SUBSCRIPTION_CHANGED: 'subscription.changed',
+  TOKEN_LIMIT_REACHED: 'token_limit.reached',
+  ERROR_OCCURRED: 'error.occurred',
+} as const;
+export type WebhookEventType =
+  (typeof WebhookEventType)[keyof typeof WebhookEventType];
 
 export interface WebhookEventData {
   resourceId: string;
@@ -569,69 +587,74 @@ export type AsyncAPIResult<T> = Promise<APIResult<T>>;
 // Common Enums
 // =============================================================================
 
-export enum SortOrder {
-  ASC = 'asc',
-  DESC = 'desc',
-}
+export const SortOrder = {
+  ASC: 'asc',
+  DESC: 'desc',
+} as const;
+export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder];
 
-export enum FilterOperator {
-  EQUALS = 'eq',
-  NOT_EQUALS = 'ne',
-  GREATER_THAN = 'gt',
-  GREATER_THAN_OR_EQUAL = 'gte',
-  LESS_THAN = 'lt',
-  LESS_THAN_OR_EQUAL = 'lte',
-  IN = 'in',
-  NOT_IN = 'nin',
-  CONTAINS = 'contains',
-  STARTS_WITH = 'starts_with',
-  ENDS_WITH = 'ends_with',
-}
+export const FilterOperator = {
+  EQUALS: 'eq',
+  NOT_EQUALS: 'ne',
+  GREATER_THAN: 'gt',
+  GREATER_THAN_OR_EQUAL: 'gte',
+  LESS_THAN: 'lt',
+  LESS_THAN_OR_EQUAL: 'lte',
+  IN: 'in',
+  NOT_IN: 'nin',
+  CONTAINS: 'contains',
+  STARTS_WITH: 'starts_with',
+  ENDS_WITH: 'ends_with',
+} as const;
+export type FilterOperator =
+  (typeof FilterOperator)[keyof typeof FilterOperator];
 
-export enum CacheStrategy {
-  NO_CACHE = 'no-cache',
-  NO_STORE = 'no-store',
-  RELOAD = 'reload',
-  FORCE_CACHE = 'force-cache',
-  ONLY_IF_CACHED = 'only-if-cached',
-}
+export const CacheStrategy = {
+  NO_CACHE: 'no-cache',
+  NO_STORE: 'no-store',
+  RELOAD: 'reload',
+  FORCE_CACHE: 'force-cache',
+  ONLY_IF_CACHED: 'only-if-cached',
+} as const;
+export type CacheStrategy = (typeof CacheStrategy)[keyof typeof CacheStrategy];
 
 // =============================================================================
 // Error Types
 // =============================================================================
 
-export enum APIErrorCode {
+export const APIErrorCode = {
   // Authentication
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  FORBIDDEN = 'FORBIDDEN',
-  INVALID_TOKEN = 'INVALID_TOKEN',
-  TOKEN_EXPIRED = 'TOKEN_EXPIRED',
-  INVALID_SIGNATURE = 'INVALID_SIGNATURE',
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  FORBIDDEN: 'FORBIDDEN',
+  INVALID_TOKEN: 'INVALID_TOKEN',
+  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+  INVALID_SIGNATURE: 'INVALID_SIGNATURE',
 
   // Validation
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  INVALID_REQUEST = 'INVALID_REQUEST',
-  MISSING_PARAMETERS = 'MISSING_PARAMETERS',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  INVALID_REQUEST: 'INVALID_REQUEST',
+  MISSING_PARAMETERS: 'MISSING_PARAMETERS',
 
   // Resources
-  RESOURCE_NOT_FOUND = 'RESOURCE_NOT_FOUND',
-  RESOURCE_CONFLICT = 'RESOURCE_CONFLICT',
-  RESOURCE_LIMIT_EXCEEDED = 'RESOURCE_LIMIT_EXCEEDED',
+  RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
+  RESOURCE_CONFLICT: 'RESOURCE_CONFLICT',
+  RESOURCE_LIMIT_EXCEEDED: 'RESOURCE_LIMIT_EXCEEDED',
 
   // Rate Limiting
-  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
-  QUOTA_EXCEEDED = 'QUOTA_EXCEEDED',
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+  QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
 
   // AI/Model
-  MODEL_UNAVAILABLE = 'MODEL_UNAVAILABLE',
-  CONTEXT_TOO_LONG = 'CONTEXT_TOO_LONG',
-  UNSAFE_CONTENT = 'UNSAFE_CONTENT',
+  MODEL_UNAVAILABLE: 'MODEL_UNAVAILABLE',
+  CONTEXT_TOO_LONG: 'CONTEXT_TOO_LONG',
+  UNSAFE_CONTENT: 'UNSAFE_CONTENT',
 
   // Server
-  INTERNAL_ERROR = 'INTERNAL_ERROR',
-  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
-  TIMEOUT = 'TIMEOUT',
-}
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+  TIMEOUT: 'TIMEOUT',
+} as const;
+export type APIErrorCode = (typeof APIErrorCode)[keyof typeof APIErrorCode];
 // =============================================================================
 // Assistant & Thread Management Types
 // =============================================================================

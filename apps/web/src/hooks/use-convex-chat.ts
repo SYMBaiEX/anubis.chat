@@ -54,22 +54,8 @@ export function useConvexChat(chatId: string | undefined) {
         setStreamingMessage({
           id: `stream-${sessionId}`,
           content: streamingSession.content,
-          role: MessageRole.ASSISTANT as any,
+          role: MessageRole.ASSISTANT,
           isStreaming: streamingSession.status === 'streaming',
-          metadata:
-            streamingSession.status === 'completed'
-              ? {
-                  usage: streamingSession.tokens
-                    ? {
-                        inputTokens: streamingSession.tokens.input,
-                        outputTokens: streamingSession.tokens.output,
-                        totalTokens:
-                          streamingSession.tokens.input +
-                          streamingSession.tokens.output,
-                      }
-                    : undefined,
-                }
-              : undefined,
         });
       }
 
@@ -95,7 +81,7 @@ export function useConvexChat(chatId: string | undefined) {
   const sendMessage = useCallback(
     async (
       content: string,
-      walletAddress: string,
+      _walletAddress: string,
       model?: string,
       useReasoning?: boolean,
       attachments?: Array<{

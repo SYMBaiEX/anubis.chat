@@ -5,8 +5,8 @@ import { getAuthUserId } from '@convex-dev/auth/server';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText } from 'ai';
 import { v } from 'convex/values';
-import { api } from './_generated/api';
-import type { Id } from './_generated/dataModel';
+import { api, internal } from './_generated/api';
+import type { Doc, Id } from './_generated/dataModel';
 import { action, httpAction, mutation, query } from './_generated/server';
 import { createModuleLogger } from './utils/logger';
 
@@ -53,7 +53,9 @@ export const createStreamingSession = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) {
+      throw new Error('Not authenticated');
+    }
 
     // Verify chat ownership
     const chat = await ctx.db.get(args.chatId);
@@ -86,7 +88,9 @@ export const subscribeToStream = query({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
+    if (!userId) {
+      return null;
+    }
 
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.userId !== userId) {
@@ -121,7 +125,9 @@ export const updateStreamingContent = mutation({
   },
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+      throw new Error('Session not found');
+    }
 
     await ctx.db.patch(args.sessionId, {
       content: args.content,
@@ -140,16 +146,22 @@ export const updateStreamArtifact = mutation({
   args: {
     sessionId: v.id('streamingSessions'),
     artifact: v.object({
-      type: v.union(v.literal('document'), v.literal('code'), v.literal('markdown')),
+      type: v.union(
+        v.literal('document'),
+        v.literal('code'),
+        v.literal('markdown')
+      ),
       data: v.any(),
     }),
   },
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+      throw new Error('Session not found');
+    }
 
     await ctx.db.patch(args.sessionId, {
-      artifact: args.artifact,
+      artifacts: [args.artifact],
       updatedAt: Date.now(),
     });
   },
@@ -221,7 +233,7 @@ export const streamWithWebSocket = action({
             });
           } catch (err) {
             logger.warn('Failed to process attachment for RAG', {
-              error: err,
+              error: String(err),
               fileId: attachment.fileId,
             });
           }
@@ -268,7 +280,9 @@ export const streamWithWebSocket = action({
               );
             }
           } catch (error) {
-            logger.warn('RAG context retrieval failed', { error });
+            logger.warn('RAG context retrieval failed', {
+              error: String(error),
+            });
           }
         }
       }
@@ -290,11 +304,11 @@ export const streamWithWebSocket = action({
       );
 
       // Convert messages for AI SDK
-      const conversationHistory = messages.map((msg) => ({
+      const conversationHistory = messages.map((msg: Doc<'messages'>) => ({
         role: msg.role as 'user' | 'assistant' | 'system',
         content: msg.content,
       }));
-      
+
       // Add the current user message to the conversation
       conversationHistory.push({
         role: 'user' as const,
@@ -302,8 +316,15 @@ export const streamWithWebSocket = action({
       });
 
       // Import tools
-      const { aiTools, searchWeb, calculate, createDocumentInternal, generateCodeInternal, summarizeText } = await import('./tools');
-      
+      const {
+        aiTools,
+        searchWeb,
+        calculate,
+        createDocumentInternal,
+        generateCodeInternal,
+        summarizeText,
+      } = await import('./tools');
+
       // Stream with real-time updates and tool support
       let accumulatedContent = '';
       const toolCalls: Array<{
@@ -317,7 +338,7 @@ export const streamWithWebSocket = action({
           executionTime?: number;
         };
       }> = [];
-      
+
       const result = await streamText({
         model: aiModel,
         system: systemPrompt,
@@ -325,117 +346,6 @@ export const streamWithWebSocket = action({
         temperature: args.temperature ?? chat.temperature ?? 0.7,
         maxOutputTokens: args.maxTokens ?? chat.maxTokens ?? 2000,
         tools: aiTools,
-        onToolCall: async ({ toolCall }) => {
-          logger.info('Tool called', { toolName: toolCall.toolName, args: toolCall.args });
-          
-          const startTime = Date.now();
-          
-          // Track this tool call
-          const trackedToolCall = {
-            id: toolCall.toolCallId,
-            name: toolCall.toolName,
-            args: toolCall.args,
-          };
-          toolCalls.push(trackedToolCall);
-          
-          // Execute the actual tool based on the tool name
-          let toolResult;
-          switch (toolCall.toolName) {
-            case 'webSearch':
-              toolResult = await ctx.runAction(api.tools.searchWeb, {
-                query: toolCall.args.query,
-                num: toolCall.args.num,
-              });
-              break;
-            case 'calculator':
-              toolResult = await ctx.runAction(api.tools.calculate, {
-                expression: toolCall.args.expression,
-              });
-              break;
-            case 'createDocument':
-              toolResult = await ctx.runAction(api.tools.createDocumentInternal, {
-                title: toolCall.args.title,
-                content: toolCall.args.content,
-                type: toolCall.args.type,
-              });
-              // Store document for UI display
-              await ctx.runMutation(api.streaming.updateStreamArtifact, {
-                sessionId: args.sessionId,
-                artifact: {
-                  type: 'document',
-                  data: toolResult.document,
-                },
-              });
-              break;
-            case 'generateCode':
-              toolResult = await ctx.runAction(api.tools.generateCodeInternal, {
-                language: toolCall.args.language,
-                description: toolCall.args.description,
-                framework: toolCall.args.framework,
-              });
-              // Store code for UI display
-              await ctx.runMutation(api.streaming.updateStreamArtifact, {
-                sessionId: args.sessionId,
-                artifact: {
-                  type: 'code',
-                  data: toolResult,
-                },
-              });
-              break;
-            case 'summarize':
-              toolResult = await ctx.runAction(api.tools.summarizeText, {
-                text: toolCall.args.text,
-                maxLength: toolCall.args.maxLength,
-              });
-              break;
-            default:
-              toolResult = { error: 'Unknown tool' };
-          }
-          
-          // Update the tracked tool call with results
-          const executionTime = Date.now() - startTime;
-          trackedToolCall.result = {
-            success: !toolResult.error,
-            data: toolResult,
-            error: toolResult.error,
-            executionTime,
-          };
-          
-          return toolResult;
-        },
-        onFinish: async ({ text, usage }) => {
-          // Save final message
-          await ctx.runMutation(api.messages.create, {
-            chatId: args.chatId,
-            walletAddress: user?.walletAddress || '',
-            role: 'assistant',
-            content: text || accumulatedContent,
-            metadata: {
-              model: modelName,
-              usage: usage
-                ? {
-                    inputTokens: usage.inputTokens || 0,
-                    outputTokens: usage.outputTokens || 0,
-                    totalTokens: usage.totalTokens || 0,
-                  }
-                : undefined,
-              tools: toolCalls.length > 0 ? toolCalls : undefined,
-            },
-          });
-
-          // Update session as completed
-          await ctx.runMutation(api.streaming.updateStreamingContent, {
-            sessionId: args.sessionId,
-            content: text || accumulatedContent,
-            status: 'completed',
-            tokens: usage
-              ? {
-                  input: usage.inputTokens || 0,
-                  output: usage.outputTokens || 0,
-                }
-              : undefined,
-          });
-        },
       });
 
       // Stream chunks with real-time updates
@@ -449,6 +359,139 @@ export const streamWithWebSocket = action({
           status: 'streaming',
         });
       }
+
+      // Handle tool calls if any - await the promises for text and usage
+      const text = await result.text;
+      const usage = await result.usage;
+      
+      // In AI SDK v5, toolCalls is also a Promise
+      const resultToolCalls = result.toolCalls ? await result.toolCalls : undefined;
+
+      // Process any tool calls that occurred
+      if (resultToolCalls && Array.isArray(resultToolCalls)) {
+        for (const toolCall of resultToolCalls) {
+          logger.info('Tool called', {
+            toolName: toolCall.toolName,
+            args: toolCall.args,
+          });
+
+          const startTime = Date.now();
+
+          // Track this tool call
+          const trackedToolCall = {
+            id: toolCall.toolCallId || toolCall.id,
+            name: toolCall.toolName,
+            args: toolCall.args,
+          };
+          toolCalls.push(trackedToolCall);
+
+          // Execute the actual tool based on the tool name
+          let toolResult;
+          const toolArgs = toolCall.args as any;
+          switch (toolCall.toolName) {
+            case 'webSearch':
+              toolResult = await ctx.runAction(internal.tools.searchWeb, {
+                query: toolArgs.query,
+                num: toolArgs.num,
+              });
+              break;
+            case 'calculator':
+              toolResult = await ctx.runAction(internal.tools.calculate, {
+                expression: toolArgs.expression,
+              });
+              break;
+            case 'createDocument':
+              toolResult = await ctx.runAction(
+                internal.tools.createDocumentInternal,
+                {
+                  title: toolArgs.title,
+                  content: toolArgs.content,
+                  type: toolArgs.type,
+                }
+              );
+              // Store document for UI display
+              await ctx.runMutation(api.streaming.updateStreamArtifact, {
+                sessionId: args.sessionId,
+                artifact: {
+                  type: 'document',
+                  data: toolResult.document,
+                },
+              });
+              break;
+            case 'generateCode':
+              toolResult = await ctx.runAction(
+                internal.tools.generateCodeInternal,
+                {
+                  language: toolArgs.language,
+                  description: toolArgs.description,
+                  framework: toolArgs.framework,
+                }
+              );
+              // Store code for UI display
+              await ctx.runMutation(api.streaming.updateStreamArtifact, {
+                sessionId: args.sessionId,
+                artifact: {
+                  type: 'code',
+                  data: toolResult,
+                },
+              });
+              break;
+            case 'summarize':
+              toolResult = await ctx.runAction(internal.tools.summarizeText, {
+                text: toolArgs.text,
+                maxLength: toolArgs.maxLength,
+              });
+              break;
+            default:
+              toolResult = { error: 'Unknown tool' };
+          }
+
+          // Update the tracked tool call with results
+          const executionTime = Date.now() - startTime;
+          const hasError =
+            toolResult &&
+            typeof toolResult === 'object' &&
+            'error' in toolResult;
+          (trackedToolCall as any).result = {
+            success: !hasError,
+            data: toolResult,
+            error: hasError ? (toolResult as any).error : undefined,
+            executionTime,
+          };
+        }
+      }
+
+      // Save final message
+      await ctx.runMutation(api.messages.create, {
+        chatId: args.chatId,
+        walletAddress: user?.walletAddress || '',
+        role: 'assistant',
+        content: text || accumulatedContent,
+        metadata: {
+          model: modelName,
+          usage: usage
+            ? {
+                inputTokens: usage.inputTokens || 0,
+                outputTokens: usage.outputTokens || 0,
+                totalTokens: usage.totalTokens || 0,
+              }
+            : undefined,
+          tools: toolCalls.length > 0 ? toolCalls : undefined,
+        },
+      });
+
+      // Update session as completed
+      await ctx.runMutation(api.streaming.updateStreamingContent, {
+        sessionId: args.sessionId,
+        content: text || accumulatedContent,
+        status: 'completed',
+        tokens: usage
+          ? {
+              input: usage.inputTokens || 0,
+              output: usage.outputTokens || 0,
+            }
+          : undefined,
+      });
     } catch (error: any) {
       logger.error('WebSocket streaming error', error);
 
@@ -619,7 +662,7 @@ export const streamChat = httpAction(async (ctx, request) => {
   // Authenticate user with proper Convex Auth
   // Note: For HTTP actions, authentication should be handled via Authorization header
   // with a JWT token from your auth provider
-  const authHeader = request.headers.get('Authorization');
+  const _authHeader = request.headers.get('Authorization');
 
   // For now, we'll use wallet address verification as a temporary measure
   // TODO: Implement proper JWT validation with @convex-dev/auth
@@ -756,7 +799,10 @@ export const streamChat = httpAction(async (ctx, request) => {
       logger.info('Attachments detected, scheduling RAG processing', {
         messageId: _userMessage._id,
         attachmentCount: attachments.length,
-        attachmentTypes: attachments.map((a) => a.mimeType).filter(Boolean),
+        attachmentTypes: attachments
+          .map((a: { mimeType?: string }) => a.mimeType)
+          .filter(Boolean)
+          .join(', '),
       });
 
       // Schedule file processing for RAG integration
@@ -820,7 +866,10 @@ export const streamChat = httpAction(async (ctx, request) => {
 
         if (memories && memories.length > 0) {
           const importantMemories = memories
-            .sort((a, b) => b.importance - a.importance)
+            .sort(
+              (a: Doc<'memories'>, b: Doc<'memories'>) =>
+                b.importance - a.importance
+            )
             .slice(0, 5);
 
           contextToInject =
@@ -878,7 +927,7 @@ export const streamChat = httpAction(async (ctx, request) => {
           } catch (_e) {
             logger.warn('Failed to resolve attachment URL', {
               fileId: a.fileId,
-              error: _e,
+              error: String(_e),
             });
           }
         }

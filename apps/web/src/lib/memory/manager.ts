@@ -3,7 +3,7 @@
  * Handles conversation memory, context windows, and embeddings
  */
 
-import type { generateId, ModelMessage, UIMessage } from 'ai';
+import type { ModelMessage, UIMessage } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
 
 // Memory Types

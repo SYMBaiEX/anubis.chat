@@ -261,13 +261,14 @@ export function ChatHeader({
               </div>
 
               {/* Desktop version */}
-              <h3
-                className="hidden cursor-pointer truncate font-medium text-sm transition-colors hover:text-primary sm:block"
+              <button
+                className="hidden truncate font-medium text-sm transition-colors hover:text-primary sm:block"
                 onClick={() => setIsEditing(true)}
                 title={chat.title}
+                type="button"
               >
                 {chat.title}
-              </h3>
+              </button>
               <Button
                 className="hidden h-4 w-4 flex-shrink-0 p-0 opacity-0 transition-opacity group-hover:opacity-100 sm:flex"
                 onClick={() => setIsEditing(true)}

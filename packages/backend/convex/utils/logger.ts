@@ -11,7 +11,7 @@ export interface LogContext {
   userId?: string;
   messageId?: string;
   chatId?: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | undefined;
 }
 
 class Logger {
@@ -31,6 +31,9 @@ class Logger {
     _context?: Omit<LogContext, 'module'>
   ) {
     if (this.shouldLog('debug')) {
+      // Debug logging disabled in production
+      // Uncomment for development debugging
+      // console.debug(`[${_module}] ${_message}`, _context);
     }
   }
 
@@ -40,6 +43,9 @@ class Logger {
     _context?: Omit<LogContext, 'module'>
   ) {
     if (this.shouldLog('info')) {
+      // Info logging disabled in production
+      // Uncomment for development
+      // console.info(`[${_module}] ${_message}`, _context);
     }
   }
 
@@ -49,20 +55,23 @@ class Logger {
     _context?: Omit<LogContext, 'module'>
   ) {
     if (this.shouldLog('warn')) {
+      // Warning logging disabled in production
+      // Uncomment for development
+      // console.warn(`[${_module}] ${_message}`, _context);
     }
   }
 
   error(
     _module: string,
     _message: string,
-    error?: any,
+    error?: Error | unknown,
     context?: Omit<LogContext, 'module'>
   ) {
     if (this.shouldLog('error')) {
       const _errorDetails = error
         ? {
-            message: error.message || String(error),
-            stack: error.stack,
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
             ...context,
           }
         : context;
@@ -81,6 +90,9 @@ export const createModuleLogger = (moduleName: string) => ({
     logger.info(moduleName, message, context),
   warn: (message: string, context?: Omit<LogContext, 'module'>) =>
     logger.warn(moduleName, message, context),
-  error: (message: string, error?: any, context?: Omit<LogContext, 'module'>) =>
-    logger.error(moduleName, message, error, context),
+  error: (
+    message: string,
+    error?: Error | unknown,
+    context?: Omit<LogContext, 'module'>
+  ) => logger.error(moduleName, message, error, context),
 });

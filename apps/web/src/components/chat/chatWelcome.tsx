@@ -47,8 +47,8 @@ export function ChatWelcome({ onCreateChat, isCreating }: ChatWelcomeProps) {
 
         {/* Feature Cards */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-          {features.map((feature, index) => (
-            <Card className="p-3 sm:p-4" key={index}>
+          {features.map((feature) => (
+            <Card className="p-3 sm:p-4" key={feature.title}>
               <div className="mb-2">{feature.icon}</div>
               <h3 className="mb-1 font-medium text-xs sm:text-sm">
                 {feature.title}

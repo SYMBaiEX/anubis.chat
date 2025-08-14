@@ -3,37 +3,60 @@
  * Provides web search, code generation, and other capabilities
  */
 
-import { z } from 'zod';
 import { tool } from 'ai';
 import { v } from 'convex/values';
-import { action, internalAction } from './_generated/server';
+import { z } from 'zod';
+import { internalAction } from './_generated/server';
+
+// Define proper types for search results
+interface SearchResult {
+  title: string;
+  link: string;
+  snippet?: string;
+  description?: string;
+  displayed_link?: string;
+  domain?: string;
+}
 
 // Tool schemas using Zod for validation
 export const toolSchemas = {
   webSearch: z.object({
     query: z.string().describe('The search query to look up on the web'),
-    num: z.number().optional().default(5).describe('Number of results to return'),
+    num: z
+      .number()
+      .optional()
+      .default(5)
+      .describe('Number of results to return'),
   }),
-  
+
   createDocument: z.object({
     title: z.string().describe('Title of the document'),
     content: z.string().describe('Content of the document in markdown format'),
     type: z.enum(['document', 'code', 'markdown']).describe('Type of document'),
   }),
-  
+
   generateCode: z.object({
-    language: z.string().describe('Programming language (e.g., typescript, python, javascript)'),
+    language: z
+      .string()
+      .describe('Programming language (e.g., typescript, python, javascript)'),
     description: z.string().describe('Description of what the code should do'),
-    framework: z.string().optional().describe('Framework to use (e.g., react, nextjs, express)'),
+    framework: z
+      .string()
+      .optional()
+      .describe('Framework to use (e.g., react, nextjs, express)'),
   }),
-  
+
   calculator: z.object({
     expression: z.string().describe('Mathematical expression to evaluate'),
   }),
-  
+
   summarize: z.object({
     text: z.string().describe('Text to summarize'),
-    maxLength: z.number().optional().default(200).describe('Maximum length of summary'),
+    maxLength: z
+      .number()
+      .optional()
+      .default(200)
+      .describe('Maximum length of summary'),
   }),
 };
 
@@ -43,7 +66,7 @@ export const searchWeb = internalAction({
     query: v.string(),
     num: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const apiKey = process.env.SEARCHAPI_API_KEY;
     if (!apiKey) {
       throw new Error('SEARCHAPI_API_KEY not configured');
@@ -60,7 +83,7 @@ export const searchWeb = internalAction({
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
       });
 
@@ -72,10 +95,10 @@ export const searchWeb = internalAction({
 
       // Extract relevant information from search results
       const organicResults = data.organic_results || [];
-      
+
       return {
         success: true,
-        results: organicResults.map((result: any) => ({
+        results: organicResults.map((result: SearchResult) => ({
           title: result.title,
           link: result.link,
           snippet: result.snippet || result.description,
@@ -86,8 +109,9 @@ export const searchWeb = internalAction({
           timeTaken: data.search_information?.time_taken_displayed,
         },
       };
-    } catch (error) {
-      console.error('Web search error:', error);
+    } catch (_error) {
+      // Log error for debugging - in production use proper logging
+      // console.error('Web search error:', error);
       return {
         success: false,
         error: 'Failed to perform web search',
@@ -102,18 +126,18 @@ export const calculate = internalAction({
   args: {
     expression: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: (_ctx, args) => {
     try {
       // Use Function constructor for safe evaluation
       // This is safer than eval but still be careful with user input
-      const result = new Function('return ' + args.expression)();
-      
+      const result = new Function(`return ${args.expression}`)();
+
       return {
         success: true,
         expression: args.expression,
-        result: result,
+        result,
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         success: false,
         error: 'Invalid mathematical expression',
@@ -130,7 +154,7 @@ export const generateCodeInternal = internalAction({
     description: v.string(),
     framework: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: (_ctx, args) => {
     // This would normally call an AI model to generate code
     // For now, we'll return a template
     const codeTemplates: Record<string, string> = {
@@ -150,14 +174,15 @@ function generatedFunction() {
 }`,
     };
 
-    const code = codeTemplates[args.language.toLowerCase()] || 
+    const code =
+      codeTemplates[args.language.toLowerCase()] ||
       `// ${args.description}\n// Language: ${args.language}`;
 
     return {
       success: true,
       language: args.language,
       framework: args.framework,
-      code: code,
+      code,
       description: args.description,
     };
   },
@@ -168,9 +193,13 @@ export const createDocumentInternal = internalAction({
   args: {
     title: v.string(),
     content: v.string(),
-    type: v.union(v.literal('document'), v.literal('code'), v.literal('markdown')),
+    type: v.union(
+      v.literal('document'),
+      v.literal('code'),
+      v.literal('markdown')
+    ),
   },
-  handler: async (ctx, args) => {
+  handler: (_ctx, args) => {
     // Store the document or return it for display
     return {
       success: true,
@@ -186,16 +215,20 @@ export const createDocumentInternal = internalAction({
 });
 
 // Text Summarization Tool
+const SENTENCE_SPLIT_REGEX = /[.!?]+/;
+
 export const summarizeText = internalAction({
   args: {
     text: v.string(),
     maxLength: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: (_ctx, args) => {
     // Simple summarization - in production, use an AI model
     const maxLength = args.maxLength || 200;
-    const sentences = args.text.split(/[.!?]+/).filter(s => s.trim());
-    
+    const sentences = args.text
+      .split(SENTENCE_SPLIT_REGEX)
+      .filter((s) => s.trim());
+
     if (args.text.length <= maxLength) {
       return {
         success: true,
@@ -207,13 +240,15 @@ export const summarizeText = internalAction({
     // Take first few sentences up to maxLength
     let summary = '';
     for (const sentence of sentences) {
-      if (summary.length + sentence.length > maxLength) break;
-      summary += sentence.trim() + '. ';
+      if (summary.length + sentence.length > maxLength) {
+        break;
+      }
+      summary += `${sentence.trim()}. `;
     }
 
     return {
       success: true,
-      summary: summary.trim() || args.text.substring(0, maxLength) + '...',
+      summary: summary.trim() || `${args.text.substring(0, maxLength)}...`,
       originalLength: args.text.length,
       summaryLength: summary.length,
     };
@@ -224,41 +259,50 @@ export const summarizeText = internalAction({
 export const aiTools = {
   webSearch: tool({
     description: 'Search the web for current information',
-    parameters: toolSchemas.webSearch,
-    execute: async ({ query, num }) => {
+    inputSchema: toolSchemas.webSearch,
+    execute: ({ query, num }: z.infer<typeof toolSchemas.webSearch>) => {
       // This will be called from the streaming action
       return { query, num, pending: true };
     },
   }),
-  
+
   createDocument: tool({
-    description: 'Create a document or code artifact that can be displayed separately',
-    parameters: toolSchemas.createDocument,
-    execute: async ({ title, content, type }) => {
+    description:
+      'Create a document or code artifact that can be displayed separately',
+    inputSchema: toolSchemas.createDocument,
+    execute: ({
+      title,
+      content,
+      type,
+    }: z.infer<typeof toolSchemas.createDocument>) => {
       return { title, content, type, pending: true };
     },
   }),
-  
+
   generateCode: tool({
     description: 'Generate code in a specific programming language',
-    parameters: toolSchemas.generateCode,
-    execute: async ({ language, description, framework }) => {
+    inputSchema: toolSchemas.generateCode,
+    execute: ({
+      language,
+      description,
+      framework,
+    }: z.infer<typeof toolSchemas.generateCode>) => {
       return { language, description, framework, pending: true };
     },
   }),
-  
+
   calculator: tool({
     description: 'Perform mathematical calculations',
-    parameters: toolSchemas.calculator,
-    execute: async ({ expression }) => {
+    inputSchema: toolSchemas.calculator,
+    execute: ({ expression }: z.infer<typeof toolSchemas.calculator>) => {
       return { expression, pending: true };
     },
   }),
-  
+
   summarize: tool({
     description: 'Summarize long text into a shorter version',
-    parameters: toolSchemas.summarize,
-    execute: async ({ text, maxLength }) => {
+    inputSchema: toolSchemas.summarize,
+    execute: ({ text, maxLength }: z.infer<typeof toolSchemas.summarize>) => {
       return { text, maxLength, pending: true };
     },
   }),

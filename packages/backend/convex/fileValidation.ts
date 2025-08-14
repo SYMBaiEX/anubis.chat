@@ -343,9 +343,13 @@ function validateImageFile(
  * Generate SHA-256 hash of file content using Web Crypto API
  */
 async function generateFileHash(bytes: Uint8Array): Promise<string> {
-  const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
+  // Create a new ArrayBuffer from the Uint8Array to ensure compatibility
+  const buffer = new Uint8Array(bytes).buffer;
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
   return hashHex;
 }
 
@@ -353,10 +357,18 @@ async function generateFileHash(bytes: Uint8Array): Promise<string> {
  * Get file type category from MIME type
  */
 function getFileType(mimeType: string): string {
-  if (mimeType.startsWith('image/')) return 'image';
-  if (mimeType === 'application/pdf') return 'pdf';
-  if (mimeType.startsWith('text/')) return 'text';
-  if (mimeType.includes('document')) return 'document';
+  if (mimeType.startsWith('image/')) {
+    return 'image';
+  }
+  if (mimeType === 'application/pdf') {
+    return 'pdf';
+  }
+  if (mimeType.startsWith('text/')) {
+    return 'text';
+  }
+  if (mimeType.includes('document')) {
+    return 'document';
+  }
   return 'default';
 }
 

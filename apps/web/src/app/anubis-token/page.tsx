@@ -187,7 +187,7 @@ function FloatingParticles() {
             x: Math.random() * windowSize.width,
             y: windowSize.height + 100,
           }}
-          key={`particle-${i}`}
+          key={`particle-${i}-${windowSize.width}-${windowSize.height}`}
           transition={{
             duration: Math.random() * 10 + 10,
             repeat: Number.POSITIVE_INFINITY,
@@ -239,6 +239,8 @@ export default function AnubisTokenPage() {
       // ignore clipboard errors
     }
   };
+
+  const tokenDotIds = Array.from({ length: 8 }, (_, i) => `token-dot-${i}`);
 
   return (
     <div className="relative h-full w-full">
@@ -566,14 +568,14 @@ export default function AnubisTokenPage() {
 
                     {/* Animated particles */}
                     <div className="pointer-events-none absolute inset-0">
-                      {Array.from({ length: 8 }).map((_, i) => (
+                      {tokenDotIds.map((id, _i) => (
                         <motion.div
                           animate={{
                             y: [-10, 10, -10],
                             opacity: [0.3, 0.8, 0.3],
                           }}
                           className="absolute h-2 w-2 rounded-full bg-primary"
-                          key={`dot-${i}`}
+                          key={id}
                           style={{
                             left: `${Math.random() * 100}%`,
                             top: `${Math.random() * 100}%`,

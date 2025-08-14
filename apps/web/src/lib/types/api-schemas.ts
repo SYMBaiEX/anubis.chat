@@ -47,10 +47,23 @@ export const paginationParamsSchema = z.object({
 // =============================================================================
 
 export const userPreferencesSchema = z.object({
-  theme: z.nativeEnum(Theme),
+  theme: z.enum([Theme.LIGHT, Theme.DARK, Theme.SYSTEM]),
   aiModel: z.string().min(1),
   notifications: z.boolean(),
-  language: z.nativeEnum(Language).optional(),
+  language: z
+    .enum([
+      Language.EN,
+      Language.ES,
+      Language.FR,
+      Language.DE,
+      Language.ZH,
+      Language.JA,
+      Language.KO,
+      Language.PT,
+      Language.RU,
+      Language.AR,
+    ])
+    .optional(),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().int().min(1).max(128_000).optional(),
   streamResponses: z.boolean().optional(),
@@ -72,7 +85,13 @@ export const userProfileSchema = z.object({
   avatar: urlSchema.optional(),
   preferences: userPreferencesSchema,
   subscription: z.object({
-    tier: z.nativeEnum(SubscriptionTier),
+    tier: z.enum([
+      SubscriptionTier.FREE,
+      SubscriptionTier.STARTER,
+      SubscriptionTier.PRO,
+      SubscriptionTier.TEAM,
+      SubscriptionTier.ENTERPRISE,
+    ]),
     expiresAt: timestampSchema.optional(),
     tokensUsed: z.number().int().min(0),
     tokensLimit: z.number().int().min(0),
@@ -136,7 +155,13 @@ export const chatMessageSchema = z.object({
   _id: z.string(),
   chatId: z.string(),
   walletAddress: walletAddressSchema,
-  role: z.nativeEnum(MessageRole),
+  role: z.enum([
+    MessageRole.USER,
+    MessageRole.ASSISTANT,
+    MessageRole.SYSTEM,
+    MessageRole.TOOL,
+    MessageRole.FUNCTION,
+  ]),
   content: z.string(),
   tokenCount: z.number().int().min(0).optional(),
   embedding: z.array(z.number()).optional(),
@@ -185,7 +210,16 @@ export const chatMessageSchema = z.object({
 
 export const sendMessageRequestSchema = z.object({
   content: z.string().min(1).max(32_000),
-  role: z.nativeEnum(MessageRole).optional().default(MessageRole.USER),
+  role: z
+    .enum([
+      MessageRole.USER,
+      MessageRole.ASSISTANT,
+      MessageRole.SYSTEM,
+      MessageRole.TOOL,
+      MessageRole.FUNCTION,
+    ])
+    .optional()
+    .default(MessageRole.USER),
   metadata: z
     .record(
       z.string(),
@@ -201,12 +235,26 @@ export const sendMessageRequestSchema = z.object({
 export const aiModelSchema = z.object({
   id: z.string(),
   name: z.string(),
-  provider: z.nativeEnum(AIProvider),
+  provider: z.enum([
+    AIProvider.OPENAI,
+    AIProvider.ANTHROPIC,
+    AIProvider.DEEPSEEK,
+    AIProvider.GOOGLE,
+    AIProvider.MISTRAL,
+    AIProvider.COHERE,
+    AIProvider.HUGGINGFACE,
+  ]),
   contextWindow: z.number().int().positive(),
   maxTokens: z.number().int().positive(),
   strengths: z.array(z.string()),
   capabilities: z.array(z.string()),
-  costTier: z.nativeEnum(AICostTier),
+  costTier: z.enum([
+    AICostTier.FREE,
+    AICostTier.BUDGET,
+    AICostTier.STANDARD,
+    AICostTier.PREMIUM,
+    AICostTier.ENTERPRISE,
+  ]),
   isAvailable: z.boolean(),
   version: z.string().optional(),
   releaseDate: timestampSchema.optional(),
@@ -247,13 +295,29 @@ export const chatCompletionRequestSchema = z.object({
 
 export const searchRequestSchema = z.object({
   query: z.string().min(1).max(1000),
-  type: z.nativeEnum(SearchType),
+  type: z.enum([
+    SearchType.SEMANTIC,
+    SearchType.HYBRID,
+    SearchType.KEYWORD,
+    SearchType.FUZZY,
+    SearchType.VECTOR,
+  ]),
   filters: z
     .object({
       chatIds: z.array(z.string()).optional(),
       documentIds: z.array(z.string()).optional(),
       dateRange: dateRangeSchema.optional(),
-      messageTypes: z.array(z.nativeEnum(MessageRole)).optional(),
+      messageTypes: z
+        .array(
+          z.enum([
+            MessageRole.USER,
+            MessageRole.ASSISTANT,
+            MessageRole.SYSTEM,
+            MessageRole.TOOL,
+            MessageRole.FUNCTION,
+          ])
+        )
+        .optional(),
       tags: z.array(z.string()).optional(),
       walletAddresses: z.array(walletAddressSchema).optional(),
       models: z.array(z.string()).optional(),
@@ -266,7 +330,7 @@ export const searchRequestSchema = z.object({
     .array(
       z.object({
         field: z.string(),
-        order: z.nativeEnum(SortOrder),
+        order: z.enum([SortOrder.ASC, SortOrder.DESC]),
       })
     )
     .optional(),
@@ -310,7 +374,18 @@ export const documentUpdateSchema = z.object({
 
 export const webhookEventSchema = z.object({
   id: z.string(),
-  type: z.nativeEnum(WebhookEventType),
+  type: z.enum([
+    WebhookEventType.CHAT_CREATED,
+    WebhookEventType.CHAT_UPDATED,
+    WebhookEventType.CHAT_DELETED,
+    WebhookEventType.MESSAGE_SENT,
+    WebhookEventType.MESSAGE_RECEIVED,
+    WebhookEventType.USER_CREATED,
+    WebhookEventType.USER_UPDATED,
+    WebhookEventType.SUBSCRIPTION_CHANGED,
+    WebhookEventType.TOKEN_LIMIT_REACHED,
+    WebhookEventType.ERROR_OCCURRED,
+  ]),
   data: z.object({
     resourceId: z.string(),
     resourceType: z.enum(['chat', 'message', 'user', 'subscription']),
@@ -331,7 +406,20 @@ export const webhookEventSchema = z.object({
 
 export const webhookSubscriptionSchema = z.object({
   url: urlSchema,
-  events: z.array(z.nativeEnum(WebhookEventType)),
+  events: z.array(
+    z.enum([
+      WebhookEventType.CHAT_CREATED,
+      WebhookEventType.CHAT_UPDATED,
+      WebhookEventType.CHAT_DELETED,
+      WebhookEventType.MESSAGE_SENT,
+      WebhookEventType.MESSAGE_RECEIVED,
+      WebhookEventType.USER_CREATED,
+      WebhookEventType.USER_UPDATED,
+      WebhookEventType.SUBSCRIPTION_CHANGED,
+      WebhookEventType.TOKEN_LIMIT_REACHED,
+      WebhookEventType.ERROR_OCCURRED,
+    ])
+  ),
   secret: z.string().min(32),
   isActive: z.boolean().default(true),
   headers: z.record(z.string(), z.string()).optional(),
@@ -349,7 +437,27 @@ export const webhookSubscriptionSchema = z.object({
 // =============================================================================
 
 export const apiErrorSchema = z.object({
-  code: z.nativeEnum(APIErrorCode),
+  code: z.enum([
+    APIErrorCode.UNAUTHORIZED,
+    APIErrorCode.FORBIDDEN,
+    APIErrorCode.INVALID_TOKEN,
+    APIErrorCode.TOKEN_EXPIRED,
+    APIErrorCode.INVALID_SIGNATURE,
+    APIErrorCode.VALIDATION_ERROR,
+    APIErrorCode.INVALID_REQUEST,
+    APIErrorCode.MISSING_PARAMETERS,
+    APIErrorCode.RESOURCE_NOT_FOUND,
+    APIErrorCode.RESOURCE_CONFLICT,
+    APIErrorCode.RESOURCE_LIMIT_EXCEEDED,
+    APIErrorCode.RATE_LIMIT_EXCEEDED,
+    APIErrorCode.QUOTA_EXCEEDED,
+    APIErrorCode.MODEL_UNAVAILABLE,
+    APIErrorCode.CONTEXT_TOO_LONG,
+    APIErrorCode.UNSAFE_CONTENT,
+    APIErrorCode.INTERNAL_ERROR,
+    APIErrorCode.SERVICE_UNAVAILABLE,
+    APIErrorCode.TIMEOUT,
+  ]),
   message: z.string(),
   details: z
     .object({

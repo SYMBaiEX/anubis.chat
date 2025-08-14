@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import type { UpgradePrompt as UpgradePromptType } from '@/hooks/use-subscription';
 import { cn } from '@/lib/utils';
-import { useUpgrade } from './upgrade-wrapper';
+import { useUpgrade } from './upgradeWrapper';
 
 interface UpgradePromptProps {
   prompt: UpgradePromptType;
@@ -218,8 +218,8 @@ export function UpgradePrompt({
                 </div>
 
                 <ul className="space-y-1 text-sm">
-                  {tierDetails.features.map((feature, index) => (
-                    <li className="flex items-center gap-2" key={index}>
+                  {tierDetails.features.map((feature) => (
+                    <li className="flex items-center gap-2" key={feature}>
                       <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
                       <span>{feature}</span>
                     </li>

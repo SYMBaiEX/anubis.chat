@@ -126,16 +126,7 @@ type ListedUser = {
   };
 };
 
-type AdminListItem = {
-  _id: string;
-  walletAddress?: string;
-  role: 'moderator' | 'admin' | 'super_admin';
-  permissions?: string[];
-  isActive?: boolean;
-  lastActiveAt?: number;
-  createdAt?: number;
-  updatedAt?: number;
-};
+// Removed unused AdminListItem type per linter
 
 function UserRow({
   listedUser,
@@ -439,45 +430,61 @@ function AdminDashboardContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {admins.map((admin: AdminListItem) => (
-                    <TableRow key={admin._id}>
-                      <TableCell>
-                        {admin.walletAddress ? (
-                          <div className="font-medium">
-                            {admin.walletAddress.slice(0, 8)}...
-                            {admin.walletAddress.slice(-4)}
+                  {(
+                    admins as Array<{
+                      _id: string;
+                      walletAddress?: string;
+                      role?: 'moderator' | 'admin' | 'super_admin' | string;
+                      permissions?: string[];
+                      createdAt?: number;
+                    }>
+                  )
+                    .filter(
+                      (admin) =>
+                        Boolean(admin.role) &&
+                        ['moderator', 'admin', 'super_admin'].includes(
+                          admin.role as 'moderator' | 'admin' | 'super_admin'
+                        )
+                    )
+                    .map((admin) => (
+                      <TableRow key={admin._id}>
+                        <TableCell>
+                          {admin.walletAddress ? (
+                            <div className="font-medium">
+                              {admin.walletAddress.slice(0, 8)}...
+                              {admin.walletAddress.slice(-4)}
+                            </div>
+                          ) : (
+                            <div className="text-muted-foreground text-sm">
+                              N/A
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              admin.role === 'super_admin'
+                                ? 'default'
+                                : 'secondary'
+                            }
+                          >
+                            {admin.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {admin.permissions?.length ?? 0} permissions
                           </div>
-                        ) : (
-                          <div className="text-muted-foreground text-sm">
-                            N/A
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {admin.createdAt
+                              ? new Date(admin.createdAt).toLocaleDateString()
+                              : 'N/A'}
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            admin.role === 'super_admin'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                        >
-                          {admin.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {admin.permissions?.length ?? 0} permissions
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {admin.createdAt
-                            ? new Date(admin.createdAt).toLocaleDateString()
-                            : 'N/A'}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             </Card>

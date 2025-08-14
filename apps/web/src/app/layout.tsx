@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, Inter } from 'next/font/google';
 import Script from 'next/script';
 import '../index.css';
-import BreadcrumbSchema from '@/components/breadcrumb-schema';
+import BreadcrumbSchema from '@/components/breadcrumbSchema';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { globalCommandPalette as GlobalCommandPalette } from '@/components/global-command-palette';
 import Providers from '@/components/providers';

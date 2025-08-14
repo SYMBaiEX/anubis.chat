@@ -609,6 +609,7 @@ export default defineSchema({
       overlap: v.optional(v.number()),
     }),
     createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
   })
     .index('by_document', ['documentId', 'chunkIndex'])
     .vectorIndex('by_embedding', {
@@ -2264,7 +2265,10 @@ export default defineSchema({
 
   // Track commission payouts with direct wallet transfers
   referralPayouts: defineTable({
-    paymentId: v.id('subscriptionPayments'),
+    paymentId: v.union(
+      v.id('subscriptionPayments'),
+      v.id('messageCreditPurchases')
+    ),
     referralCode: v.string(),
     referrerId: v.id('users'),
     referrerWalletAddress: v.string(), // For direct payout verification
@@ -2453,10 +2457,18 @@ export default defineSchema({
       input: v.number(),
       output: v.number(),
     }),
-    artifacts: v.optional(v.array(v.object({
-      type: v.union(v.literal('document'), v.literal('code'), v.literal('markdown')),
-      data: v.any(),
-    }))),
+    artifacts: v.optional(
+      v.array(
+        v.object({
+          type: v.union(
+            v.literal('document'),
+            v.literal('code'),
+            v.literal('markdown')
+          ),
+          data: v.any(),
+        })
+      )
+    ),
     error: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),

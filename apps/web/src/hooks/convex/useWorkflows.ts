@@ -1,5 +1,5 @@
 import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
+import type { Doc, Id } from '@convex/_generated/dataModel';
 import type { Edge, Node } from '@xyflow/react';
 import { useMutation, useQuery } from 'convex/react';
 import { useCallback } from 'react';
@@ -125,7 +125,7 @@ export function useWorkflows(walletAddress: string) {
       // we'll need to implement it differently or use the listVisualWorkflows
       // and filter client-side
       const allWorkflows = workflows || [];
-      return allWorkflows.find((w) => w._id === workflowId);
+      return allWorkflows.find((w: Doc<'workflows'>) => w._id === workflowId);
     },
     [workflows]
   );

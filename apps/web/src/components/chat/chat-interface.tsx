@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
+import { UpgradePrompt } from '@/components/auth/upgradePrompt';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import {
@@ -37,10 +37,10 @@ import type { Chat, StreamingMessage } from '@/lib/types/api';
 import type { MinimalMessage } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { ArtifactView } from './artifact-view';
-import { ChatHeader } from './chat-header';
-import { ChatSettingsDialog } from './chat-settings-dialog';
-import { ChatWelcome } from './chat-welcome';
+import { ArtifactView } from './artifactView';
+import { ChatHeader } from './chatHeader';
+import { ChatSettingsDialog } from './chatSettingsDialog';
+import { ChatWelcome } from './chatWelcome';
 import { EnhancedMessageInput } from './enhanced-message-input';
 import { MessageList } from './message-list';
 import { ModelSelector } from './model-selector';
@@ -478,7 +478,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         id: chatId as Id<'chats'>,
       });
       if (selectedChatId === chatId) {
-        const remainingChats = chats?.filter((chat: Doc<'chats'>) => chat._id !== chatId);
+        const remainingChats = chats?.filter(
+          (chat: Doc<'chats'>) => chat._id !== chatId
+        );
         setSelectedChatId(remainingChats?.[0]?._id);
       }
     } catch (error: any) {

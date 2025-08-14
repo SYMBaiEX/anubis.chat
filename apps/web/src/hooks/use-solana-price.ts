@@ -45,7 +45,6 @@ export function useSolanaPrice() {
           setError(
             err instanceof Error ? err.message : 'Failed to fetch price'
           );
-          console.error('Price fetch error:', err);
         }
       } finally {
         if (isMounted) {
@@ -70,7 +69,9 @@ export function useSolanaPrice() {
    * Convert SOL amount to USD
    */
   const solToUsd = (solAmount: number): number | null => {
-    if (price === null) return null;
+    if (price === null) {
+      return null;
+    }
     return solAmount * price;
   };
 
@@ -90,7 +91,9 @@ export function useSolanaPrice() {
    * Format price change percentage
    */
   const formatPriceChange = (): string => {
-    if (priceChange === null) return '';
+    if (priceChange === null) {
+      return '';
+    }
     const sign = priceChange >= 0 ? '+' : '';
     return `${sign}${priceChange.toFixed(2)}%`;
   };

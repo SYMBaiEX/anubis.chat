@@ -12,7 +12,7 @@ import { Card } from '@/components/ui/card';
 import type { AIMessage } from '@/hooks/use-ai-chat';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { AISuggestions } from './ai-suggestions';
+import { AISuggestions } from './aiSuggestions';
 import { Composer } from './composer';
 import { Thread } from './thread';
 
@@ -46,11 +46,11 @@ function convertToAIMessage(uiMessage: UIMessage): AIMessage {
 export function AIChatInterface({
   chatId,
   className,
-  initialMessages = [],
+  initialMessages: _initialMessages = [],
   model = 'gpt-4',
   maxSteps = 5,
   showSuggestions = true,
-  enableTools = true,
+  enableTools: _enableTools = true,
 }: AIChatInterfaceProps) {
   const log = createModuleLogger('ai-chat-interface');
   const [selectedModel, setSelectedModel] = useState(model);
@@ -68,7 +68,12 @@ export function AIChatInterface({
   >([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { messages, sendMessage, stop, error: chatError } = useChat({
+  const {
+    messages,
+    sendMessage,
+    stop,
+    error: chatError,
+  } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/chat',
       body: { chatId, model: selectedModel, maxSteps },

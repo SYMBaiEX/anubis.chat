@@ -12,7 +12,7 @@ import nacl from 'tweetnacl';
 import { getStorage } from '../database/storage';
 import { corsConfig, isProduction, jwtConfig } from '../env';
 import { APIErrorCode } from '../types/api';
-import { createErrorResponse } from '../utils/api-response';
+import { createErrorResponse } from '../utils/apiResponse';
 import { createModuleLogger } from '../utils/logger';
 
 const log = createModuleLogger('auth-middleware');

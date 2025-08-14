@@ -3,11 +3,10 @@
 import { api } from '@convex/_generated/api';
 // useCurrentUser replacement - using getCurrentUserProfile query
 import { useQuery } from 'convex/react';
-import { ArrowRight, Crown, Lock, Shield } from 'lucide-react';
+import { Crown, Lock, Shield } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { UpgradeModal } from './upgrade-modal';
+import { UpgradeCard } from './upgradeCard';
 
 // Helper functions moved from useSubscription
 function requiresPremium(
@@ -38,8 +38,20 @@ function canAccessFeature(tier: string, feature: string): boolean {
   if (tier === 'admin') {
     return true;
   }
-  const tierLevel = tier === 'pro_plus' ? 2 : tier === 'pro' ? 1 : 0;
-  const requiredTier = requiresPremium(feature as any);
+  let tierLevel = 0;
+  if (tier === 'pro_plus') {
+    tierLevel = 2;
+  } else if (tier === 'pro') {
+    tierLevel = 1;
+  }
+  const requiredTier = requiresPremium(
+    feature as
+      | 'advanced_agents'
+      | 'api_access'
+      | 'large_files'
+      | 'priority_support'
+      | 'premium_models'
+  );
   const requiredLevel = requiredTier === 'pro_plus' ? 2 : 1;
 
   return tierLevel >= requiredLevel;
@@ -153,58 +165,6 @@ export function FeatureGate({
   const requiredTier = featureInfo.requiredTier;
   const tierInfo = TIER_INFO[requiredTier];
 
-  const UpgradeCard = ({ inModal = false }: { inModal?: boolean }) => (
-    <Card
-      className={cn(
-        'p-6 text-center',
-        tierInfo.bgColor,
-        tierInfo.borderColor,
-        !inModal && 'mx-auto max-w-md',
-        className
-      )}
-    >
-      <div className="mb-4 flex justify-center">
-        <div
-          className={cn(
-            'flex h-12 w-12 items-center justify-center rounded-full bg-white/10',
-            tierInfo.color
-          )}
-        >
-          <Lock className="h-6 w-6" />
-        </div>
-      </div>
-
-      <h3 className="mb-2 font-semibold text-lg">
-        {featureInfo.name} - {tierInfo.name} Feature
-      </h3>
-
-      <p className="mb-4 text-muted-foreground text-sm">
-        {featureInfo.description}
-      </p>
-
-      <div className="mb-4 space-y-2">
-        <div className="flex items-center justify-center gap-2">
-          <span className="font-bold text-xl">{tierInfo.price}</span>
-          <span className="text-muted-foreground text-sm line-through">
-            {tierInfo.originalPrice}
-          </span>
-          <span className="rounded bg-orange-500 px-2 py-1 font-semibold text-white text-xs">
-            50% Off
-          </span>
-        </div>
-        <p className="text-muted-foreground text-xs">per month</p>
-      </div>
-
-      {showUpgradeButton && (
-        <Button className="w-full" onClick={() => setShowUpgradeModal(true)}>
-          <Crown className="mr-2 h-4 w-4" />
-          Upgrade to {tierInfo.name}
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      )}
-    </Card>
-  );
-
   return (
     <>
       {fallback ? (
@@ -224,13 +184,38 @@ export function FeatureGate({
                     Unlock {featureInfo.name}
                   </DialogTitle>
                 </DialogHeader>
-                <UpgradeCard inModal />
+                <UpgradeCard
+                  bgColor={tierInfo.bgColor}
+                  borderColor={tierInfo.borderColor}
+                  className={className}
+                  color={tierInfo.color}
+                  featureDescription={featureInfo.description}
+                  featureName={featureInfo.name}
+                  inModal
+                  onClickUpgrade={() => setShowUpgradeModal(true)}
+                  originalPrice={tierInfo.originalPrice}
+                  price={tierInfo.price}
+                  showButton={showUpgradeButton}
+                  tierName={tierInfo.name}
+                />
               </DialogContent>
             </Dialog>
           )}
         </div>
       ) : (
-        <UpgradeCard />
+        <UpgradeCard
+          bgColor={tierInfo.bgColor}
+          borderColor={tierInfo.borderColor}
+          className={className}
+          color={tierInfo.color}
+          featureDescription={featureInfo.description}
+          featureName={featureInfo.name}
+          onClickUpgrade={() => setShowUpgradeModal(true)}
+          originalPrice={tierInfo.originalPrice}
+          price={tierInfo.price}
+          showButton={showUpgradeButton}
+          tierName={tierInfo.name}
+        />
       )}
 
       {showUpgradeModal && (

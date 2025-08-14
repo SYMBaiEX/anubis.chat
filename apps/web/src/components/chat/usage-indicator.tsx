@@ -2,7 +2,7 @@
 
 import { BarChart3, Crown, Info, MessageCircle, Zap } from 'lucide-react';
 import { useState } from 'react';
-import { PaymentModal } from '@/components/auth/payment-modal';
+import { PaymentModal } from '@/components/auth/paymentModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -113,19 +113,21 @@ export function UsageIndicator({
           <TooltipContent>
             <div className="space-y-1 text-sm">
               <p>{limits.messagesRemaining} messages remaining</p>
-              {subscription.messageCredits > 0 && (
-                <p className="text-green-600 dark:text-green-400">
-                  +{subscription.messageCredits} purchased credits
-                </p>
-              )}
+              {subscription.messageCredits &&
+                subscription.messageCredits > 0 && (
+                  <p className="text-green-600 dark:text-green-400">
+                    +{subscription.messageCredits} purchased credits
+                  </p>
+                )}
               {subscription.tier !== 'free' && (
                 <p>{limits.premiumMessagesRemaining} premium messages left</p>
               )}
-              {subscription.premiumMessageCredits > 0 && (
-                <p className="text-amber-600 dark:text-amber-400">
-                  +{subscription.premiumMessageCredits} premium credits
-                </p>
-              )}
+              {subscription.premiumMessageCredits &&
+                subscription.premiumMessageCredits > 0 && (
+                  <p className="text-amber-600 dark:text-amber-400">
+                    +{subscription.premiumMessageCredits} premium credits
+                  </p>
+                )}
               <p>{limits.daysUntilReset} days until reset</p>
             </div>
           </TooltipContent>
@@ -210,11 +212,12 @@ export function UsageIndicator({
               <span className={getUsageColor(usagePercentage)}>
                 {subscription.messagesUsed}/{subscription.messagesLimit}
               </span>
-              {subscription.messageCredits > 0 && (
-                <Badge className="text-xs" variant="secondary">
-                  +{subscription.messageCredits}
-                </Badge>
-              )}
+              {subscription.messageCredits &&
+                subscription.messageCredits > 0 && (
+                  <Badge className="text-xs" variant="secondary">
+                    +{subscription.messageCredits}
+                  </Badge>
+                )}
             </div>
           </div>
           <Progress
@@ -249,11 +252,12 @@ export function UsageIndicator({
                   {subscription.premiumMessagesUsed}/
                   {subscription.premiumMessagesLimit}
                 </span>
-                {subscription.premiumMessageCredits > 0 && (
-                  <Badge className="text-xs" variant="secondary">
-                    +{subscription.premiumMessageCredits}
-                  </Badge>
-                )}
+                {subscription.premiumMessageCredits &&
+                  subscription.premiumMessageCredits > 0 && (
+                    <Badge className="text-xs" variant="secondary">
+                      +{subscription.premiumMessageCredits}
+                    </Badge>
+                  )}
               </div>
             </div>
             <Progress

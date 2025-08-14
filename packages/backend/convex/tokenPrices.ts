@@ -1,5 +1,4 @@
 import { v } from 'convex/values';
-import type { Doc } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // Cache duration in milliseconds (5 minutes)
@@ -101,25 +100,45 @@ export const getBatchPrices = query({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    const prices: Record<string, any> = {};
-
-    for (const symbol of args.symbols) {
-      const price = await ctx.db
-        .query('tokenPrices')
-        .withIndex('by_symbol', (q) => q.eq('symbol', symbol))
-        .first();
-
-      if (price && now - price.updatedAt <= CACHE_DURATION) {
-        prices[symbol] = {
-          symbol: price.symbol,
-          price: price.priceUsd,
-          priceChange24h: price.priceChange24h,
-          marketCap: price.marketCap,
-          volume24h: price.volume24h,
-          updatedAt: price.updatedAt,
-        };
-      }
+    interface TokenPriceInfo {
+      symbol: string;
+      price: number;
+      priceChange24h?: number;
+      marketCap?: number;
+      volume24h?: number;
+      updatedAt: number;
     }
+
+    const entries = await Promise.all(
+      args.symbols.map(async (symbol) => {
+        const price = await ctx.db
+          .query('tokenPrices')
+          .withIndex('by_symbol', (q) => q.eq('symbol', symbol))
+          .first();
+        if (price && now - price.updatedAt <= CACHE_DURATION) {
+          const info: TokenPriceInfo = {
+            symbol: price.symbol,
+            price: price.priceUsd,
+            priceChange24h: price.priceChange24h,
+            marketCap: price.marketCap,
+            volume24h: price.volume24h,
+            updatedAt: price.updatedAt,
+          };
+          return [symbol, info] as const;
+        }
+        return null;
+      })
+    );
+
+    const prices = entries.reduce<Record<string, TokenPriceInfo>>(
+      (acc, entry) => {
+        if (entry) {
+          acc[entry[0]] = entry[1];
+        }
+        return acc;
+      },
+      {}
+    );
 
     return prices;
   },
@@ -139,15 +158,11 @@ export const cleanupExpiredPrices = mutation({
       .filter((q) => q.lt(q.field('updatedAt'), expiredTime))
       .collect();
 
-    let deletedCount = 0;
-    for (const price of expiredPrices) {
-      await ctx.db.delete(price._id);
-      deletedCount++;
-    }
+    await Promise.all(expiredPrices.map((price) => ctx.db.delete(price._id)));
 
     return {
       success: true,
-      deletedCount,
+      deletedCount: expiredPrices.length,
     };
   },
 });

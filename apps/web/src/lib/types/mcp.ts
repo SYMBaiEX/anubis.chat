@@ -49,12 +49,14 @@ export function isJsonValue(value: unknown): value is JsonValue {
 // MCP Transport Types
 // =============================================================================
 
-export enum MCPTransportType {
-  STDIO = 'stdio',
-  SSE = 'sse',
-  HTTP = 'http',
-  WEBSOCKET = 'websocket',
-}
+export const MCPTransportType = {
+  STDIO: 'stdio',
+  SSE: 'sse',
+  HTTP: 'http',
+  WEBSOCKET: 'websocket',
+} as const;
+export type MCPTransportType =
+  (typeof MCPTransportType)[keyof typeof MCPTransportType];
 
 export interface MCPTransportConfig {
   type: MCPTransportType;
@@ -93,13 +95,15 @@ export interface MCPServer {
   metadata?: MCPServerMetadata;
 }
 
-export enum MCPServerStatus {
-  DISCONNECTED = 'disconnected',
-  CONNECTING = 'connecting',
-  CONNECTED = 'connected',
-  ERROR = 'error',
-  DISABLED = 'disabled',
-}
+export const MCPServerStatus = {
+  DISCONNECTED: 'disconnected',
+  CONNECTING: 'connecting',
+  CONNECTED: 'connected',
+  ERROR: 'error',
+  DISABLED: 'disabled',
+} as const;
+export type MCPServerStatus =
+  (typeof MCPServerStatus)[keyof typeof MCPServerStatus];
 
 export interface MCPServerCapabilities {
   tools: boolean;
@@ -238,29 +242,30 @@ export interface MCPRequestMetadata {
   correlationId?: string;
 }
 
-export enum MCPMethod {
+export const MCPMethod = {
   // Tool methods
-  LIST_TOOLS = 'tools/list',
-  CALL_TOOL = 'tools/call',
+  LIST_TOOLS: 'tools/list',
+  CALL_TOOL: 'tools/call',
 
   // Resource methods
-  LIST_RESOURCES = 'resources/list',
-  READ_RESOURCE = 'resources/read',
-  WRITE_RESOURCE = 'resources/write',
+  LIST_RESOURCES: 'resources/list',
+  READ_RESOURCE: 'resources/read',
+  WRITE_RESOURCE: 'resources/write',
 
   // Prompt methods
-  LIST_PROMPTS = 'prompts/list',
-  GET_PROMPT = 'prompts/get',
+  LIST_PROMPTS: 'prompts/list',
+  GET_PROMPT: 'prompts/get',
 
   // Server methods
-  INITIALIZE = 'initialize',
-  SHUTDOWN = 'shutdown',
-  PING = 'ping',
+  INITIALIZE: 'initialize',
+  SHUTDOWN: 'shutdown',
+  PING: 'ping',
 
   // Logging methods
-  SET_LOG_LEVEL = 'logging/setLevel',
-  GET_LOGS = 'logging/getLogs',
-}
+  SET_LOG_LEVEL: 'logging/setLevel',
+  GET_LOGS: 'logging/getLogs',
+} as const;
+export type MCPMethod = (typeof MCPMethod)[keyof typeof MCPMethod];
 
 export interface MCPResponse<T = JsonValue> {
   id: string;
@@ -282,24 +287,25 @@ export interface MCPError {
   data?: JsonObject;
 }
 
-export enum MCPErrorCode {
+export const MCPErrorCode = {
   // Standard JSON-RPC errors
-  PARSE_ERROR = -32_700,
-  INVALID_REQUEST = -32_600,
-  METHOD_NOT_FOUND = -32_601,
-  INVALID_PARAMS = -32_602,
-  INTERNAL_ERROR = -32_603,
+  PARSE_ERROR: -32_700,
+  INVALID_REQUEST: -32_600,
+  METHOD_NOT_FOUND: -32_601,
+  INVALID_PARAMS: -32_602,
+  INTERNAL_ERROR: -32_603,
 
   // Custom MCP errors
-  SERVER_NOT_FOUND = -32_000,
-  TOOL_NOT_FOUND = -32_001,
-  RESOURCE_NOT_FOUND = -32_002,
-  PERMISSION_DENIED = -32_003,
-  RATE_LIMIT_EXCEEDED = -32_004,
-  TIMEOUT = -32_005,
-  CONNECTION_ERROR = -32_006,
-  INVALID_RESPONSE = -32_007,
-}
+  SERVER_NOT_FOUND: -32_000,
+  TOOL_NOT_FOUND: -32_001,
+  RESOURCE_NOT_FOUND: -32_002,
+  PERMISSION_DENIED: -32_003,
+  RATE_LIMIT_EXCEEDED: -32_004,
+  TIMEOUT: -32_005,
+  CONNECTION_ERROR: -32_006,
+  INVALID_RESPONSE: -32_007,
+} as const;
+export type MCPErrorCode = (typeof MCPErrorCode)[keyof typeof MCPErrorCode];
 
 // =============================================================================
 // MCP Tool Execution Types
@@ -373,14 +379,16 @@ export interface MCPManager {
   status: MCPManagerStatus;
 }
 
-export enum MCPManagerStatus {
-  IDLE = 'idle',
-  INITIALIZING = 'initializing',
-  READY = 'ready',
-  BUSY = 'busy',
-  ERROR = 'error',
-  SHUTTING_DOWN = 'shutting_down',
-}
+export const MCPManagerStatus = {
+  IDLE: 'idle',
+  INITIALIZING: 'initializing',
+  READY: 'ready',
+  BUSY: 'busy',
+  ERROR: 'error',
+  SHUTTING_DOWN: 'shutting_down',
+} as const;
+export type MCPManagerStatus =
+  (typeof MCPManagerStatus)[keyof typeof MCPManagerStatus];
 
 // =============================================================================
 // Result Type Integration
@@ -400,14 +408,15 @@ export interface MCPEvent {
   timestamp: number;
 }
 
-export enum MCPEventType {
-  SERVER_CONNECTED = 'server.connected',
-  SERVER_DISCONNECTED = 'server.disconnected',
-  SERVER_ERROR = 'server.error',
-  TOOL_CALLED = 'tool.called',
-  TOOL_COMPLETED = 'tool.completed',
-  TOOL_FAILED = 'tool.failed',
-  RESOURCE_ACCESSED = 'resource.accessed',
-  RATE_LIMIT_WARNING = 'rateLimit.warning',
-  CONFIGURATION_CHANGED = 'configuration.changed',
-}
+export const MCPEventType = {
+  SERVER_CONNECTED: 'server.connected',
+  SERVER_DISCONNECTED: 'server.disconnected',
+  SERVER_ERROR: 'server.error',
+  TOOL_CALLED: 'tool.called',
+  TOOL_COMPLETED: 'tool.completed',
+  TOOL_FAILED: 'tool.failed',
+  RESOURCE_ACCESSED: 'resource.accessed',
+  RATE_LIMIT_WARNING: 'rateLimit.warning',
+  CONFIGURATION_CHANGED: 'configuration.changed',
+} as const;
+export type MCPEventType = (typeof MCPEventType)[keyof typeof MCPEventType];

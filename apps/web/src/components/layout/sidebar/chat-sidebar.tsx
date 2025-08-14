@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
+import type { Doc, Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import {
   Bot,
@@ -113,7 +113,7 @@ export function ChatSidebar({
     if (!(chats && searchQuery)) {
       return chats;
     }
-    return chats.filter((chat) =>
+    return chats.filter((chat: Doc<'chats'>) =>
       chat.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [chats, searchQuery]);
@@ -200,7 +200,7 @@ export function ChatSidebar({
                   No chats found
                 </div>
               ) : (
-                filteredChats?.map((chat, index) => (
+                filteredChats?.map((chat: Doc<'chats'>, index: number) => (
                   <div
                     className={cn(
                       'group flex animate-fade-in cursor-pointer items-center gap-2 rounded-md px-2 py-2 transition-all',

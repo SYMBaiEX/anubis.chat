@@ -404,7 +404,12 @@ export default function ReferralsPage() {
                             referredAt: u.referredAt ?? Date.now(),
                             totalCommissionsEarned: u.totalCommissionsEarned,
                             isActive: u.isActive,
-                            subscriptionTier: u.subscriptionTier,
+                            subscriptionTier: u.subscriptionTier as
+                              | 'admin'
+                              | 'free'
+                              | 'pro'
+                              | 'pro_plus'
+                              | undefined,
                           })
                         )}
                       />

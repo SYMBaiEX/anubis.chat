@@ -167,10 +167,10 @@ export function Composer({
             exit={{ opacity: 0, y: 10 }}
             initial={{ opacity: 0, y: 10 }}
           >
-            {suggestions.map((suggestion, index) => (
+            {suggestions.map((suggestion, _index) => (
               <Button
                 className="text-xs"
-                key={index}
+                key={`composer-sugg-${suggestion}`}
                 onClick={() => handleSuggestionClick(suggestion)}
                 size="sm"
                 variant="outline"
@@ -190,13 +190,15 @@ export function Composer({
                 className="group relative flex items-center gap-2 px-2 py-1"
                 key={attachment.fileId}
               >
-                {attachment.type === 'image' ? (
-                  <Image className="h-4 w-4" />
-                ) : attachment.mimeType === 'application/pdf' ? (
-                  <FileText className="h-4 w-4" />
-                ) : (
-                  <Paperclip className="h-4 w-4" />
-                )}
+                {(() => {
+                  if (attachment.type === 'image') {
+                    return <Image className="h-4 w-4" />;
+                  }
+                  if (attachment.mimeType === 'application/pdf') {
+                    return <FileText className="h-4 w-4" />;
+                  }
+                  return <Paperclip className="h-4 w-4" />;
+                })()}
                 <span className="max-w-[100px] truncate text-xs">
                   {attachment.fileId.split('/').pop()}
                 </span>

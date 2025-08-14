@@ -2,7 +2,7 @@
 
 import { CreditCard, Crown, Plus } from 'lucide-react';
 import { useState } from 'react';
-import MessageCreditsModal from '@/components/auth/message-credits-modal';
+import MessageCreditsModal from '@/components/auth/messageCreditsModal';
 import { UpgradeModal } from '@/components/auth/upgrade-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

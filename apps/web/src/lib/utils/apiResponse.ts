@@ -314,9 +314,13 @@ export function addSecurityHeaders(
         });
 
   // Import CORS utility dynamically to avoid circular dependency
-  const corsUtil = require('@/lib/utils/cors');
-
-  return corsUtil.addSecurityHeaders(nextResponse, requestOrigin);
+  const { addSecurityHeaders: add } = require('@/lib/utils/cors') as {
+    addSecurityHeaders: (
+      res: NextResponse,
+      origin?: string | null
+    ) => NextResponse;
+  };
+  return add(nextResponse, requestOrigin);
 }
 
 export function addRateLimitHeaders(

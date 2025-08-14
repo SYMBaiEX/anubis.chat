@@ -154,13 +154,15 @@ export function AIMessage({
                   ) : (
                     <div className="flex items-center gap-3 px-3 py-2">
                       <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
-                        {attachment.type === 'image' ? (
-                          <ImageIcon className="h-5 w-5" />
-                        ) : attachment.mimeType === 'application/pdf' ? (
-                          <FileText className="h-5 w-5" />
-                        ) : (
-                          <Paperclip className="h-5 w-5" />
-                        )}
+                        {(() => {
+                          if (attachment.type === 'image') {
+                            return <ImageIcon className="h-5 w-5" />;
+                          }
+                          if (attachment.mimeType === 'application/pdf') {
+                            return <FileText className="h-5 w-5" />;
+                          }
+                          return <Paperclip className="h-5 w-5" />;
+                        })()}
                       </div>
                       <div className="flex flex-col">
                         <span className="font-medium text-sm">

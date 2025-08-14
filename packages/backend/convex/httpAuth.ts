@@ -4,6 +4,7 @@
  */
 
 import { getAuthUserId } from '@convex-dev/auth/server';
+import { api } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
 import type { ActionCtx } from './_generated/server';
 import { createModuleLogger } from './utils/logger';
@@ -11,7 +12,7 @@ import { createModuleLogger } from './utils/logger';
 const logger = createModuleLogger('httpAuth');
 
 // Rate limiting configuration
-const RATE_LIMITS = {
+const RATE_LIMITS: Record<string, { requests: number; window: number }> = {
   // Per endpoint limits (requests per minute)
   '/stream-chat': { requests: 60, window: 60_000 }, // 60 req/min (legacy)
   '/generateUploadUrl': { requests: 10, window: 60_000 }, // 10 uploads/min
@@ -34,7 +35,7 @@ export async function authenticateHttpRequest(
   try {
     // Extract bearer token from Authorization header
     const authHeader = request.headers.get('Authorization');
-    if (!(authHeader && authHeader.startsWith('Bearer '))) {
+    if (!authHeader?.startsWith('Bearer ')) {
       logger.warn('Missing or invalid Authorization header');
       return null;
     }
@@ -47,12 +48,10 @@ export async function authenticateHttpRequest(
       return null;
     }
 
-    // Fetch user document
-    const user = await ctx.runQuery(async ({ db }) => {
-      return await db.get(userId);
-    });
+    // Fetch user document using the internal query
+    const user = await ctx.runQuery(api.users.getUserById, { userId });
 
-    if (!(user && user.isActive)) {
+    if (!user?.isActive) {
       logger.warn('User not found or inactive', { userId });
       return null;
     }
@@ -195,7 +194,7 @@ export function validateRequestBody<T>(
     [K in keyof T]: {
       type: 'string' | 'number' | 'boolean' | 'object' | 'array';
       required?: boolean;
-      validator?: (value: any) => boolean;
+      validator?: (value: unknown) => boolean;
     };
   }
 ): T | null {
@@ -203,13 +202,18 @@ export function validateRequestBody<T>(
     return null;
   }
 
-  const validated: any = {};
+  const validated: Partial<T> = {};
 
   for (const [key, config] of Object.entries(schema)) {
-    const value = (body as any)[key];
+    const value = (body as Record<string, unknown>)[key];
+    const configTyped = config as {
+      type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+      required?: boolean;
+      validator?: (value: unknown) => boolean;
+    };
 
     // Check required fields
-    if (config.required && value === undefined) {
+    if (configTyped.required && value === undefined) {
       logger.warn('Missing required field', { field: key });
       return null;
     }
@@ -221,22 +225,22 @@ export function validateRequestBody<T>(
 
     // Type validation
     const actualType = Array.isArray(value) ? 'array' : typeof value;
-    if (actualType !== config.type) {
+    if (actualType !== configTyped.type) {
       logger.warn('Invalid field type', {
         field: key,
-        expected: config.type,
+        expected: configTyped.type,
         actual: actualType,
       });
       return null;
     }
 
     // Custom validation
-    if (config.validator && !config.validator(value)) {
+    if (configTyped.validator && !configTyped.validator(value)) {
       logger.warn('Field validation failed', { field: key });
       return null;
     }
 
-    validated[key] = value;
+    (validated as Record<string, unknown>)[key] = value;
   }
 
   return validated as T;

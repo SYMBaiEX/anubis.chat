@@ -3,7 +3,7 @@
  * Provides prompt injection protection, context sanitization, and user data isolation
  */
 
-import type { Doc, Id } from './_generated/dataModel';
+import type { Id } from './_generated/dataModel';
 import { createModuleLogger } from './utils/logger';
 
 const logger = createModuleLogger('ragSecurity');
@@ -142,7 +142,7 @@ export function sanitizeRAGContext(
 
   // Truncate if too long
   if (sanitized.length > MAX_CONTEXT_SIZE) {
-    sanitized = sanitized.slice(0, MAX_CONTEXT_SIZE) + '\n[CONTEXT TRUNCATED]';
+    sanitized = `${sanitized.slice(0, MAX_CONTEXT_SIZE)}\n[CONTEXT TRUNCATED]`;
     truncated = true;
     warnings.push('Context truncated due to size');
   }
@@ -221,7 +221,9 @@ export function createIsolatedContext(
     contextParts.push('');
 
     totalTokens += Math.ceil(sanitized.length / 4); // Rough token estimate
-    if (ctxTruncated) truncated = true;
+    if (ctxTruncated) {
+      truncated = true;
+    }
   }
 
   // Add clear boundary before user query
@@ -268,7 +270,7 @@ export function sanitizeCitations(
     .map((citation) => {
       // Truncate long citations
       if (citation.length > MAX_CITATION_LENGTH) {
-        return citation.slice(0, MAX_CITATION_LENGTH) + '...';
+        return `${citation.slice(0, MAX_CITATION_LENGTH)}...`;
       }
       return citation;
     })
@@ -285,7 +287,9 @@ export async function verifyDocumentOwnership(
 ): Promise<boolean> {
   try {
     const doc = await ctx.db.get(documentId);
-    if (!doc) return false;
+    if (!doc) {
+      return false;
+    }
 
     // Check if document owner matches user
     return doc.ownerId === userId;

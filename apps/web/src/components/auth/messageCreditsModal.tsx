@@ -147,7 +147,7 @@ export function MessageCreditsModal({
     }
   }, [paymentStep, paymentDetails.txSignature, checkPurchaseStatus]);
 
-  const handlePurchase = async () => {
+  const handlePurchase = () => {
     if (!user) {
       setError('Please sign in first');
       return;
@@ -296,47 +296,60 @@ export function MessageCreditsModal({
       }
 
       // Submit to backend for verification
-      let verificationResult;
-      let lastError;
+      let verificationResult: {
+        success: boolean;
+        purchaseId?: string;
+        error?: string;
+      } | null = null;
+      let lastError: unknown;
 
-      for (let i = 0; i < 3; i++) {
-        try {
-          const verificationResponse = await fetch('/api/verify-payment', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              txSignature: txSignatureToVerify,
-              expectedAmount: totalCost,
-              paymentType: 'message_credits',
-              packType: 'standard',
-              numberOfPacks,
-              walletAddress: publicKey.toString(),
-              referralCode: referrerInfo?.hasReferrer
-                ? referrerInfo.referralCode
-                : undefined,
-              referralPayoutTx: referrerInfo?.hasReferrer
-                ? txSignatureToVerify
-                : undefined,
-              referrerWalletAddress: referrerInfo?.referrerWalletAddress,
-              commissionRate: referrerInfo?.commissionRate,
-            }),
-          });
+      {
+        const attempts = [0, 1, 2] as const;
+        for (const i of attempts) {
+          try {
+            const verificationResponse = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                txSignature: txSignatureToVerify,
+                expectedAmount: totalCost,
+                paymentType: 'message_credits',
+                packType: 'standard',
+                numberOfPacks,
+                walletAddress: publicKey.toString(),
+                referralCode: referrerInfo?.hasReferrer
+                  ? referrerInfo.referralCode
+                  : undefined,
+                referralPayoutTx: referrerInfo?.hasReferrer
+                  ? txSignatureToVerify
+                  : undefined,
+                referrerWalletAddress: referrerInfo?.referrerWalletAddress,
+                commissionRate: referrerInfo?.commissionRate,
+              }),
+            });
 
-          if (!verificationResponse.ok) {
-            const errorText = await verificationResponse.text();
-            throw new Error(
-              `HTTP ${verificationResponse.status}: ${errorText}`
-            );
-          }
+            if (!verificationResponse.ok) {
+              const errorText = await verificationResponse.text();
+              throw new Error(
+                `HTTP ${verificationResponse.status}: ${errorText}`
+              );
+            }
 
-          verificationResult = await verificationResponse.json();
-          break;
-        } catch (fetchError) {
-          lastError = fetchError;
-          if (i < 2) {
-            await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** i));
+            verificationResult = (await verificationResponse.json()) as {
+              success: boolean;
+              purchaseId?: string;
+              error?: string;
+            };
+            break;
+          } catch (fetchError) {
+            lastError = fetchError;
+            if (i < 2) {
+              await new Promise((resolve) =>
+                setTimeout(resolve, 1000 * 2 ** i)
+              );
+            }
           }
         }
       }
@@ -476,7 +489,7 @@ export function MessageCreditsModal({
             </div>
 
             <div className="space-y-2">
-              <label className="font-medium text-sm">Number of packs:</label>
+              <div className="font-medium text-sm">Number of packs:</div>
               <div className="flex items-center space-x-3">
                 <Button
                   disabled={numberOfPacks <= 1}
@@ -562,39 +575,46 @@ export function MessageCreditsModal({
         <Card className="p-4">
           <h5 className="mb-3 font-medium">Recent Purchases</h5>
           <div className="space-y-2">
-            {purchaseHistory.slice(0, 3).map((purchase: { 
-              id: string; 
-              standardCredits: number; 
-              premiumCredits: number; 
-              createdAt: number; 
-              priceSOL: number; 
-              status: string; 
-            }) => (
-              <div
-                className="flex items-center justify-between border-b pb-2 text-sm"
-                key={purchase.id}
-              >
-                <div>
-                  <div className="font-medium">
-                    {purchase.standardCredits + purchase.premiumCredits} credits
-                  </div>
-                  <div className="text-muted-foreground text-xs">
-                    {new Date(purchase.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium">{purchase.priceSOL} SOL</div>
-                  <Badge
-                    size="sm"
-                    variant={
-                      purchase.status === 'confirmed' ? 'default' : 'secondary'
-                    }
+            {purchaseHistory
+              .slice(0, 3)
+              .map(
+                (purchase: {
+                  id: string;
+                  standardCredits: number;
+                  premiumCredits: number;
+                  createdAt: number;
+                  priceSOL: number;
+                  status: string;
+                }) => (
+                  <div
+                    className="flex items-center justify-between border-b pb-2 text-sm"
+                    key={purchase.id}
                   >
-                    {purchase.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+                    <div>
+                      <div className="font-medium">
+                        {purchase.standardCredits + purchase.premiumCredits}{' '}
+                        credits
+                      </div>
+                      <div className="text-muted-foreground text-xs">
+                        {new Date(purchase.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">{purchase.priceSOL} SOL</div>
+                      <Badge
+                        size="sm"
+                        variant={
+                          purchase.status === 'confirmed'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                      >
+                        {purchase.status}
+                      </Badge>
+                    </div>
+                  </div>
+                )
+              )}
           </div>
         </Card>
       )}
@@ -637,9 +657,9 @@ export function MessageCreditsModal({
       <Card className="bg-gray-50 p-6 dark:bg-gray-800/50">
         <div className="space-y-4">
           <div>
-            <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
+            <div className="font-medium text-gray-700 text-sm dark:text-gray-300">
               Purchase Summary
-            </label>
+            </div>
             <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
               <div className="space-y-2">
                 <div className="flex justify-between">
@@ -663,9 +683,9 @@ export function MessageCreditsModal({
           </div>
 
           <div>
-            <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
+            <div className="font-medium text-gray-700 text-sm dark:text-gray-300">
               Your Wallet
-            </label>
+            </div>
             <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
               <div className="flex items-center justify-between">
                 {connected && publicKey ? (
@@ -687,9 +707,9 @@ export function MessageCreditsModal({
           </div>
 
           <div>
-            <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
+            <div className="font-medium text-gray-700 text-sm dark:text-gray-300">
               Payment Address
-            </label>
+            </div>
             <div className="mt-1 rounded-lg border bg-white p-3 font-mono text-sm dark:bg-gray-900">
               <div className="flex items-center justify-between">
                 <span className="break-all">

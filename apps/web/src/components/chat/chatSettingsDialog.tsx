@@ -220,7 +220,9 @@ export function ChatSettingsDialog({
               "The selected agent's base personality and instructions (read-only)",
             type: 'textarea' as const,
             value: localSettings.agentPrompt,
-            onChange: () => {}, // Read-only
+            onChange: () => {
+              /* read-only */
+            },
             placeholder: 'No agent selected',
             rows: 4,
             icon: <Brain className="h-4 w-4" />,

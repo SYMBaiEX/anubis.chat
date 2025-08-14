@@ -5,6 +5,7 @@ A next-generation AI chat platform combining advanced RAG (Retrieval-Augmented G
 ## 🚀 Key Features
 
 ### AI & Chat
+
 - **Latest AI Models (August 2025)** - GPT-5, Claude Opus 4.1, Gemini 2.5 Pro, and 14+ cutting-edge models
 - **Dynamic Model Selection** - Switch between AI models on-the-fly with rich UI selector
 - **Multi-Provider Support** - Seamless integration with OpenAI, Anthropic, and Google
@@ -17,104 +18,139 @@ A next-generation AI chat platform combining advanced RAG (Retrieval-Augmented G
 - **Model Persistence** - Selected model saved per chat conversation
 
 ### Web3 Integration
-- **Solana Wallet Authentication** - Secure login with Phantom, Solflare, and other wallets
-- **Signature-Based Security** - Cryptographic wallet signature verification
-- **Smart Contract Ready** - Built for future Anchor framework integration
+
+- **Solana wallet authentication** - Phantom, Backpack, and more
+- **Signature-based security** - Challenge/nonce verification
+- **Subscription-ready** - On-chain and off-chain verification flows
 
 ### Platform Architecture
-- **TypeScript-First** - Strict type safety across frontend and backend
-- **Next.js 15 App Router** - Modern React with Server Components
-- **Convex Backend** - Real-time, reactive database with edge functions
-- **Progressive Web App** - Mobile-optimized with offline capabilities
-- **Enterprise Security** - JWT tokens, rate limiting, and input validation
+
+- **TypeScript-first** across frontend and backend
+- **Next.js 15 (App Router)** with React 19
+- **Convex backend** for data, auth, and server actions
+- **PWA** with service worker and icon set
+- **Code quality** with Biome and Turborepo
 
 ### Document Management
-- **Multi-Format Support** - Text, Markdown, PDF, and URL ingestion
-- **Semantic Search** - Vector-based document retrieval
-- **Chunking & Embedding** - Optimized for RAG performance
-- **User Isolation** - Secure per-wallet document storage
+
+- **Multi-format ingestion** - Text, Markdown, PDF, URLs
+- **Semantic search** - Vector embeddings and similarity search
+- **User isolation** - Per-wallet document scopes
 
 ## 🛠 Tech Stack
 
 ### Frontend
-- **Next.js 15** with App Router and React 19
-- **TypeScript** with strict mode enabled
-- **Tailwind CSS 4** with Shadcn UI components
-- **Tanstack Form** with Zod validation
-- **Progressive Web App** support
+
+- **Next.js 15** (App Router) + **React 19**
+- **TypeScript**, **Tailwind CSS 4**, Shadcn UI
+- **TanStack Form** + **Zod** validation
 
 ### Backend
+
 - **Convex** - Real-time backend-as-a-service
 - **Edge Functions** - Serverless query/mutation functions
 - **Real-time Database** - Reactive data synchronization
 - **Full-text Search** - Built-in document search indexes
 
 ### Security & Auth
+
 - **Wallet Authentication** - Solana signature verification
 - **JWT Tokens** with blacklisting support
 - **Rate Limiting** - Request throttling and abuse prevention
 - **Input Validation** - Zod schemas with ReDoS protection
 
 ### Development
-- **Turborepo** - Optimized monorepo orchestration
-- **Bun** - Fast package manager and runtime
-- **Biome** - Code formatting and linting
-- **Husky** - Git hooks for code quality
+
+- **Turborepo**, **Bun**, **Biome**, **Husky**
 
 ## 🚦 Getting Started
 
 ### Prerequisites
 
-- [Bun](https://bun.sh) 1.2.18 or later
-- [Solana Wallet](https://phantom.app) (Phantom recommended)
-- [Convex Account](https://convex.dev) for backend services
+- Bun 1.2.19+
+- Solana wallet (Phantom recommended)
+- Convex account/project
 
 ### Installation
 
-1. **Clone and install dependencies**
+1. Clone and install
+
 ```bash
 git clone https://github.com/your-username/anubis-chat.git
 cd anubis-chat
 bun install
 ```
 
-2. **Set up Convex backend**
+2. Configure environment
+
+Frontend (`apps/web/.env.local`):
+
+```bash
+# Required
+NEXT_PUBLIC_CONVEX_URL=https://<your-convex-deployment>.convex.cloud
+
+# Providers (choose one or more)
+OPENROUTER_API_KEY=...            # preferred for broad model access
+OPENAI_API_KEY=...                # optional
+GOOGLE_GENERATIVE_AI_API_KEY=...  # optional
+
+# Solana (client)
+NEXT_PUBLIC_SOLANA_NETWORK=devnet
+NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
+
+# Optional
+NEXT_PUBLIC_APP_URL=http://localhost:3001
+```
+
+Backend (Convex env variables; set via Convex dashboard/CLI):
+
+```bash
+# Providers
+OPENROUTER_API_KEY=...
+OPENAI_API_KEY=...
+GOOGLE_GENERATIVE_AI_API_KEY=...
+
+# Security / CORS / Rate-limits
+ALLOWED_ORIGINS=http://localhost:3001
+RATE_LIMIT_MAX_REQUESTS=100
+RATE_LIMIT_WINDOW_MS=900000
+
+# Auth / Admin (optional)
+ADMIN_WALLETS=<comma-separated-solana-public-keys>
+JWT_SECRET=<optional-legacy-only>
+
+# Solana (server)
+SOLANA_NETWORK=devnet
+SOLANA_RPC_URL=https://api.devnet.solana.com
+```
+
+3. Initialize Convex
+
 ```bash
 bun dev:setup
 ```
-Follow the prompts to create a new Convex project and connect it to your application.
 
-3. **Configure environment variables**
-```bash
-# apps/web/.env.local
-JWT_SECRET=your-super-secret-jwt-key
-ALLOWED_ORIGINS=http://localhost:3001
+4. Start development
 
-# Convex configuration is handled automatically
-```
-
-4. **Start development server**
 ```bash
 bun dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) to see the application.
+- Web app: http://localhost:3001
+- Docs app: http://localhost:4000 (see `apps/fumadocs` below)
 
 ### Quick Commands
 
 ```bash
 # Development
-bun dev                    # Start all services
-bun dev:web               # Frontend only
-bun dev:server            # Convex backend only
+bun dev          # Start all apps
+bun dev:web      # Frontend only
+bun dev:server   # Convex backend only
 
 # Code Quality
-bun check                 # Format and lint
-bun check-types           # TypeScript validation
-bun build                 # Production build
-
-# PWA
-cd apps/web && bun generate-pwa-assets  # Generate PWA icons
+bun check        # Format + lint (Biome)
+bun check-types  # TypeScript validation
+bun build        # Production build
 ```
 
 ## 📁 Project Structure
@@ -122,130 +158,123 @@ cd apps/web && bun generate-pwa-assets  # Generate PWA icons
 ```
 anubis-chat/
 ├── apps/
-│   └── web/                    # Next.js frontend application
-│       ├── src/
-│       │   ├── app/            # App Router pages and API routes
-│       │   ├── components/     # React components and UI
-│       │   └── lib/            # Utilities, types, and middleware
-│       └── public/             # Static assets and PWA files
+│   ├── web/                     # Next.js frontend
+│   │   ├── src/app/             # App Router pages and API routes
+│   │   ├── src/components/      # UI components
+│   │   └── src/lib/             # Utils, env, middleware
+│   ├── fumadocs/                # Documentation site (Next.js + Fumadocs)
+│   │   └── ...                  # Run with: bun -C apps/fumadocs dev
 ├── packages/
-│   └── backend/                # Convex backend
-│       └── convex/             # Database schema and functions
-│           ├── schema.ts       # Database schema definition
-│           ├── users.ts        # User management functions
-│           ├── documents.ts    # Document CRUD operations
-│           ├── chats.ts        # Chat conversation functions
-│           └── auth.ts         # Authentication utilities
-└── turbo.json                  # Turborepo configuration
+│   └── backend/
+│       └── convex/              # Convex functions and HTTP routes
+│           ├── http.ts          # HTTP router (uploads, streaming, payments)
+│           ├── streaming.ts     # WebSocket + HTTP streaming actions
+│           ├── files.ts         # Uploads and storage
+│           ├── documents.ts     # Document pipeline and CRUD
+│           ├── rag.ts           # RAG retrieval and formatting
+│           ├── users.ts         # User management
+│           ├── auth.ts          # Convex Auth (Solana)
+│           └── schema.ts        # Data model
+└── turbo.json                   # Turborepo config
 ```
 
 ## 🔧 API Reference
 
-### Authentication Endpoints
+### Next.js API routes (frontend bridge)
 
-```typescript
-POST /api/auth/challenge        # Get wallet challenge nonce
-POST /api/auth/verify          # Verify wallet signature
-POST /api/auth/logout          # Blacklist JWT token
-GET  /api/auth/me              # Get user profile
+```text
+POST /api/chat                   # Stream chat via AI SDK providers
+POST /api/ai/chat                # Tool-enabled chat endpoint
+GET  /api/models                 # Available model list
+GET  /api/ai-overview            # Providers/feature overview
+GET  /api/mcp/servers            # List MCP servers
+GET  /api/mcp/servers/[name]     # MCP server detail
+POST /api/subscriptions/payment  # Subscription payment webhook/flow
+POST /api/verify-payment         # Proxy to Convex payment verification
 ```
 
-### Document Management
+### Convex HTTP routes (backend)
 
-```typescript
-GET    /api/documents          # List user documents
-POST   /api/documents          # Upload new document
-GET    /api/documents/[id]     # Get specific document
-PUT    /api/documents/[id]     # Update document
-DELETE /api/documents/[id]     # Delete document
+```text
+POST /stream-chat                # HTTP streaming fallback
+POST /generateUploadUrl          # Get upload URL
+POST /registerUpload             # Persist upload metadata
+GET  /serveStorage               # Serve stored files
+POST /verify-payment             # Verify Solana payments
+# Convex Auth routes are also exposed via httpRouter (see auth.addHttpRoutes)
 ```
 
-### Search & RAG
-
-```typescript
-GET  /api/search               # Keyword-based document search
-POST /api/search/semantic      # Semantic RAG search for AI context
-```
-
-### Chat System
-
-```typescript
-GET    /api/chats              # List user conversations
-POST   /api/chats              # Create new chat
-GET    /api/chats/[id]         # Get conversation
-POST   /api/chats/[id]/message # Send message (streaming)
-```
+Note: Most application logic uses Convex queries/mutations/actions directly from the client. The REST-like endpoints above exist for streaming fallback, uploads, and integration surfaces.
 
 ## 🔐 Security Features
 
-### Wallet Authentication
-- **Nonce-based challenges** - Prevents replay attacks
-- **Signature verification** - Using NaCl/TweetNaCl cryptography  
-- **JWT with blacklisting** - Secure logout and session management
-- **Rate limiting** - Per-wallet request throttling
+### Authentication
 
-### Input Validation
-- **Zod schemas** - Runtime type checking on all inputs
-- **ReDoS protection** - Regular expression denial-of-service prevention
-- **XSS prevention** - Content sanitization and escaping
-- **CORS configuration** - Web3-compatible cross-origin headers
+- **Solana wallet sign-in** with nonce challenge (Convex Auth)
+- Optional legacy **JWT** for bridge routes only
+
+### Input & Transport
+
+- **Zod** validation across server boundaries
+- **CORS** allowlist with environment-configurable origins
+- **Rate limiting** for HTTP endpoints
 
 ### Data Protection
-- **User isolation** - Documents scoped to wallet addresses
-- **Access control** - Owner verification on all operations
-- **Audit logging** - Request tracking and error monitoring
+
+- **Per-wallet isolation** for documents and chats
+- **Access controls** enforced in Convex functions
+- **Audit-friendly logging** via structured logger
 
 ## 🚀 Deployment
 
-### Environment Setup
+1. Build
 
 ```bash
-# Production environment variables
-NODE_ENV=production
-JWT_SECRET=your-production-jwt-secret-256-bit-key
-ALLOWED_ORIGINS=https://your-domain.com
+bun build
 ```
 
-### Build & Deploy
+2. Deploy Convex
 
 ```bash
-# Build for production
-bun build
-
-# Deploy Convex backend
 cd packages/backend
 npx convex deploy
+```
 
-# Deploy frontend (Vercel, Netlify, etc.)
+3. Deploy Web (e.g., Vercel)
+
+```bash
 cd apps/web
 vercel deploy
 ```
 
-## 🛡️ Security Considerations
+4. Configure Environment
 
-- **Never commit secrets** - Use environment variables
-- **Rotate JWT secrets** - Regular key rotation in production
-- **Monitor rate limits** - Adjust based on usage patterns  
-- **Update dependencies** - Regular security updates
-- **Audit wallet integrations** - Verify signature implementations
+- Set Convex env vars (providers, CORS, Solana, limits) in the Convex dashboard/CLI
+- Set web `.env` (NEXT_PUBLIC_CONVEX_URL, provider keys as needed)
+
+## 🛡️ Operational Tips
+
+- Never commit secrets; use environment variables
+- Rotate provider keys and JWT secrets regularly if enabled
+- Monitor rate limits and model usage
+- Keep dependencies updated
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes with proper tests
-4. Run quality checks: `bun check && bun check-types`
-5. Commit with clear messages: `git commit -m 'Add amazing feature'`
-6. Push to your branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+2. Create a branch: `git checkout -b feature/amazing-feature`
+3. Add tests and ensure quality: `bun check && bun check-types`
+4. Commit: `git commit -m 'Add amazing feature'`
+5. Push: `git push origin feature/amazing-feature`
+6. Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
 
 ## 🙏 Acknowledgments
 
-- [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack) for the initial project template
-- [Convex](https://convex.dev) for the real-time backend platform
-- [Solana](https://solana.com) for Web3 infrastructure
-- [Shadcn UI](https://ui.shadcn.com) for beautiful component library
+- [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack)
+- [Convex](https://convex.dev)
+- [Solana](https://solana.com)
+- [Shadcn UI](https://ui.shadcn.com)

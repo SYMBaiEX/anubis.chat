@@ -24,7 +24,10 @@ import type { User } from '@/lib/types/api';
 import type { UserProfileProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { SubscriptionStatus } from './subscription-status';
+import {
+  type CompatibleSubscription,
+  SubscriptionStatus,
+} from './subscriptionStatus';
 
 // Initialize logger
 const log = createModuleLogger('user-profile');
@@ -99,7 +102,7 @@ export function UserProfile({
     return blob;
   };
 
-  const onAvatarClick = async () => {
+  const onAvatarClick = () => {
     try {
       const input = document.createElement('input');
       input.type = 'file';
@@ -201,7 +204,7 @@ export function UserProfile({
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          void handleSaveName();
+                          handleSaveName();
                         }
                         if (e.key === 'Escape') {
                           setIsEditingName(false);
@@ -232,17 +235,13 @@ export function UserProfile({
                     </Button>
                   </div>
                 ) : (
-                  <h3
+                  <button
                     className="cursor-pointer rounded-md bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text px-2 py-1 font-semibold text-[18px] text-transparent transition hover:bg-primary/10 hover:ring-1 hover:ring-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:text-xl"
                     onClick={() => editable && setIsEditingName(true)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        editable && setIsEditingName(true);
-                      }
-                    }}
+                    type="button"
                   >
                     {user?.displayName ?? 'Anonymous User'}
-                  </h3>
+                  </button>
                 )}
               </div>
               <p className="text-muted-foreground text-sm">
@@ -481,7 +480,7 @@ export function UserProfile({
           showUpgrade={
             (subscription?.tier || user?.subscription?.tier) === 'free'
           }
-          subscription={subscription || user?.subscription}
+          subscription={subscription as CompatibleSubscription | undefined}
           upgradePrompt={upgradePrompt}
         />
       ),

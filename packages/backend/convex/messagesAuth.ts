@@ -130,23 +130,28 @@ export const createMyMessage = mutation({
       const model = args.metadata?.model || chat.model;
       const premiumModels = ['gpt-4o', 'claude-3.5-sonnet', 'gemini-1.5-pro'];
       const isPremium = premiumModels.includes(model);
-      
+
       // Calculate available resources
-      const monthlyMessagesRemaining = (subscription.messagesLimit ?? 0) - (subscription.messagesUsed ?? 0);
-      const monthlyPremiumRemaining = (subscription.premiumMessagesLimit ?? 0) - (subscription.premiumMessagesUsed ?? 0);
+      const monthlyMessagesRemaining =
+        (subscription.messagesLimit ?? 0) - (subscription.messagesUsed ?? 0);
+      const monthlyPremiumRemaining =
+        (subscription.premiumMessagesLimit ?? 0) -
+        (subscription.premiumMessagesUsed ?? 0);
       const purchasedCredits = subscription.messageCredits ?? 0;
       const purchasedPremiumCredits = subscription.premiumMessageCredits ?? 0;
-      
+
       // Check if user has enough resources for this message
       if (isPremium) {
-        const totalPremiumAvailable = monthlyPremiumRemaining + purchasedPremiumCredits;
+        const totalPremiumAvailable =
+          monthlyPremiumRemaining + purchasedPremiumCredits;
         if (totalPremiumAvailable <= 0) {
           throw new Error(
             'Premium message limit reached. Please purchase more credits or upgrade to Pro Plus.'
           );
         }
       } else {
-        const totalStandardAvailable = monthlyMessagesRemaining + purchasedCredits;
+        const totalStandardAvailable =
+          monthlyMessagesRemaining + purchasedCredits;
         if (totalStandardAvailable <= 0) {
           throw new Error(
             'Message limit reached. Please purchase more credits or upgrade your subscription.'
@@ -156,27 +161,30 @@ export const createMyMessage = mutation({
 
       // Consume credits in the correct order: monthly first, then purchased
       const updatedSubscription = { ...subscription };
-      
+
       if (isPremium) {
         // Consume premium message
         if (monthlyPremiumRemaining > 0) {
           // Use monthly premium allowance first
-          updatedSubscription.premiumMessagesUsed = (subscription.premiumMessagesUsed ?? 0) + 1;
+          updatedSubscription.premiumMessagesUsed =
+            (subscription.premiumMessagesUsed ?? 0) + 1;
         } else {
           // Use purchased premium credits
-          updatedSubscription.premiumMessageCredits = (subscription.premiumMessageCredits ?? 0) - 1;
+          updatedSubscription.premiumMessageCredits =
+            (subscription.premiumMessageCredits ?? 0) - 1;
         }
       }
-      
+
       // Always consume a standard message (even for premium)
       if (monthlyMessagesRemaining > 0) {
         // Use monthly allowance first
         updatedSubscription.messagesUsed = (subscription.messagesUsed ?? 0) + 1;
       } else {
         // Use purchased credits
-        updatedSubscription.messageCredits = (subscription.messageCredits ?? 0) - 1;
+        updatedSubscription.messageCredits =
+          (subscription.messageCredits ?? 0) - 1;
       }
-      
+
       await ctx.db.patch(user._id, {
         subscription: updatedSubscription,
       });

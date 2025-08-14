@@ -5,7 +5,7 @@
 
 import type { NextRequest } from 'next/server';
 import { rateLimitConfig } from '../env';
-import { addRateLimitHeaders, rateLimitResponse } from '../utils/api-response';
+import { addRateLimitHeaders, rateLimitResponse } from '../utils/apiResponse';
 import { createModuleLogger } from '../utils/logger';
 import { extractWalletFromRequest } from './auth';
 

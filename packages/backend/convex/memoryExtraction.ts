@@ -204,7 +204,7 @@ function createMemoryFromMessage(
   logger.debug('Creating memory', {
     type: memory.type,
     importance: memory.importance,
-    tags: memory.tags,
+    tags: memory.tags?.join(', '),
     contentLength: memory.content.length,
   });
 
@@ -937,7 +937,9 @@ export const processChatHistory = action({
       });
 
       // Filter user messages only
-      const userMessages = messages.filter((msg) => msg.role === 'user');
+      const userMessages = messages.filter(
+        (msg: Doc<'messages'>) => msg.role === 'user'
+      );
 
       if (userMessages.length === 0) {
         return {
@@ -961,7 +963,7 @@ export const processChatHistory = action({
           {
             chatId: args.chatId,
             userId: args.userId,
-            messageIds: batch.map((m) => m._id),
+            messageIds: batch.map((m: Doc<'messages'>) => m._id),
           }
         );
 

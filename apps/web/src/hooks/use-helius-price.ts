@@ -53,90 +53,10 @@ export function useHeliusPrice(symbol = 'SOL') {
   const updateCache = useMutation(api.tokenPrices.updateCachedPrice);
 
   /**
-   * Fetch price from Helius API
-   */
-  const fetchPriceFromHelius = useCallback(async () => {
-    try {
-      const mintAddress = TOKEN_MINTS[symbol as keyof typeof TOKEN_MINTS];
-      if (!mintAddress) {
-        throw new Error(`Unsupported token: ${symbol}`);
-      }
-
-      // Get RPC URL from environment
-      const rpcUrl = env.NEXT_PUBLIC_SOLANA_RPC_URL;
-      if (!(rpcUrl && rpcUrl.includes('helius'))) {
-        // Fallback to a basic Helius endpoint if not configured
-        throw new Error('Helius RPC URL not configured');
-      }
-
-      // Extract API key from URL if present
-      const apiKeyMatch = rpcUrl.match(/api-key=([^&]+)/);
-      const apiKey = apiKeyMatch ? apiKeyMatch[1] : null;
-
-      if (!apiKey) {
-        throw new Error('Helius API key not found in RPC URL');
-      }
-
-      // Call Helius DAS API to get asset info including price
-      const response = await fetch(
-        `https://mainnet.helius-rpc.com/?api-key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 'price-fetch',
-            method: 'getAsset',
-            params: {
-              id: mintAddress,
-              displayOptions: {
-                showFungible: true,
-              },
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch from Helius');
-      }
-
-      const data: HeliusPriceResponse = await response.json();
-
-      if (data.result?.token_info?.price_info) {
-        const pricePerToken = data.result.token_info.price_info.price_per_token;
-
-        // Update local state
-        setPrice(pricePerToken);
-
-        // Update Convex cache
-        await updateCache({
-          symbol,
-          priceUsd: pricePerToken,
-          mintAddress,
-        });
-
-        return pricePerToken;
-      }
-      // If Helius doesn't have price data, try alternative method
-      // For SOL, we can use a different endpoint
-      if (symbol === 'SOL') {
-        return await fetchSolPriceAlternative(apiKey);
-      }
-      throw new Error('Price data not available from Helius');
-    } catch (err) {
-      console.error('Helius price fetch error:', err);
-      throw err;
-    }
-  }, [symbol, updateCache]);
-
-  /**
    * Alternative method to fetch SOL price using Jupiter aggregator
    */
-  const fetchSolPriceAlternative = async (apiKey: string): Promise<number> => {
-    try {
+  const fetchSolPriceAlternative = useCallback(
+    async (_apiKey: string): Promise<number> => {
       // Use Jupiter Price API as fallback
       const response = await fetch('https://price.jup.ag/v4/price?ids=SOL');
 
@@ -159,11 +79,84 @@ export function useHeliusPrice(symbol = 'SOL') {
       }
 
       throw new Error('No price data available');
-    } catch (err) {
-      console.error('Alternative price fetch error:', err);
-      throw err;
+    },
+    [updateCache]
+  );
+
+  /**
+   * Fetch price from Helius API
+   */
+  const fetchPriceFromHelius = useCallback(async () => {
+    const mintAddress = TOKEN_MINTS[symbol as keyof typeof TOKEN_MINTS];
+    if (!mintAddress) {
+      throw new Error(`Unsupported token: ${symbol}`);
     }
-  };
+
+    // Get RPC URL from environment
+    const rpcUrl = env.NEXT_PUBLIC_SOLANA_RPC_URL;
+    if (!rpcUrl?.includes('helius')) {
+      // Fallback to a basic Helius endpoint if not configured
+      throw new Error('Helius RPC URL not configured');
+    }
+
+    // Extract API key from URL if present
+    const apiKeyMatch = rpcUrl.match(/api-key=([^&]+)/);
+    const apiKey = apiKeyMatch ? apiKeyMatch[1] : null;
+
+    if (!apiKey) {
+      throw new Error('Helius API key not found in RPC URL');
+    }
+
+    // Call Helius DAS API to get asset info including price
+    const response = await fetch(
+      `https://mainnet.helius-rpc.com/?api-key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'price-fetch',
+          method: 'getAsset',
+          params: {
+            id: mintAddress,
+            displayOptions: {
+              showFungible: true,
+            },
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch from Helius');
+    }
+
+    const data: HeliusPriceResponse = await response.json();
+
+    if (data.result?.token_info?.price_info) {
+      const pricePerToken = data.result.token_info.price_info.price_per_token;
+
+      // Update local state
+      setPrice(pricePerToken);
+
+      // Update Convex cache
+      await updateCache({
+        symbol,
+        priceUsd: pricePerToken,
+        mintAddress,
+      });
+
+      return pricePerToken;
+    }
+    // If Helius doesn't have price data, try alternative method
+    // For SOL, we can use a different endpoint
+    if (symbol === 'SOL') {
+      return await fetchSolPriceAlternative(apiKey);
+    }
+    throw new Error('Price data not available from Helius');
+  }, [symbol, updateCache, fetchSolPriceAlternative]);
 
   useEffect(() => {
     let isMounted = true;
@@ -174,7 +167,7 @@ export function useHeliusPrice(symbol = 'SOL') {
         setError(null);
 
         // Check if we have a valid cached price
-        if (cachedPrice && cachedPrice.price) {
+        if (cachedPrice?.price) {
           setPrice(cachedPrice.price);
           setPriceChange(cachedPrice.priceChange24h || null);
 
@@ -221,13 +214,15 @@ export function useHeliusPrice(symbol = 'SOL') {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [symbol, cachedPrice, fetchPriceFromHelius]);
+  }, [cachedPrice, fetchPriceFromHelius]);
 
   /**
    * Convert token amount to USD
    */
   const tokenToUsd = (amount: number): number | null => {
-    if (price === null) return null;
+    if (price === null) {
+      return null;
+    }
     return amount * price;
   };
 
@@ -247,7 +242,9 @@ export function useHeliusPrice(symbol = 'SOL') {
    * Format price change percentage
    */
   const formatPriceChange = (): string => {
-    if (priceChange === null) return '';
+    if (priceChange === null) {
+      return '';
+    }
     const sign = priceChange >= 0 ? '+' : '';
     return `${sign}${priceChange.toFixed(2)}%`;
   };

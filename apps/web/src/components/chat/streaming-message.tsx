@@ -5,7 +5,7 @@ import { Bot } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { AIStreamingIndicator } from './ai-streaming-indicator';
+import { AIStreamingIndicator } from './aiStreamingIndicator';
 import { OptimizedMarkdownRenderer } from './optimized-markdown-renderer';
 
 interface StreamingMessageProps {

@@ -139,11 +139,14 @@ async function searchSingleDocument(
     }
   );
 
-  const chunkPromises = vectorResults.map((result) =>
-    ctx
-      // Fallback to direct db.get via a small inline query function is not supported here; rely on a proper query
-      .runQuery(api.vectorSearch.getChunkById, { id: result._id })
-      .then((chunk) => (chunk ? { chunk, score: result._score } : null))
+  const chunkPromises = vectorResults.map(
+    (result: { _id: Id<'documentChunks'>; _score: number }) =>
+      ctx
+        // Fallback to direct db.get via a small inline query function is not supported here; rely on a proper query
+        .runQuery(api.vectorSearch.getChunkById, { id: result._id })
+        .then((chunk: Doc<'documentChunks'> | null) =>
+          chunk ? { chunk, score: result._score } : null
+        )
   );
 
   const documentPromise = ctx.runQuery(api.documents.getById, {
@@ -161,10 +164,18 @@ async function searchSingleDocument(
 
   return chunkResults
     .filter(
-      (result): result is { chunk: Doc<'documentChunks'>; score: number } =>
+      (
+        result: { chunk: Doc<'documentChunks'>; score: number } | null
+      ): result is { chunk: Doc<'documentChunks'>; score: number } =>
         result !== null
     )
-    .map(({ chunk, score }) => ({ chunk, document, score }));
+    .map(
+      ({ chunk, score }: { chunk: Doc<'documentChunks'>; score: number }) => ({
+        chunk,
+        document,
+        score,
+      })
+    );
 }
 
 /**

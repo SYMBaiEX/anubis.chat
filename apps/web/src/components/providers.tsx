@@ -5,7 +5,7 @@ import { ConvexReactClient } from 'convex/react';
 import { SidebarProvider } from '@/contexts/SidebarContext';
 import { convexConfig, isDevelopment } from '@/lib/env';
 import { createModuleLogger } from '@/lib/utils/logger';
-import { UpgradeProvider } from './auth/upgrade-wrapper';
+import { UpgradeProvider } from './auth/upgradeWrapper';
 import { ConvexErrorBoundary } from './error/ConvexErrorBoundary';
 import { AuthProvider } from './providers/auth-provider';
 import { ClientOnlyWrapper } from './providers/client-only-wrapper';

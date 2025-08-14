@@ -1,6 +1,7 @@
 'use client';
 
 import { api } from '@convex/_generated/api';
+import type { Doc } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import {
   BookOpen,
@@ -9,6 +10,7 @@ import {
   Home,
   Info,
   Keyboard,
+  type LucideIcon,
   MessageSquare,
   Moon,
   Plus,
@@ -36,6 +38,14 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from '@/components/ui/command';
+
+interface CommandItem {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  action: () => void;
+  shortcut?: string;
+}
 
 export function globalCommandPalette() {
   const pathname = usePathname();
@@ -104,7 +114,7 @@ export function globalCommandPalette() {
   const altKey = isMac ? '⌥' : 'Alt+';
 
   // Sections
-  const promptCommands = (topPrompts || []).map((p) => ({
+  const promptCommands = (topPrompts || []).map((p: Doc<'prompts'>) => ({
     id: `prompt-${p._id}`,
     label: String(p.title),
     icon: FileText,
@@ -116,7 +126,7 @@ export function globalCommandPalette() {
 
   const recentChatCommands = (chats || [])
     .slice(0, 9)
-    .map((chat: any, index: number) => ({
+    .map((chat: Doc<'chats'>, index: number) => ({
       id: `chat-${chat._id}`,
       label: chat.title || `Chat ${index + 1}`,
       icon: MessageSquare,
@@ -310,7 +320,7 @@ export function globalCommandPalette() {
               <>
                 <CommandGroup heading="📖 Prompt Library">
                   {promptCommands.length > 0 ? (
-                    promptCommands.map((cmd) => (
+                    promptCommands.map((cmd: CommandItem) => (
                       <CommandItem
                         className="flex items-center justify-between"
                         key={cmd.id}
@@ -348,7 +358,7 @@ export function globalCommandPalette() {
             )}
 
             <CommandGroup heading="💬 Chat">
-              {coreCommands.map((cmd) => (
+              {coreCommands.map((cmd: CommandItem) => (
                 <CommandItem
                   className="flex items-center justify-between"
                   key={cmd.id}
@@ -370,7 +380,7 @@ export function globalCommandPalette() {
               <>
                 <CommandSeparator />
                 <CommandGroup heading="🕘 Recent Chats">
-                  {recentChatCommands.map((cmd) => (
+                  {recentChatCommands.map((cmd: CommandItem) => (
                     <CommandItem
                       className="flex items-center justify-between"
                       key={cmd.id}
@@ -392,7 +402,7 @@ export function globalCommandPalette() {
 
             <CommandSeparator />
             <CommandGroup heading="🤖 Models & Agents">
-              {modelAgentCommands.map((cmd) => (
+              {modelAgentCommands.map((cmd: CommandItem) => (
                 <CommandItem
                   className="flex items-center justify-between"
                   key={cmd.id}
@@ -412,7 +422,7 @@ export function globalCommandPalette() {
 
             <CommandSeparator />
             <CommandGroup heading="⚙️ Settings">
-              {settingsCommands.map((cmd) => (
+              {settingsCommands.map((cmd: CommandItem) => (
                 <CommandItem
                   className="flex items-center justify-between"
                   key={cmd.id}
@@ -432,7 +442,7 @@ export function globalCommandPalette() {
 
             <CommandSeparator />
             <CommandGroup heading="📚 Help & Info">
-              {helpCommands.map((cmd) => (
+              {helpCommands.map((cmd: CommandItem) => (
                 <CommandItem
                   className="flex items-center justify-between"
                   key={cmd.id}
@@ -452,7 +462,7 @@ export function globalCommandPalette() {
 
             <CommandSeparator />
             <CommandGroup heading="🧭 Navigation">
-              {navigationCommands.map((cmd) => (
+              {navigationCommands.map((cmd: CommandItem) => (
                 <CommandItem
                   className="flex items-center justify-between"
                   key={cmd.id}

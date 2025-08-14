@@ -452,7 +452,7 @@ export const generateAndUpdateTitle = action({
 
     // Filter to get only user and assistant messages (skip system messages)
     const conversationMessages = messages.filter(
-      (msg) => msg.role === 'user' || msg.role === 'assistant'
+      (msg: Doc<'messages'>) => msg.role === 'user' || msg.role === 'assistant'
     );
 
     if (conversationMessages.length === 0) {
@@ -462,7 +462,9 @@ export const generateAndUpdateTitle = action({
     // Prepare the conversation context for title generation
     const conversationText = conversationMessages
       .slice(0, 3) // Use first 3 messages max
-      .map((msg) => `${msg.role}: ${msg.content.slice(0, 200)}`)
+      .map(
+        (msg: Doc<'messages'>) => `${msg.role}: ${msg.content.slice(0, 200)}`
+      )
       .join('\n');
 
     try {
@@ -477,7 +479,7 @@ Title:`;
       // For now, we'll use a fallback approach since we need to integrate with the streaming API
       // Extract key topics from the first user message as a fallback
       const firstUserMessage = conversationMessages.find(
-        (msg) => msg.role === 'user'
+        (msg: Doc<'messages'>) => msg.role === 'user'
       );
       if (!firstUserMessage) {
         return { success: false, error: 'No user message found' };

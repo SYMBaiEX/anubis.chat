@@ -2,6 +2,16 @@ import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { getCurrentUser, requireAuth } from './authHelpers';
 
+// Query to get user by ID (for use in actions)
+export const getUserById = query({
+  args: {
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.userId);
+  },
+});
+
 // Get user by wallet address (used for streaming and legacy compatibility)
 export const getUserByWallet = query({
   args: {

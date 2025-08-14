@@ -1,7 +1,6 @@
 'use client';
 
 import { api } from '@convex/_generated/api';
-import type { Doc } from '@convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { Bot, Calendar, MessageSquare, TrendingUp, Zap } from 'lucide-react';
 import Link from 'next/link';
@@ -107,28 +106,44 @@ export default function DashboardPage() {
         totalCredits: number;
       };
 
+  type SubscriptionPaymentLike = {
+    id?: string;
+    tier?: string;
+    amountSol?: number;
+    status?: string;
+    paymentDate?: number;
+  };
+  type CreditPurchaseLike = {
+    id?: string;
+    priceSOL?: number;
+    status?: string;
+    createdAt?: number;
+    standardCredits?: number;
+    premiumCredits?: number;
+  };
+
   const recentPurchases: RecentPurchaseItem[] = useMemo(() => {
     const subRows: RecentPurchaseItem[] = (subscriptionPayments || []).map(
-      (p: Doc<'subscriptionPayments'>) => ({
+      (p: SubscriptionPaymentLike) => ({
         kind: 'subscription',
-        id: p._id as string,
-        title: `${String(p.tier).toUpperCase()} plan`,
-        amountSol: p.amountSol as number,
-        status: p.status as RecentPurchaseItem['status'],
-        date: p.paymentDate as number,
+        id: (p.id as string) ?? '',
+        title: `${String(p.tier ?? '').toUpperCase()} plan`,
+        amountSol: (p.amountSol as number) ?? 0,
+        status: (p.status as RecentPurchaseItem['status']) ?? 'pending',
+        date: (p.paymentDate as number) ?? 0,
       })
     );
     const creditRows: RecentPurchaseItem[] = (purchases || []).map(
-      (purchase: Doc<'messageCreditPurchases'>) => ({
+      (purchase: CreditPurchaseLike) => ({
         kind: 'credits',
-        id: purchase._id as string,
+        id: (purchase.id as string) ?? '',
         title: 'Message credits',
-        amountSol: purchase.priceSOL as number,
-        status: purchase.status as RecentPurchaseItem['status'],
-        date: purchase.createdAt as number,
+        amountSol: (purchase.priceSOL as number) ?? 0,
+        status: (purchase.status as RecentPurchaseItem['status']) ?? 'pending',
+        date: (purchase.createdAt as number) ?? 0,
         totalCredits:
-          (purchase.standardCredits as number) +
-          (purchase.premiumCredits as number),
+          ((purchase.standardCredits as number) ?? 0) +
+          ((purchase.premiumCredits as number) ?? 0),
       })
     );
     return [...subRows, ...creditRows].sort((a, b) => b.date - a.date);

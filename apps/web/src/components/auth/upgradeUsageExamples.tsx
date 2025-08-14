@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useFeatureGate } from '@/hooks/use-upgrade-modal';
-import { FeatureGate, useUpgrade } from './upgrade-wrapper';
+import { FeatureGate, useUpgrade } from './upgradeWrapper';
 
 /**
  * Example component showing how to use the upgrade system throughout the app

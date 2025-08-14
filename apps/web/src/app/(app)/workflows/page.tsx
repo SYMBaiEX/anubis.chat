@@ -16,7 +16,7 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { AdminGuard } from '@/components/auth/adminGuard';
-import { UpgradePrompt } from '@/components/auth/upgrade-prompt';
+import { UpgradePrompt } from '@/components/auth/upgradePrompt';
 import { useSubscriptionStatus } from '@/components/providers/auth-provider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';

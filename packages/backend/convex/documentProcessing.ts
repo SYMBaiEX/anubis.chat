@@ -5,7 +5,6 @@
 
 import { v } from 'convex/values';
 import { api } from './_generated/api';
-import type { Id } from './_generated/dataModel';
 import { action } from './_generated/server';
 import { createModuleLogger } from './utils/logger';
 
@@ -166,16 +165,26 @@ export const reprocessAllDocuments = action({
     ownerId: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    processedCount?: number;
+    errorCount?: number;
+    totalDocuments?: number;
+    error?: string;
+  }> => {
     try {
       const limit = args.limit || 50;
 
       // Get documents to reprocess
-      const documents = await ctx.runQuery(api.documents.getByOwner, {
+      const result = await ctx.runQuery(api.documents.getByOwner, {
         ownerId: args.ownerId || '',
         limit,
       });
 
+      const documents = result.documents || [];
       let processedCount = 0;
       let errorCount = 0;
 
@@ -190,10 +199,13 @@ export const reprocessAllDocuments = action({
           const content = await getDocumentContent(ctx, doc);
 
           if (content) {
-            const result = await ctx.runAction(processDocument, {
-              documentId: doc._id,
-              content,
-            });
+            const result = await ctx.runAction(
+              api.documentProcessing.processDocument,
+              {
+                documentId: doc._id,
+                content,
+              }
+            );
 
             if (result.success) {
               processedCount++;
@@ -230,7 +242,7 @@ export const reprocessAllDocuments = action({
  * This is a placeholder - implement based on your document storage strategy
  */
 async function getDocumentContent(
-  ctx: any,
+  _ctx: any,
   document: any
 ): Promise<string | null> {
   try {

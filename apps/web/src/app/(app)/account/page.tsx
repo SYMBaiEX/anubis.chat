@@ -3,7 +3,7 @@
 import { AlertTriangle, Loader, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { UpgradeModal } from '@/components/auth/upgrade-modal';
-import { UserProfile } from '@/components/auth/user-profile';
+import { UserProfile } from '@/components/auth/userProfile';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';

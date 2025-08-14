@@ -18,8 +18,13 @@ import { cn } from '@/lib/utils';
  * SubscriptionStatus component - Display subscription details and usage
  * Shows message usage, features, and upgrade options
  */
+export type CompatibleSubscription = SubscriptionData & {
+  isAdmin?: boolean;
+  availableModels?: string[];
+};
+
 interface ExtendedSubscriptionStatusProps {
-  subscription?: SubscriptionData | any; // Accept both new and legacy subscription format
+  subscription?: CompatibleSubscription;
   limits?: SubscriptionLimits | null;
   upgradePrompt?: UpgradePrompt;
   showUpgrade?: boolean;
@@ -50,25 +55,25 @@ export function SubscriptionStatus({
   }
 
   // Use messagesUsed/messagesLimit for new subscription system
-  const messagesUsed =
-    subscription.messagesUsed ?? subscription.tokensUsed ?? 0;
-  const messagesLimit =
-    subscription.messagesLimit ?? subscription.tokensLimit ?? 10_000;
+  const messagesUsed = subscription.messagesUsed ?? 0;
+  const messagesLimit = subscription.messagesLimit ?? 10_000;
   const premiumMessagesUsed = subscription.premiumMessagesUsed ?? 0;
   const premiumMessagesLimit = subscription.premiumMessagesLimit ?? 0;
 
   // Handle admin unlimited access (Infinity values)
   const isAdmin = subscription.tier === 'admin' || subscription.isAdmin;
-  const usagePercentage = isAdmin
-    ? 0
-    : messagesLimit > 0
-      ? Math.round((messagesUsed / messagesLimit) * 100)
-      : 0;
-  const premiumUsagePercentage = isAdmin
-    ? 0
-    : premiumMessagesLimit > 0
-      ? Math.round((premiumMessagesUsed / premiumMessagesLimit) * 100)
-      : 0;
+  let usagePercentage = 0;
+  if (!isAdmin) {
+    usagePercentage =
+      messagesLimit > 0 ? Math.round((messagesUsed / messagesLimit) * 100) : 0;
+  }
+  let premiumUsagePercentage = 0;
+  if (!isAdmin) {
+    premiumUsagePercentage =
+      premiumMessagesLimit > 0
+        ? Math.round((premiumMessagesUsed / premiumMessagesLimit) * 100)
+        : 0;
+  }
 
   // Use limits from the hook if available, otherwise calculate from subscription
   const canSendMessage = limits?.canSendMessage ?? messagesUsed < messagesLimit;
@@ -88,6 +93,19 @@ export function SubscriptionStatus({
       default:
         return <Crown className="h-5 w-5" />;
     }
+  };
+
+  const getTierLabel = (tier: string) => {
+    if (tier === 'admin') {
+      return 'Administrator';
+    }
+    if (tier === 'pro_plus') {
+      return 'Pro+ Plan';
+    }
+    if (tier === 'pro') {
+      return 'Pro Plan';
+    }
+    return 'Free Plan';
   };
 
   const getTierColor = (tier: string) => {
@@ -130,13 +148,7 @@ export function SubscriptionStatus({
             </div>
             <div>
               <h3 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-lg text-transparent">
-                {subscription.tier === 'admin'
-                  ? 'Administrator'
-                  : subscription.tier === 'pro_plus'
-                    ? 'Pro+ Plan'
-                    : subscription.tier === 'pro'
-                      ? 'Pro Plan'
-                      : 'Free Plan'}
+                {getTierLabel(subscription.tier)}
               </h3>
               <p className="text-gray-600 text-sm dark:text-gray-400">
                 {subscription.tier === 'admin'
@@ -233,7 +245,7 @@ export function SubscriptionStatus({
             Included Features
           </h4>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {subscription.features.map((feature: string, index: number) => {
+            {subscription.features.map((feature: string) => {
               // Format feature names for better display
               const formattedFeature = feature
                 .replace(/_/g, ' ')
@@ -242,7 +254,7 @@ export function SubscriptionStatus({
               return (
                 <div
                   className="flex items-center space-x-2 text-gray-600 text-sm dark:text-gray-400"
-                  key={index}
+                  key={feature}
                 >
                   <div className="h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
                   <span>{formattedFeature}</span>
@@ -261,13 +273,11 @@ export function SubscriptionStatus({
               Available AI Models
             </h4>
             <div className="flex flex-wrap gap-2">
-              {subscription.availableModels.map(
-                (model: string, index: number) => (
-                  <Badge key={index} variant="secondary">
-                    {model}
-                  </Badge>
-                )
-              )}
+              {subscription.availableModels.map((model: string) => (
+                <Badge key={model} variant="secondary">
+                  {model}
+                </Badge>
+              ))}
             </div>
           </Card>
         )}
@@ -304,14 +314,15 @@ export function SubscriptionStatus({
                 days
               </span>
             </div>
-            {subscription.isExpired && (
-              <div className="flex justify-between">
-                <span className="font-medium text-red-600 dark:text-red-400">
-                  Status:
-                </span>
-                <Badge variant="destructive">Expired</Badge>
-              </div>
-            )}
+            {subscription.currentPeriodEnd &&
+              subscription.currentPeriodEnd < Date.now() && (
+                <div className="flex justify-between">
+                  <span className="font-medium text-red-600 dark:text-red-400">
+                    Status:
+                  </span>
+                  <Badge variant="destructive">Expired</Badge>
+                </div>
+              )}
           </div>
         </Card>
       )}

@@ -2,7 +2,7 @@
 
 import { useChat } from '@ai-sdk/react';
 import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
+import type { Doc, Id } from '@convex/_generated/dataModel';
 import { TextStreamChatTransport } from 'ai';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -72,7 +72,7 @@ export function useEnhancedChat({
       return [];
     }
 
-    return convexMessages.map((msg) => ({
+    return convexMessages.map((msg: Doc<'messages'>) => ({
       id: msg._id,
       role: msg.role as 'user' | 'assistant' | 'system',
       content: msg.content,
@@ -85,7 +85,9 @@ export function useEnhancedChat({
 
   // Get memory context for current conversation
   const getMemoryContext = useCallback(async (): Promise<string> => {
-    if (!chatId) return '';
+    if (!chatId) {
+      return '';
+    }
 
     try {
       // Retrieve recent memories related to this conversation
@@ -136,11 +138,13 @@ export function useEnhancedChat({
 
   // Initialize memory system with existing messages
   const initializeMemoryFromConvex = useCallback(async () => {
-    if (!(chatId && convexMessages) || convexMessages.length === 0) return;
+    if (!(chatId && convexMessages) || convexMessages.length === 0) {
+      return;
+    }
 
     try {
       // Convert Convex messages to UIMessage format
-      const uiMessages = convexMessages.map((msg) => ({
+      const uiMessages = convexMessages.map((msg: Doc<'messages'>) => ({
         id: msg._id,
         role: msg.role as 'user' | 'assistant' | 'system',
         parts: [{ type: 'text' as const, text: msg.content }],
@@ -168,7 +172,7 @@ export function useEnhancedChat({
   // Update message from WebSocket streaming session
   useEffect(() => {
     if (streamingSession && isWebSocketStreaming) {
-      const isActive =
+      const _isActive =
         streamingSession.status === 'streaming' ||
         streamingSession.status === 'initializing';
 
@@ -261,7 +265,7 @@ export function useEnhancedChat({
   });
 
   // Determine active streaming status
-  const status = isWebSocketStreaming ? 'streaming' : aiStatus;
+  const _status = isWebSocketStreaming ? 'streaming' : aiStatus;
 
   // Enhanced send function with WebSocket streaming support
   const sendMessage = useCallback(
@@ -393,14 +397,16 @@ export function useEnhancedChat({
   const formattedMessages = useMemo((): MinimalMessage[] => {
     // If we have Convex messages, prefer them as source of truth
     if (convexMessages && convexMessages.length > 0) {
-      const convexMsgs: MinimalMessage[] = convexMessages.map((msg) => ({
-        _id: msg._id,
-        content: msg.content,
-        role: msg.role,
-        createdAt: msg.createdAt ?? msg._creationTime ?? Date.now(),
-        attachments: (msg as any).attachments || [],
-        metadata: msg.metadata,
-      }));
+      const convexMsgs: MinimalMessage[] = convexMessages.map(
+        (msg: Doc<'messages'>) => ({
+          _id: msg._id,
+          content: msg.content,
+          role: msg.role,
+          createdAt: msg.createdAt ?? msg._creationTime ?? Date.now(),
+          attachments: (msg as any).attachments || [],
+          metadata: msg.metadata,
+        })
+      );
 
       // Add WebSocket streaming message if active
       if (webSocketMessage) {

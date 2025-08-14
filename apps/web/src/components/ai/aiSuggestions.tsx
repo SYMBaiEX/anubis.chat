@@ -45,7 +45,7 @@ export function AISuggestions({
           <motion.div
             animate={{ opacity: 1, scale: 1 }}
             initial={{ opacity: 0, scale: 0.9 }}
-            key={index}
+            key={`chip-${suggestion}`}
             transition={{ delay: index * 0.05 }}
           >
             <Button
@@ -68,10 +68,10 @@ export function AISuggestions({
       <div className={cn('flex items-center gap-2 text-sm', className)}>
         <Sparkles className="h-4 w-4 text-muted-foreground" />
         <span className="text-muted-foreground">Try:</span>
-        {suggestions.slice(0, 2).map((suggestion, index) => (
+        {suggestions.slice(0, 2).map((suggestion, _index) => (
           <Button
             className="h-auto p-0 text-xs"
-            key={index}
+            key={`inline-${suggestion}`}
             onClick={() => onSelect(suggestion)}
             size="sm"
             variant="link"
@@ -95,7 +95,7 @@ export function AISuggestions({
         <motion.div
           animate={{ opacity: 1, x: 0 }}
           initial={{ opacity: 0, x: -20 }}
-          key={index}
+          key={`card-${suggestion}`}
           transition={{ delay: index * 0.05 }}
         >
           <Card

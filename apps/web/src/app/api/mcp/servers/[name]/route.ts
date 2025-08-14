@@ -11,7 +11,7 @@ import {
   addSecurityHeaders,
   successResponse,
   validationErrorResponse,
-} from '@/lib/utils/api-response';
+} from '@/lib/utils/apiResponse';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 // =============================================================================

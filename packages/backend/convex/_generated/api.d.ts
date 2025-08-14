@@ -22,6 +22,7 @@ import type * as documentProcessing from "../documentProcessing.js";
 import type * as documents from "../documents.js";
 import type * as embeddings from "../embeddings.js";
 import type * as env from "../env.js";
+import type * as fileDocuments from "../fileDocuments.js";
 import type * as fileProcessing from "../fileProcessing.js";
 import type * as fileValidation from "../fileValidation.js";
 import type * as files from "../files.js";
@@ -88,6 +89,7 @@ declare const fullApi: ApiFromModules<{
   documents: typeof documents;
   embeddings: typeof embeddings;
   env: typeof env;
+  fileDocuments: typeof fileDocuments;
   fileProcessing: typeof fileProcessing;
   fileValidation: typeof fileValidation;
   files: typeof files;

@@ -9,7 +9,7 @@ import { ConvexHttpClient } from 'convex/browser';
 import type { NextRequest } from 'next/server';
 import { convexConfig } from '@/lib/env';
 import { APIErrorCode } from '@/lib/types/api';
-import { createErrorResponse } from '@/lib/utils/api-response';
+import { createErrorResponse } from '@/lib/utils/apiResponse';
 import { createModuleLogger } from '@/lib/utils/logger';
 import { isValidSolanaAddress, verifyJWTToken } from './auth';
 

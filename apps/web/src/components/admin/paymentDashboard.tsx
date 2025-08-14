@@ -223,62 +223,60 @@ export function PaymentDashboard({ className }: PaymentDashboardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {alerts
-              .slice(0, 5)
-              .map(
-                (
-                  alert: {
-                    eventType: string;
-                    severity: string;
-                    timestamp: number;
-                    message: string;
-                  },
-                  alertIndex: number
-                ) => {
-                  const severityConfig = {
-                    critical: 'bg-red-100 text-red-800 border-red-200',
-                    error: 'bg-red-50 text-red-700 border-red-100',
-                    warning: 'bg-yellow-50 text-yellow-700 border-yellow-100',
-                  };
+            {alerts.slice(0, 5).map(
+              (
+                alert: {
+                  eventType: string;
+                  severity: string;
+                  timestamp: number;
+                  message: string;
+                },
+                alertIndex: number
+              ) => {
+                const severityConfig = {
+                  critical: 'bg-red-100 text-red-800 border-red-200',
+                  error: 'bg-red-50 text-red-700 border-red-100',
+                  warning: 'bg-yellow-50 text-yellow-700 border-yellow-100',
+                };
 
-                  return (
-                    <Alert
-                      className={
-                        severityConfig[
-                          alert.severity as keyof typeof severityConfig
-                        ]
-                      }
-                      key={`${alert.timestamp}-${alertIndex}`}
-                    >
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium text-sm">
-                              {alert.eventType.replace('_', ' ')}
-                            </div>
-                            <div className="text-xs opacity-90">
-                              {alert.message}
-                            </div>
-                            <div className="mt-1 text-xs opacity-75">
-                              {new Date(alert.timestamp).toLocaleString()}
-                            </div>
+                return (
+                  <Alert
+                    className={
+                      severityConfig[
+                        alert.severity as keyof typeof severityConfig
+                      ]
+                    }
+                    key={`${alert.timestamp}-${alertIndex}`}
+                  >
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">
+                            {alert.eventType.replace('_', ' ')}
                           </div>
-                          <Badge
-                            variant={
-                              alert.severity === 'critical'
-                                ? 'destructive'
-                                : 'secondary'
-                            }
-                          >
-                            {alert.severity}
-                          </Badge>
+                          <div className="text-xs opacity-90">
+                            {alert.message}
+                          </div>
+                          <div className="mt-1 text-xs opacity-75">
+                            {new Date(alert.timestamp).toLocaleString()}
+                          </div>
                         </div>
-                      </AlertDescription>
-                    </Alert>
-                  );
-                }
-              )}
+                        <Badge
+                          variant={
+                            alert.severity === 'critical'
+                              ? 'destructive'
+                              : 'secondary'
+                          }
+                        >
+                          {alert.severity}
+                        </Badge>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                );
+              }
+            )}
           </div>
         </CardContent>
       </Card>

@@ -7,8 +7,8 @@ import { EmptyState } from '@/components/data/empty-states';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { AIMessage as AIMessageType } from '@/hooks/use-ai-chat';
 import { cn } from '@/lib/utils';
-import { AIMessage } from './ai-message';
-import { AISuggestions } from './ai-suggestions';
+import { AIMessage } from './aiMessage';
+import { AISuggestions } from './aiSuggestions';
 
 interface ThreadProps {
   messages: AIMessageType[];
@@ -114,7 +114,8 @@ export const Thread = forwardRef<HTMLDivElement, ThreadProps>(
                         message={message}
                         onFeedback={
                           message.role === 'assistant' && onMessageFeedback
-                            ? (type) => onMessageFeedback(message.id, type)
+                            ? (type: 'positive' | 'negative') =>
+                                onMessageFeedback(message.id, type)
                             : undefined
                         }
                         onRegenerate={

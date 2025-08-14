@@ -218,14 +218,14 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   useEffect(() => {
     if (agents && agents.length > 0 && !selectedAgent) {
       const generalAgent =
-        agents.find((agent) => agent.type === 'general') || agents[0];
+        agents.find((agent: Agent) => agent.type === 'general') || agents[0];
       setSelectedAgent(generalAgent);
     }
   }, [agents, selectedAgent]);
 
   const selectAgent = useCallback(
     (agentId: string) => {
-      const agent = agents?.find((a) => a._id === agentId);
+      const agent = agents?.find((a: Agent) => a._id === agentId);
       if (agent) {
         setSelectedAgent(agent);
       }

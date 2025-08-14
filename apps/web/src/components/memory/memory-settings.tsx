@@ -1,6 +1,7 @@
 'use client';
 
 import { api, api as convexApi } from '@convex/_generated/api';
+import type { Doc } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import {
   Download,
@@ -91,7 +92,7 @@ export function MemorySettings({ userId }: MemorySettingsProps) {
 
     try {
       // Delete all memories one by one (since there's no bulk delete in the API)
-      const deletePromises = memories.map((memory) =>
+      const deletePromises = memories.map((memory: Doc<'memories'>) =>
         clearAllMemories({ id: memory._id })
       );
       await Promise.all(deletePromises);

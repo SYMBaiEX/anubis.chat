@@ -151,8 +151,8 @@ export function PaymentModal({
 
       setStep('success');
       onSuccess?.();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Payment failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Payment failed');
       setStep('error');
     } finally {
       setIsProcessing(false);
@@ -223,8 +223,8 @@ export function PaymentModal({
               </div>
 
               <ul className="space-y-2 text-sm">
-                {config.features.map((feature, index) => (
-                  <li className="flex items-start gap-2" key={index}>
+                {config.features.map((feature) => (
+                  <li className="flex items-start gap-2" key={feature}>
                     <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
                     <span>{feature}</span>
                   </li>

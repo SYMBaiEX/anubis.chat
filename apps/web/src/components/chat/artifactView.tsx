@@ -46,7 +46,9 @@ export function ArtifactView({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  if (!(isOpen && artifact)) return null;
+  if (!(isOpen && artifact)) {
+    return null;
+  }
 
   const handleCopy = async () => {
     const textToCopy = artifact.code || artifact.content || '';
@@ -55,7 +57,7 @@ export function ArtifactView({
       setCopied(true);
       toast.success('Copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to copy');
     }
   };
@@ -102,11 +104,9 @@ export function ArtifactView({
     if (artifact.type === 'markdown' || artifact.type === 'document') {
       return (
         <div className="prose prose-sm dark:prose-invert h-full max-w-none overflow-auto p-6">
-          <div
-            dangerouslySetInnerHTML={{
-              __html: artifact.content || '',
-            }}
-          />
+          <pre className="whitespace-pre-wrap break-words text-sm">
+            {artifact.content || ''}
+          </pre>
         </div>
       );
     }

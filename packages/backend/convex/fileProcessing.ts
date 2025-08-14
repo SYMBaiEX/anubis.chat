@@ -8,7 +8,7 @@
 import { v } from 'convex/values';
 import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
-import { action, mutation } from './_generated/server';
+import { action } from './_generated/server';
 import { createModuleLogger } from './utils/logger';
 
 const logger = createModuleLogger('file-processing');
@@ -29,7 +29,7 @@ const SUPPORTED_MIME_TYPES = {
 };
 
 // File size limits by type (in bytes)
-const FILE_SIZE_LIMITS = {
+const _FILE_SIZE_LIMITS = {
   text: 10 * 1024 * 1024, // 10MB
   pdf: 50 * 1024 * 1024, // 50MB
   image: 20 * 1024 * 1024, // 20MB
@@ -56,7 +56,19 @@ export const processFileForRAG = action({
     fileName: v.string(),
     mimeType: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    documentId?: string;
+    chunks?: number;
+    error?: string;
+    textExtracted?: boolean;
+    textLength?: number;
+    processingTime?: number;
+    warning?: string;
+  }> => {
     const startTime = Date.now();
 
     try {
@@ -71,7 +83,7 @@ export const processFileForRAG = action({
       }
 
       // Get the file data from storage with timeout
-      const file = await Promise.race([
+      const file = (await Promise.race([
         ctx.runQuery(api.files.get, {
           fileId: args.fileId,
           walletAddress: args.walletAddress,
@@ -79,7 +91,7 @@ export const processFileForRAG = action({
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('File retrieval timeout')), 30_000)
         ),
-      ]);
+      ])) as any; // Type assertion needed due to Promise.race
 
       if (!file) {
         logger.warn('File not found for RAG processing', {
@@ -89,7 +101,11 @@ export const processFileForRAG = action({
       }
 
       // Validate file size (if available)
-      if (file.size && file.size > 50 * 1024 * 1024) {
+      if (
+        'size' in file &&
+        typeof file.size === 'number' &&
+        file.size > 50 * 1024 * 1024
+      ) {
         // 50MB limit
         logger.warn('File too large for processing', {
           fileId: args.fileId,
@@ -155,14 +171,17 @@ export const processFileForRAG = action({
       }
 
       // Create document record for the file
-      const documentId = await ctx.runMutation(createFileDocument, {
-        messageId: args.messageId,
-        fileId: args.fileId,
-        walletAddress: args.walletAddress,
-        fileName: args.fileName,
-        mimeType: args.mimeType,
-        extractedText,
-      });
+      const documentId = await ctx.runMutation(
+        api.fileDocuments.createFileDocument,
+        {
+          messageId: args.messageId,
+          fileId: args.fileId,
+          walletAddress: args.walletAddress,
+          fileName: args.fileName,
+          mimeType: args.mimeType,
+          extractedText,
+        }
+      );
 
       // Process text into searchable chunks with error handling
       try {
@@ -336,7 +355,7 @@ async function extractPDFContent(ctx: any, file: any): Promise<string> {
  * Handle image files - skip text extraction since images are handled visually by multi-modal models
  */
 async function extractImageContent(
-  ctx: any,
+  _ctx: any,
   file: any,
   fileName: string
 ): Promise<string> {
@@ -354,55 +373,6 @@ async function extractImageContent(
 }
 
 /**
- * Create document record for the uploaded file
- */
-const createFileDocument = mutation({
-  args: {
-    messageId: v.id('messages'),
-    fileId: v.string(),
-    walletAddress: v.string(),
-    fileName: v.string(),
-    mimeType: v.string(),
-    extractedText: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-
-    // Determine document type based on MIME type
-    const fileCategory = getFileTypeCategory(args.mimeType);
-    const docType =
-      fileCategory === 'text'
-        ? 'text'
-        : fileCategory === 'pdf'
-          ? 'pdf'
-          : 'text'; // fallback to text
-
-    const documentId = await ctx.db.insert('documents', {
-      ownerId: args.walletAddress,
-      title: args.fileName,
-      content: args.extractedText,
-      type: docType,
-      isPublic: false,
-      metadata: {
-        source: 'file_upload',
-        originalFileId: args.fileId,
-        messageId: args.messageId,
-        mimeType: args.mimeType,
-        category: fileCategory,
-        wordCount: args.extractedText
-          .split(/\s+/)
-          .filter((word) => word.length > 0).length,
-        characterCount: args.extractedText.length,
-      },
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    return documentId;
-  },
-});
-
-/**
  * Batch process multiple files from a message
  */
 export const processMessageAttachments = action({
@@ -410,7 +380,15 @@ export const processMessageAttachments = action({
     messageId: v.id('messages'),
     walletAddress: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    processed?: number;
+    failed?: number;
+    error?: string;
+  }> => {
     try {
       // Get the message with attachments
       const message = await ctx.runQuery(api.messages.getById, {
@@ -425,20 +403,23 @@ export const processMessageAttachments = action({
       const attachments = metadata?.attachments;
 
       if (!attachments || attachments.length === 0) {
-        return { success: true, filesProcessed: 0 };
+        return { success: true, processed: 0 };
       }
 
       const results = [];
 
       // Process each attachment
       for (const attachment of attachments) {
-        const result = await ctx.runAction(processFileForRAG, {
-          messageId: args.messageId,
-          fileId: attachment.fileId,
-          walletAddress: args.walletAddress,
-          fileName: `file_${attachment.fileId}`,
-          mimeType: attachment.mimeType,
-        });
+        const result = await ctx.runAction(
+          api.fileProcessing.processFileForRAG,
+          {
+            messageId: args.messageId,
+            fileId: attachment.fileId,
+            walletAddress: args.walletAddress,
+            fileName: `file_${attachment.fileId}`,
+            mimeType: attachment.mimeType,
+          }
+        );
 
         results.push({
           fileId: attachment.fileId,
@@ -456,8 +437,8 @@ export const processMessageAttachments = action({
 
       return {
         success: true,
-        filesProcessed: successCount,
-        results,
+        processed: successCount,
+        failed: results.length - successCount,
       };
     } catch (error) {
       logger.error('Failed to batch process message attachments', error, {
@@ -575,6 +556,6 @@ function getFileTypeCategory(mimeType: string): string {
 /**
  * Check if file type is supported for content extraction
  */
-function isFileTypeSupported(mimeType: string): boolean {
+function _isFileTypeSupported(mimeType: string): boolean {
   return getFileTypeCategory(mimeType) !== 'unknown';
 }

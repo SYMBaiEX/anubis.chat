@@ -18,7 +18,7 @@ import {
   createdResponse,
   successResponse,
   validationErrorResponse,
-} from '@/lib/utils/api-response';
+} from '@/lib/utils/apiResponse';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('mcp-servers-api');
@@ -82,7 +82,12 @@ const toolSchemaSchema = z.object({
 const initServerSchema = z.object({
   name: z.string().min(1),
   transport: z.object({
-    type: z.nativeEnum(MCPTransportType),
+    type: z.enum([
+      MCPTransportType.STDIO,
+      MCPTransportType.SSE,
+      MCPTransportType.HTTP,
+      MCPTransportType.WEBSOCKET,
+    ]),
     command: z.string().optional(),
     args: z.array(z.string()).optional(),
     url: z.string().optional(),

@@ -15,7 +15,7 @@ import {
   internalErrorResponse,
   successResponse,
   validationErrorResponse,
-} from '@/lib/utils/api-response';
+} from '@/lib/utils/apiResponse';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('payment-webhook-api');

@@ -150,7 +150,10 @@ function getSafeSubscription(user: {
     autoRenew: Boolean(candidate?.autoRenew),
     planPriceSol: candidate?.planPriceSol ?? tierDefaults.priceSol,
     features: candidate?.features ?? tierDefaults.features,
-    subscriptionTxSignature: (candidate as any)?.subscriptionTxSignature ?? '',
+    subscriptionTxSignature:
+      typeof candidate?.subscriptionTxSignature === 'string'
+        ? candidate.subscriptionTxSignature
+        : '',
   };
 }
 
@@ -438,27 +441,24 @@ export const trackDetailedMessageUsage = mutation({
       } else {
         throw new Error('No premium messages or credits available');
       }
-    } else {
+    } else if (planMessagesAvailable > 0) {
       // For standard models, consume from plan messages first, then standard credits
-      if (planMessagesAvailable > 0) {
-        // Use plan messages first
-        updates = {
-          subscription: {
-            ...sub,
-            messagesUsed: sub.messagesUsed + 1,
-          },
-        };
-      } else if (sub.messageCredits > 0) {
-        // Fall back to message credits
-        updates = {
-          subscription: {
-            ...sub,
-            messageCredits: sub.messageCredits - 1,
-          },
-        };
-      } else {
-        throw new Error('No standard messages or credits available');
-      }
+      updates = {
+        subscription: {
+          ...sub,
+          messagesUsed: sub.messagesUsed + 1,
+        },
+      };
+    } else if (sub.messageCredits > 0) {
+      // Fall back to message credits
+      updates = {
+        subscription: {
+          ...sub,
+          messageCredits: sub.messageCredits - 1,
+        },
+      };
+    } else {
+      throw new Error('No standard messages or credits available');
     }
 
     await ctx.db.patch(user._id, {
@@ -878,7 +878,9 @@ export const processVerifiedPayment = internalMutation({
             referralProcessed = true;
           }
         }
-      } catch (_referralError) {}
+      } catch (_referralError) {
+        // Intentionally ignore referral errors to avoid blocking payment processing
+      }
     }
 
     // Also process explicit referral code if provided (for backward compatibility and first-time conversions)
@@ -961,7 +963,9 @@ export const processVerifiedPayment = internalMutation({
             }
           }
         }
-      } catch (_referralError) {}
+      } catch (_referralError) {
+        // Intentionally ignore referral errors to avoid blocking payment processing
+      }
     }
 
     return {
@@ -1196,28 +1200,30 @@ export const resetMonthlyUsage = mutation({
     // Get all users whose billing period has ended
     const users = await ctx.db.query('users').collect();
 
-    for (const user of users) {
-      if (
-        user.subscription?.currentPeriodEnd &&
-        user.subscription.currentPeriodEnd <= now
-      ) {
-        // Reset usage for new period
-        const periodEnd = now + 30 * 24 * 60 * 60 * 1000; // 30 days
-
-        try {
-          await ctx.db.patch(user._id, {
-            subscription: {
-              ...user.subscription,
-              messagesUsed: 0,
-              premiumMessagesUsed: 0,
-              currentPeriodStart: now,
-              currentPeriodEnd: periodEnd,
-            },
-            updatedAt: now,
-          });
-        } catch (_error) {}
-      }
-    }
+    await Promise.all(
+      users.map(async (user) => {
+        if (
+          user.subscription?.currentPeriodEnd &&
+          user.subscription.currentPeriodEnd <= now
+        ) {
+          const periodEnd = now + 30 * 24 * 60 * 60 * 1000; // 30 days
+          try {
+            await ctx.db.patch(user._id, {
+              subscription: {
+                ...user.subscription,
+                messagesUsed: 0,
+                premiumMessagesUsed: 0,
+                currentPeriodStart: now,
+                currentPeriodEnd: periodEnd,
+              },
+              updatedAt: now,
+            });
+          } catch (_error) {
+            // ignore individual failures and continue
+          }
+        }
+      })
+    );
 
     return { success: true, usersReset: users.length };
   },
@@ -1393,12 +1399,14 @@ export const initializeModelQuotas = mutation({
       },
     ];
 
-    for (const quota of quotas) {
-      await ctx.db.insert('modelQuotas', {
-        ...quota,
-        updatedAt: Date.now(),
-      });
-    }
+    await Promise.all(
+      quotas.map((quota) =>
+        ctx.db.insert('modelQuotas', {
+          ...quota,
+          updatedAt: Date.now(),
+        })
+      )
+    );
 
     return { success: true, quotasCreated: quotas.length };
   },
@@ -1606,7 +1614,8 @@ export const processVerifiedMessageCreditPurchase = internalMutation({
             // Create referral payout record for message credit purchase
             // Note: Using purchase ID string representation since paymentId expects subscriptionPayments ID
             await ctx.db.insert('referralPayouts', {
-              paymentId: purchase._id as any, // Using purchase ID for message credit referrals
+              // Using purchase ID string for message credit referrals (schema accepts string)
+              paymentId: purchase._id,
               referralCode: referredByCode,
               referrerId: user.referredBy,
               referrerWalletAddress: referrer.walletAddress,
@@ -1632,7 +1641,9 @@ export const processVerifiedMessageCreditPurchase = internalMutation({
             referralProcessed = true;
           }
         }
-      } catch (_referralError) {}
+      } catch (_referralError) {
+        // Intentionally ignore referral errors to avoid blocking credit processing
+      }
     }
 
     return {
