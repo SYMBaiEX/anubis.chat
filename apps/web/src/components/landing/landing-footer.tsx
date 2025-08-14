@@ -40,7 +40,7 @@ export default function LandingFooter() {
           <Link
             aria-label="Twitter"
             className="text-foreground/60 transition-colors duration-200 hover:text-primary"
-            href="https://twitter.com"
+            href="https://x.com/AnubisChat"
             rel="noopener noreferrer"
             target="_blank"
           >
