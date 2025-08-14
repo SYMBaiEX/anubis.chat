@@ -865,16 +865,14 @@ html {
 
 /* Tablet-Specific Breakpoints */
 @media (min-width: 768px) and (max-width: 1024px) {
-  /* iPad and similar tablets */
-  .sidebar-open {
-    width: 280px !important;
+  /* iPad and similar tablets - Only apply to expanded sidebar */
+  aside:not(.sidebar-collapsed) {
+    width: 280px;
   }
   
-  aside {
-    width: 280px !important;
-  }
-  
-  .main-content {
+  /* Adjust main content offset only when sidebar is expanded */
+  body:has(aside:not(.sidebar-collapsed)) .main-content,
+  .main-content:has(~ aside:not(.sidebar-collapsed)) {
     margin-left: 280px;
   }
   
@@ -886,16 +884,14 @@ html {
 }
 
 @media (min-width: 1024px) and (max-width: 1366px) {
-  /* iPad Pro and larger tablets */
-  .sidebar-open {
-    width: 320px !important;
-  }
-  
+  /* iPad Pro and larger tablets - Only apply to expanded sidebar */
   aside:not(.sidebar-collapsed) {
-    width: 320px !important;
+    width: 320px;
   }
   
-  .main-content {
+  /* Adjust main content offset only when sidebar is expanded */
+  body:has(aside:not(.sidebar-collapsed)) .main-content,
+  .main-content:has(~ aside:not(.sidebar-collapsed)) {
     margin-left: 320px;
   }
   
@@ -910,15 +906,16 @@ html {
 @media (orientation: landscape) and (max-height: 500px) {
   /* Reduce header height in landscape */
   .header,
-  header {
-    height: 50px !important;
-    min-height: 50px !important;
+  header,
+  [data-component="header"] {
+    height: 50px;
+    min-height: 50px;
   }
   
   /* Limit chat input height */
   .chat-input,
   textarea.chat-input {
-    max-height: 100px !important;
+    max-height: 100px;
   }
   
   /* Adjust sidebar for landscape */
@@ -927,16 +924,15 @@ html {
     padding-bottom: 0.5rem;
   }
   
-  /* Reduce vertical spacing */
-  .space-y-4 > :not([hidden]) ~ :not([hidden]) {
-    --tw-space-y-reverse: 0;
-    margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse))) !important;
-    margin-bottom: calc(0.5rem * var(--tw-space-y-reverse)) !important;
+  /* Reduce vertical spacing - target margin instead of gap */
+  .space-y-4 > * + * {
+    margin-top: 0.5rem;
   }
   
+  /* Reduce padding for better use of vertical space */
   .py-4 {
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
   }
 }
 
@@ -944,7 +940,7 @@ html {
   /* Further adjustments for slightly larger landscape screens */
   .chat-input,
   textarea.chat-input {
-    max-height: 120px !important;
+    max-height: 120px;
   }
 }
 
@@ -961,11 +957,17 @@ html {
     container-name: bubble;
   }
   
+  /* Define base styles for message content */
+  .message-content {
+    display: grid;
+    align-items: start;
+    gap: 0.75rem;
+  }
+  
   /* Responsive message content based on container width */
   @container message (min-width: 400px) {
     .message-content {
-      display: grid;
-      grid-template-columns: 60px 1fr;
+      grid-template-columns: auto 1fr;
       gap: 1rem;
     }
     
@@ -1018,24 +1020,41 @@ html {
 
 /* Fallback for browsers without container query support */
 @supports not (container-type: inline-size) {
+  /* Base styles for message content */
+  .message-content {
+    display: grid;
+    align-items: start;
+    gap: 0.75rem;
+  }
+  
   /* Use regular media queries as fallback */
   @media (max-width: 640px) {
     .message-content {
       grid-template-columns: 1fr;
+      gap: 0.5rem;
     }
     
     .message-avatar {
       display: none;
     }
+    
+    .message-text {
+      font-size: 0.875rem;
+    }
   }
   
   @media (min-width: 641px) {
     .message-content {
-      grid-template-columns: 60px 1fr;
+      grid-template-columns: auto 1fr;
+      gap: 1rem;
     }
     
     .message-avatar {
       display: block;
+    }
+    
+    .message-text {
+      font-size: 1rem;
     }
   }
 }
