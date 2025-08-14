@@ -46,6 +46,7 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/prismjs": "^1.26.5",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@xyflow/react": "^12.8.3",
     "ai": "^5.0.5",
     "animejs": "3.2.1",
     "bs58": "^6.0.0",

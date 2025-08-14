@@ -1,5 +1,5 @@
 {
-  "installCommand": "npx bun@latest install",
-  "buildCommand": "npx bun@latest run build",
-  "framework": "nextjs"
+  "buildCommand": "bunx turbo build --filter=web",
+  "installCommand": "bun install",
+  "ignoreCommand": "bunx turbo-ignore"
 }

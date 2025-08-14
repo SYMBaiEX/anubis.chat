@@ -6,13 +6,15 @@
     "bun": ">=1.0.0"
   },
   "workspaces": [
-    "apps/*",
+    "apps/web",
     "packages/*"
   ],
   "scripts": {
     "check": "biome check --write .",
-    "dev": "turbo dev",
-    "build": "turbo build",
+    "dev": "turbo dev --filter=!fumadocs",
+    "dev:all": "turbo dev",
+    "build": "turbo build --filter=!fumadocs",
+    "build:all": "turbo build",
     "check-types": "turbo check-types",
     "dev:native": "turbo -F native dev",
     "dev:web": "turbo -F web dev",
