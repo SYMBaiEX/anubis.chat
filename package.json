@@ -7,7 +7,7 @@
   },
   "workspaces": [
     "apps/web",
-    "packages/*"
+    "packages/backend"
   ],
   "scripts": {
     "check": "biome check --write .",
