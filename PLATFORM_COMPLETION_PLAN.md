@@ -266,7 +266,7 @@ describe('smoke', () => {
 ## Implementation Workstreams
 
 1) Security Hardening (Auth, Headers, Rate Limits)
-- Deliverables: ed25519 verification; site-wide CSP/HSTS; shared limiter on Convex HTTP.
+- Deliverables: [x] ed25519 verification; site-wide CSP/HSTS; shared limiter on Convex HTTP.
 - Exit: All security tests pass; headers present; unauthorized blocked.
 
 2) Reliability & Payments
