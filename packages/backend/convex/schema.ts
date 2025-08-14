@@ -354,9 +354,6 @@ export default defineSchema({
     publicKey: v.string(),
     nonce: v.string(),
     challenge: v.string(),
-    // Optional SIWS-style metadata for stronger validation
-    domain: v.optional(v.string()),
-    issuedAt: v.optional(v.number()),
     expiresAt: v.number(),
     createdAt: v.number(),
     used: v.boolean(),
