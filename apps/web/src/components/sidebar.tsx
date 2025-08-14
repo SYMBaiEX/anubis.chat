@@ -155,8 +155,10 @@ export default function Sidebar() {
       <aside
         className={cn(
           'fixed top-0 left-0 z-40 h-[calc(100vh-2.5rem)] overflow-hidden border-sidebar-border border-r bg-sidebar-background/95 backdrop-blur transition-all duration-300 supports-[backdrop-filter]:bg-sidebar-background/80',
-          isCollapsed ? 'w-14' : 'w-56',
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          isCollapsed ? 'w-14 sidebar-collapsed' : 'w-56 md:w-64 lg:w-56',
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          // Add container query support
+          'sidebar-content'
         )}
       >
         <div className="flex h-full flex-col">
@@ -293,7 +295,7 @@ export default function Sidebar() {
                       {item.icon && (
                         <item.icon
                           className={cn(
-                            'h-5 w-5 flex-shrink-0 transition-colors',
+                            'h-5 w-5 flex-shrink-0 transition-colors sidebar-icon',
                             isActive
                               ? 'text-sidebar-primary-foreground'
                               : 'text-sidebar-primary'
@@ -302,7 +304,7 @@ export default function Sidebar() {
                       )}
                       {!isCollapsed && (
                         <>
-                          <span className="flex-1 text-sm">{item.label}</span>
+                          <span className="flex-1 text-sm sidebar-text">{item.label}</span>
                           {item.devOnly && (
                             <span className="rounded-full bg-anubis-accent px-1.5 py-0 text-[9px] text-white">
                               DEV
@@ -361,8 +363,8 @@ export default function Sidebar() {
                   href={item.href}
                   key={item.href}
                 >
-                  {item.icon}
-                  {!isCollapsed && <span>{item.label}</span>}
+                  <span className="sidebar-icon">{item.icon}</span>
+                  {!isCollapsed && <span className="sidebar-text">{item.label}</span>}
                 </Link>
               );
             })}

@@ -863,6 +863,202 @@ html {
   }
 }
 
+/* Tablet-Specific Breakpoints */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* iPad and similar tablets - Only apply to expanded sidebar */
+  aside:not(.sidebar-collapsed) {
+    width: 280px;
+  }
+  
+  /* Adjust main content offset only when sidebar is expanded */
+  body:has(aside:not(.sidebar-collapsed)) .main-content,
+  .main-content:has(~ aside:not(.sidebar-collapsed)) {
+    margin-left: 280px;
+  }
+  
+  /* Adjust chat interface for tablets */
+  .chat-container {
+    max-width: 100%;
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1366px) {
+  /* iPad Pro and larger tablets - Only apply to expanded sidebar */
+  aside:not(.sidebar-collapsed) {
+    width: 320px;
+  }
+  
+  /* Adjust main content offset only when sidebar is expanded */
+  body:has(aside:not(.sidebar-collapsed)) .main-content,
+  .main-content:has(~ aside:not(.sidebar-collapsed)) {
+    margin-left: 320px;
+  }
+  
+  /* Optimize chat layout for iPad Pro */
+  .chat-container {
+    max-width: 100%;
+    padding: 1.5rem;
+  }
+}
+
+/* Landscape Orientation Fixes */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Reduce header height in landscape */
+  .header,
+  header,
+  [data-component="header"] {
+    height: 50px;
+    min-height: 50px;
+  }
+  
+  /* Limit chat input height */
+  .chat-input,
+  textarea.chat-input {
+    max-height: 100px;
+  }
+  
+  /* Adjust sidebar for landscape */
+  aside {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  /* Reduce vertical spacing - target margin instead of gap */
+  .space-y-4 > * + * {
+    margin-top: 0.5rem;
+  }
+  
+  /* Reduce padding for better use of vertical space */
+  .py-4 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  /* Further adjustments for slightly larger landscape screens */
+  .chat-input,
+  textarea.chat-input {
+    max-height: 120px;
+  }
+}
+
+/* Container Queries Support */
+@supports (container-type: inline-size) {
+  /* Message container queries */
+  .chat-message {
+    container-type: inline-size;
+    container-name: message;
+  }
+  
+  .message-bubble {
+    container-type: inline-size;
+    container-name: bubble;
+  }
+  
+  /* Define base styles for message content */
+  .message-content {
+    display: grid;
+    align-items: start;
+    gap: 0.75rem;
+  }
+  
+  /* Responsive message content based on container width */
+  @container message (min-width: 400px) {
+    .message-content {
+      grid-template-columns: auto 1fr;
+      gap: 1rem;
+    }
+    
+    .message-avatar {
+      display: block;
+    }
+    
+    .message-text {
+      font-size: 1rem;
+    }
+  }
+  
+  @container message (max-width: 399px) {
+    .message-content {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+    
+    .message-avatar {
+      display: none;
+    }
+    
+    .message-text {
+      font-size: 0.875rem;
+    }
+  }
+  
+  /* Sidebar container queries */
+  .sidebar-content {
+    container-type: inline-size;
+    container-name: sidebar;
+  }
+  
+  @container sidebar (max-width: 200px) {
+    .sidebar-text {
+      display: none;
+    }
+    
+    .sidebar-icon {
+      margin: 0 auto;
+    }
+  }
+  
+  @container sidebar (min-width: 201px) {
+    .sidebar-text {
+      display: block;
+    }
+  }
+}
+
+/* Fallback for browsers without container query support */
+@supports not (container-type: inline-size) {
+  /* Base styles for message content */
+  .message-content {
+    display: grid;
+    align-items: start;
+    gap: 0.75rem;
+  }
+  
+  /* Use regular media queries as fallback */
+  @media (max-width: 640px) {
+    .message-content {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+    
+    .message-avatar {
+      display: none;
+    }
+    
+    .message-text {
+      font-size: 0.875rem;
+    }
+  }
+  
+  @media (min-width: 641px) {
+    .message-content {
+      grid-template-columns: auto 1fr;
+      gap: 1rem;
+    }
+    
+    .message-avatar {
+      display: block;
+    }
+    
+    .message-text {
+      font-size: 1rem;
+    }
+  }
+}
+
 /* Print Styles */
 @media print {
   .no-print {

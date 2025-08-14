@@ -263,7 +263,7 @@ export function MessageList({
       className={cn('relative flex h-full flex-col overflow-hidden', className)}
     >
       <ScrollArea
-        className="flex-1 overflow-x-hidden"
+        className="flex-1 overflow-x-hidden chat-message"
         onScrollCapture={handleScroll}
         ref={scrollRef}
       >

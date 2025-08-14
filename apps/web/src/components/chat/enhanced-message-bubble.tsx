@@ -460,14 +460,14 @@ export function EnhancedMessageBubble({
       <motion.div
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          'group relative flex gap-3',
+          'group relative flex gap-3 message-bubble',
           isUser ? 'flex-row-reverse' : 'flex-row',
           className
         )}
         initial={{ opacity: 0, y: 20 }}
       >
         {/* Avatar */}
-        <Avatar className="h-8 w-8 shrink-0">
+        <Avatar className="h-8 w-8 shrink-0 message-avatar">
           <AvatarImage
             alt={isUser ? user?.displayName || 'User' : 'Anubis'}
             src={isUser ? user?.avatar : '/assets/logoNoText.png'}
@@ -493,7 +493,7 @@ export function EnhancedMessageBubble({
         {/* Message content */}
         <div
           className={cn(
-            'relative max-w-[70%] space-y-2',
+            'relative max-w-[70%] space-y-2 message-content',
             isUser ? 'items-end' : 'items-start'
           )}
         >
@@ -505,7 +505,7 @@ export function EnhancedMessageBubble({
             )}
           >
             {/* Render all message parts */}
-            <div className="space-y-2">
+            <div className="space-y-2 message-text">
               {message.parts.map((part, index) => renderPart(part, index))}
             </div>
 
