@@ -131,6 +131,9 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 // =============================================================================
 
 import { v } from 'convex/values';
+import nacl from 'tweetnacl';
+import bs58 from 'bs58';
+import { PublicKey } from '@solana/web3.js';
 import { internal } from './_generated/api';
 import { internalMutation, mutation } from './_generated/server';
 
@@ -146,7 +149,7 @@ export const verifyAndSignIn = internalMutation({
     nonce: v.string(),
   },
   handler: async (ctx, args) => {
-    const { publicKey, signature: _signature, message, nonce } = args;
+    const { publicKey, signature, message, nonce } = args;
 
     // Verify the challenge
     const storedChallenge = await ctx.db
@@ -165,9 +168,45 @@ export const verifyAndSignIn = internalMutation({
       throw new Error('Invalid or expired authentication challenge');
     }
 
-    // Mark challenge as used
-    await ctx.db.patch(storedChallenge._id, { used: true });
+    // SIWS-style validations (if fields present)
+    if (storedChallenge.domain) {
+      const expectedDomain = storedChallenge.domain;
+      if (!message.includes(`Domain: ${expectedDomain}`)) {
+        throw new Error('Challenge domain mismatch');
+      }
+    }
+    if (storedChallenge.issuedAt) {
+      if (!message.includes('Issued At:')) {
+        throw new Error('Challenge missing issuedAt');
+      }
+    }
 
+    // Quick sanity checks to avoid throwing deep in crypto
+    const publicKeyBytes = new PublicKey(publicKey).toBytes();
+    const signatureBytes = bs58.decode(signature);
+    if (signatureBytes.length !== nacl.sign.signatureLength) {
+      throw new Error('Invalid signature length');
+    }
+    if (publicKeyBytes.length !== nacl.sign.publicKeyLength) {
+      throw new Error('Invalid public key length');
+    }
+
+    // Verify ed25519 signature BEFORE marking challenge as used
+    try {
+      const messageBytes = new TextEncoder().encode(message);
+      const isValid = nacl.sign.detached.verify(
+        messageBytes,
+        signatureBytes,
+        publicKeyBytes
+      );
+      if (!isValid) {
+        throw new Error('Invalid signature for provided message and public key');
+      }
+    } catch (_e) {
+      throw new Error('Signature verification failed');
+    }
+    // Only now invalidate the challenge (atomic single-use)
+    await ctx.db.delete(storedChallenge._id);
     // Check if user already exists
     const existingUser = await ctx.db
       .query('users')
@@ -281,15 +320,17 @@ export const verifyAndSignIn = internalMutation({
 export const createWalletChallenge = mutation({
   args: {
     publicKey: v.string(),
+    // Optional: allow client to pass domain for SIWS message (defaults to SITE_URL host)
+    domain: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
     const expiresAt = now + 5 * 60 * 1000; // 5 minutes
-    const nonce =
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15);
-
-    const challenge = `Sign this message to authenticate with anubis.chat:\nNonce: ${nonce}\nTimestamp: ${now}`;
+    const nonce = crypto.randomUUID();
+    const domain = args.domain || (process.env.SITE_URL || 'anubis.chat');
+    const host = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const issuedAt = now;
+    const challenge = buildSiwsChallenge(domain, args.publicKey, nonce, issuedAt, expiresAt);
 
     // Clean up any existing challenges for this public key
     const existingChallenges = await ctx.db
@@ -306,6 +347,8 @@ export const createWalletChallenge = mutation({
       publicKey: args.publicKey,
       nonce,
       challenge,
+      domain: host,
+      issuedAt,
       expiresAt,
       createdAt: now,
       used: false,
@@ -315,6 +358,8 @@ export const createWalletChallenge = mutation({
       challenge,
       nonce,
       expiresAt: new Date(expiresAt).toISOString(),
+      domain: host,
+      issuedAt: new Date(issuedAt).toISOString(),
     };
   },
 });
