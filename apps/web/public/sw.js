@@ -7,14 +7,28 @@ const STATIC_CACHE = 'anubis-chat-static-v1';
 // Install event - cache essential resources
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => {
-      return cache.addAll([
+    caches.open(STATIC_CACHE).then(async (cache) => {
+      // Try to cache each resource individually to handle missing files gracefully
+      const urlsToCache = [
         '/',
         '/favicon.ico',
-        '/favicon/apple-touch-icon.png',
-        '/favicon/web-app-manifest-192x192.png',
-        '/favicon/web-app-manifest-512x512.png',
-      ]);
+        '/favicon.png',
+        '/favicon/icon-192x192.png',
+        '/favicon/icon-512x512.png',
+      ];
+      
+      const cachePromises = urlsToCache.map(async (url) => {
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            await cache.put(url, response);
+          }
+        } catch (error) {
+          console.log(`Failed to cache ${url}:`, error);
+        }
+      });
+      
+      await Promise.allSettled(cachePromises);
     })
   );
   // Activate immediately

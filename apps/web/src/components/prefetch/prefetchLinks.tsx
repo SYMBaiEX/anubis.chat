@@ -232,33 +232,18 @@ function useNetworkInformation() {
   return connection;
 }
 
-// Preload critical CSS - only in production where these files exist
+// Preload critical CSS - Next.js handles this automatically
 export function PreloadStyles() {
-  const isProduction = process.env.NODE_ENV === 'production';
-
-  return (
-    <>
-      {isProduction && (
-        <link as="style" href="/_next/static/css/app.css" rel="preload" />
-      )}
-    </>
-  );
+  // Next.js automatically handles CSS preloading through its build process
+  // No manual preloading needed as it uses dynamic chunk names
+  return null;
 }
 
-// Preload critical scripts - only in production where these files exist
+// Preload critical scripts - Next.js handles this automatically
 export function PreloadScripts() {
-  const isProduction = process.env.NODE_ENV === 'production';
-
-  if (!isProduction) {
-    return null; // Turbopack handles script loading in dev mode
-  }
-
-  return (
-    <>
-      <link href="/_next/static/chunks/main.js" rel="modulepreload" />
-      <link href="/_next/static/chunks/framework.js" rel="modulepreload" />
-    </>
-  );
+  // Next.js automatically handles script preloading through its build process
+  // The framework uses dynamic chunk names and handles preloading internally
+  return null;
 }
 
 import { useState } from 'react';
