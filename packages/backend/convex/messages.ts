@@ -1,8 +1,31 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { api } from './_generated/api';
-import type { Id } from './_generated/dataModel';
-import { mutation, query } from './_generated/server';
+import type { Id, Doc } from './_generated/dataModel';
+import {
+  mutation,
+  query,
+  type DatabaseReader,
+  type DatabaseWriter,
+} from './_generated/server';
+import type { 
+  MessageReaction, 
+  MessageMetadata,
+  CreateMessageParams,
+  MessageWithReactions,
+  MessageStats
+} from './types/chat';
+
+// Helper context types for database operations
+type DatabaseReadContext = {
+  db: DatabaseReader;
+};
+
+type DatabaseWriteContext = {
+  db: DatabaseWriter;
+};
+
+type ReactionMap = Record<string, MessageReaction[]>;
 
 // Get messages by chat ID
 export const getByChatId = query({
@@ -68,9 +91,9 @@ export const editMessage = mutation({
       content: args.content,
       metadata: {
         ...message.metadata,
-        edited: true as any,
-        editedAt: Date.now() as any,
-      } as any,
+        edited: true,
+        editedAt: Date.now(),
+      },
     });
 
     return { success: true };
@@ -114,7 +137,7 @@ export const toggleReaction = mutation({
     }
 
     // Get or initialize reactions
-    const reactions = (message.metadata as any)?.reactions || {};
+    const reactions: ReactionMap = message.metadata?.reactions || {};
     const userReactions = reactions[userId] || [];
 
     // Toggle the reaction
@@ -141,9 +164,9 @@ export const toggleReaction = mutation({
     await ctx.db.patch(args.messageId, {
       metadata: {
         ...message.metadata,
-        reactions: reactions as any,
-        lastReactionAt: Date.now() as any,
-      } as any,
+        reactions,
+        lastReactionAt: Date.now(),
+      },
     });
 
     return {
@@ -188,9 +211,9 @@ export const regenerateLastAssistant = mutation({
     await ctx.db.patch(lastAssistantMessage._id, {
       metadata: {
         ...lastAssistantMessage.metadata,
-        regenerated: true as any,
-        regeneratedAt: Date.now() as any,
-      } as any,
+        regenerated: true,
+        regeneratedAt: Date.now(),
+      },
     });
 
     // Delete the old assistant message
@@ -337,13 +360,13 @@ export const create = mutation({
 
 // Helper: validate if a user can send a message, including premium model checks
 async function ensureUserCanSendMessage(
-  ctx: { db: any },
+  ctx: DatabaseReadContext,
   walletAddress: string,
   model?: string
 ): Promise<void> {
   const user = await ctx.db
     .query('users')
-    .withIndex('by_wallet', (q: any) => q.eq('walletAddress', walletAddress))
+    .withIndex('by_wallet', (q) => q.eq('walletAddress', walletAddress))
     .unique();
 
   const subscription = user?.subscription;
@@ -379,14 +402,14 @@ async function ensureUserCanSendMessage(
 
 // Helper: increment chat counters atomically and safely
 async function incrementChatCounters(
-  ctx: { db: any },
+  ctx: DatabaseWriteContext,
   chatId: Id<'chats'>,
   now: number,
   tokenIncrement: number
 ): Promise<void> {
   const chat = await ctx.db.get(chatId);
-  const currentCount = Math.max(0, (chat as any)?.messageCount ?? 0);
-  const currentTokens = Math.max(0, (chat as any)?.totalTokens ?? 0);
+  const currentCount = Math.max(0, chat?.messageCount ?? 0);
+  const currentTokens = Math.max(0, chat?.totalTokens ?? 0);
 
   await ctx.db.patch(chatId, {
     lastMessageAt: now,
@@ -398,7 +421,7 @@ async function incrementChatCounters(
 
 // Helper: check if we should generate a title for the chat
 async function checkAndScheduleTitleGeneration(
-  ctx: { db: any; scheduler: any },
+  ctx: DatabaseReadContext & { scheduler: any },
   chatId: Id<'chats'>,
   walletAddress: string
 ): Promise<void> {
@@ -430,7 +453,7 @@ async function checkAndScheduleTitleGeneration(
     // Get the user to check their preferences
     const user = await ctx.db
       .query('users')
-      .withIndex('by_wallet', (q: any) => q.eq('walletAddress', walletAddress))
+      .withIndex('by_wallet', (q) => q.eq('walletAddress', walletAddress))
       .unique();
 
     if (!user) {
@@ -440,7 +463,7 @@ async function checkAndScheduleTitleGeneration(
     // Get user preferences
     const preferences = await ctx.db
       .query('userPreferences')
-      .withIndex('by_user', (q: any) => q.eq('userId', user._id))
+      .withIndex('by_user', (q) => q.eq('userId', user._id))
       .first();
 
     // Check if auto-create titles is enabled (default to true if not set)
@@ -453,8 +476,8 @@ async function checkAndScheduleTitleGeneration(
     // Check if this is the first meaningful user message in the chat
     const userMessages = await ctx.db
       .query('messages')
-      .withIndex('by_chat', (q: any) => q.eq('chatId', chatId))
-      .filter((q: any) => q.eq(q.field('role'), 'user'))
+      .withIndex('by_chat', (q) => q.eq('chatId', chatId))
+      .filter((q) => q.eq(q.field('role'), 'user'))
       .take(2); // Get first 2 to check if this is really the first
 
     // Only generate title after the first user message that has meaningful content

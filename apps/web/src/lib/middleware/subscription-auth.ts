@@ -53,6 +53,56 @@ export interface SubscriptionAuthenticatedRequest extends NextRequest {
 // Subscription Verification
 // =============================================================================
 
+type AllowedTier = SubscriptionSession['subscription']['tier'];
+
+function isAllowedTier(value: unknown): value is AllowedTier {
+  return (
+    value === 'free' ||
+    value === 'pro' ||
+    value === 'pro_plus' ||
+    value === 'admin'
+  );
+}
+
+type SubscriptionLike = {
+  tier: string;
+  messagesUsed: number;
+  messagesLimit: number;
+  premiumMessagesUsed: number;
+  premiumMessagesLimit: number;
+  currentPeriodStart: number;
+  currentPeriodEnd: number;
+  autoRenew: boolean;
+  planPriceSol: number;
+  isAdmin?: boolean;
+};
+
+function toSubscription(
+  raw: unknown
+): SubscriptionSession['subscription'] {
+  // Be permissive in parsing to avoid runtime failures when backend evolves
+  const obj = (raw ?? {}) as Partial<Record<string, unknown>>;
+
+  const tierString = typeof obj.tier === 'string' ? obj.tier : 'free';
+  const tier: AllowedTier = isAllowedTier(tierString) ? tierString : 'free';
+
+  const toNumber = (value: unknown, fallback = 0): number =>
+    typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+
+  return {
+    tier,
+    messagesUsed: toNumber(obj.messagesUsed),
+    messagesLimit: toNumber(obj.messagesLimit),
+    premiumMessagesUsed: toNumber(obj.premiumMessagesUsed),
+    premiumMessagesLimit: toNumber(obj.premiumMessagesLimit),
+    currentPeriodStart: toNumber(obj.currentPeriodStart),
+    currentPeriodEnd: toNumber(obj.currentPeriodEnd),
+    autoRenew: Boolean(obj.autoRenew),
+    planPriceSol: toNumber(obj.planPriceSol),
+    isAdmin: typeof obj.isAdmin === 'boolean' ? obj.isAdmin : undefined,
+  } satisfies SubscriptionLike as SubscriptionSession['subscription'];
+}
+
 async function getSubscriptionStatus(walletAddress: string) {
   try {
     const convexUrl = convexConfig.publicUrl;
@@ -195,13 +245,14 @@ export async function verifyAuthToken(
       };
     }
 
-    const limits = calculateLimits(subscription);
+    const normalized = toSubscription(subscription);
+    const limits = calculateLimits(normalized);
 
     return {
       success: true,
       walletAddress: session.walletAddress,
       publicKey: session.publicKey,
-      subscription,
+      subscription: normalized,
       limits,
     };
   } catch (error) {
@@ -423,7 +474,8 @@ export async function trackMessageUsage<T extends NextRequest>(
 
 export async function getUserSubscriptionStatus(walletAddress: string) {
   try {
-    const subscription = await getSubscriptionStatus(walletAddress);
+    const raw = await getSubscriptionStatus(walletAddress);
+    const subscription = toSubscription(raw);
     const limits = calculateLimits(subscription);
 
     return {

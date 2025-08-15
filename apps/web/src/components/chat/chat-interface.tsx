@@ -33,7 +33,7 @@ import { ModelGrid } from '@/components/ui/model-grid';
 import { useConvexChat } from '@/hooks/use-convex-chat';
 import { useTypingIndicator } from '@/hooks/use-typing-indicator';
 import { AI_MODELS, DEFAULT_MODEL } from '@/lib/constants/ai-models';
-import type { Chat, StreamingMessage } from '@/lib/types/api';
+import type { Chat, StreamingMessage, ToolCall, ToolCallArguments, ToolCallResult } from '@/lib/types/api';
 import type { MinimalMessage } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -333,9 +333,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           id: selectedChatId as Id<'chats'>,
           agentPrompt: selectedAgent.systemPrompt,
           agentId: selectedAgent._id,
-        }).catch((error: any) => {
+        }).catch((error: unknown) => {
           log.error('Failed to update chat agent', {
-            error: error?.message,
+            error: error instanceof Error ? error.message : String(error),
           });
         });
       }
@@ -484,8 +484,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         );
         setSelectedChatId(remainingChats?.[0]?._id);
       }
-    } catch (error: any) {
-      log.error('Failed to delete chat', { error: error?.message });
+    } catch (error: unknown) {
+      log.error('Failed to delete chat', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -534,8 +536,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           id: selectedChatId as Id<'chats'>,
           model: newModel,
         });
-      } catch (error: any) {
-        log.error('Failed to update chat model', { error: error?.message });
+      } catch (error: unknown) {
+        log.error('Failed to update chat model', { 
+          error: error instanceof Error ? error.message : String(error) 
+        });
       }
     }
   };
@@ -578,7 +582,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           defaultFrequencyPenalty: newSettings.frequencyPenalty,
           defaultPresencePenalty: newSettings.presencePenalty,
         });
-      } catch (_error: any) {}
+      } catch (_error: unknown) {}
     }
 
     // Update chat-specific settings in database if needed
@@ -608,9 +612,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         updateChat({
           id: selectedChatId as Id<'chats'>,
           ...updates,
-        }).catch((error: any) => {
+        }).catch((error: unknown) => {
           log.error('Failed to update chat settings', {
-            error: error?.message,
+            error: error instanceof Error ? error.message : String(error),
           });
         });
       }
@@ -693,9 +697,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       updateChat({
                         id: selectedChatId as Id<'chats'>,
                         title: newTitle,
-                      }).catch((error: any) => {
+                      }).catch((error: unknown) => {
                         log.error('Failed to rename chat', {
-                          error: error?.message,
+                          error: error instanceof Error ? error.message : String(error),
                         });
                       });
                     }
@@ -788,20 +792,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                         lastActionAt?: number;
                       };
                       metadata?: {
-                        tools?: Array<{
-                          id: string;
-                          name: string;
-                          args: any;
-                          result?: {
-                            success: boolean;
-                            data?: any;
-                            error?: string;
-                            executionTime?: number;
-                          };
-                        }>;
+                        tools?: ToolCall[];
                       };
                     };
-                    const normalized: MinimalMessage & { toolCalls?: any[] } = {
+                    const normalized: MinimalMessage & { toolCalls?: ToolCall[] } = {
                       _id: String(doc._id),
                       content: doc.content,
                       role: doc.role,
