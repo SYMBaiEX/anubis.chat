@@ -5,6 +5,12 @@
 
 import type { Doc } from '../../_generated/dataModel';
 
+export interface McpServerConfig {
+  name: string;
+  enabled: boolean;
+  config?: Record<string, string | number | boolean>;
+}
+
 export interface AgentConfig {
   name: string;
   type: Doc<'agents'>['type'];
@@ -14,6 +20,7 @@ export interface AgentConfig {
   temperature: number;
   maxTokens: number;
   tokenOptimized: boolean;
+  mcpServers?: McpServerConfig[];
 }
 
 /**
@@ -51,10 +58,20 @@ export const anubisAgent: AgentConfig = {
   description:
     'Ancient Egyptian god of the afterlife - wise guide with millennia of knowledge',
   systemPrompt: ANUBIS_OPTIMIZED_PROMPT,
-  capabilities: ['chat', 'general-knowledge', 'guidance', 'wisdom'],
+  capabilities: ['webSearch', 'calculator', 'createDocument', 'generateCode', 'summarizeText'],
   temperature: 0.7,
   maxTokens: 2000, // Reduced from 4000 for efficiency
   tokenOptimized: true,
+  mcpServers: [
+    {
+      name: 'websearch',
+      enabled: true,
+      config: {
+        maxResults: 5,
+        timeout: 10000,
+      },
+    },
+  ],
 };
 
 /**

@@ -466,9 +466,10 @@ export const streamWithWebSocket = action({
       const { getToolsForAgent, executeToolByName } = await import(
         './toolRegistry'
       );
-      const { shouldRouteThroughMcp, getEnhancedCapabilities } = await import(
-        './mcpIntegration'
-      );
+      const { 
+        shouldRouteThroughRealMcp, 
+        getEnhancedCapabilitiesWithRealMcp 
+      } = await import('./lib/mcp/realMcpIntegration');
 
       // Get agent and determine available tools
       let availableCapabilities: string[] = [
@@ -489,13 +490,13 @@ export const streamWithWebSocket = action({
 
           // Add MCP capabilities if configured
           if (agent?.mcpServers && agent.mcpServers.length > 0) {
-            // Get enhanced capabilities including MCP tools
-            availableCapabilities = getEnhancedCapabilities(
+            // Get enhanced capabilities including real MCP tools
+            availableCapabilities = getEnhancedCapabilitiesWithRealMcp(
               availableCapabilities,
               agent.mcpServers
             );
 
-            logger.info('MCP capabilities added for agent', {
+            logger.info('Real MCP capabilities added for agent', {
               agentId: chat.agentId,
               mcpServerCount: agent.mcpServers.filter((s) => s.enabled).length,
               enhancedCapabilities: availableCapabilities.length,
@@ -625,7 +626,7 @@ export const streamWithWebSocket = action({
           const mcpServer = agent?.mcpServers?.find(
             (server) =>
               server.enabled &&
-              shouldRouteThroughMcp(toolCall.toolName, [server])
+              shouldRouteThroughRealMcp(toolCall.toolName, [server])
           );
           const toolType = mcpServer ? 'mcp' : 'regular';
           const serverId = mcpServer?.name;
@@ -660,25 +661,53 @@ export const streamWithWebSocket = action({
           try {
             if (
               agent?.mcpServers &&
-              shouldRouteThroughMcp(toolCall.toolName, agent.mcpServers)
+              shouldRouteThroughRealMcp(toolCall.toolName, agent.mcpServers)
             ) {
-              // Execute through MCP server
-              logger.info('Routing tool through MCP server', {
+              // Execute through real MCP server
+              logger.info('Routing tool through real MCP server', {
                 toolName: toolCall.toolName,
                 agentId: chat.agentId,
                 executionId,
               });
 
-              // For now, fall back to regular tool execution
-              // MCP integration will be enabled after Convex codegen
-              logger.info(
-                'MCP server routing temporarily disabled, using regular tools'
-              );
-              toolResult = await executeToolByName(
-                toolCall.toolName,
-                toolCall.input,
-                { ctx, sessionId: args.sessionId }
-              );
+              // Execute through real MCP integration directly
+              const { globalMcpClient } = await import('./lib/mcp/mcpClient');
+              
+              // Ensure MCP server is connected
+              try {
+                await globalMcpClient.connectServer('websearch-mcp');
+              } catch (error) {
+                logger.warn('MCP server connection failed, continuing with mock response', {
+                  error: error instanceof Error ? error.message : String(error),
+                });
+              }
+              
+              // Map tool name for MCP execution
+              const mcpToolName = toolCall.toolName === 'webSearch' ? 'web_search' : toolCall.toolName;
+              
+              const mcpResult = await globalMcpClient.executeTool('websearch-mcp', {
+                toolName: mcpToolName,
+                arguments: toolCall.input,
+              });
+              
+              if (mcpResult.success) {
+                toolResult = {
+                  success: true,
+                  data: mcpResult.content as Record<string, string | number | boolean | null>,
+                };
+              } else {
+                // MCP failed, fallback to regular tool
+                logger.info('MCP tool failed, falling back to regular tool', {
+                  toolName: toolCall.toolName,
+                  mcpError: mcpResult.error,
+                });
+                
+                toolResult = await executeToolByName(
+                  toolCall.toolName,
+                  toolCall.input,
+                  { ctx, sessionId: args.sessionId }
+                );
+              }
             } else {
               // Execute through regular tool registry system
               toolResult = await executeToolByName(

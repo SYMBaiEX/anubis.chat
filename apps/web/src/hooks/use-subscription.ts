@@ -21,6 +21,7 @@ export interface SubscriptionStatus {
 }
 
 export interface SubscriptionLimits {
+  tier: SubscriptionStatus['tier'];
   canSendMessage: boolean;
   canUsePremiumModel: boolean;
   canUploadLargeFiles: boolean;
@@ -101,6 +102,7 @@ export function useSubscription() {
   const limits = useMemo((): SubscriptionLimits => {
     if (!normalizedSubscription) {
       return {
+        tier: 'free',
         canSendMessage: false,
         canUsePremiumModel: false,
         canUploadLargeFiles: false,
@@ -135,6 +137,7 @@ export function useSubscription() {
     );
 
     return {
+      tier: normalizedSubscription.tier,
       canSendMessage:
         messagesRemaining > 0 ||
         (normalizedSubscription.messageCredits || 0) > 0,

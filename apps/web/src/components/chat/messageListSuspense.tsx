@@ -1,0 +1,117 @@
+'use client';
+
+import { Suspense, Component, type ReactNode } from 'react';
+import { MessageSquare, RefreshCw } from 'lucide-react';
+import { errorMonitor } from '@/lib/monitoring/errorMonitor';
+import { EmptyState } from '@/components/data/empty-states';
+import { LoadingStates } from '@/components/data/loading-states';
+import { Button } from '@/components/ui/button';
+import type { MessageListProps } from '@/lib/types/components';
+import type { FontSize } from '@/lib/utils/fontSizes';
+import { MessageList } from './message-list';
+
+interface MessageListSuspenseProps extends MessageListProps {
+  isTyping?: boolean;
+  fontSize?: FontSize;
+}
+
+/**
+ * Loading fallback component with skeleton states
+ */
+function MessageListSkeleton() {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <LoadingStates
+        size="lg"
+        text="Loading conversation..."
+        variant="spinner"
+      />
+    </div>
+  );
+}
+
+/**
+ * Custom Error Boundary class component
+ */
+class MessageListErrorBoundary extends Component<
+  { children: ReactNode; onReset?: () => void },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: ReactNode; onReset?: () => void }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('MessageList error boundary caught an error:', error, errorInfo);
+    
+    // Report to error monitoring system
+    errorMonitor.captureError(error, {
+      category: 'javascript',
+      severity: 'high',
+      component: 'MessageList',
+      context: {
+        componentStack: errorInfo.componentStack,
+        errorBoundary: 'MessageListErrorBoundary'
+      }
+    });
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: undefined });
+    if (this.props.onReset) {
+      this.props.onReset();
+    }
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-full items-center justify-center p-4">
+          <EmptyState
+            title="Failed to Load Messages"
+            description={this.state.error?.message || "An error occurred while loading the conversation"}
+            icon={<MessageSquare className="h-12 w-12 text-destructive" />}
+            action={
+              <Button
+                onClick={this.handleReset}
+                variant="outline"
+                className="mt-4"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Try Again
+              </Button>
+            }
+          />
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+/**
+ * MessageListSuspense - Wraps MessageList with React 18+ Suspense and Error Boundaries
+ * Provides proper loading states and error recovery for message streams
+ */
+export function MessageListSuspense(props: MessageListSuspenseProps) {
+  return (
+    <MessageListErrorBoundary
+      onReset={() => {
+        // Reset any cached queries or state that might be causing issues
+        window.location.reload();
+      }}
+    >
+      <Suspense fallback={<MessageListSkeleton />}>
+        <MessageList {...props} />
+      </Suspense>
+    </MessageListErrorBoundary>
+  );
+}
+
+export default MessageListSuspense;

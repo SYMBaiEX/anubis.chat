@@ -4,12 +4,56 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import type { ToolCallResult } from '@/lib/types/api';
 
-// Type for search results
-interface SearchResult {
-  title?: string;
-  url?: string;
-  description?: string;
+// Web search result shape used by the UI
+interface WebSearchResult {
+  title: string;
+  link: string;
+  snippet: string;
 }
+
+interface WebSearchPayload {
+  results: WebSearchResult[];
+}
+
+// Runtime type guard to narrow ToolCallResult.data for webSearch
+const isWebSearchPayload = (data: unknown): data is WebSearchPayload => {
+  if (typeof data !== 'object' || data === null) return false;
+  const candidate = data as Record<string, unknown>;
+  const results = candidate.results;
+  if (!Array.isArray(results)) return false;
+  return results.every((item) => {
+    if (typeof item !== 'object' || item === null) return false;
+    const obj = item as Record<string, unknown>;
+    return (
+      typeof obj.title === 'string' &&
+      typeof obj.link === 'string' &&
+      typeof obj.snippet === 'string'
+    );
+  });
+};
+
+interface DocumentArtifactPayload {
+  document: {
+    id?: string;
+    title?: string;
+    content?: string;
+    code?: string;
+    type: 'document' | 'code' | 'markdown';
+    language?: string;
+    framework?: string;
+    description?: string;
+  };
+}
+
+const isDocumentPayload = (data: unknown): data is DocumentArtifactPayload => {
+  if (typeof data !== 'object' || data === null) return false;
+  const candidate = data as Record<string, unknown>;
+  const doc = candidate.document;
+  if (typeof doc !== 'object' || doc === null) return false;
+  const d = doc as Record<string, unknown>;
+  // minimally ensure required shape
+  return typeof d.type === 'string';
+};
 import type { UIMessage } from 'ai';
 import { useMutation } from 'convex/react';
 import { motion } from 'framer-motion';
@@ -524,8 +568,10 @@ export function EnhancedMessageBubble({
                   // Handle different tool types
                   if (
                     toolCall.name === 'webSearch' &&
-                    toolCall.result?.data?.results
+                    toolCall.result &&
+                    isWebSearchPayload(toolCall.result.data)
                   ) {
+                    const { results } = toolCall.result.data;
                     return (
                       <div
                         className="rounded-lg border bg-background/50 p-3"
@@ -538,9 +584,8 @@ export function EnhancedMessageBubble({
                           </span>
                         </div>
                         <div className="space-y-2">
-                          {toolCall.result.data.results
-                            .slice(0, 3)
-                            .map((result: SearchResult, idx: number) => (
+                          {results.slice(0, 3).map(
+                            (result: WebSearchResult, idx: number) => (
                               <div className="text-sm" key={idx}>
                                 <a
                                   className="font-medium text-primary hover:underline"
@@ -554,7 +599,8 @@ export function EnhancedMessageBubble({
                                   {result.snippet}
                                 </p>
                               </div>
-                            ))}
+                            )
+                          )}
                         </div>
                       </div>
                     );
@@ -563,7 +609,8 @@ export function EnhancedMessageBubble({
                   if (
                     (toolCall.name === 'createDocument' ||
                       toolCall.name === 'generateCode') &&
-                    toolCall.result?.data?.document
+                    toolCall.result &&
+                    isDocumentPayload(toolCall.result.data)
                   ) {
                     const artifact = toolCall.result.data.document;
                     return (
@@ -573,7 +620,18 @@ export function EnhancedMessageBubble({
                       >
                         <button
                           className="-m-1 flex w-full items-center gap-2 rounded p-1 text-left transition-colors hover:bg-accent/50"
-                          onClick={() => onArtifactClick?.(artifact)}
+                          onClick={() =>
+                            onArtifactClick?.({
+                              id: artifact.id,
+                              title: artifact.title ?? 'Generated Document',
+                              content: artifact.content,
+                              code: artifact.code,
+                              type: artifact.type,
+                              language: artifact.language,
+                              framework: artifact.framework,
+                              description: artifact.description,
+                            })
+                          }
                         >
                           <FileText className="h-4 w-4 text-primary" />
                           <div className="flex-1">

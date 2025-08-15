@@ -1,13 +1,11 @@
 'use client';
 
-import { api } from '@convex/_generated/api';
 import type { Doc, Id } from '@convex/_generated/dataModel';
-import { useAction, useMutation, useQuery } from 'convex/react';
 import { MessageSquare, Plus, Sidebar } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { UpgradePrompt } from '@/components/auth/upgradePrompt';
 import { EmptyState } from '@/components/data/empty-states';
@@ -31,9 +29,17 @@ import {
 import { ModelGrid } from '@/components/ui/model-grid';
 
 import { useConvexChat } from '@/hooks/use-convex-chat';
+import { 
+  useUserPreferences,
+  useUpdateUserPreferences,
+  useChats,
+  useChat,
+  useChatManagement,
+  useAgents
+} from '@/hooks/use-convex-chat-typed';
 import { useTypingIndicator } from '@/hooks/use-typing-indicator';
 import { AI_MODELS, DEFAULT_MODEL } from '@/lib/constants/ai-models';
-import type { Chat, StreamingMessage, ToolCall, ToolCallArguments, ToolCallResult } from '@/lib/types/api';
+import type { Chat, StreamingMessage, ToolCall } from '@/lib/types/api';
 import type { MinimalMessage } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -42,8 +48,9 @@ import { ChatHeader } from './chatHeader';
 import { ChatSettingsDialog } from './chatSettingsDialog';
 import { ChatWelcome } from './chatWelcome';
 import { EnhancedMessageInput } from './enhanced-message-input';
-import { MessageList } from './message-list';
 import { ModelSelector } from './model-selector';
+import { MessageListSuspense } from './messageListSuspense';
+import { StreamingSuspenseWrapper } from './streamingSuspenseWrapper';
 
 const log = createModuleLogger('components/chat/chat-interface');
 
@@ -87,11 +94,61 @@ interface ChatInterfaceProps {
 export function ChatInterface({ className }: ChatInterfaceProps) {
   const { user, isAuthenticated, token } = useAuthContext();
   const userWalletAddress = user?.walletAddress;
-  const _limits = useSubscriptionLimits();
+  const limits = useSubscriptionLimits();
   const upgradePrompt = useUpgradePrompt();
   const canSendMessage = useCanSendMessage();
-  const { agents, selectedAgent, selectAgent, isInitialized } =
+  const { agents: solanaAgents, selectedAgent, selectAgent, isInitialized } =
     useSolanaAgent();
+  
+  // Fetch public agents from Convex backend to complement Solana agents
+  const publicAgents = useAgents(isAuthenticated);
+  
+  // Merge Solana agents with public agents for comprehensive agent management
+  const allAgents = useMemo(() => {
+    const combined = [...(solanaAgents || [])];
+    
+    // Add public agents that aren't already in the Solana agent list
+    if (publicAgents) {
+      for (const publicAgent of publicAgents) {
+        const exists = combined.some(agent => 
+          agent._id === publicAgent._id || 
+          agent.name === publicAgent.name
+        );
+        if (!exists) {
+          combined.push(publicAgent);
+        }
+      }
+    }
+    
+    return combined;
+  }, [solanaAgents, publicAgents]);
+
+  // Debug logging for authentication and limits
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      log.info('Chat interface authenticated', { 
+        userWalletAddress,
+        hasToken: !!token,
+        limits: limits ? {
+          messagesRemaining: limits.messagesRemaining
+        } : 'loading'
+      });
+    }
+  }, [isAuthenticated, token, userWalletAddress, limits]);
+
+  // Debug logging for agent system integration
+  useEffect(() => {
+    if (isAuthenticated) {
+      log.info('Agent system status', {
+        solanaAgentsCount: solanaAgents?.length || 0,
+        publicAgentsCount: publicAgents?.length || 0,
+        totalAgentsCount: allAgents?.length || 0,
+        selectedAgentId: selectedAgent?._id,
+        selectedAgentName: selectedAgent?.name,
+        isInitialized
+      });
+    }
+  }, [isAuthenticated, solanaAgents, publicAgents, allAgents, selectedAgent, isInitialized]);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -130,14 +187,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   // Theme hook from next-themes
   const { theme, setTheme } = useTheme();
 
-  // User preferences from Convex
-  const userPreferences = useQuery(
-    api.userPreferences.getUserPreferencesWithDefaults,
-    isAuthenticated ? {} : 'skip'
-  );
-  const updateUserPreferences = useMutation(
-    api.userPreferences.updateUserPreferences
-  );
+  // User preferences from Convex (using typed hooks)
+  const userPreferences = useUserPreferences(isAuthenticated);
+  const updateUserPreferences = useUpdateUserPreferences();
 
   // Theme sync is now handled globally in ThemeSync component
 
@@ -220,30 +272,20 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   // Debug logging
   useEffect(() => {}, []);
 
-  // Convex queries and mutations - using authenticated queries
-  const chats = useQuery(
-    api.chatsAuth.getMyChats,
-    isAuthenticated ? {} : 'skip'
+  // Convex queries and mutations - using typed hooks
+  const chats = useChats(isAuthenticated);
+  const currentChatQuery = useChat(
+    selectedChatId && isAuthenticated ? selectedChatId as Id<'chats'> : undefined,
+    isAuthenticated
   );
-
-  const currentChatQuery = useQuery(
-    api.chatsAuth.getMyChat,
-    selectedChatId && isAuthenticated
-      ? { id: selectedChatId as Id<'chats'> }
-      : 'skip'
-  );
-
-  const createChat = useMutation(api.chatsAuth.createMyChat);
-  const updateChat = useMutation(api.chatsAuth.updateMyChat);
-  const deleteChat = useMutation(api.chatsAuth.deleteMyChat);
-  const generateTitle = useAction(api.chats.generateAndUpdateTitle);
+  const { createChat, updateChat, deleteChat, generateTitle } = useChatManagement();
 
   // Use our new Convex chat hook for real-time streaming
-  const { messages, sendMessage, isStreaming, streamingMessage } =
+  const { messages, sendMessage, isStreaming } =
     useConvexChat(selectedChatId);
 
   // Use typing indicators
-  const { typingUsers, startTyping, stopTyping, isAnyoneTyping } =
+  const { startTyping, isAnyoneTyping } =
     useTypingIndicator(selectedChatId, userWalletAddress);
 
   // Use the dedicated query for the current chat instead of filtering from the list
@@ -306,9 +348,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         temperature: currentChat.temperature || prev.temperature,
       }));
 
-      // Also select the agent if the chat has an agentId
-      if (currentChat.agentId && agents && selectAgent) {
-        const chatAgent = agents.find((a) => a._id === currentChat.agentId);
+      // Also select the agent if the chat has an agentId (but only if it's different from current)
+      if (currentChat.agentId && allAgents && selectAgent) {
+        const chatAgent = allAgents.find((a) => a._id === currentChat.agentId);
         if (
           chatAgent &&
           (!selectedAgent || selectedAgent._id !== chatAgent._id)
@@ -317,18 +359,20 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         }
       }
     }
-  }, [currentChat, agents, selectAgent, selectedAgent]);
+  }, [currentChat?.model, currentChat?.agentId, currentChat?.systemPrompt, currentChat?.agentPrompt, currentChat?.temperature, allAgents, selectAgent, selectedAgent?._id]);
 
   // Update agent prompt when agent changes (keep system prompt separate)
+  // Only update if the agent actually changed to prevent feedback loops
   useEffect(() => {
-    if (selectedAgent?.systemPrompt) {
-      setChatSettings((prev) => ({
-        ...prev,
-        agentPrompt: selectedAgent.systemPrompt,
-      }));
+    if (selectedAgent?.systemPrompt && selectedChatId && isAuthenticated) {
+      // Check if this agent is different from what's already set in the chat
+      if (currentChat?.agentId !== selectedAgent._id) {
+        setChatSettings((prev) => ({
+          ...prev,
+          agentPrompt: selectedAgent.systemPrompt,
+        }));
 
-      // Update the current chat's agent prompt if a chat is selected
-      if (selectedChatId && isAuthenticated) {
+        // Update the current chat's agent prompt and reference
         updateChat({
           id: selectedChatId as Id<'chats'>,
           agentPrompt: selectedAgent.systemPrompt,
@@ -338,9 +382,15 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             error: error instanceof Error ? error.message : String(error),
           });
         });
+      } else {
+        // Just update the settings without triggering a database update
+        setChatSettings((prev) => ({
+          ...prev,
+          agentPrompt: selectedAgent.systemPrompt,
+        }));
       }
     }
-  }, [selectedAgent, selectedChatId, isAuthenticated, updateChat]);
+  }, [selectedAgent?._id, selectedAgent?.systemPrompt, selectedChatId, isAuthenticated, updateChat, currentChat?.agentId]);
 
   // Quick suggestions removed per product request
 
@@ -398,10 +448,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   };
 
-  const _handleChatSelect = (chatId: string) => {
-    setSelectedChatId(chatId);
-    router.push(`/chat?chatId=${chatId}`);
-  };
 
   // Define handleCreateChat before using it
   const handleCreateChat = async () => {
@@ -767,52 +813,63 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   />
                 </div>
               ) : (
-                <MessageList
-                  fontSize={chatSettings.fontSize}
-                  isTyping={isAnyoneTyping && !isStreaming}
-                  messages={(messages || []).map((m) => {
-                    if ((m as StreamingMessage).isStreaming) {
-                      return m as StreamingMessage;
-                    }
-                    const doc = m as {
-                      _id: unknown;
-                      content: string;
-                      role: 'user' | 'assistant' | 'system';
-                      createdAt?: number;
-                      _creationTime?: number;
-                      rating?: {
-                        userRating: 'like' | 'dislike';
-                        ratedAt: number;
-                        ratedBy: string;
-                      };
-                      actions?: {
-                        copiedCount?: number;
-                        sharedCount?: number;
-                        regeneratedCount?: number;
-                        lastActionAt?: number;
-                      };
-                      metadata?: {
-                        tools?: ToolCall[];
-                      };
-                    };
-                    const normalized: MinimalMessage & { toolCalls?: ToolCall[] } = {
-                      _id: String(doc._id),
-                      content: doc.content,
-                      role: doc.role,
-                      createdAt:
-                        doc.createdAt ?? doc._creationTime ?? Date.now(),
-                      rating: doc.rating,
-                      actions: doc.actions,
-                      toolCalls: doc.metadata?.tools || [],
-                    };
-                    return normalized;
-                  })}
-                  onArtifactClick={(artifact) => {
-                    setCurrentArtifact(artifact);
-                    setShowArtifact(true);
+                <StreamingSuspenseWrapper
+                  isStreaming={isStreaming}
+                  onError={(error) => {
+                    log.error('Message list streaming error', { error: error.message });
                   }}
-                  onMessageRegenerate={handleRegenerateMessage}
-                />
+                  onRetry={() => {
+                    // Refresh the message list
+                    window.location.reload();
+                  }}
+                >
+                  <MessageListSuspense
+                    fontSize={chatSettings.fontSize}
+                    isTyping={isAnyoneTyping && !isStreaming}
+                    messages={(messages || []).map((m) => {
+                      if ((m as StreamingMessage).isStreaming) {
+                        return m as StreamingMessage;
+                      }
+                      const doc = m as {
+                        _id: unknown;
+                        content: string;
+                        role: 'user' | 'assistant' | 'system';
+                        createdAt?: number;
+                        _creationTime?: number;
+                        rating?: {
+                          userRating: 'like' | 'dislike';
+                          ratedAt: number;
+                          ratedBy: string;
+                        };
+                        actions?: {
+                          copiedCount?: number;
+                          sharedCount?: number;
+                          regeneratedCount?: number;
+                          lastActionAt?: number;
+                        };
+                        metadata?: {
+                          tools?: ToolCall[];
+                        };
+                      };
+                      const normalized: MinimalMessage & { toolCalls?: ToolCall[] } = {
+                        _id: String(doc._id),
+                        content: doc.content,
+                        role: doc.role,
+                        createdAt:
+                          doc.createdAt ?? doc._creationTime ?? Date.now(),
+                        rating: doc.rating,
+                        actions: doc.actions,
+                        toolCalls: doc.metadata?.tools || [],
+                      };
+                      return normalized;
+                    })}
+                    onArtifactClick={(artifact) => {
+                      setCurrentArtifact(artifact);
+                      setShowArtifact(true);
+                    }}
+                    onMessageRegenerate={handleRegenerateMessage}
+                  />
+                </StreamingSuspenseWrapper>
               )}
             </div>
 
@@ -840,7 +897,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       !selectedChatId ||
                       messages === undefined ||
                       isStreaming ||
-                      !canSendMessage
+                      !canSendMessage ||
+                      !isInitialized
                     }
                     isStreaming={isStreaming}
                     onSend={async (content, options) => {
@@ -867,11 +925,13 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     }}
                     onTyping={startTyping}
                     placeholder={
-                      canSendMessage
-                        ? isStreaming
-                          ? 'Anubis is responding...'
-                          : 'Ask Anubis anything...'
-                        : 'Message limit reached - Upgrade to continue'
+                      !isInitialized
+                        ? 'Initializing agent system...'
+                        : canSendMessage
+                          ? isStreaming
+                            ? 'Anubis is responding...'
+                            : `Ask Anubis anything...${limits?.messagesRemaining ? ` (${limits.messagesRemaining} messages remaining)` : ''}`
+                          : 'Message limit reached - Upgrade to continue'
                     }
                   />
                 </div>
@@ -939,9 +999,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           </DialogHeader>
 
           <div className="max-h-[60vh] overflow-y-auto">
-            {agents && (
+            {allAgents && (
               <AgentGrid
-                agents={agents}
+                agents={allAgents}
                 columns={5}
                 onAgentSelect={async (agent) => {
                   selectAgent(agent._id);
@@ -1009,9 +1069,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           </DialogHeader>
 
           <div className="max-h-[60vh] overflow-y-auto">
-            {agents && (
+            {allAgents && (
               <AgentGrid
-                agents={agents}
+                agents={allAgents}
                 columns={5}
                 onAgentSelect={async (agent) => {
                   selectAgent(agent._id);

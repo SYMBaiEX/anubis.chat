@@ -133,6 +133,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     );
 
     return {
+      tier: normalizedSubscription.tier,
       canSendMessage: messagesRemaining > 0,
       canUsePremiumModel:
         premiumMessagesRemaining > 0 && normalizedSubscription.tier !== 'free',

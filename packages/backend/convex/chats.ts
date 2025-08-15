@@ -641,3 +641,34 @@ export const clearHistory = mutation({
     };
   },
 });
+
+/**
+ * Get token usage statistics for a chat
+ */
+export const getTokenUsage = query({
+  args: {
+    chatId: v.id('chats'),
+  },
+  handler: async (ctx, args) => {
+    // Get authenticated user
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error('Not authenticated');
+    }
+
+    // Verify chat ownership
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.ownerId !== userId) {
+      throw new Error('Chat not found or access denied');
+    }
+
+    return chat.tokenUsage || {
+      totalPromptTokens: 0,
+      totalCompletionTokens: 0,
+      totalTokens: 0,
+      totalCachedTokens: 0,
+      totalEstimatedCost: 0,
+      messageCount: 0,
+    };
+  },
+});
