@@ -9,14 +9,8 @@ import {
   getAccount,
   getAssociatedTokenAddress,
   getMint,
-  TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
-import {
-  type Connection,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from '@solana/web3.js';
+import { type Connection, PublicKey, Transaction } from '@solana/web3.js';
 
 // SPL Token Configuration (matches backend)
 export interface SPLTokenConfig {
@@ -58,7 +52,7 @@ export async function createSPLTokenTransferTransaction(
   toPublicKey: PublicKey,
   mintAddress: string,
   amount: number,
-  decimals: number
+  _decimals: number
 ): Promise<Transaction> {
   const mint = new PublicKey(mintAddress);
 
@@ -83,7 +77,7 @@ export async function createSPLTokenTransferTransaction(
     // Check if sender's token account exists
     try {
       await getAccount(connection, fromTokenAccount);
-    } catch (error) {
+    } catch (_error) {
       throw new Error(
         'Sender does not have a token account for this SPL token. Please create one first.'
       );
@@ -93,7 +87,7 @@ export async function createSPLTokenTransferTransaction(
     let needsRecipientAccount = false;
     try {
       await getAccount(connection, toTokenAccount);
-    } catch (error) {
+    } catch (_error) {
       needsRecipientAccount = true;
     }
 
@@ -169,7 +163,7 @@ export async function validateSPLTokenTransfer(
         requiredAmount,
         sufficientBalance: balance >= requiredAmount,
       };
-    } catch (error) {
+    } catch (_error) {
       // Token account doesn't exist
       return {
         isValid: false,
@@ -217,8 +211,7 @@ export async function getTokenMetadata(
       supply: mintInfo.supply.toString(),
       isInitialized: mintInfo.isInitialized,
     };
-  } catch (error) {
-    console.error(`Failed to get token metadata for ${mintAddress}:`, error);
+  } catch (_error) {
     return null;
   }
 }
@@ -262,7 +255,7 @@ export async function getUserSPLTokenBalance(
         balanceFormatted,
         decimals: mintInfo.decimals,
       };
-    } catch (error) {
+    } catch (_error) {
       // Account doesn't exist
       const mintInfo = await getMint(connection, mint);
       return {
@@ -272,8 +265,7 @@ export async function getUserSPLTokenBalance(
         decimals: mintInfo.decimals,
       };
     }
-  } catch (error) {
-    console.error(`Failed to get SPL token balance for ${mintAddress}:`, error);
+  } catch (_error) {
     return null;
   }
 }
@@ -313,7 +305,7 @@ export function formatTokenAmount(
  */
 export function parseTokenAmount(input: string, decimals: number): number {
   const cleanInput = input.trim();
-  if (!cleanInput || isNaN(Number(cleanInput))) {
+  if (!cleanInput || Number.isNaN(Number(cleanInput))) {
     throw new Error('Invalid token amount');
   }
 
@@ -347,7 +339,7 @@ export async function estimateSPLTokenTransferFee(
     }
 
     return estimatedFee;
-  } catch (error) {
+  } catch (_error) {
     // Fallback estimate
     return needsTokenAccountCreation ? 2_040_000 : 5000; // ~0.002 SOL or ~0.000005 SOL
   }

@@ -6,7 +6,6 @@
  */
 
 import { tool } from 'ai';
-import type { ConvexError } from 'convex/values';
 import { z } from 'zod';
 import { internal } from './_generated/api';
 import type { ActionCtx } from './_generated/server';
@@ -85,7 +84,7 @@ export class ToolRegistry {
     if (!this.capabilityMapping.has(capability)) {
       this.capabilityMapping.set(capability, []);
     }
-    this.capabilityMapping.get(capability)!.push(toolDef.metadata.name);
+    this.capabilityMapping.get(capability)?.push(toolDef.metadata.name);
   }
 
   /**
@@ -134,7 +133,7 @@ export class ToolRegistry {
       };
     }
 
-    const [capability, toolDef] = toolEntry;
+    const [_capability, toolDef] = toolEntry;
     const startTime = Date.now();
 
     try {

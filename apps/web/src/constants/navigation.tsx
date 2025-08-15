@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   Shield,
+  Trophy,
   Users,
   Workflow,
 } from 'lucide-react';
@@ -77,6 +78,14 @@ const allItems: NavItem[] = [
     label: 'Referrals',
     href: '/referrals',
     icon: Users,
+    requiresAuth: true,
+    inHeader: true,
+    inSidebar: true,
+  },
+  {
+    label: 'Leaderboard',
+    href: '/leaderboard',
+    icon: Trophy,
     requiresAuth: true,
     inHeader: true,
     inSidebar: true,

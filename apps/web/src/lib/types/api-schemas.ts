@@ -68,7 +68,11 @@ export const userPreferencesSchema = z.object({
   maxTokens: z.number().int().min(1).max(128_000).optional(),
   streamResponses: z.boolean().optional(),
   saveHistory: z.boolean().optional(),
-  compactMode: z.boolean().optional(),
+  // Notification preferences
+  soundEffects: z.boolean().optional(),
+  desktopNotifications: z.boolean().optional(),
+  // Privacy preferences
+  shareAnalytics: z.boolean().optional(),
   // Chat/UI preferences
   fontSize: z.enum(['small', 'medium', 'large']).optional(),
   autoScroll: z.boolean().optional(),

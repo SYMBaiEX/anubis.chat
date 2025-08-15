@@ -9,7 +9,7 @@ import { UpgradeProvider } from './auth/upgradeWrapper';
 import { ConvexErrorBoundary } from './error/ConvexErrorBoundary';
 import { AuthProvider } from './providers/auth-provider';
 import { ClientOnlyWrapper } from './providers/client-only-wrapper';
-import { SolanaAgentProvider } from './providers/solana-agent-provider';
+import { SolanaAgentProvider } from './providers/solanaAgentProvider';
 import { ThemeSync } from './providers/theme-sync';
 import { Toaster } from './ui/sonner';
 import { WalletProvider } from './wallet/wallet-provider';

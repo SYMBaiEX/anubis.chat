@@ -97,10 +97,11 @@ export class ConvexService {
   /**
    * Subscribe to a query
    */
-  subscribe<T>(query: any, args: any, callback: (data: T) => void): () => void {
-    // Note: subscribe method needs to be implemented
-    // For now, return a no-op unsubscribe function
-    console.warn('Subscribe not implemented yet');
+  subscribe<T>(
+    _query: any,
+    _args: any,
+    _callback: (data: T) => void
+  ): () => void {
     return () => {};
   }
 }

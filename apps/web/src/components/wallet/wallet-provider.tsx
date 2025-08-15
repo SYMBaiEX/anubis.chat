@@ -1,6 +1,5 @@
 'use client';
 
-import { BackpackWalletAdapter } from '@solana/wallet-adapter-backpack';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import {
   ConnectionProvider,
@@ -9,8 +8,6 @@ import {
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import {
   LedgerWalletAdapter,
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
   TorusWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
@@ -48,19 +45,16 @@ export const WalletProvider: FC<WalletProviderProps> = ({
     [selectedNetwork]
   );
 
-  // Curated explicit Solana wallets only (avoid Wallet Standard auto-detection to prevent duplicates like MetaMask)
+  // Only include wallets that don't implement the Wallet Standard
+  // Phantom, Solflare, and Backpack are now auto-detected via Wallet Standard
   const wallets = useMemo(() => {
     const configured = [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter({ network: selectedNetwork }),
-      new BackpackWalletAdapter(),
+      // Only include wallets that aren't auto-detected via Wallet Standard
       new TorusWalletAdapter(),
       new LedgerWalletAdapter(),
     ];
 
-    // Some environments inject Wallet Standard adapters (e.g., MetaMask Snap)
-    // which may lead to duplicate names like "MetaMask". Deduplicate by name
-    // and explicitly exclude MetaMask from Solana wallet list.
+    // Filter out any duplicates and MetaMask
     const seen = new Set<string>();
     return configured.filter((w) => {
       const name = String(w.name || '');

@@ -61,7 +61,9 @@ const Row = memo(({ index, style, data }: RowProps) => {
   const { items, fontSizes, onMessageRegenerate, onArtifactClick } = data;
   const item = items[index];
 
-  if (!item) return null;
+  if (!item) {
+    return null;
+  }
 
   // Date separator
   if (item.type === 'date-separator') {
@@ -222,7 +224,9 @@ export function VirtualMessageList({
 
   // Prepare list items
   const listItems = useMemo<ListItem[]>(() => {
-    if (!messages || messages.length === 0) return [];
+    if (!messages || messages.length === 0) {
+      return [];
+    }
 
     const items: ListItem[] = [];
     let lastDate: string | null = null;
@@ -274,11 +278,15 @@ export function VirtualMessageList({
   const getItemSize = useCallback(
     (index: number) => {
       const item = listItems[index];
-      if (!item) return 100; // Default height
+      if (!item) {
+        return 100; // Default height
+      }
 
       // Return cached size if available
       const cachedSize = itemSizeCache.current[item.id];
-      if (cachedSize) return cachedSize;
+      if (cachedSize) {
+        return cachedSize;
+      }
 
       // Estimate sizes based on item type
       if (item.type === 'date-separator') {
@@ -307,7 +315,7 @@ export function VirtualMessageList({
   );
 
   // Handle item size changes
-  const handleItemSizeChange = useCallback(
+  const _handleItemSizeChange = useCallback(
     (index: number, size: number) => {
       const item = listItems[index];
       if (item && itemSizeCache.current[item.id] !== size) {
@@ -321,7 +329,9 @@ export function VirtualMessageList({
   // Scroll to bottom
   const scrollToBottom = useCallback(
     (smooth = true) => {
-      if (!listRef.current || listItems.length === 0) return;
+      if (!listRef.current || listItems.length === 0) {
+        return;
+      }
 
       const lastIndex = listItems.length - 1;
       listRef.current.scrollToItem(lastIndex, smooth ? 'end' : 'auto');
@@ -340,7 +350,9 @@ export function VirtualMessageList({
   // Handle scroll events
   const handleScroll = useCallback(
     ({ scrollOffset, scrollUpdateWasRequested }: any) => {
-      if (!listRef.current || scrollUpdateWasRequested) return;
+      if (!listRef.current || scrollUpdateWasRequested) {
+        return;
+      }
 
       const list = listRef.current;
       const totalHeight = listItems.reduce(

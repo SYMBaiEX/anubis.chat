@@ -30,7 +30,7 @@ export interface TokenPrice {
 const DEFAULT_SPL_TOKENS: SPLTokenConfig[] = [
   {
     symbol: 'SYMX',
-    name: 'Symbiosis Token',
+    name: 'SYMBaiEX Token',
     address: 'Fu4jQQpUnECSVQrVfeeVPpQpXQffM75LL328EJPtpump',
     decimals: 6,
     enabled: true,
@@ -47,6 +47,11 @@ const DEFAULT_SPL_TOKENS: SPLTokenConfig[] = [
 // Get configured SPL tokens
 export function getConfiguredSPLTokens(): SPLTokenConfig[] {
   if (!solanaConfig.splTokens.enabled) {
+    return [];
+  }
+
+  // Disable SPL tokens on devnet/testnet since Jupiter API only works with mainnet
+  if (solanaConfig.network !== 'mainnet-beta') {
     return [];
   }
 
@@ -131,8 +136,7 @@ class PriceFeedService {
 
       const data = await response.json();
       return data.data?.[tokenAddress]?.price || null;
-    } catch (error) {
-      console.error('Jupiter price fetch error:', error);
+    } catch (_error) {
       return null;
     }
   }
@@ -150,11 +154,9 @@ class PriceFeedService {
 
       const data = await response.json();
       return (
-        data.data?.['So11111111111111111111111111111111111111112']?.price ||
-        null
+        data.data?.So11111111111111111111111111111111111111112?.price || null
       );
-    } catch (error) {
-      console.error('SOL price fetch error:', error);
+    } catch (_error) {
       return null;
     }
   }
@@ -191,8 +193,7 @@ class PriceFeedService {
       this.setCachedPrice(tokenConfig.address, price);
 
       return price;
-    } catch (error) {
-      console.error(`Error fetching price for ${tokenConfig.symbol}:`, error);
+    } catch (_error) {
       return null;
     }
   }
@@ -221,7 +222,7 @@ export const getTokenPrices = query({
       if (args.tokenAddresses && args.tokenAddresses.length > 0) {
         // Get prices for specific tokens
         const tokens = getConfiguredSPLTokens().filter((token) =>
-          args.tokenAddresses!.includes(token.address)
+          args.tokenAddresses?.includes(token.address)
         );
 
         const prices = await Promise.all(
@@ -232,8 +233,7 @@ export const getTokenPrices = query({
       }
       // Get all token prices
       return await priceFeedService.getAllTokenPrices();
-    } catch (error) {
-      console.error('Error fetching token prices:', error);
+    } catch (_error) {
       return [];
     }
   },
@@ -300,7 +300,6 @@ export const calculateTokenPaymentAmount = query({
         },
       };
     } catch (error) {
-      console.error('Error calculating token payment amount:', error);
       throw new Error(
         `Failed to calculate payment amount: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

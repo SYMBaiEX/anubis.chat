@@ -2,7 +2,7 @@
 
 import { api } from '@convex/_generated/api';
 import { useMutation } from 'convex/react';
-import { Moon, Sun } from 'lucide-react';
+import { Check, Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 export function ModeToggle() {
-  const { setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { isAuthenticated } = useAuthContext();
   const updateUserPreferences = useMutation(
     api.userPreferences.updateUserPreferences
@@ -31,6 +32,7 @@ export function ModeToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem
+          className="flex items-center justify-between"
           onClick={() => {
             setTheme('light');
             // Update preferences asynchronously without blocking UI
@@ -41,9 +43,14 @@ export function ModeToggle() {
             }
           }}
         >
-          Light
+          <div className="flex items-center gap-2">
+            <Sun className="h-4 w-4" />
+            <span>Light</span>
+          </div>
+          {theme === 'light' && <Check className="h-4 w-4" />}
         </DropdownMenuItem>
         <DropdownMenuItem
+          className="flex items-center justify-between"
           onClick={() => {
             setTheme('dark');
             // Update preferences asynchronously without blocking UI
@@ -54,9 +61,14 @@ export function ModeToggle() {
             }
           }}
         >
-          Dark
+          <div className="flex items-center gap-2">
+            <Moon className="h-4 w-4" />
+            <span>Dark</span>
+          </div>
+          {theme === 'dark' && <Check className="h-4 w-4" />}
         </DropdownMenuItem>
         <DropdownMenuItem
+          className="flex items-center justify-between"
           onClick={() => {
             setTheme('system');
             // Update preferences asynchronously without blocking UI
@@ -67,7 +79,11 @@ export function ModeToggle() {
             }
           }}
         >
-          System
+          <div className="flex items-center gap-2">
+            <Monitor className="h-4 w-4" />
+            <span>System</span>
+          </div>
+          {theme === 'system' && <Check className="h-4 w-4" />}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

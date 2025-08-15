@@ -163,7 +163,7 @@ export default function AnimatedSection({
 
   return (
     <motion.section
-      className={`relative ${allowOverlap ? 'overflow-visible' : 'overflow-hidden'} ${useSurface ? 'light:papyrus-surface dark:basalt-surface' : ''} bg-background ${className ?? ''}`}
+      className={`relative ${allowOverlap ? 'overflow-visible' : 'overflow-hidden'} ${useSurface ? 'papyrus-surface dark:basalt-surface' : ''} bg-background ${className ?? ''}`}
       ref={ref}
       style={{ contain: 'paint', position: 'relative' }}
       {...rest}

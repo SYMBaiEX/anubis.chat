@@ -321,7 +321,7 @@ export const EnhancedMessageInput = memo(
                         variant={useReasoning ? 'default' : 'ghost'}
                         className={cn(
                           "h-9 w-9 transition-all relative",
-                          useReasoning && "bg-yellow-500 hover:bg-yellow-600 text-black shadow-lg shadow-yellow-500/20"
+                          useReasoning && "bg-yellow-500 hover:bg-yellow-600 text-primary-foreground shadow-lg shadow-yellow-500/20"
                         )}
                         disabled={disabled}
                       >
@@ -348,7 +348,7 @@ export const EnhancedMessageInput = memo(
                         variant={useReasoning ? 'default' : 'outline'}
                         onClick={() => setUseReasoning(!useReasoning)}
                         className={cn(
-                          useReasoning && "bg-yellow-500 hover:bg-yellow-600 text-black"
+                          useReasoning && "bg-yellow-500 hover:bg-yellow-600 text-primary-foreground"
                         )}
                       >
                         {useReasoning ? 'Enabled' : 'Disabled'}

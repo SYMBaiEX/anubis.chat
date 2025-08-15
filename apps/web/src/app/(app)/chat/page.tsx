@@ -3,7 +3,6 @@
 import { Suspense } from 'react';
 import { ChatInterface } from '@/components/chat/chat-interface';
 import { ChatSkeleton } from '@/components/chat/chat-skeleton';
-import { AsyncErrorBoundary } from '@/components/error-boundary/async-error-boundary';
 import { ChatErrorBoundary } from '@/components/error-boundary/chat-error-boundary';
 import { useAuthContext } from '@/components/providers/auth-provider';
 
@@ -23,15 +22,13 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="h-full w-full overflow-hidden bg-gradient-to-b from-primary/5 dark:from-primary/10">
+    <div className="fixed inset-0 bg-gradient-to-b from-primary/5 dark:from-primary/10">
       {/* Chat Interface with Error Boundary and Suspense for better reliability */}
       <div className="relative h-full w-full overflow-hidden">
         <ChatErrorBoundary>
-          <AsyncErrorBoundary>
-            <Suspense fallback={<ChatSkeleton />}>
-              <ChatInterface />
-            </Suspense>
-          </AsyncErrorBoundary>
+          <Suspense fallback={<ChatSkeleton />}>
+            <ChatInterface />
+          </Suspense>
         </ChatErrorBoundary>
       </div>
     </div>

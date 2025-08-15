@@ -19,7 +19,6 @@ export function WebVitals() {
   useReportWebVitals((metric) => {
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.log('Web Vital:', metric);
     }
 
     // Send to analytics endpoint
@@ -51,9 +50,7 @@ export function WebVitals() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
-      }).catch((error) => {
-        console.error('Failed to send analytics:', error);
-      });
+      }).catch((_error) => {});
     }
 
     // Special handling for specific metrics
@@ -61,37 +58,31 @@ export function WebVitals() {
       case 'FCP': // First Contentful Paint
         // Track initial render performance
         if (metric.value > 1800) {
-          console.warn('FCP is slow:', metric.value);
         }
         break;
       case 'LCP': // Largest Contentful Paint
         // Track main content load
         if (metric.value > 2500) {
-          console.warn('LCP is slow:', metric.value);
         }
         break;
       case 'CLS': // Cumulative Layout Shift
         // Track visual stability
         if (metric.value > 0.1) {
-          console.warn('CLS is high:', metric.value);
         }
         break;
       case 'FID': // First Input Delay
         // Track interactivity
         if (metric.value > 100) {
-          console.warn('FID is slow:', metric.value);
         }
         break;
       case 'TTFB': // Time to First Byte
         // Track server response time
         if (metric.value > 800) {
-          console.warn('TTFB is slow:', metric.value);
         }
         break;
       case 'INP': // Interaction to Next Paint
         // Track responsiveness
         if (metric.value > 200) {
-          console.warn('INP is slow:', metric.value);
         }
         break;
     }
@@ -108,12 +99,11 @@ export function WebVitals() {
         const firstResponse = performance.mark('first-ai-response');
 
         if (navigation && firstResponse) {
-          const timeToFirstResponse =
+          const _timeToFirstResponse =
             firstResponse.startTime - navigation.fetchStart;
 
           // Report custom metric
           if (process.env.NODE_ENV === 'development') {
-            console.log('Time to First AI Response:', timeToFirstResponse);
           }
         }
       };
@@ -159,7 +149,6 @@ export function WebVitals() {
 // Export utility function for manual metric reporting
 export function reportCustomMetric(name: string, value: number) {
   if (process.env.NODE_ENV === 'development') {
-    console.log('Custom Metric:', { name, value });
   }
 
   // Send to analytics

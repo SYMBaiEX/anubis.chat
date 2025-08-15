@@ -246,8 +246,6 @@ export * from './subscription-billing';
 // Type Utilities and Helpers
 // =============================================================================
 
-// Import Convex id helper from our convex-integration to keep constraints
-import type { ConvexId } from './convex-integration';
 // Import Result types locally for guard function signatures
 import type { Err, Ok, Result } from './result';
 
@@ -278,7 +276,7 @@ export type EventHandler<T = Event> = (event: T) => void;
 export type AsyncEventHandler<T = Event> = (event: T) => Promise<void>;
 
 // ID and reference utilities
-export type EntityWithId<T extends string> = {
+export type EntityWithId<_T extends string> = {
   // Use string to avoid generic constraint issues in UI utility types
   _id: string;
   _creationTime: number;

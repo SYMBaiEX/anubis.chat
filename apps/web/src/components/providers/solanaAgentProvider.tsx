@@ -110,6 +110,7 @@ interface SolanaAgentContextType {
 
   // Agent Management
   selectAgent: (agentId: string) => void;
+  resetAgentSelection: () => void;
   createCustomAgent: (config: Partial<Agent>) => Promise<string | null>;
 
   // Tool Execution
@@ -155,6 +156,7 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSelectingAgent, setIsSelectingAgent] = useState(false);
+  const [hasExplicitSelection, setHasExplicitSelection] = useState(false);
 
   // Fetch available agents
   const agents = useQuery(
@@ -180,7 +182,7 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
 
   // Initialize Solana Agent Kit when wallet connects
   useEffect(() => {
-    const initializeAgentKit = async () => {
+    const initializeAgentKit = () => {
       if (
         !(wallet.isConnected && wallet.publicKey && isAuthenticated && user)
       ) {
@@ -193,13 +195,22 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
         // In production, the private key should NOT be stored on the frontend
         // Instead, the agent operations should be executed on the backend
         // For now, we'll create the kit without the private key and use it for read-only operations
-        const _rpcUrl =
-          process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
-          process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta'
-            ? 'https://api.mainnet-beta.solana.com'
-            : process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'testnet'
-              ? 'https://api.testnet.solana.com'
-              : 'https://api.devnet.solana.com';
+        const getRpcUrl = () => {
+          if (process.env.NEXT_PUBLIC_SOLANA_RPC_URL) {
+            return process.env.NEXT_PUBLIC_SOLANA_RPC_URL;
+          }
+
+          const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK;
+          if (network === 'mainnet-beta') {
+            return 'https://api.mainnet-beta.solana.com';
+          }
+          if (network === 'testnet') {
+            return 'https://api.testnet.solana.com';
+          }
+          return 'https://api.devnet.solana.com';
+        };
+
+        const _rpcUrl = getRpcUrl();
 
         // Skip agent kit instantiation on the client for read-only operations
         // Server-side should handle transaction-capable agent actions
@@ -215,84 +226,105 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
     initializeAgentKit();
   }, [wallet.isConnected, wallet.publicKey, isAuthenticated, user]);
 
-  // Auto-select first agent when available
+  // Auto-select first agent when available only once on initial load
   useEffect(() => {
-    if (agents && agents.length > 0 && !selectedAgent) {
+    if (
+      agents &&
+      agents.length > 0 &&
+      !selectedAgent &&
+      !isSelectingAgent &&
+      !hasExplicitSelection
+    ) {
+      // Only auto-select if:
+      // 1. We have agents available
+      // 2. No agent is currently selected
+      // 3. We're not in the process of selecting
+      // 4. No explicit selection has been made (prevents overriding chat selections)
       const generalAgent =
         agents.find((agent: Agent) => agent.type === 'general') || agents[0];
       setSelectedAgent(generalAgent);
     }
-  }, [agents, selectedAgent]);
+  }, [agents, selectedAgent, isSelectingAgent, hasExplicitSelection]);
 
   const selectAgent = useCallback(
     (agentId: string) => {
-      // Prevent unnecessary updates if the same agent is already selected
-      if (selectedAgent?._id === agentId || isSelectingAgent) {
+      // If the same agent is already selected, don't re-select it
+      if (selectedAgent?._id === agentId) {
         return;
       }
 
-      setIsSelectingAgent(true);
+      // Prevent selection during an ongoing selection process
+      if (isSelectingAgent) {
+        return;
+      }
 
       const agent = agents?.find((a: Agent) => a._id === agentId);
-      if (agent) {
-        setSelectedAgent(agent);
-      }
 
-      // Reset the selecting flag after a brief delay
-      setTimeout(() => setIsSelectingAgent(false), 100);
+      if (agent) {
+        setIsSelectingAgent(true);
+        setHasExplicitSelection(true); // Mark that a selection has been made
+
+        // Update the selected agent
+        setSelectedAgent(agent);
+
+        // Reset the selecting flag after a brief delay
+        setTimeout(() => setIsSelectingAgent(false), 100);
+      }
     },
-    [agents, selectedAgent?._id, isSelectingAgent]
+    [agents, isSelectingAgent, selectedAgent?._id]
   );
 
+  // Add a method to reset the selection state (useful when switching chats)
+  const resetAgentSelection = useCallback(() => {
+    setHasExplicitSelection(false);
+    setSelectedAgent(null);
+  }, []);
+
   const createCustomAgent = useCallback(
-    async (_config: Partial<Agent>): Promise<string | null> => {
+    (_config: Partial<Agent>): Promise<string | null> => {
       if (!user) {
-        return null;
+        return Promise.resolve(null);
       }
 
-      try {
-        return null;
-      } catch (_err) {
-        setError('Failed to create custom agent');
-        return null;
-      }
+      // TODO: Implement custom agent creation via Convex mutation
+      setError('Custom agent creation not yet implemented');
+      return Promise.resolve(null);
     },
     [user]
   );
 
   const executeTool = useCallback(
-    async (execution: ToolExecution): Promise<unknown> => {
+    (execution: ToolExecution): Promise<unknown> => {
       if (!(agentKit && selectedAgent && wallet.isConnected)) {
-        throw new Error(
-          'Agent kit not initialized, no agent selected, or wallet not connected'
+        return Promise.reject(
+          new Error(
+            'Agent kit not initialized, no agent selected, or wallet not connected'
+          )
         );
       }
-      // Execute the tool based on its name
-      // This is a simplified example - you'd have a proper tool registry
-      switch (execution.toolName) {
-        case 'getBalance':
-          // Use wallet balance since we have access to it
-          return wallet.balance || 0;
 
-        case 'getAddress':
-          return wallet.publicKey;
+      // Handle read-only tools
+      const readOnlyTools: Record<string, () => unknown> = {
+        getBalance: () => wallet.balance || 0,
+        getAddress: () => wallet.publicKey,
+        getTokenBalances: () => [], // TODO: Implement token balance fetching
+      };
 
-        case 'getTokenBalances':
-          // For now, return empty array - would need to implement token balance fetching
-          return [];
+      const secureTools = ['deployToken', 'transfer', 'swap'];
 
-        // Transaction-based tools should be executed server-side with proper security
-        case 'deployToken':
-        case 'transfer':
-        case 'swap':
-          throw new Error(
-            `Tool '${execution.toolName}' requires server-side execution for security`
-          );
-
-        // Add more read-only tools as needed
-        default:
-          throw new Error(`Unknown tool: ${execution.toolName}`);
+      if (readOnlyTools[execution.toolName]) {
+        return Promise.resolve(readOnlyTools[execution.toolName]());
       }
+
+      if (secureTools.includes(execution.toolName)) {
+        return Promise.reject(
+          new Error(
+            `Tool '${execution.toolName}' requires server-side execution for security`
+          )
+        );
+      }
+
+      return Promise.reject(new Error(`Unknown tool: ${execution.toolName}`));
     },
     [agentKit, selectedAgent, wallet]
   );
@@ -312,28 +344,30 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
     }
   }, [wallet]);
 
-  const getTokenBalances = useCallback(async (): Promise<Array<{
+  const getTokenBalances = useCallback((): Promise<Array<{
     mint: string;
     amount: string;
   }> | null> => {
     if (!wallet.isConnected) {
-      return null;
+      return Promise.resolve(null);
     }
 
-    try {
-      // For now, return empty array
-      // In production, this would fetch token balances from the RPC
-      // using the connection and wallet's public key
-      return [];
-    } catch (_err) {
-      setError('Failed to get token balances');
-      return null;
-    }
+    // TODO: Implement token balance fetching from Solana RPC
+    // This would use @solana/web3.js to fetch SPL token accounts
+    return Promise.resolve([]);
   }, [wallet.isConnected]);
 
   const refreshData = useCallback(() => {
-    // Placeholder for data refresh logic
-  }, []);
+    // Refresh wallet balance if connected
+    if (wallet.isConnected && wallet.refreshBalance) {
+      wallet.refreshBalance();
+    }
+
+    // Clear any stale errors
+    setError(null);
+
+    // TODO: Add transaction refresh logic when implemented
+  }, [wallet]);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -350,6 +384,7 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
 
     // Agent Management
     selectAgent,
+    resetAgentSelection,
     createCustomAgent,
 
     // Tool Execution

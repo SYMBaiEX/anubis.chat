@@ -16,7 +16,7 @@ export const themeInitScript = `
     
     // Fallback to localStorage (next-themes default)
     try {
-      return localStorage.getItem('theme');
+      return localStorage.getItem('anubis-theme');
     } catch {
       return null;
     }
@@ -33,18 +33,29 @@ export const themeInitScript = `
   }
 
   // Apply theme
-  const theme = getStoredTheme();
+  const theme = getStoredTheme() || 'system';
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   
-  if (theme === 'dark' || (!theme && prefersDark)) {
+  // Remove any existing theme class first
+  document.documentElement.classList.remove('dark', 'light');
+  
+  // Apply the appropriate theme
+  if (theme === 'dark') {
     document.documentElement.classList.add('dark');
+    document.documentElement.style.colorScheme = 'dark';
   } else if (theme === 'light') {
+    // Light theme - explicitly ensure no dark class
     document.documentElement.classList.remove('dark');
-  } else if (theme === 'system') {
+    document.documentElement.classList.add('light');
+    document.documentElement.style.colorScheme = 'light';
+  } else if (theme === 'system' || !theme) {
+    // System preference
     if (prefersDark) {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+      document.documentElement.style.colorScheme = 'light';
     }
   }
 

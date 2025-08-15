@@ -348,7 +348,7 @@ export interface SearchBarProps extends BaseComponentProps {
   showFilters?: boolean;
   onFiltersChange?: (filters: {
     // Keep lightweight to avoid importing API schemas in UI layer
-    documentTypes?: Array<Document['type']>;
+    documentTypes?: Document['type'][];
     dateRange?: { start: Date; end: Date };
     categories?: string[];
   }) => void;

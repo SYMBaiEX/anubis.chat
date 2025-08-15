@@ -1,12 +1,11 @@
 'use client';
 
-import { api } from '@convex/_generated/api';
 import type { Doc, Id } from '@convex/_generated/dataModel';
 import { MessageSquare, Plus, Sidebar } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme as useNextTheme } from 'next-themes';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { UpgradePrompt } from '@/components/auth/upgradePrompt';
 import { EmptyState } from '@/components/data/empty-states';
@@ -17,7 +16,7 @@ import {
   useSubscriptionLimits,
   useUpgradePrompt,
 } from '@/components/providers/auth-provider';
-import { useSolanaAgent } from '@/components/providers/solana-agent-provider';
+import { useSolanaAgent } from '@/components/providers/solanaAgentProvider';
 import { AgentGrid } from '@/components/ui/agent-grid';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,11 +35,8 @@ import {
   useUpdateChat,
 } from '@/hooks/convex/useChats';
 import {
-  useAgentManagement,
   useAgents,
   useGenerateTitle,
-  useSettings,
-  useTheme,
   useUpdateUserPreferences,
   useUserPreferences,
 } from '@/hooks/convex/useConvexHooks';
@@ -53,47 +49,16 @@ import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
 import { ArtifactView } from './artifactView';
 import { ChatHeader } from './chatHeader';
+import { applyUserPreferencesToSettings } from './chatHelpers';
 import { ChatSettingsDialog } from './chatSettingsDialog';
 import { ChatWelcome } from './chatWelcome';
 import { EnhancedMessageInput } from './enhanced-message-input';
 import { MessageListSuspense } from './messageListSuspense';
 import { ModelSelector } from './model-selector';
 import { StreamingSuspenseWrapper } from './streamingSuspenseWrapper';
+import type { ChatInterfaceProps, ChatSettings } from './types';
 
 const log = createModuleLogger('components/chat/chat-interface');
-
-type ChatSettings = {
-  // Model Settings
-  model: string;
-  temperature: number;
-  maxTokens: number;
-  topP: number;
-  frequencyPenalty: number;
-  presencePenalty: number;
-
-  // Behavior Settings
-  systemPrompt: string;
-  agentPrompt?: string; // Read-only agent prompt for display
-  streamResponses: boolean;
-  enableMemory: boolean;
-  autoCreateTitles: boolean;
-
-  // Interface Settings
-  theme: 'light' | 'dark' | 'system';
-  language: string;
-  fontSize: 'small' | 'medium' | 'large';
-  soundEnabled: boolean;
-  autoScroll: boolean;
-
-  // Advanced Settings
-  saveHistory: boolean;
-  contextWindow: number;
-  responseFormat: 'text' | 'markdown' | 'json';
-};
-
-interface ChatInterfaceProps {
-  className?: string;
-}
 
 /**
  * ChatInterface - Main chat application component
@@ -109,6 +74,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     agents: solanaAgents,
     selectedAgent,
     selectAgent,
+    resetAgentSelection,
     isInitialized,
   } = useSolanaAgent();
 
@@ -247,46 +213,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   // Sync chat settings with user preferences when preferences are loaded
   useEffect(() => {
     if (userPreferences && isAuthenticated) {
-      setChatSettings((prev) => {
-        const prefsBase = userPreferences as unknown;
-        let defaults: Partial<{
-          defaultModel: string;
-          defaultTemperature: number;
-          defaultMaxTokens: number;
-          defaultTopP: number;
-          defaultFrequencyPenalty: number;
-          defaultPresencePenalty: number;
-        }> = {};
-        if (typeof prefsBase === 'object' && prefsBase !== null) {
-          defaults = prefsBase as typeof defaults;
-        }
-        return {
-          ...prev,
-          // Apply user preferences to interface and behavior settings
-          theme: userPreferences.theme || prev.theme,
-          language: userPreferences.language || prev.language,
-          fontSize: userPreferences.fontSize || prev.fontSize,
-          soundEnabled: userPreferences.soundEnabled ?? prev.soundEnabled,
-          autoScroll: userPreferences.autoScroll ?? prev.autoScroll,
-          streamResponses:
-            userPreferences.streamResponses ?? prev.streamResponses,
-          enableMemory: userPreferences.enableMemory ?? prev.enableMemory,
-          autoCreateTitles:
-            userPreferences.autoCreateTitles ?? prev.autoCreateTitles,
-          responseFormat: userPreferences.responseFormat || prev.responseFormat,
-          contextWindow: userPreferences.contextWindow || prev.contextWindow,
-          saveHistory: userPreferences.saveHistory ?? prev.saveHistory,
-          // Apply model defaults for new chats (when provided by preferences)
-          model: defaults.defaultModel ?? prev.model,
-          temperature: defaults.defaultTemperature ?? prev.temperature,
-          maxTokens: defaults.defaultMaxTokens ?? prev.maxTokens,
-          topP: defaults.defaultTopP ?? prev.topP,
-          frequencyPenalty:
-            defaults.defaultFrequencyPenalty ?? prev.frequencyPenalty,
-          presencePenalty:
-            defaults.defaultPresencePenalty ?? prev.presencePenalty,
-        };
-      });
+      setChatSettings((prev) =>
+        applyUserPreferencesToSettings(prev, userPreferences)
+      );
     }
   }, [userPreferences, isAuthenticated]);
 
@@ -365,8 +294,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   }, [chats, selectedChatId, router]);
 
   // Update selected model and settings when chat changes
+  // Only sync agent on initial load or when switching chats, not when agent is manually changed
   useEffect(() => {
-    if (currentChat?.model) {
+    if (!currentChat) return;
+
+    if (currentChat.model) {
       setSelectedModel(currentChat.model);
       setChatSettings((prev) => ({
         ...prev,
@@ -375,62 +307,79 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         agentPrompt: currentChat.agentPrompt || prev.agentPrompt,
         temperature: currentChat.temperature || prev.temperature,
       }));
-
-      // Also select the agent if the chat has an agentId (but only if it's different from current)
-      if (currentChat.agentId && allAgents && selectAgent) {
-        const chatAgent = allAgents.find((a) => a._id === currentChat.agentId);
-        if (
-          chatAgent &&
-          (!selectedAgent || selectedAgent._id !== chatAgent._id)
-        ) {
-          selectAgent(currentChat.agentId);
-        }
-      }
     }
   }, [
     currentChat?.model,
-    currentChat?.agentId,
     currentChat?.systemPrompt,
     currentChat?.agentPrompt,
     currentChat?.temperature,
+  ]);
+
+  // Sync agent selection only when switching between chats
+  // We use a ref to track the last chat ID to prevent re-syncing on the same chat
+  const lastSyncedChatIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    // Only sync agent when we switch to a different chat
+    if (
+      !(selectedChatId && currentChat) ||
+      lastSyncedChatIdRef.current === selectedChatId
+    ) {
+      return;
+    }
+
+    // Mark this chat as synced
+    lastSyncedChatIdRef.current = selectedChatId;
+
+    // Handle agent selection based on chat's agent
+    if (currentChat.agentId && allAgents?.length > 0) {
+      const chatAgent = allAgents.find((a) => a._id === currentChat.agentId);
+      if (chatAgent) {
+        selectAgent(currentChat.agentId);
+      }
+    } else if (!currentChat.agentId) {
+      // If the chat has no agent, reset selection
+      resetAgentSelection();
+    }
+  }, [
+    selectedChatId,
+    currentChat,
     allAgents,
     selectAgent,
-    selectedAgent?._id,
+    resetAgentSelection,
   ]);
 
   // Update agent prompt when agent changes (keep system prompt separate)
   // Only update if the agent actually changed to prevent feedback loops
   useEffect(() => {
-    if (
-      selectedAgent?.systemPrompt &&
-      selectedChatId &&
-      isAuthenticated &&
-      currentChat
-    ) {
-      // Always update settings to reflect the current agent
-      setChatSettings((prev) => ({
-        ...prev,
-        agentPrompt: selectedAgent.systemPrompt,
-      }));
+    // Skip if no agent is selected or no chat is selected
+    if (!(selectedAgent && selectedChatId && isAuthenticated && currentChat)) {
+      return;
+    }
 
-      // Only update database if this agent is different from what's already set in the chat
-      // Add debouncing to prevent rapid database updates
-      if (currentChat.agentId !== selectedAgent._id && user?._id) {
-        const timeoutId = setTimeout(() => {
-          updateChat({
-            id: selectedChatId as Id<'chats'>,
-            ownerId: user._id,
-            agentPrompt: selectedAgent.systemPrompt,
-            agentId: selectedAgent._id,
-          }).catch((error: unknown) => {
-            log.error('Failed to update chat agent', {
-              error: error instanceof Error ? error.message : String(error),
-            });
+    // Always update settings to reflect the current agent
+    setChatSettings((prev) => ({
+      ...prev,
+      agentPrompt: selectedAgent.systemPrompt || '',
+    }));
+
+    // Only update database if this agent is different from what's already set in the chat
+    // Add debouncing to prevent rapid database updates
+    if (currentChat.agentId !== selectedAgent._id && user?._id) {
+      const timeoutId = setTimeout(() => {
+        updateChat({
+          id: selectedChatId as Id<'chats'>,
+          ownerId: user._id,
+          agentPrompt: selectedAgent.systemPrompt,
+          agentId: selectedAgent._id,
+        }).catch((error: unknown) => {
+          log.error('Failed to update chat agent', {
+            error: error instanceof Error ? error.message : String(error),
           });
-        }, 300); // 300ms debounce
+        });
+      }, 500); // 500ms debounce to prevent rapid updates
 
-        return () => clearTimeout(timeoutId);
-      }
+      return () => clearTimeout(timeoutId);
     }
   }, [
     selectedAgent?._id,
@@ -439,7 +388,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     isAuthenticated,
     currentChat?.agentId,
     user?._id,
-    updateChat,
   ]);
 
   // Quick suggestions removed per product request
@@ -638,7 +586,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     // Update the chat's model in the database
     if (selectedChatId && isAuthenticated && currentChatQuery && user?._id) {
       try {
-        const result = await updateChat({
+        const _result = await updateChat({
           id: selectedChatId as Id<'chats'>,
           ownerId: user._id,
           model: newModel,
@@ -755,7 +703,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         )}
       >
         {/* Top Bar */}
-        <div className="flex h-14 min-h-[3.5rem] items-center justify-between border-border/50 border-b bg-card/30 px-2 backdrop-blur sm:px-3 md:px-4 lg:px-6">
+        <div className="sticky top-0 z-30 flex h-14 min-h-[3.5rem] items-center justify-between border-border/50 border-b bg-card/95 px-2 backdrop-blur-sm sm:px-3 md:px-4 lg:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2 md:gap-3">
             {/* Hamburger menu */}
             {!sidebarOpen && (
@@ -876,7 +824,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         {currentChat ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">
             {/* Message List */}
-            <div className="relative flex-1 overflow-hidden">
+            <div className="relative flex-1 overflow-y-auto overflow-x-hidden">
               {messages === undefined ? (
                 <div className="flex h-full items-center justify-center">
                   <LoadingStates
@@ -966,7 +914,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             )}
 
             {/* Message Input */}
-            <div className="border-border/50 border-t bg-card/30 backdrop-blur">
+            <div className="border-border/50 border-t bg-card/30 backdrop-blur pb-12">
               <div className="p-2 sm:p-3 md:p-4">
                 <div className="mx-auto w-full max-w-full px-0 sm:max-w-6xl md:max-w-7xl lg:px-4 xl:px-8">
                   <EnhancedMessageInput

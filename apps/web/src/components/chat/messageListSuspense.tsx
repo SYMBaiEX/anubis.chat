@@ -4,7 +4,6 @@ import { MessageSquare } from 'lucide-react';
 import { Component, type ReactNode, Suspense } from 'react';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
-import { Button } from '@/components/ui/button';
 import {
   useAdaptiveMessageList,
   VIRTUAL_SCROLL_THRESHOLD,
@@ -50,12 +49,6 @@ class MessageListErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error(
-      'MessageList error boundary caught an error:',
-      error,
-      errorInfo
-    );
-
     // Report to error monitoring system
     errorMonitor.captureError(error, {
       category: 'javascript',
@@ -108,7 +101,6 @@ export function MessageListSuspense(props: MessageListSuspenseProps) {
   if (process.env.NODE_ENV === 'development' && props.messages) {
     const messageCount = props.messages.length;
     if (messageCount > VIRTUAL_SCROLL_THRESHOLD) {
-      console.log(`Using virtual scrolling for ${messageCount} messages`);
     }
   }
 

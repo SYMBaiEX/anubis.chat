@@ -104,7 +104,7 @@ export default function Sidebar() {
   // Close mobile sidebar on route change
   useEffect(() => {
     setIsMobileOpen(false);
-  }, [pathname]);
+  }, []);
 
   // Handle escape key
   useEffect(() => {
@@ -132,7 +132,7 @@ export default function Sidebar() {
       {/* Mobile Menu Button (moved to right) */}
       <button
         aria-label="Toggle menu"
-        className="button-press fixed top-3 right-3 z-50 rounded-md border border-sidebar-border bg-sidebar-background/90 p-1.5 shadow-sm backdrop-blur lg:hidden"
+        className="button-press fixed top-3 right-3 z-50 rounded-md border border-border bg-card p-1.5 shadow-sm backdrop-blur lg:hidden"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         type="button"
       >
@@ -146,7 +146,7 @@ export default function Sidebar() {
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-background/50 backdrop-blur-sm lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -154,7 +154,7 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-0 left-0 z-40 h-[calc(100vh-2.5rem)] overflow-hidden border-sidebar-border border-r bg-sidebar-background/95 backdrop-blur transition-all duration-300 supports-[backdrop-filter]:bg-sidebar-background/80',
+          'fixed top-0 left-0 z-40 h-[calc(100vh-2.5rem)] overflow-hidden border-border border-r bg-card backdrop-blur transition-all duration-300 supports-[backdrop-filter]:bg-card/95',
           isCollapsed ? 'w-14' : 'w-56',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
@@ -165,7 +165,7 @@ export default function Sidebar() {
             className="aurora aurora-primary absolute inset-0"
           />
           {/* Logo with subtle glowing mark */}
-          <div className="flex h-12 items-center justify-between border-sidebar-border/80 border-b bg-sidebar-background/60 px-3">
+          <div className="flex h-12 items-center justify-between border-border/80 border-b bg-card/90 px-3">
             {isCollapsed ? (
               <div className="relative mx-auto inline-flex items-center justify-center">
                 <span
@@ -308,7 +308,7 @@ export default function Sidebar() {
                         <>
                           <span className="flex-1 text-sm">{item.label}</span>
                           {item.devOnly && (
-                            <span className="rounded-full bg-anubis-accent px-1.5 py-0 text-[9px] text-white">
+                            <span className="rounded-full bg-anubis-accent px-1.5 py-0 text-[9px] text-primary-foreground">
                               DEV
                             </span>
                           )}
@@ -436,7 +436,7 @@ export default function Sidebar() {
                       <Crown
                         className={`h-3 w-3 ${
                           subscription.tier === 'free'
-                            ? 'text-slate-600 dark:text-slate-400'
+                            ? 'text-muted-foreground'
                             : subscription.tier === 'pro'
                               ? 'text-blue-600 dark:text-blue-400'
                               : 'text-purple-600 dark:text-purple-400'

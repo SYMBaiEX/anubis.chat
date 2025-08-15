@@ -31,7 +31,7 @@ export function useConvexChat(chatId: string | undefined) {
   const { messages: optimisticMessages, sendMessage: sendOptimisticMessage } =
     useOptimisticMessages(chatId as Id<'chats'>);
 
-  const createMessage = useMutation(api.messagesAuth.createMyMessage);
+  const _createMessage = useMutation(api.messagesAuth.createMyMessage);
   const createSession = useMutation(api.streaming.createStreamingSession);
   const streamWithWebSocket = useAction(api.streaming.streamWithWebSocket);
 
@@ -60,11 +60,14 @@ export function useConvexChat(chatId: string | undefined) {
 
       if (streamingSession.status === 'completed') {
         // Clean up after completion with small delay for smooth transition
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           setStreamingMessage(null);
           setSessionId(null);
           setIsStreaming(false);
         }, 100);
+
+        // Clean up timeout on unmount or when dependencies change
+        return () => clearTimeout(timeoutId);
       }
 
       if (streamingSession.status === 'error') {
@@ -144,7 +147,7 @@ export function useConvexChat(chatId: string | undefined) {
         throw error;
       }
     },
-    [chatId, createMessage, createSession, streamWithWebSocket]
+    [chatId, createSession, streamWithWebSocket, sendOptimisticMessage]
   );
 
   // Combine optimistic messages with streaming message

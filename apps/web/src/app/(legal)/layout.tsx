@@ -29,7 +29,7 @@ export default function LegalLayout({
                 </span>
               </div>
               <h1 className="mt-1 mb-3 font-bold text-4xl sm:text-5xl md:mt-2 md:mb-4 md:text-6xl">
-                <span className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary">
+                <span className="bg-gradient-to-r from-foreground via-primary to-primary bg-clip-text text-transparent">
                   Policies and Terms
                 </span>
               </h1>

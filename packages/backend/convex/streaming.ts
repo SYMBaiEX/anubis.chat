@@ -7,13 +7,7 @@ import { v } from 'convex/values';
 import { api } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { action, httpAction, mutation, query } from './_generated/server';
-import {
-  estimateTokens,
-  getAgentConfig,
-  getCachedPrompt,
-  TOKEN_OPTIMIZATION,
-  truncateToTokenLimit,
-} from './lib/agents/agentManager';
+import { getCachedPrompt, TOKEN_OPTIMIZATION } from './lib/agents/agentManager';
 import { createModuleLogger } from './utils/logger';
 
 // Create logger instance for this module
@@ -170,6 +164,82 @@ const ALLOWED_OPENROUTER_MODELS = new Set<string>([
   // Premium model via OpenRouter on Cerebras
   'openai/gpt-oss-120b',
 ]);
+
+// Models that support tool use (function calling)
+// Based on OpenRouter documentation: https://openrouter.ai/models?supported_parameters=tools
+const MODELS_WITH_TOOL_SUPPORT = new Set<string>([
+  // OpenRouter models with verified tool support
+  'anthropic/claude-3.7-sonnet:thinking',
+  'openai/gpt-4o-mini',
+  'openai/gpt-4o',
+  'openai/gpt-4-turbo',
+  'openai/gpt-3.5-turbo',
+  'deepseek/deepseek-chat',
+  'qwen/qwen2.5-coder:32b',
+  'meta/llama-3.1-70b-instruct',
+  'openai/gpt-oss-120b',
+  // OpenAI models (all support tools when accessed directly)
+  'gpt-5',
+  'gpt-5-mini',
+  'gpt-4.1-mini',
+  'gpt-4o',
+  'gpt-4o-mini',
+  'o3',
+  'o4-mini',
+  // Google Gemini models (all support tools)
+  'gemini-2.5-pro',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-exp',
+  // Claude models (all support tools)
+  'claude-3.5-sonnet',
+  'claude-opus-4.1',
+  'claude-sonnet-4',
+  // DeepSeek models with tool support
+  'deepseek-chat',
+  'deepseek-r1',
+]);
+
+/**
+ * Check if a model supports tool use (function calling)
+ */
+function modelSupportsTools(model: string): boolean {
+  // Check exact match first
+  if (MODELS_WITH_TOOL_SUPPORT.has(model)) {
+    return true;
+  }
+
+  // Check if it's an OpenRouter model with the prefix
+  const openRouterModel = model.replace('openrouter/', '');
+  if (MODELS_WITH_TOOL_SUPPORT.has(openRouterModel)) {
+    return true;
+  }
+
+  // Check partial matches for provider-specific models
+  for (const supportedModel of MODELS_WITH_TOOL_SUPPORT) {
+    if (model.includes(supportedModel) || supportedModel.includes(model)) {
+      return true;
+    }
+  }
+
+  // Models that explicitly don't support tools
+  const noToolModels = [
+    'gpt-oss-20b:free',
+    'z-ai/glm-4.5-air:free',
+    'qwen/qwen3-coder:free',
+    'moonshotai/kimi-k2:free',
+  ];
+
+  for (const noToolModel of noToolModels) {
+    if (model.includes(noToolModel)) {
+      return false;
+    }
+  }
+
+  // Default to false for unknown models
+  return false;
+}
 
 // Configure allowed origins for CORS
 const ALLOWED_ORIGINS = [
@@ -511,6 +581,19 @@ export const streamWithWebSocket = action({
       // Get tools for this agent's capabilities (including MCP tools)
       const { aiTools } = getToolsForAgent(availableCapabilities);
 
+      // Check if the model supports tools
+      const supportsTools = modelSupportsTools(modelName);
+
+      if (!supportsTools && aiTools && Object.keys(aiTools).length > 0) {
+        logger.info(
+          'Model does not support tools, excluding tools from request',
+          {
+            model: modelName,
+            toolCount: Object.keys(aiTools).length,
+          }
+        );
+      }
+
       // Stream with real-time updates and tool support
       let accumulatedContent = '';
       const toolCalls: TrackedToolCall[] = [];
@@ -521,7 +604,8 @@ export const streamWithWebSocket = action({
         messages: conversationHistory,
         temperature: args.temperature ?? chat.temperature ?? 0.7,
         maxOutputTokens: args.maxTokens ?? chat.maxTokens ?? 2000,
-        tools: aiTools,
+        // Only include tools if the model supports them
+        ...(supportsTools && aiTools ? { tools: aiTools } : {}),
       });
 
       // Stream chunks with real-time updates

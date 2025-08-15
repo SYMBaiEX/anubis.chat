@@ -207,6 +207,7 @@ export function FileUploadPreview({
       uploadLimits,
       subscription?.tier,
       showUpgradePrompt,
+      subscription,
     ]
   );
 

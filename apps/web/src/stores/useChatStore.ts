@@ -252,7 +252,9 @@ export const useChatStore = create<ChatState>()(
 
       exportChat: (id) => {
         const chat = get().chats.get(id);
-        if (!chat) return '';
+        if (!chat) {
+          return '';
+        }
 
         return JSON.stringify(chat, null, 2);
       },
@@ -265,9 +267,7 @@ export const useChatStore = create<ChatState>()(
               state.chats.set(chat.id, chat);
             });
           }
-        } catch (error) {
-          console.error('Failed to import chat:', error);
-        }
+        } catch (_error) {}
       },
     }))
   )

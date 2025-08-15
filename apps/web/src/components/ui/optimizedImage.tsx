@@ -44,7 +44,7 @@ export function OptimizedImage({
 }: OptimizedImageProps) {
   const [imgSrc, setImgSrc] = useState(src);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  const [_hasError, setHasError] = useState(false);
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -194,7 +194,7 @@ export function OptimizedBackground({
       />
       {overlay && (
         <div
-          className="absolute inset-0 bg-black"
+          className="absolute inset-0 bg-background dark:bg-foreground"
           style={{ opacity: overlayOpacity }}
         />
       )}

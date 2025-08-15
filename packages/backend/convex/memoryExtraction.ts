@@ -275,8 +275,12 @@ export const checkSimilarMemory = query({
  */
 function mergeMemoryContents(existing: string, new_: string): string {
   // If one contains the other, use the longer one
-  if (existing.includes(new_)) return existing;
-  if (new_.includes(existing)) return new_;
+  if (existing.includes(new_)) {
+    return existing;
+  }
+  if (new_.includes(existing)) {
+    return new_;
+  }
 
   // Otherwise, combine them intelligently
   const existingLower = existing.toLowerCase();

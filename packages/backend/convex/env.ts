@@ -61,7 +61,9 @@ const convexEnvSchema = z.object({
     .string()
     .optional()
     .transform((val) => {
-      if (!val) return [];
+      if (!val) {
+        return [];
+      }
       try {
         const tokens = JSON.parse(val);
         return Array.isArray(tokens) ? tokens : [];

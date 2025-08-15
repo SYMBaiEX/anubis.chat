@@ -41,11 +41,13 @@ const getProviderIcon = (provider: AIModel['provider']) => {
 
 const getIntelligenceBadge = (intelligence: AIModel['intelligence']) => {
   const variants: Record<AIModel['intelligence'], string> = {
-    basic: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-    advanced: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+    basic: 'bg-secondary text-secondary-foreground',
+    advanced:
+      'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
     expert:
-      'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-    frontier: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white',
+      'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300',
+    frontier:
+      'bg-gradient-to-r from-purple-500 to-pink-500 text-primary-foreground',
   };
 
   // Shortened labels

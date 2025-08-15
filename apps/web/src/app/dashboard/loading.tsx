@@ -10,7 +10,7 @@ export default function DashboardLoading() {
 
         {/* Stats Cards Skeleton */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
+          {[...new Array(4)].map((_, i) => (
             <div className="rounded-lg border bg-card p-6" key={i}>
               <div className="flex items-center justify-between space-x-4">
                 <div className="space-y-2">
@@ -35,7 +35,7 @@ export default function DashboardLoading() {
           <div className="rounded-lg border bg-card p-6">
             <div className="mb-4 h-6 w-32 animate-pulse rounded bg-muted" />
             <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
+              {[...new Array(5)].map((_, i) => (
                 <div className="flex items-center gap-3" key={i}>
                   <div className="h-10 w-10 animate-pulse rounded-full bg-muted" />
                   <div className="flex-1 space-y-2">

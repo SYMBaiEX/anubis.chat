@@ -6,12 +6,8 @@
  */
 
 import { v } from 'convex/values';
-import type { Id } from '../../_generated/dataModel';
 import { action, query } from '../../_generated/server';
-import type {
-  ToolExecutionContext,
-  ToolExecutionResult,
-} from '../../toolRegistry';
+import type { ToolExecutionResult } from '../../toolRegistry';
 import { createModuleLogger } from '../../utils/logger';
 import type { McpServerConfig } from '../agents/anubisAgent';
 import { globalMcpClient, type McpToolExecution } from './mcpClient';
@@ -37,7 +33,7 @@ export const initializeAgentMcpServers = action({
       })
     ),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     try {
       logger.info('Initializing real MCP servers for agent', {
         agentId: args.agentId,
@@ -142,7 +138,7 @@ export const executeRealMcpTool = action({
     userId: v.string(),
     sessionId: v.optional(v.string()),
   },
-  handler: async (ctx, args): Promise<ToolExecutionResult> => {
+  handler: async (_ctx, args): Promise<ToolExecutionResult> => {
     const startTime = Date.now();
 
     try {
@@ -220,7 +216,7 @@ export const getAgentMcpTools = query({
     agentId: v.id('agents'),
     userId: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     try {
       // Get all available tools from connected MCP servers
       const allTools = globalMcpClient.getAllTools();
@@ -251,7 +247,7 @@ export const getMcpServerHealth = query({
     agentId: v.id('agents'),
     userId: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     try {
       const status = globalMcpClient.getServerStatus('websearch-mcp');
 

@@ -6,9 +6,7 @@
  */
 
 import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { action } from './_generated/server';
-import type { ToolExecutionContext, ToolExecutionResult } from './toolRegistry';
 import { createModuleLogger } from './utils/logger';
 
 // Create logger instance for this module
@@ -88,7 +86,7 @@ export const executeMcpTool = action({
     userId: v.string(),
     sessionId: v.optional(v.string()),
   },
-  handler: async (ctx, args): Promise<McpToolResponse> => {
+  handler: async (_ctx, args): Promise<McpToolResponse> => {
     const startTime = Date.now();
 
     try {
@@ -267,7 +265,7 @@ export const initializeMcpServers = action({
     agentId: v.id('agents'),
     userId: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     try {
       logger.info('Initializing MCP servers for agent', {
         agentId: args.agentId,

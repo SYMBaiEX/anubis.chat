@@ -129,7 +129,11 @@ export interface UserPreferences {
   maxTokens?: number;
   streamResponses?: boolean;
   saveHistory?: boolean;
-  compactMode?: boolean;
+  // Notification preferences
+  soundEffects?: boolean;
+  desktopNotifications?: boolean;
+  // Privacy preferences
+  shareAnalytics?: boolean;
   // Chat/UI preferences
   fontSize?: 'small' | 'medium' | 'large';
   autoScroll?: boolean;

@@ -116,16 +116,16 @@ export function MessageList({
     );
 
     // Auto-scroll conditions:
-    // 1. New message arrived and auto-scrolling is enabled
+    // 1. New message arrived (both user and assistant messages)
     // 2. Streaming message is active
-    // 3. User is not manually scrolling
+    // 3. User is not manually scrolling away from bottom
     if (
       (hasNewMessage || hasStreamingMessage) &&
       isAutoScrolling &&
       !isUserScrolling
     ) {
-      // Use smooth scrolling for streaming, instant for new messages
-      scrollToBottom(hasStreamingMessage);
+      // Always use smooth scrolling for better UX
+      scrollToBottom(true);
 
       if (hasNewMessage) {
         setLastMessageCount(messages.length);
@@ -167,7 +167,7 @@ export function MessageList({
     };
   }, [messages, isAutoScrolling, isUserScrolling, scrollToBottom]);
 
-  // Enhanced scroll handler with user scroll detection
+  // Enhanced scroll handler with better user scroll detection
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) {
       return;
@@ -175,20 +175,24 @@ export function MessageList({
 
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-    const isNearBottom = distanceFromBottom < 100;
+    const isNearBottom = distanceFromBottom <= 50; // More generous threshold
+    const isAtBottom = distanceFromBottom <= 5;
 
-    // Detect if user is scrolling
-    if (!(isNearBottom || isUserScrolling)) {
-      setIsUserScrolling(true);
-      setIsAutoScrolling(false);
-    } else if (isNearBottom && isUserScrolling) {
+    // More intelligent scroll detection
+    if (isAtBottom) {
+      // User is at the very bottom - enable auto-scrolling
       setIsUserScrolling(false);
       setIsAutoScrolling(true);
+    } else if (!isNearBottom) {
+      // User has scrolled significantly away from bottom
+      setIsUserScrolling(true);
+      setIsAutoScrolling(false);
     }
+    // If user is near bottom but not at bottom, maintain current state
 
-    // Show scroll button when not at bottom
+    // Show scroll button when not near bottom and we have messages
     setShowScrollButton(!isNearBottom && messages && messages.length > 0);
-  }, [messages, isUserScrolling]);
+  }, [messages]);
 
   // Group messages by date for date separators
   const groupMessagesByDate = (

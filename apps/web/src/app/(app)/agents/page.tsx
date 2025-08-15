@@ -3,13 +3,18 @@
 import { api } from '@convex/_generated/api';
 import type { Doc, Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bot,
   Brain,
   Copy,
+  Crown,
+  Eye,
+  EyeOff,
   MoreVertical,
   Plus,
   Settings,
+  Shield,
   Sparkles,
   Trash2,
   Zap,
@@ -49,64 +54,96 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-// Agent type icons; colors now driven by theme tokens
+// Animation Variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 100,
+      damping: 12,
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { scale: 0.95, opacity: 0 },
+  visible: {
+    scale: 1,
+    opacity: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 100,
+      damping: 15,
+    },
+  },
+  hover: {
+    y: -4,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 400,
+      damping: 25,
+    },
+  },
+};
+
+// Agent type icons with Egyptian-themed gradients
 const getAgentTypeInfo = (type: string) => {
   switch (type) {
     case 'general':
       return {
-        color: 'bg-primary/10 text-primary',
-        ring: 'hover:ring-primary/20',
-        gradient: 'from-primary/5',
-        accent: 'border-l-primary/20',
+        gradient: 'from-primary/20 to-emerald-500/20',
         icon: Bot,
+        label: 'General AI',
       };
     case 'trading':
       return {
-        color: 'bg-primary/10 text-primary',
-        ring: 'hover:ring-primary/20',
-        gradient: 'from-primary/5',
-        accent: 'border-l-primary/20',
+        gradient: 'from-amber-500/20 to-orange-500/20',
         icon: Zap,
+        label: 'Trading Bot',
       };
     case 'defi':
       return {
-        color: 'bg-primary/10 text-primary',
-        ring: 'hover:ring-primary/20',
-        gradient: 'from-primary/5',
-        accent: 'border-l-primary/20',
+        gradient: 'from-accent/20 to-purple-500/20',
         icon: Sparkles,
+        label: 'DeFi Agent',
       };
     case 'nft':
       return {
-        color: 'bg-primary/10 text-primary',
-        ring: 'hover:ring-primary/20',
-        gradient: 'from-primary/5',
-        accent: 'border-l-primary/20',
+        gradient: 'from-pink-500/20 to-rose-500/20',
         icon: Brain,
+        label: 'NFT Specialist',
       };
     case 'portfolio':
       return {
-        color: 'bg-primary/10 text-primary',
-        ring: 'hover:ring-primary/20',
-        gradient: 'from-primary/5',
-        accent: 'border-l-primary/20',
-        icon: Brain,
+        gradient: 'from-blue-500/20 to-cyan-500/20',
+        icon: Shield,
+        label: 'Portfolio Manager',
       };
     case 'custom':
       return {
-        color: 'bg-primary/10 text-primary',
-        ring: 'hover:ring-primary/20',
-        gradient: 'from-primary/5',
-        accent: 'border-l-primary/20',
+        gradient: 'from-green-500/20 to-emerald-500/20',
         icon: Settings,
+        label: 'Custom Agent',
       };
     default:
       return {
-        color: 'bg-primary/10 text-primary',
-        ring: 'hover:ring-primary/20',
-        gradient: 'from-primary/5',
-        accent: 'border-l-primary/20',
+        gradient: 'from-primary/20 to-accent/20',
         icon: Bot,
+        label: 'AI Agent',
       };
   }
 };
@@ -197,184 +234,299 @@ export default function AgentsPage() {
   }
 
   return (
-    <div className="w-full bg-gradient-to-b from-primary/5 dark:from-primary/10">
-      {/* Full-width header */}
-      <div className="w-full p-4 md:p-6">
-        <div className="mx-auto w-full max-w-6xl">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-center">
-            <div>
-              <h1 className="whitespace-nowrap bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl">
-                AI Agents
-              </h1>
-              <p className="mt-1 text-muted-foreground text-sm">
-                Manage your custom AI agents and assistants
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 md:flex-row md:justify-end">
-              <Button asChild>
-                <Link href="/agents/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create New Agent
-                </Link>
-              </Button>
-              <Button
-                onClick={() => setShowPublicAgents(!showPublicAgents)}
-                size="sm"
-                variant="outline"
+    <AnimatePresence mode="wait">
+      <motion.div
+        animate={{ opacity: 1 }}
+        className="min-h-screen bg-gradient-to-b from-background via-background/95 to-primary/5"
+        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }}
+        key="agents"
+      >
+        {/* Compact Hero Header with Aurora Effect */}
+        <div className="relative overflow-hidden">
+          <motion.div
+            animate={{ opacity: 1 }}
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
+            transition={{ duration: 1.5 }}
+          >
+            <div className="aurora-primary opacity-20" />
+          </motion.div>
+
+          <div className="relative px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+            <div className="mx-auto max-w-7xl">
+              <motion.div
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center"
+                initial={{ opacity: 0, y: -10 }}
               >
-                {showPublicAgents ? 'Hide' : 'Show'} Public Agents
-              </Button>
+                <div>
+                  <h1 className="animate-gradient-x bg-gradient-to-r from-primary via-accent to-primary bg-clip-text font-bold text-3xl text-transparent sm:text-4xl">
+                    AI Agents Workshop
+                  </h1>
+                  <p className="mt-1 text-muted-foreground text-sm">
+                    Create and manage your custom AI agents
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      className="gap-2"
+                      onClick={() => setShowPublicAgents(!showPublicAgents)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      {showPublicAgents ? (
+                        <EyeOff className="h-3 w-3" />
+                      ) : (
+                        <Eye className="h-3 w-3" />
+                      )}
+                      {showPublicAgents ? 'Hide' : 'Show'} Public
+                    </Button>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      asChild
+                      className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                    >
+                      <Link href="/agents/new">
+                        <Plus className="mr-1 h-4 w-4" />
+                        Create Agent
+                      </Link>
+                    </Button>
+                  </motion.div>
+                </div>
+              </motion.div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Constrained content */}
-      <div className="mx-auto w-full max-w-6xl space-y-3 p-3 sm:space-y-4 sm:p-4 md:p-6">
-        {/* Agents Grid */}
-        {agents.length === 0 ? (
-          <Card className="p-8 sm:p-10">
-            <EmptyState
-              action={{
-                label: 'Create Agent',
-                onClick: () => router.push('/agents/new'),
-              }}
-              description="Create your first AI agent to get started"
-              icon={<Bot className="h-12 w-12 text-muted-foreground" />}
-              title="No agents yet"
-            />
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-2.5">
-            {agents.map((agent: Doc<'agents'>) => {
-              const typeInfo = getAgentTypeInfo(agent.type);
-              const _TypeIcon = typeInfo.icon;
-
-              return (
-                <Card
-                  className={cn(
-                    'group relative flex h-full flex-col overflow-hidden border border-border/60 p-2.5 transition-colors sm:p-3',
-                    'bg-gradient-to-b from-transparent to-card/40 dark:to-card/20',
-                    'hover:ring-1 hover:ring-primary/20',
-                    'border-l-2 border-l-primary/20'
-                  )}
-                  key={agent._id}
-                >
-                  <CardHeader className="border-border/50 border-b pb-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="min-w-0">
-                          <CardTitle className="truncate font-semibold text-[13.5px] tracking-tight sm:text-[15.5px]">
-                            {agent.name}
-                          </CardTitle>
-                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                            {agent.isPublic && (
-                              <Badge
-                                className="text-[10px] sm:text-xs"
-                                variant="secondary"
-                              >
-                                Public
-                              </Badge>
-                            )}
-                            <Badge
-                              className="text-[10px] sm:text-xs"
-                              variant="outline"
-                            >
-                              {agent.type}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Menu */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            className="h-8 w-8 p-0 opacity-100 transition-opacity hover:opacity-100"
-                            size="sm"
-                            variant="ghost"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {!agent.isPublic && (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  router.push(`/agents/${agent._id}/edit`)
-                                }
-                              >
-                                <Settings className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                            </>
-                          )}
-                          <DropdownMenuItem
-                            onClick={() => handleDuplicateAgent(agent)}
-                          >
-                            <Copy className="mr-2 h-4 w-4" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          {!agent.isPublic && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => setDeleteAgentId(agent._id)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="flex flex-1 flex-col pt-1 sm:pt-1.5">
-                    <CardDescription className="line-clamp-2 text-[12px] leading-snug sm:text-sm">
-                      {agent.description ||
-                        agent.systemPrompt ||
-                        'No description provided'}
-                    </CardDescription>
-
-                    {/* Agent Stats */}
-                    <div className="mt-2.5 flex flex-wrap items-center gap-2.5 text-[11px] text-muted-foreground sm:text-xs">
-                      <div className="rounded-md border px-1.5 py-0.5 leading-none">
-                        <span>Temp:</span>
-                        <span className="font-medium">
-                          {agent.temperature || 0.7}
-                        </span>
-                      </div>
-                      {agent.maxTokens && (
-                        <div className="rounded-md border px-1.5 py-0.5 leading-none">
-                          <span>Tokens:</span>
-                          <span className="font-medium">{agent.maxTokens}</span>
-                        </div>
-                      )}
-                      {agent.capabilities && agent.capabilities.length > 0 && (
-                        <div className="rounded-md border px-1.5 py-0.5 leading-none">
-                          <span>Tools:</span>
-                          <span className="font-medium">
-                            {agent.capabilities.length}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Created Date */}
-                    <div className="mt-auto pt-2 text-[11px] text-muted-foreground sm:text-xs">
-                      Created {new Date(agent.createdAt).toLocaleDateString()}
-                    </div>
-                  </CardContent>
+        {/* Main Content */}
+        <div className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+          <motion.div
+            animate="visible"
+            className="space-y-4"
+            initial="hidden"
+            variants={containerVariants}
+          >
+            {/* Agents Grid */}
+            {agents.length === 0 ? (
+              <motion.div variants={itemVariants}>
+                <Card className="border-primary/10 p-8 sm:p-10">
+                  <EmptyState
+                    action={{
+                      label: 'Create Agent',
+                      onClick: () => router.push('/agents/new'),
+                    }}
+                    description="Create your first AI agent to get started"
+                    icon={<Bot className="h-12 w-12 text-muted-foreground" />}
+                    title="No agents yet"
+                  />
                 </Card>
-              );
-            })}
-          </div>
-        )}
+              </motion.div>
+            ) : (
+              <motion.div
+                animate="visible"
+                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                initial="hidden"
+                variants={containerVariants}
+              >
+                {agents.map((agent: Doc<'agents'>, index: number) => {
+                  const typeInfo = getAgentTypeInfo(agent.type);
+                  const TypeIcon = typeInfo.icon;
+
+                  return (
+                    <motion.div
+                      className="group"
+                      custom={index}
+                      key={agent._id}
+                      variants={cardVariants}
+                      whileHover="hover"
+                    >
+                      <Card className="relative h-full overflow-hidden border-primary/10 backdrop-blur-sm transition-all hover:border-primary/30 hover:shadow-md">
+                        {/* Gradient Background */}
+                        <motion.div
+                          className={cn(
+                            'absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100',
+                            'bg-gradient-to-br',
+                            typeInfo.gradient
+                          )}
+                          initial={{ opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          whileHover={{ opacity: 0.05 }}
+                        />
+
+                        <CardHeader className="relative">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="mb-2 flex items-center gap-2">
+                                <motion.div
+                                  className={cn(
+                                    'rounded-lg p-2',
+                                    'bg-gradient-to-br',
+                                    typeInfo.gradient
+                                  )}
+                                  transition={{
+                                    type: 'spring',
+                                    stiffness: 400,
+                                    damping: 25,
+                                  }}
+                                  whileHover={{ scale: 1.1 }}
+                                >
+                                  <TypeIcon className="h-4 w-4 text-foreground" />
+                                </motion.div>
+                                <div className="min-w-0 flex-1">
+                                  <CardTitle className="truncate font-semibold text-base">
+                                    {agent.name}
+                                  </CardTitle>
+                                  <div className="mt-0.5 flex items-center gap-1.5">
+                                    {agent.isPublic && (
+                                      <Badge
+                                        className="text-xs"
+                                        variant="secondary"
+                                      >
+                                        <Crown className="mr-1 h-3 w-3" />
+                                        Public
+                                      </Badge>
+                                    )}
+                                    <Badge
+                                      className="text-xs"
+                                      variant="outline"
+                                    >
+                                      {typeInfo.label}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Action Menu */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  className="h-8 w-8 p-0"
+                                  size="sm"
+                                  variant="ghost"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {!agent.isPublic && (
+                                  <>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        router.push(`/agents/${agent._id}/edit`)
+                                      }
+                                    >
+                                      <Settings className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                  </>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() => handleDuplicateAgent(agent)}
+                                >
+                                  <Copy className="mr-2 h-4 w-4" />
+                                  Duplicate
+                                </DropdownMenuItem>
+                                {!agent.isPublic && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={() =>
+                                        setDeleteAgentId(agent._id)
+                                      }
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </CardHeader>
+
+                        <CardContent className="relative flex flex-1 flex-col p-4">
+                          <CardDescription className="line-clamp-2 text-muted-foreground text-sm">
+                            {agent.description ||
+                              agent.systemPrompt ||
+                              'No description provided'}
+                          </CardDescription>
+
+                          {/* Agent Stats */}
+                          <div className="mt-3 flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
+                            <motion.div
+                              className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-1"
+                              whileHover={{ scale: 1.05 }}
+                            >
+                              <span className="opacity-70">Temp:</span>
+                              <span className="font-medium">
+                                {agent.temperature || 0.7}
+                              </span>
+                            </motion.div>
+                            {agent.maxTokens && (
+                              <motion.div
+                                className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-1"
+                                whileHover={{ scale: 1.05 }}
+                              >
+                                <span className="opacity-70">Tokens:</span>
+                                <span className="font-medium">
+                                  {agent.maxTokens}
+                                </span>
+                              </motion.div>
+                            )}
+                            {agent.capabilities &&
+                              agent.capabilities.length > 0 && (
+                                <motion.div
+                                  className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-1"
+                                  whileHover={{ scale: 1.05 }}
+                                >
+                                  <span className="opacity-70">Tools:</span>
+                                  <span className="font-medium">
+                                    {agent.capabilities.length}
+                                  </span>
+                                </motion.div>
+                              )}
+                          </div>
+
+                          {/* Created Date */}
+                          <div className="mt-auto pt-3 text-muted-foreground text-xs opacity-60">
+                            Created{' '}
+                            {new Date(agent.createdAt).toLocaleDateString()}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            )}
+
+            {/* Egyptian-themed decorative element */}
+            <motion.div
+              animate={{ opacity: 1 }}
+              className="mt-8 flex items-center justify-center gap-2 text-muted-foreground/50"
+              initial={{ opacity: 0 }}
+              transition={{ delay: 1 }}
+            >
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+              <Shield className="h-4 w-4" />
+              <span className="text-xs">Protected by ANUBIS</span>
+              <Shield className="h-4 w-4" />
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+            </motion.div>
+          </motion.div>
+        </div>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog
@@ -397,7 +549,7 @@ export default function AgentsPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
-    </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }

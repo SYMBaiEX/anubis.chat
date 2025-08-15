@@ -801,7 +801,7 @@ export default function RoadmapPage(): ReactElement {
                 animate={{
                   backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
                 }}
-                className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary"
+                className="bg-gradient-to-r from-foreground via-primary to-primary bg-clip-text text-transparent"
                 style={{ backgroundSize: '200% 100%' }}
                 transition={{
                   duration: 8,
@@ -1060,7 +1060,7 @@ export default function RoadmapPage(): ReactElement {
                 animate={{
                   backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
                 }}
-                className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary"
+                className="bg-gradient-to-r from-foreground via-primary to-primary bg-clip-text text-transparent"
                 style={{ backgroundSize: '200% 100%' }}
                 transition={{
                   duration: 6,

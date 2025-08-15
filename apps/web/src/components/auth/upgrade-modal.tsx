@@ -10,6 +10,7 @@ import {
   Transaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery } from 'convex/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertCircle,
   Check,
@@ -20,8 +21,9 @@ import {
   Shield,
   Wallet,
   Zap,
+  Sparkles,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +35,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // useCurrentUser replacement - using useSubscription hook instead
 import { useSubscription } from '@/hooks/use-subscription';
@@ -43,6 +52,10 @@ import {
 } from '@/lib/solana';
 import { cn } from '@/lib/utils';
 import { createModuleLogger } from '@/lib/utils/logger';
+import {
+  createSPLTokenTransferTransaction,
+  validateSPLTokenTransfer,
+} from '@/lib/solana-spl';
 
 // Initialize logger
 const log = createModuleLogger('upgrade-modal');
@@ -169,6 +182,32 @@ export function UpgradeModal({
     selectedTier ? { targetTier: selectedTier } : 'skip'
   );
 
+  // SPL Token queries and state
+  const availableTokens = useQuery(api.splTokens.getAvailablePaymentTokens);
+  const [selectedToken, setSelectedToken] = useState<string>('SOL');
+  const tokenCalculation = useQuery(
+    api.splTokens.calculateTokenPaymentAmount,
+    selectedToken && selectedTier
+      ? {
+          tokenAddress: selectedToken === 'SOL' ? 'native' : selectedToken,
+          subscriptionTier: selectedTier,
+        }
+      : 'skip'
+  );
+
+  // Credits SPL token state
+  const [selectedCreditsToken, setSelectedCreditsToken] = useState<string>('SOL');
+  const creditsTokenCalculation = useQuery(
+    api.splTokens.calculateTokenPaymentAmount,
+    selectedCreditsToken
+      ? {
+          tokenAddress: selectedCreditsToken === 'SOL' ? 'native' : selectedCreditsToken,
+          subscriptionTier: 'pro', // Use pro pricing as base for credits calculation
+        }
+      : 'skip'
+  );
+
+
   // Message credits queries and mutations
   const _purchaseMessageCredits = useMutation(
     api.subscriptions.purchaseMessageCredits
@@ -205,6 +244,34 @@ export function UpgradeModal({
     MESSAGE_CREDIT_PACK.standardCredits * numberOfPacks;
   const totalPremiumCredits =
     MESSAGE_CREDIT_PACK.premiumCredits * numberOfPacks;
+
+  // Calculate actual credits token amounts (0.025 SOL vs 0.05 SOL for pro)
+  const creditsTokenAmount = useMemo(() => {
+    if (selectedCreditsToken === 'SOL') {
+      return {
+        symbol: 'SOL',
+        amount: totalCreditsCost,
+        rawAmount: Math.floor(totalCreditsCost * 10 ** 9), // Convert to lamports
+        decimals: 9,
+      };
+    }
+    
+    if (!creditsTokenCalculation?.priceInfo) return null;
+    
+    // Calculate token amount for credits: (0.025 SOL per pack) / (token price in SOL)
+    const solPerPack = MESSAGE_CREDIT_PACK.priceSOL; // 0.025 SOL
+    const totalSolCost = solPerPack * numberOfPacks;
+    const tokenAmount = totalSolCost / creditsTokenCalculation.priceInfo.solPrice;
+    const decimals = creditsTokenCalculation.decimals || 6;
+    
+    return {
+      symbol: creditsTokenCalculation.symbol,
+      amount: tokenAmount,
+      rawAmount: Math.floor(tokenAmount * 10 ** decimals),
+      decimals,
+      priceInfo: creditsTokenCalculation.priceInfo,
+    };
+  }, [selectedCreditsToken, creditsTokenCalculation, totalCreditsCost, numberOfPacks]);
 
   // Initialize Solana connection
   const connection = new Connection(
@@ -700,9 +767,15 @@ export function UpgradeModal({
       proratedUpgrade?.isProrated &&
       tier === 'pro_plus' &&
       currentTier === 'pro';
-    const displayPrice = isProrated
-      ? proratedUpgrade.proratedPrice
-      : config.priceSOL;
+    
+    // Calculate display price based on selected token
+    let displayPrice = isProrated ? proratedUpgrade.proratedPrice : config.priceSOL;
+    let displaySymbol = 'SOL';
+    
+    if (tokenCalculation && selectedToken !== 'SOL' && tier === selectedTier) {
+      displayPrice = tokenCalculation.amount;
+      displaySymbol = tokenCalculation.symbol;
+    }
 
     return (
       <Card
@@ -738,7 +811,7 @@ export function UpgradeModal({
             <div
               className={cn('rounded-lg bg-gradient-to-r p-2', config.color)}
             >
-              <Icon className="h-5 w-5 text-white" />
+              <Icon className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
               <h3 className="font-semibold text-lg">{config.name}</h3>
@@ -751,7 +824,7 @@ export function UpgradeModal({
             {isProrated ? (
               <div className="space-y-1">
                 <div className="font-bold text-green-600 text-xl">
-                  {displayPrice} SOL
+                  {displayPrice.toFixed(displaySymbol === 'SOL' ? 3 : 6)} {displaySymbol}
                 </div>
                 <div className="text-muted-foreground text-xs line-through">
                   {config.priceSOL} SOL
@@ -762,9 +835,16 @@ export function UpgradeModal({
               </div>
             ) : (
               <div>
-                <div className="font-bold text-xl">{displayPrice} SOL</div>
+                <div className="font-bold text-xl">
+                  {displayPrice.toFixed(displaySymbol === 'SOL' ? 3 : 6)} {displaySymbol}
+                </div>
                 <div className="text-muted-foreground text-sm">
                   ≈ ${config.priceUSD}/month
+                  {tokenCalculation?.priceInfo && selectedToken !== 'SOL' && (
+                    <span className="block text-xs">
+                      ({tokenCalculation.priceInfo.solPrice.toFixed(6)} SOL)
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -783,7 +863,7 @@ export function UpgradeModal({
         </div>
 
         {isCurrentTier && (
-          <div className="mt-4 rounded bg-gray-100 p-2 text-center dark:bg-gray-800">
+          <div className="mt-4 rounded bg-muted p-2 text-center">
             <span className="font-medium text-gray-600 text-sm dark:text-gray-400">
               Current Plan
             </span>
@@ -819,7 +899,7 @@ export function UpgradeModal({
             'mb-4'
           )}
         >
-          <Wallet className="h-8 w-8 text-white" />
+          <Wallet className="h-8 w-8 text-primary-foreground" />
         </div>
         <h3 className="mb-2 font-semibold text-xl">Send Payment</h3>
         <p className="text-muted-foreground">
@@ -829,13 +909,13 @@ export function UpgradeModal({
         </p>
       </div>
 
-      <Card className="bg-gray-50 p-6 dark:bg-gray-800/50">
+      <Card className="bg-muted/50 p-6">
         <div className="space-y-4">
           <div>
             <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
               Your Wallet
             </label>
-            <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
+            <div className="mt-1 rounded-lg border bg-background p-3">
               <div className="flex items-center justify-between">
                 {connected && publicKey ? (
                   <span className="break-all font-mono text-sm">
@@ -859,7 +939,7 @@ export function UpgradeModal({
             <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
               Payment Address
             </label>
-            <div className="mt-1 rounded-lg border bg-white p-3 font-mono text-sm dark:bg-gray-900">
+            <div className="mt-1 rounded-lg border bg-card p-3 font-mono text-sm">
               <div className="flex items-center justify-between">
                 <span className="break-all">
                   {solanaConfig.paymentAddress ||
@@ -885,17 +965,22 @@ export function UpgradeModal({
             <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
               Amount
             </label>
-            <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
+            <div className="mt-1 rounded-lg border bg-background p-3">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">
-                  {paymentDetails.amount || selectedConfig.priceSOL} SOL
+                  {tokenCalculation && selectedToken !== 'SOL' 
+                    ? `${tokenCalculation.amount.toFixed(6)} ${tokenCalculation.symbol}`
+                    : `${paymentDetails.amount || selectedConfig.priceSOL} SOL`
+                  }
                 </span>
                 <span className="text-muted-foreground text-sm">
                   {proratedUpgrade?.isProrated &&
                   selectedTier === 'pro_plus' &&
                   subscription?.tier === 'pro'
                     ? 'Prorated upgrade'
-                    : `≈ $${selectedConfig.priceUSD} USD`}
+                    : tokenCalculation?.priceInfo && selectedToken !== 'SOL'
+                      ? `≈ ${tokenCalculation.priceInfo.solPrice.toFixed(6)} SOL`
+                      : `≈ $${selectedConfig.priceUSD} USD`}
                 </span>
               </div>
             </div>
@@ -989,7 +1074,7 @@ export function UpgradeModal({
         {/* Transaction link when available */}
         {paymentDetails.txSignature && (
           <div className="space-y-3">
-            <div className="rounded-lg border bg-gray-50 p-3 dark:bg-gray-800/50">
+            <div className="rounded-lg border bg-muted/50 p-3/50">
               <p className="font-medium text-sm">Transaction ID:</p>
               <p className="break-all font-mono text-muted-foreground text-xs">
                 {paymentDetails.txSignature}
@@ -1028,7 +1113,7 @@ export function UpgradeModal({
           selectedConfig.color
         )}
       >
-        <Check className="h-8 w-8 text-white" />
+        <Check className="h-8 w-8 text-primary-foreground" />
       </div>
       <div>
         <h3 className="mb-2 font-semibold text-xl">Payment Successful!</h3>
@@ -1107,7 +1192,7 @@ export function UpgradeModal({
           )}
 
           {isUserCancellation && (
-            <Alert className="border-gray-200 bg-gray-50 text-left dark:border-gray-700 dark:bg-gray-800/50">
+            <Alert className="border-border bg-muted/50 text-left">
               <AlertCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               <AlertDescription className="text-gray-800 dark:text-gray-200">
                 <strong>Transaction Cancelled:</strong> You cancelled the
@@ -1163,7 +1248,7 @@ export function UpgradeModal({
 
         {/* Transaction details if available for debugging */}
         {paymentDetails.txSignature && (
-          <div className="rounded-lg border bg-gray-50 p-3 text-left dark:bg-gray-800/50">
+          <div className="rounded-lg border bg-muted/50 p-3 text-left">
             <p className="font-medium text-sm">Transaction ID for Support:</p>
             <p className="break-all font-mono text-muted-foreground text-xs">
               {paymentDetails.txSignature}
@@ -1248,51 +1333,86 @@ export function UpgradeModal({
         isSendingCreditsRef.current = true;
 
         // Check wallet balance first
-        const balance = await connection.getBalance(publicKey);
-        const balanceSol = balance / 1_000_000_000;
-        if (balanceSol < totalCreditsCost) {
-          throw new Error(
-            `Insufficient balance. Required: ${totalCreditsCost} SOL, Available: ${balanceSol.toFixed(4)} SOL`
+        if (!creditsTokenAmount) {
+          throw new Error('Unable to calculate payment amount. Please try again.');
+        }
+
+        if (selectedCreditsToken === 'SOL') {
+          const balance = await connection.getBalance(publicKey);
+          const balanceSol = balance / 1_000_000_000;
+          if (balanceSol < totalCreditsCost) {
+            throw new Error(
+              `Insufficient balance. Required: ${totalCreditsCost} SOL, Available: ${balanceSol.toFixed(4)} SOL`
+            );
+          }
+        } else {
+          // Validate SPL token balance
+          const validation = await validateSPLTokenTransfer(
+            connection,
+            publicKey,
+            selectedCreditsToken,
+            creditsTokenAmount.rawAmount
           );
+          
+          if (!validation.isValid) {
+            throw new Error(validation.error || 'Insufficient token balance');
+          }
         }
 
         // Build transaction with referral payout if applicable
         const recipientPublicKey = new PublicKey(solanaConfig.paymentAddress);
-        let tx = new Transaction();
-        let mainAmount = totalCreditsCost;
-        let referralAmount = 0;
-        let referralWallet: string | undefined;
+        let tx: Transaction;
 
-        if (referrerInfo?.hasReferrer) {
-          referralAmount =
-            Math.round(
-              totalCreditsCost * (referrerInfo.commissionRate ?? 0) * 1_000_000
-            ) / 1_000_000;
-          mainAmount = Math.max(0, totalCreditsCost - referralAmount);
-          referralWallet = referrerInfo.referrerWalletAddress;
-        }
+        if (selectedCreditsToken === 'SOL') {
+          // SOL payment logic
+          let mainAmount = totalCreditsCost;
+          let referralAmount = 0;
+          let referralWallet: string | undefined;
 
-        // Create transfer to treasury
-        const mainTx = await createPaymentTransaction(
-          publicKey,
-          recipientPublicKey,
-          mainAmount
-        );
-        tx = mainTx;
+          if (referrerInfo?.hasReferrer) {
+            referralAmount =
+              Math.round(
+                totalCreditsCost * (referrerInfo.commissionRate ?? 0) * 1_000_000
+              ) / 1_000_000;
+            mainAmount = Math.max(0, totalCreditsCost - referralAmount);
+            referralWallet = referrerInfo.referrerWalletAddress;
+          }
 
-        // Add referral payout transfer if applicable
-        if (referralWallet && referralAmount > 0) {
-          const referralIx = SystemProgram.transfer({
-            fromPubkey: publicKey,
-            toPubkey: new PublicKey(referralWallet),
-            lamports: Math.floor(referralAmount * 1_000_000_000),
-          });
-          tx.add(referralIx);
+          // Create transfer to treasury
+          const mainTx = await createPaymentTransaction(
+            publicKey,
+            recipientPublicKey,
+            mainAmount
+          );
+          tx = mainTx;
+
+          // Add referral payout transfer if applicable
+          if (referralWallet && referralAmount > 0) {
+            const referralIx = SystemProgram.transfer({
+              fromPubkey: publicKey,
+              toPubkey: new PublicKey(referralWallet),
+              lamports: Math.floor(referralAmount * 1_000_000_000),
+            });
+            tx.add(referralIx);
+          }
+        } else {
+          // SPL token payment logic
+          // Note: For now, SPL token payments don't support referral payouts
+          tx = await createSPLTokenTransferTransaction(
+            connection,
+            publicKey,
+            recipientPublicKey,
+            selectedCreditsToken,
+            creditsTokenAmount.rawAmount,
+            creditsTokenAmount.decimals
+          );
         }
 
         log.info('Message credits transaction created', {
           numberOfPacks,
           amount: totalCreditsCost,
+          token: selectedCreditsToken,
+          tokenAmount: creditsTokenAmount.amount,
           recipient: solanaConfig.paymentAddress,
           sender: publicKey.toString(),
           attempt: retryAttempt + 1,
@@ -1354,6 +1474,13 @@ export function UpgradeModal({
                 : undefined,
               referrerWalletAddress: referrerInfo?.referrerWalletAddress,
               commissionRate: referrerInfo?.commissionRate,
+              // Add SPL token data if using SPL tokens
+              ...(selectedCreditsToken !== 'SOL' && creditsTokenAmount && {
+                tokenAddress: selectedCreditsToken,
+                tokenAmount: creditsTokenAmount.rawAmount,
+                tokenSymbol: creditsTokenAmount.symbol,
+                amountSol: totalCreditsCost, // SOL equivalent for verification
+              }),
             }),
           });
 
@@ -1584,7 +1711,12 @@ export function UpgradeModal({
               </div>
               <div className="rounded-xl border p-2">
                 <div className="text-muted-foreground">Total Cost</div>
-                <div className="font-medium">{totalCreditsCost} SOL</div>
+                <div className="font-medium">
+                  {creditsTokenAmount 
+                    ? `${creditsTokenAmount.amount.toFixed(creditsTokenAmount.decimals <= 6 ? creditsTokenAmount.decimals : 6)} ${creditsTokenAmount.symbol}`
+                    : `${totalCreditsCost} SOL`
+                  }
+                </div>
               </div>
               <div className="rounded-xl border p-2">
                 <div className="text-muted-foreground">Standard</div>
@@ -1599,19 +1731,52 @@ export function UpgradeModal({
         </div>
       </Card>
 
+      {/* SPL Token Selection for Credits */}
+      {availableTokens && availableTokens.splTokens.length > 0 && (
+        <Card className="p-4">
+          <div className="mb-3">
+            <label className="font-medium text-sm">Payment Token</label>
+          </div>
+          <Select onValueChange={setSelectedCreditsToken} value={selectedCreditsToken}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select payment token" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="SOL">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">SOL</span>
+                  <span className="text-muted-foreground text-sm">Solana</span>
+                </div>
+              </SelectItem>
+              {availableTokens.splTokens.map((token: any) => (
+                <SelectItem key={token.address} value={token.address}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{token.symbol}</span>
+                    <span className="text-muted-foreground text-sm">{token.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Card>
+      )}
+
       <div className="flex justify-end space-x-3">
         <Button onClick={handleClose} variant="outline">
           Maybe Later
         </Button>
         <Button
           className="bg-gradient-to-r from-green-500 to-green-600"
-          disabled={isProcessingCredits}
+          disabled={isProcessingCredits || !creditsTokenAmount}
           onClick={handleCreditsPurchase}
         >
           {isProcessingCredits && (
             <Loader className="mr-2 h-4 w-4 animate-spin" />
           )}
-          Purchase Credits • {totalCreditsCost} SOL
+          {creditsTokenAmount
+            ? `Purchase Credits • ${creditsTokenAmount.amount.toFixed(creditsTokenAmount.decimals <= 6 ? creditsTokenAmount.decimals : 6)} ${creditsTokenAmount.symbol}`
+            : 'Loading...'
+          }
         </Button>
       </div>
     </div>
@@ -1621,7 +1786,7 @@ export function UpgradeModal({
     <div className="space-y-6">
       <div className="text-center">
         <div className="mb-4 inline-flex rounded-full bg-gradient-to-r from-green-500 to-green-600 p-4">
-          <Wallet className="h-8 w-8 text-white" />
+          <Wallet className="h-8 w-8 text-primary-foreground" />
         </div>
         <h3 className="mb-2 font-semibold text-xl">Send Payment</h3>
         <p className="text-muted-foreground">
@@ -1631,13 +1796,13 @@ export function UpgradeModal({
         </p>
       </div>
 
-      <Card className="bg-gray-50 p-6 dark:bg-gray-800/50">
+      <Card className="bg-muted/50 p-6">
         <div className="space-y-4">
           <div>
             <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
               Purchase Summary
             </label>
-            <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
+            <div className="mt-1 rounded-lg border bg-background p-3">
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Packs:</span>
@@ -1653,7 +1818,12 @@ export function UpgradeModal({
                 </div>
                 <div className="flex justify-between border-t pt-2">
                   <span className="font-medium">Total:</span>
-                  <span className="font-bold">{totalCreditsCost} SOL</span>
+                  <span className="font-bold">
+                    {creditsTokenAmount 
+                      ? `${creditsTokenAmount.amount.toFixed(creditsTokenAmount.decimals <= 6 ? creditsTokenAmount.decimals : 6)} ${creditsTokenAmount.symbol}`
+                      : `${totalCreditsCost} SOL`
+                    }
+                  </span>
                 </div>
               </div>
             </div>
@@ -1663,7 +1833,7 @@ export function UpgradeModal({
             <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
               Your Wallet
             </label>
-            <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
+            <div className="mt-1 rounded-lg border bg-background p-3">
               <div className="flex items-center justify-between">
                 {connected && publicKey ? (
                   <span className="break-all font-mono text-sm">
@@ -1687,7 +1857,7 @@ export function UpgradeModal({
             <label className="font-medium text-gray-700 text-sm dark:text-gray-300">
               Payment Address
             </label>
-            <div className="mt-1 rounded-lg border bg-white p-3 font-mono text-sm dark:bg-gray-900">
+            <div className="mt-1 rounded-lg border bg-card p-3 font-mono text-sm">
               <div className="flex items-center justify-between">
                 <span className="break-all">
                   {solanaConfig.paymentAddress ||
@@ -1716,8 +1886,12 @@ export function UpgradeModal({
         <AlertDescription className="text-green-800 dark:text-green-200">
           <div className="space-y-2">
             <p>
-              <strong>Important:</strong> Send exactly {totalCreditsCost} SOL to
-              avoid processing delays.
+              <strong>Important:</strong> Send exactly{' '}
+              {creditsTokenAmount 
+                ? `${creditsTokenAmount.amount.toFixed(creditsTokenAmount.decimals <= 6 ? creditsTokenAmount.decimals : 6)} ${creditsTokenAmount.symbol}`
+                : `${totalCreditsCost} SOL`
+              }{' '}
+              to avoid processing delays.
             </p>
             <p>
               Your message credits will be added automatically once payment is
@@ -1772,7 +1946,7 @@ export function UpgradeModal({
 
       {creditsPaymentDetails.txSignature && (
         <div className="space-y-3">
-          <div className="rounded-lg border bg-gray-50 p-3 dark:bg-gray-800/50">
+          <div className="rounded-lg border bg-muted/50 p-3/50">
             <p className="font-medium text-sm">Transaction ID:</p>
             <p className="break-all font-mono text-muted-foreground text-xs">
               {creditsPaymentDetails.txSignature}
@@ -1803,7 +1977,7 @@ export function UpgradeModal({
   const renderCreditsSuccessState = () => (
     <div className="space-y-4 py-8 text-center">
       <div className="inline-flex rounded-full bg-gradient-to-r from-green-500 to-green-600 p-4">
-        <Check className="h-8 w-8 text-white" />
+        <Check className="h-8 w-8 text-primary-foreground" />
       </div>
       <div>
         <h3 className="mb-2 font-semibold text-xl">Purchase Successful!</h3>
@@ -1867,7 +2041,7 @@ export function UpgradeModal({
         </div>
 
         {creditsPaymentDetails.txSignature && (
-          <div className="rounded-lg border bg-gray-50 p-3 text-left dark:bg-gray-800/50">
+          <div className="rounded-lg border bg-muted/50 p-3 text-left">
             <p className="font-medium text-sm">Transaction ID for Support:</p>
             <p className="break-all font-mono text-muted-foreground text-xs">
               {creditsPaymentDetails.txSignature}
@@ -1883,6 +2057,19 @@ export function UpgradeModal({
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
+            <motion.div
+              animate={{ 
+                rotate: [0, 10, -10, 0],
+                scale: [1, 1.1, 1]
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <Sparkles className="h-5 w-5 text-primary" />
+            </motion.div>
             <span>Upgrade Your Experience</span>
           </DialogTitle>
           <DialogDescription>
@@ -1890,7 +2077,12 @@ export function UpgradeModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-6">
+        <motion.div 
+          className="mt-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
           <Tabs
             className="w-full"
             onValueChange={(v: string) =>
@@ -1898,70 +2090,234 @@ export function UpgradeModal({
             }
             value={activeTab}
           >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger
-                className="flex items-center space-x-1 sm:space-x-2"
-                value="subscription"
-              >
-                <Crown className="h-4 w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Subscription Plans</span>
-                <span className="sm:hidden">Plans</span>
-              </TabsTrigger>
-              <TabsTrigger
-                className="flex items-center space-x-1 sm:space-x-2"
-                value="credits"
-              >
-                <CreditCard className="h-4 w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Message Credits</span>
-                <span className="sm:hidden">Credits</span>
-              </TabsTrigger>
-            </TabsList>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+            >
+              <TabsList className="grid w-full grid-cols-2 relative overflow-hidden">
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5"
+                  animate={{
+                    background: [
+                      "linear-gradient(90deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))",
+                      "linear-gradient(90deg, rgba(139, 92, 246, 0.05), rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05))",
+                      "linear-gradient(90deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))",
+                      "linear-gradient(90deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))"
+                    ]
+                  }}
+                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <TabsTrigger
+                  className="flex items-center space-x-1 sm:space-x-2 relative z-10 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-50 data-[state=active]:to-purple-50 dark:data-[state=active]:from-blue-900/20 dark:data-[state=active]:to-purple-900/20"
+                  value="subscription"
+                >
+                  <motion.div
+                    animate={{ 
+                      rotate: activeTab === 'subscription' ? [0, 10, -10, 0] : 0,
+                      scale: activeTab === 'subscription' ? [1, 1.1, 1] : 1
+                    }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                  >
+                    <Crown className="h-4 w-4 flex-shrink-0" />
+                  </motion.div>
+                  <span className="hidden sm:inline">Subscription Plans</span>
+                  <span className="sm:hidden">Plans</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  className="flex items-center space-x-1 sm:space-x-2 relative z-10 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-50 data-[state=active]:to-emerald-50 dark:data-[state=active]:from-green-900/20 dark:data-[state=active]:to-emerald-900/20"
+                  value="credits"
+                >
+                  <motion.div
+                    animate={{ 
+                      rotate: activeTab === 'credits' ? [0, 360] : 0,
+                      scale: activeTab === 'credits' ? [1, 1.1, 1] : 1
+                    }}
+                    transition={{ 
+                      rotate: { duration: 2, repeat: activeTab === 'credits' ? Infinity : 0, ease: "linear" },
+                      scale: { duration: 0.5, ease: "easeInOut" }
+                    }}
+                  >
+                    <CreditCard className="h-4 w-4 flex-shrink-0" />
+                  </motion.div>
+                  <span className="hidden sm:inline">Message Credits</span>
+                  <span className="sm:hidden">Credits</span>
+                </TabsTrigger>
+              </TabsList>
+            </motion.div>
 
-            <TabsContent className="mt-6" value="subscription">
-              {paymentStep === 'select' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {renderTierCard('pro')}
-                    {renderTierCard('pro_plus')}
-                  </div>
+            <div className="mt-6 relative">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ 
+                    type: "spring", 
+                    stiffness: 300, 
+                    damping: 25,
+                    duration: 0.3
+                  }}
+                >
+                  <TabsContent className="m-0" value="subscription">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={paymentStep}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {paymentStep === 'select' && (
+                          <div className="space-y-6">
+                            <motion.div 
+                              className="grid grid-cols-1 gap-6 md:grid-cols-2"
+                              initial="hidden"
+                              animate="visible"
+                              variants={{
+                                visible: {
+                                  transition: {
+                                    staggerChildren: 0.1
+                                  }
+                                }
+                              }}
+                            >
+                              <motion.div variants={{
+                                hidden: { opacity: 0, y: 20 },
+                                visible: { opacity: 1, y: 0 }
+                              }}>
+                                {renderTierCard('pro')}
+                              </motion.div>
+                              <motion.div variants={{
+                                hidden: { opacity: 0, y: 20 },
+                                visible: { opacity: 1, y: 0 }
+                              }}>
+                                {renderTierCard('pro_plus')}
+                              </motion.div>
+                            </motion.div>
 
-                  <div className="flex justify-end space-x-3">
-                    <Button onClick={handleClose} variant="outline">
-                      Maybe Later
-                    </Button>
-                    <Button
-                      className={cn('bg-gradient-to-r', selectedConfig.color)}
-                      disabled={isProcessing || !canUpgrade}
-                      onClick={handleUpgrade}
-                    >
-                      {isProcessing && (
-                        <Loader className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      {canUpgrade
-                        ? `Upgrade to ${selectedConfig.name}`
-                        : 'Upgrade Unavailable'}
-                    </Button>
-                  </div>
-                </div>
-              )}
+                            {/* Token Selection */}
+                            {availableTokens && availableTokens.splTokens.length > 0 && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                              >
+                                <Card className="p-4">
+                                  <div className="mb-3">
+                                    <label className="font-medium text-sm">Payment Token</label>
+                                    <p className="text-muted-foreground text-xs">Choose how you'd like to pay</p>
+                                  </div>
+                                  <Select onValueChange={setSelectedToken} value={selectedToken}>
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Select payment token" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="SOL">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-medium">SOL</span>
+                                          <span className="text-muted-foreground text-sm">Solana</span>
+                                        </div>
+                                      </SelectItem>
+                                      {availableTokens.splTokens.map((token: any) => (
+                                        <SelectItem key={token.address} value={token.address}>
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-medium">{token.symbol}</span>
+                                            <span className="text-muted-foreground text-sm">{token.name}</span>
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {tokenCalculation?.priceInfo && selectedToken !== 'SOL' && (
+                                    <div className="mt-2 text-muted-foreground text-xs">
+                                      Current price: {tokenCalculation.priceInfo.solPrice.toFixed(6)} SOL per {tokenCalculation.symbol}
+                                      {tokenCalculation.priceInfo.lastUpdated && (
+                                        <span className="ml-2">
+                                          (Updated {new Date(tokenCalculation.priceInfo.lastUpdated).toLocaleTimeString()})
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </Card>
+                              </motion.div>
+                            )}
 
-              {paymentStep === 'payment' && renderPaymentInstructions()}
-              {paymentStep === 'processing' && renderProcessingState()}
-              {paymentStep === 'success' && renderSuccessState()}
-              {paymentStep === 'error' && renderErrorState()}
-            </TabsContent>
+                            <motion.div 
+                              className="flex justify-end space-x-3"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.3 }}
+                            >
+                              <Button onClick={handleClose} variant="outline">
+                                Maybe Later
+                              </Button>
+                              <Button
+                                className={cn('bg-gradient-to-r relative overflow-hidden transition-all duration-300 hover:scale-105', selectedConfig.color)}
+                                disabled={isProcessing || !canUpgrade}
+                                onClick={handleUpgrade}
+                              >
+                                <motion.span
+                                  className="relative z-10 flex items-center gap-2"
+                                  whileHover={{ x: 2 }}
+                                >
+                                  {isProcessing ? (
+                                    <Loader className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    canUpgrade && <Sparkles className="h-4 w-4" />
+                                  )}
+                                  {canUpgrade
+                                    ? `Upgrade to ${selectedConfig.name}`
+                                    : 'Upgrade Unavailable'}
+                                </motion.span>
+                                {canUpgrade && (
+                                  <motion.div
+                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                                    animate={{ x: [-100, 100] }}
+                                    transition={{
+                                      duration: 3,
+                                      repeat: Infinity,
+                                      repeatType: "loop",
+                                      ease: "linear"
+                                    }}
+                                  />
+                                )}
+                              </Button>
+                            </motion.div>
+                          </div>
+                        )}
 
-            <TabsContent className="mt-6" value="credits">
-              {creditsPaymentStep === 'select' && renderCreditsPackSelector()}
-              {creditsPaymentStep === 'payment' &&
-                renderCreditsPaymentInstructions()}
-              {creditsPaymentStep === 'processing' &&
-                renderCreditsProcessingState()}
-              {creditsPaymentStep === 'success' && renderCreditsSuccessState()}
-              {creditsPaymentStep === 'error' && renderCreditsErrorState()}
-            </TabsContent>
+                        {paymentStep === 'payment' && renderPaymentInstructions()}
+                        {paymentStep === 'processing' && renderProcessingState()}
+                        {paymentStep === 'success' && renderSuccessState()}
+                        {paymentStep === 'error' && renderErrorState()}
+                      </motion.div>
+                    </AnimatePresence>
+                  </TabsContent>
+
+                  <TabsContent className="m-0" value="credits">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={creditsPaymentStep}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {creditsPaymentStep === 'select' && renderCreditsPackSelector()}
+                        {creditsPaymentStep === 'payment' && renderCreditsPaymentInstructions()}
+                        {creditsPaymentStep === 'processing' && renderCreditsProcessingState()}
+                        {creditsPaymentStep === 'success' && renderCreditsSuccessState()}
+                        {creditsPaymentStep === 'error' && renderCreditsErrorState()}
+                      </motion.div>
+                    </AnimatePresence>
+                  </TabsContent>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </Tabs>
-        </div>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );

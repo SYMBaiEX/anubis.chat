@@ -38,7 +38,9 @@ export function Breadcrumbs({
       ]
     : breadcrumbItems;
 
-  if (finalItems.length === 0) return null;
+  if (finalItems.length === 0) {
+    return null;
+  }
 
   return (
     <nav
@@ -94,7 +96,9 @@ export function Breadcrumbs({
 function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
   const segments = pathname.split('/').filter(Boolean);
 
-  if (segments.length === 0) return [];
+  if (segments.length === 0) {
+    return [];
+  }
 
   const breadcrumbs: BreadcrumbItem[] = [];
   let currentPath = '';
@@ -116,8 +120,10 @@ function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
 
   // Remove href from last item (current page)
   if (breadcrumbs.length > 0) {
-    const lastItem = breadcrumbs[breadcrumbs.length - 1];
-    breadcrumbs[breadcrumbs.length - 1] = { label: lastItem.label };
+    const lastItem = breadcrumbs.at(-1);
+    if (lastItem) {
+      breadcrumbs[breadcrumbs.length - 1] = { label: lastItem.label };
+    }
   }
 
   return breadcrumbs;
@@ -160,10 +166,16 @@ export function MobileBreadcrumbs({
       ]
     : breadcrumbItems;
 
-  if (finalItems.length === 0) return null;
+  if (finalItems.length === 0) {
+    return null;
+  }
 
-  const currentItem = finalItems[finalItems.length - 1];
+  const currentItem = finalItems.at(-1);
   const previousItems = finalItems.slice(0, -1);
+
+  if (!currentItem) {
+    return null;
+  }
 
   return (
     <nav

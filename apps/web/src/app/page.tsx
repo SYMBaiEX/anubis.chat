@@ -16,7 +16,7 @@ import Testimonials from './(landing)/components/testimonials';
 
 export default function LandingPage() {
   return (
-    <div className="w-full">
+    <div className="w-full bg-background">
       <LandingHeader />
       <Hero />
       <Features />

@@ -8,10 +8,10 @@
      Typography Tokens
      ======================================== */
 
-  /* Font Families */
-  --font-sans: "Geist Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", "SF Mono", "Monaco", monospace;
-  --font-heading: "Satoshi", "Geist Sans", ui-sans-serif, sans-serif;
+  /* Font Families - Using Geist fonts throughout */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-heading: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 
   /* Font Sizes */
   --font-size-2xs: 0.625rem; /* 10px */

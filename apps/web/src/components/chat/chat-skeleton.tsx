@@ -75,7 +75,7 @@ export function ChatSkeleton() {
 export function ChatListSkeleton() {
   return (
     <div className="space-y-2 p-2">
-      {[...Array(5)].map((_, i) => (
+      {[...new Array(5)].map((_, i) => (
         <div className="rounded-lg p-3" key={i}>
           <Skeleton className="mb-2 h-4 w-3/4" />
           <Skeleton className="h-3 w-1/2" />

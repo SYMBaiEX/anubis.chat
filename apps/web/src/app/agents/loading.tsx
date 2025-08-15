@@ -10,7 +10,7 @@ export default function AgentsLoading() {
 
         {/* Agents Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
+          {[...new Array(6)].map((_, i) => (
             <div
               className="group relative overflow-hidden rounded-xl border bg-card p-6 transition-all"
               key={i}
@@ -33,7 +33,7 @@ export default function AgentsLoading() {
 
               {/* Tags */}
               <div className="mb-4 flex gap-2">
-                {[...Array(3)].map((_, j) => (
+                {[...new Array(3)].map((_, j) => (
                   <div
                     className="h-6 w-16 animate-pulse rounded-full bg-muted"
                     key={j}

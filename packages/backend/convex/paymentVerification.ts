@@ -13,7 +13,6 @@ import {
   validatePayoutParams,
   verifyDualPayment,
 } from './solanaPayouts';
-import { getConfiguredSPLTokens } from './splTokens';
 
 // Types for transaction verification
 interface VerificationResult {
@@ -386,8 +385,12 @@ async function verifySPLTokenTransaction(
 
     for (let i = 0; i < allAccountKeys.length; i++) {
       const keyStr = allAccountKeys[i].toBase58();
-      if (keyStr === senderTokenAccount.toBase58()) senderTokenIndex = i;
-      if (keyStr === recipientTokenAccount.toBase58()) recipientTokenIndex = i;
+      if (keyStr === senderTokenAccount.toBase58()) {
+        senderTokenIndex = i;
+      }
+      if (keyStr === recipientTokenAccount.toBase58()) {
+        recipientTokenIndex = i;
+      }
     }
 
     if (senderTokenIndex === -1 || recipientTokenIndex === -1) {

@@ -7,11 +7,7 @@
 
 import type React from 'react';
 import { forwardRef, useEffect, useRef, useState } from 'react';
-import {
-  useScrollDirection,
-  useScrollPosition,
-  useSmoothScroll,
-} from '@/hooks/useSmoothScroll';
+import { useScrollPosition, useSmoothScroll } from '@/hooks/useSmoothScroll';
 import { cn } from '@/lib/utils';
 
 // ========================================
@@ -116,7 +112,9 @@ export const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
     await scrollToTop({ duration, easing });
   };
 
-  if (!isVisible) return null;
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <button
@@ -226,13 +224,17 @@ export const ScrollContainer = forwardRef<HTMLDivElement, ScrollContainerProps>(
     const containerRef = useRef<HTMLDivElement>(null);
 
     const getSnapClasses = () => {
-      if (snapType === 'none') return '';
+      if (snapType === 'none') {
+        return '';
+      }
 
       const snapClasses = [];
-      if (snapType === 'x' || snapType === 'both')
+      if (snapType === 'x' || snapType === 'both') {
         snapClasses.push('scroll-snap-x');
-      if (snapType === 'y' || snapType === 'both')
+      }
+      if (snapType === 'y' || snapType === 'both') {
         snapClasses.push('scroll-snap-y');
+      }
 
       return snapClasses.join(' ');
     };
@@ -308,7 +310,9 @@ export const ScrollAnimationWrapper: React.FC<ScrollAnimationWrapperProps> = ({
 
   useEffect(() => {
     const element = elementRef.current;
-    if (!element) return;
+    if (!element) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {

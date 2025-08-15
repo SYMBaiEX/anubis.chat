@@ -35,7 +35,9 @@ export interface ScrollToOptions {
  * Check if user prefers reduced motion
  */
 export const prefersReducedMotion = (): boolean => {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {
+    return false;
+  }
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 };
 
@@ -98,7 +100,6 @@ export const smoothScrollTo = async (
 
   const targetElement = getTargetElement(target);
   if (!targetElement) {
-    console.warn('Smooth scroll target not found:', target);
     return;
   }
 
@@ -246,7 +247,9 @@ export const scrollToHash = async (
  * Initialize smooth scrolling for anchor links
  */
 export const initSmoothScrolling = (): void => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
 
   // Handle anchor link clicks
   document.addEventListener('click', (event) => {
@@ -275,7 +278,9 @@ export const initSmoothScrolling = (): void => {
  * Get current scroll position
  */
 export const getScrollPosition = (): { x: number; y: number } => {
-  if (typeof window === 'undefined') return { x: 0, y: 0 };
+  if (typeof window === 'undefined') {
+    return { x: 0, y: 0 };
+  }
 
   return {
     x: window.pageXOffset || document.documentElement.scrollLeft,
@@ -301,14 +306,20 @@ export const isInViewport = (element: Element): boolean => {
  * Get scroll direction
  */
 export const getScrollDirection = (): 'up' | 'down' | null => {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
 
   const currentScroll = getScrollPosition().y;
   const previousScroll = (window as any).__previousScroll || 0;
 
   (window as any).__previousScroll = currentScroll;
 
-  if (currentScroll > previousScroll) return 'down';
-  if (currentScroll < previousScroll) return 'up';
+  if (currentScroll > previousScroll) {
+    return 'down';
+  }
+  if (currentScroll < previousScroll) {
+    return 'up';
+  }
   return null;
 };

@@ -11,7 +11,7 @@ import {
   Vote,
   Zap,
 } from 'lucide-react';
-import type { Agent } from '@/components/providers/solana-agent-provider';
+import type { Agent } from '@/components/providers/solanaAgentProvider';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';

@@ -71,6 +71,7 @@ import type * as tools from "../tools.js";
 import type * as types_chat from "../types/chat.js";
 import type * as typing from "../typing.js";
 import type * as userPreferences from "../userPreferences.js";
+import type * as userStats from "../userStats.js";
 import type * as users from "../users.js";
 import type * as utils_logger from "../utils/logger.js";
 import type * as vectorSearch from "../vectorSearch.js";
@@ -156,6 +157,7 @@ declare const fullApi: ApiFromModules<{
   "types/chat": typeof types_chat;
   typing: typeof typing;
   userPreferences: typeof userPreferences;
+  userStats: typeof userStats;
   users: typeof users;
   "utils/logger": typeof utils_logger;
   vectorSearch: typeof vectorSearch;

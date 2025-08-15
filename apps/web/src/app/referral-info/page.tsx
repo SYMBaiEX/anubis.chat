@@ -158,7 +158,7 @@ export default function ReferralInfoPage() {
                 animate={{
                   backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
                 }}
-                className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary"
+                className="bg-gradient-to-r from-foreground via-primary to-primary bg-clip-text text-transparent"
                 style={{ backgroundSize: '200% 200%' }}
                 transition={{ duration: 5, repeat: Number.POSITIVE_INFINITY }}
               >
@@ -183,7 +183,7 @@ export default function ReferralInfoPage() {
               on every payment your referrals make —
               <motion.span
                 animate={{ scale: [1, 1.05, 1] }}
-                className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text font-semibold text-transparent dark:from-white dark:via-primary dark:to-primary"
+                className="bg-gradient-to-r from-foreground via-primary to-primary bg-clip-text font-semibold text-transparent"
                 transition={{
                   duration: 3,
                   repeat: Number.POSITIVE_INFINITY,
@@ -373,7 +373,7 @@ export default function ReferralInfoPage() {
           <div className="relative z-10 mx-auto max-w-6xl">
             <div className="mb-16 text-center">
               <h2 className="mb-4 font-bold text-3xl md:text-4xl">
-                <span className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text text-transparent dark:from-white dark:via-primary dark:to-primary">
+                <span className="bg-gradient-to-r from-foreground via-primary to-primary bg-clip-text text-transparent">
                   Why Choose ANUBIS?
                 </span>
               </h2>

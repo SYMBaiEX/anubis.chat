@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { AIStreamingIndicator } from './aiStreamingIndicator';
-import { OptimizedMarkdownRenderer } from './optimized-markdown-renderer';
+import { StreamingTextRenderer } from './streaming-text-renderer';
 
 interface StreamingMessageProps {
   content: string;
@@ -58,10 +58,24 @@ export function StreamingMessage({
     return () => clearInterval(interval);
   }, [content, displayContent.length]);
 
-  // Auto-scroll as content streams
+  // Auto-scroll as content streams - improved to work with parent scroll container
   useEffect(() => {
     if (messageRef.current && displayContent) {
-      messageRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      // Find the scroll container (ScrollArea) by looking up the DOM tree
+      const scrollContainer = messageRef.current.closest('[data-radix-scroll-area-viewport]') || 
+                              messageRef.current.closest('[data-chat-messages]')?.parentElement;
+      
+      if (scrollContainer) {
+        // Scroll to bottom of the container smoothly
+        const targetScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+        scrollContainer.scrollTo({
+          top: targetScroll,
+          behavior: 'smooth'
+        });
+      } else {
+        // Fallback to scrollIntoView if scroll container not found
+        messageRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
     }
   }, [displayContent]);
 
@@ -93,22 +107,22 @@ export function StreamingMessage({
             transition={{ duration: 0.2 }}
           >
             {displayContent ? (
-              <>
-                <OptimizedMarkdownRenderer
+              <div className="relative">
+                <StreamingTextRenderer
                   content={displayContent}
                   isStreaming={isTyping}
                 />
                 {isTyping && (
                   <motion.span
                     animate={{ opacity: [1, 0] }}
-                    className="ml-0.5 inline-block h-4 w-2 bg-primary/60"
+                    className="ml-0.5 inline-block h-4 w-2 bg-primary/60 align-top"
                     transition={{
                       duration: 0.5,
                       repeat: Number.POSITIVE_INFINITY,
                     }}
                   />
                 )}
-              </>
+              </div>
             ) : (
               <AIStreamingIndicator
                 className="py-2"

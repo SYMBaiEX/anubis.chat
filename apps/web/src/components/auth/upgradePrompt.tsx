@@ -78,21 +78,22 @@ export function UpgradePrompt({
           border: 'border-red-200 dark:border-red-800',
           bg: 'bg-red-50 dark:bg-red-950/20',
           text: 'text-red-900 dark:text-red-100',
-          button: 'bg-red-600 hover:bg-red-700 text-white',
+          button:
+            'bg-destructive hover:bg-destructive/90 text-destructive-foreground',
         };
       case 'medium':
         return {
           border: 'border-amber-200 dark:border-amber-800',
           bg: 'bg-amber-50 dark:bg-amber-950/20',
           text: 'text-amber-900 dark:text-amber-100',
-          button: 'bg-amber-600 hover:bg-amber-700 text-white',
+          button: 'bg-amber-600 hover:bg-amber-700 text-primary-foreground',
         };
       default:
         return {
           border: 'border-blue-200 dark:border-blue-800',
           bg: 'bg-blue-50 dark:bg-blue-950/20',
           text: 'text-blue-900 dark:text-blue-100',
-          button: 'bg-blue-600 hover:bg-blue-700 text-white',
+          button: 'bg-blue-600 hover:bg-blue-700 text-primary-foreground',
         };
     }
   };

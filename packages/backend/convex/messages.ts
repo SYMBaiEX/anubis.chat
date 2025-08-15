@@ -1,20 +1,14 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { api } from './_generated/api';
-import type { Doc, Id } from './_generated/dataModel';
+import type { Id } from './_generated/dataModel';
 import {
   type DatabaseReader,
   type DatabaseWriter,
   mutation,
   query,
 } from './_generated/server';
-import type {
-  CreateMessageParams,
-  MessageMetadata,
-  MessageReaction,
-  MessageStats,
-  MessageWithReactions,
-} from './types/chat';
+import type { MessageReaction } from './types/chat';
 
 // Helper context types for database operations
 type DatabaseReadContext = {
@@ -231,6 +225,38 @@ export const getById = query({
   args: { id: v.id('messages') },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
+  },
+});
+
+// Get recent activity for dashboard
+export const getRecentActivity = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
+    const limit = Math.min(args.limit ?? 10, 20);
+
+    // Get user data to find their wallet address
+    const user = await ctx.db.get(userId);
+    if (!(user && user.walletAddress)) {
+      return [];
+    }
+
+    const walletAddress = user.walletAddress;
+
+    // Get recent messages for this user using the correct index
+    const messages = await ctx.db
+      .query('messages')
+      .withIndex('by_user', (q) => q.eq('walletAddress', walletAddress))
+      .order('desc')
+      .take(limit);
+
+    return messages;
   },
 });
 

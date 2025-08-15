@@ -51,7 +51,9 @@ export function useLiveAnnouncements() {
   ) => {
     const { politeness = 'polite', clearAfter = 0 } = options;
 
-    if (!announcementRef.current) return;
+    if (!announcementRef.current) {
+      return;
+    }
 
     // Clear any existing timeout
     if (timeoutRef.current) {

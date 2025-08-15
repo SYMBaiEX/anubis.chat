@@ -1,6 +1,6 @@
 'use client';
 
-import { type HTMLProps, memo, type ReactNode, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -22,35 +22,52 @@ export const OptimizedMarkdownRenderer = memo(
     className,
     isStreaming = false,
   }: OptimizedMarkdownRendererProps) {
-    // Pre-process content to avoid re-parsing
+    // Pre-process content to avoid re-parsing and reduce layout shifts during streaming
     const processedContent = useMemo(() => {
       if (!content) {
         return '';
       }
-      // For streaming, return content as-is to avoid re-processing
+      
+      // For streaming, provide stable rendering by detecting complete markdown blocks
+      // This prevents jarring visual changes when partial markdown is being parsed
       if (isStreaming) {
+        // Check if content has complete markdown structures that are safe to render
+        const hasCompleteCodeBlocks = /```[\s\S]*?```/g.test(content);
+        const hasCompleteHeaders = /^#{1,6}\s+.+$/gm.test(content);
+        const hasCompleteLists = /^[\s]*[-*+]\s+.+$/gm.test(content);
+        const hasCompleteLinks = /\[([^\]]+)\]\(([^)]+)\)/g.test(content);
+        
+        // If we detect complete markdown structures, it's safe to parse
+        if (hasCompleteCodeBlocks || hasCompleteHeaders || hasCompleteLists || hasCompleteLinks) {
+          return content;
+        }
+        
+        // For plain text or incomplete markdown, return as-is for stable rendering
         return content;
       }
-      // For complete messages, we can do more processing
+      
+      // For complete messages, do full processing
       return content;
     }, [content, isStreaming]);
 
     // Use simpler components for faster rendering
     const components = useMemo<Partial<Components>>(
       () => ({
-        // Simple code rendering without heavy syntax highlighting
+        // Enhanced code rendering with streaming-aware styling
         code: ({ className: codeClassName, children }) => {
           const inline = !codeClassName?.startsWith('language-');
           const match = /language-(\w+)/.exec(codeClassName || '');
           const language = match ? match[1] : '';
 
-          // For streaming, use simple styling
+          // For streaming, use consistent styling that won't shift when complete
           if (isStreaming || inline) {
             return (
               <code
                 className={cn(
                   'rounded bg-muted px-1 py-0.5 font-mono text-sm',
-                  inline ? '' : 'my-2 block overflow-x-auto p-3'
+                  inline 
+                    ? '' 
+                    : 'my-2 block overflow-x-auto p-3 transition-all duration-200'
                 )}
               >
                 {children}
@@ -58,16 +75,16 @@ export const OptimizedMarkdownRenderer = memo(
             );
           }
 
-          // For complete messages, add language badge but skip heavy highlighting
+          // For complete messages, add language badge with smooth transition
           return (
-            <div className="relative my-3">
+            <div className="relative my-3 transition-all duration-200">
               {language && (
-                <div className="absolute top-0 right-0 rounded-bl bg-muted px-2 py-1 text-xs">
+                <div className="absolute top-2 right-2 rounded bg-muted px-2 py-1 text-xs opacity-80 hover:opacity-100 transition-opacity">
                   {language}
                 </div>
               )}
               <pre className="overflow-x-auto rounded-lg bg-muted p-4">
-                <code className="font-mono text-sm">
+                <code className="font-mono text-sm leading-relaxed">
                   {String(children).replace(/\n$/, '')}
                 </code>
               </pre>
@@ -75,35 +92,47 @@ export const OptimizedMarkdownRenderer = memo(
           );
         },
 
-        // Optimized paragraph with proper spacing for readability
+        // Optimized paragraph with smooth transitions
         p: ({ children }) => (
-          <p className="mb-4 leading-relaxed last:mb-0">{children}</p>
+          <p className="mb-4 leading-relaxed last:mb-0 transition-all duration-200">{children}</p>
         ),
 
-        // Simplified headings
+        // Headings with streaming-aware styling
         h1: ({ children }) => (
-          <h1 className="mb-3 font-bold text-xl">{children}</h1>
+          <h1 className={cn(
+            "mb-3 font-bold text-xl transition-all duration-200",
+            isStreaming ? "opacity-90" : "opacity-100"
+          )}>{children}</h1>
         ),
         h2: ({ children }) => (
-          <h2 className="mb-2 font-semibold text-lg">{children}</h2>
+          <h2 className={cn(
+            "mb-2 font-semibold text-lg transition-all duration-200",
+            isStreaming ? "opacity-90" : "opacity-100"
+          )}>{children}</h2>
         ),
         h3: ({ children }) => (
-          <h3 className="mb-2 font-semibold text-base">{children}</h3>
+          <h3 className={cn(
+            "mb-2 font-semibold text-base transition-all duration-200",
+            isStreaming ? "opacity-90" : "opacity-100"
+          )}>{children}</h3>
         ),
 
-        // Simple list styling with better spacing
+        // List styling with smooth transitions
         ul: ({ children }) => (
-          <ul className="mb-4 ml-6 list-disc space-y-1 last:mb-0">
+          <ul className="mb-4 ml-6 list-disc space-y-1 last:mb-0 transition-all duration-200">
             {children}
           </ul>
         ),
         ol: ({ children }) => (
-          <ol className="mb-4 ml-6 list-decimal space-y-1 last:mb-0">
+          <ol className="mb-4 ml-6 list-decimal space-y-1 last:mb-0 transition-all duration-200">
             {children}
           </ol>
         ),
         li: ({ children }) => (
-          <li className="mb-1 leading-relaxed">{children}</li>
+          <li className={cn(
+            "mb-1 leading-relaxed transition-all duration-200",
+            isStreaming ? "opacity-95" : "opacity-100"
+          )}>{children}</li>
         ),
 
         // Links

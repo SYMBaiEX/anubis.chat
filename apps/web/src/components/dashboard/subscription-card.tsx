@@ -10,26 +10,26 @@ import { cn } from '@/lib/utils';
 function getTierBg(tier: string): string {
   switch (tier) {
     case 'free':
-      return 'bg-slate-100 dark:bg-slate-800';
+      return 'bg-muted';
     case 'pro':
       return 'bg-blue-100 dark:bg-blue-900';
     case 'pro_plus':
       return 'bg-purple-100 dark:bg-purple-900';
     default:
-      return 'bg-slate-100 dark:bg-slate-800';
+      return 'bg-muted';
   }
 }
 
 function getTierColor(tier: string): string {
   switch (tier) {
     case 'free':
-      return 'text-slate-600 dark:text-slate-400';
+      return 'text-muted-foreground';
     case 'pro':
       return 'text-blue-600 dark:text-blue-400';
     case 'pro_plus':
       return 'text-purple-600 dark:text-purple-400';
     default:
-      return 'text-slate-600 dark:text-slate-400';
+      return 'text-muted-foreground';
   }
 }
 

@@ -9,7 +9,7 @@ import {
   TrendingUp,
   Vote,
 } from 'lucide-react';
-import type { Agent } from '@/components/providers/solana-agent-provider';
+import type { Agent } from '@/components/providers/solanaAgentProvider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 

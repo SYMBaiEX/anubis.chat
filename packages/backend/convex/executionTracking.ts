@@ -15,19 +15,15 @@
  */
 
 import { ConvexError, v } from 'convex/values';
-import { api, internal } from './_generated/api';
-import type { Doc, Id } from './_generated/dataModel';
+import { internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
 import {
   type ActionCtx,
   action,
   internalMutation,
   internalQuery,
-  type MutationCtx,
-  mutation,
-  type QueryCtx,
   query,
 } from './_generated/server';
-import type { ToolExecutionResult } from './toolRegistry';
 import { createModuleLogger } from './utils/logger';
 
 // Create logger instance for this module
@@ -410,8 +406,12 @@ class ExecutionTracker {
 
       const tool = toolUsageBreakdown[execution.toolName];
       tool.count++;
-      if (execution.status === 'completed') tool.successes++;
-      if (execution.executionTime) tool.totalTime += execution.executionTime;
+      if (execution.status === 'completed') {
+        tool.successes++;
+      }
+      if (execution.executionTime) {
+        tool.totalTime += execution.executionTime;
+      }
       tool.lastUsed = Math.max(tool.lastUsed, execution.startTime);
     }
 
@@ -441,8 +441,12 @@ class ExecutionTracker {
 
       const agent = agentPerformance[agentKey];
       agent.executionCount++;
-      if (execution.status === 'completed') agent.successes++;
-      if (execution.executionTime) agent.totalTime += execution.executionTime;
+      if (execution.status === 'completed') {
+        agent.successes++;
+      }
+      if (execution.executionTime) {
+        agent.totalTime += execution.executionTime;
+      }
       agent.tools.add(execution.toolName);
     }
 
@@ -465,7 +469,11 @@ class ExecutionTracker {
     for (const execution of allExecutions.filter(
       (e) => e.status === 'failed' && e.error
     )) {
-      const errorCode = execution.error!.code;
+      const errorCode = execution.error?.code;
+      if (!errorCode) {
+        continue;
+      }
+
       if (!errorPatterns[errorCode]) {
         errorPatterns[errorCode] = {
           count: 0,
@@ -491,7 +499,7 @@ class ExecutionTracker {
     }
 
     // Generate time series data (hourly buckets)
-    const timeSeriesData: Array<any> = [];
+    const timeSeriesData: any[] = [];
     const bucketSize = 60 * 60 * 1000; // 1 hour
     for (let time = startTime; time < endTime; time += bucketSize) {
       const bucketEnd = Math.min(time + bucketSize, endTime);
@@ -987,7 +995,7 @@ export const getExecutionStatus = action({
   args: {
     sessionId: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const activeExecutions = globalExecutionTracker
       .getActiveExecutions()
       .filter((e) => e.sessionId === args.sessionId);
@@ -1025,7 +1033,7 @@ export const getComprehensiveAnalytics = action({
     endTime: v.number(),
     agentId: v.optional(v.id('agents')),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     return globalExecutionTracker.calculateAnalytics(
       args.startTime,
       args.endTime,

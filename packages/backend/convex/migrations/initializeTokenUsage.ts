@@ -3,7 +3,6 @@
  * Run this once to add the tokenUsage field to all existing chats
  */
 
-import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
 
 export const initializeTokenUsage = mutation({

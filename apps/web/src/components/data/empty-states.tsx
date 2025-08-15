@@ -21,18 +21,14 @@ export function EmptyState({
       )}
     >
       {/* Icon */}
-      {icon && (
-        <div className="mb-4 text-gray-400 dark:text-gray-600">{icon}</div>
-      )}
+      {icon && <div className="mb-4 text-muted-foreground">{icon}</div>}
 
       {/* Title */}
-      <h3 className="mb-2 font-semibold text-gray-900 text-lg dark:text-gray-100">
-        {title}
-      </h3>
+      <h3 className="mb-2 font-semibold text-foreground text-lg">{title}</h3>
 
       {/* Description */}
       {description && (
-        <p className="mb-6 max-w-sm text-gray-600 text-sm dark:text-gray-400">
+        <p className="mb-6 max-w-sm text-muted-foreground text-sm">
           {description}
         </p>
       )}

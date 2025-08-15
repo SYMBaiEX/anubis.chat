@@ -51,7 +51,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type {
-  ChatTokenMetrics,
   ExportResult,
   ModelUsageStats,
   SystemTokenMetrics,
@@ -175,15 +174,25 @@ export function TokenMetricsDashboard() {
   );
 
   const formatNumber = (num: number) => {
-    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    if (num >= 1_000_000) {
+      return `${(num / 1_000_000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
     return num.toString();
   };
 
   const formatCost = (cost: number) => {
-    if (cost === 0) return 'Free';
-    if (cost < 0.01) return '<$0.01';
-    if (cost < 1) return `$${cost.toFixed(3)}`;
+    if (cost === 0) {
+      return 'Free';
+    }
+    if (cost < 0.01) {
+      return '<$0.01';
+    }
+    if (cost < 1) {
+      return `$${cost.toFixed(3)}`;
+    }
     return `$${cost.toFixed(2)}`;
   };
 
@@ -222,8 +231,7 @@ export function TokenMetricsDashboard() {
 
         toast.success('Data exported successfully');
       }
-    } catch (error) {
-      console.error('Export failed:', error);
+    } catch (_error) {
       toast.error('Failed to export data');
     } finally {
       setIsExporting(false);

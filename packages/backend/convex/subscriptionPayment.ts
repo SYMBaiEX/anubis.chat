@@ -4,12 +4,11 @@
  */
 
 import { getAuthUserId } from '@convex-dev/auth/server';
-import { getAccount, getAssociatedTokenAddress } from '@solana/spl-token';
+import { getAssociatedTokenAddress } from '@solana/spl-token';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { api, internal } from './_generated/api';
+import { api } from './_generated/api';
 import { httpAction } from './_generated/server';
 import { solanaConfig } from './env';
-import { getConfiguredSPLTokens } from './splTokens';
 
 // Payment verification types
 interface VerificationResult {
@@ -77,8 +76,12 @@ async function verifySOLPayment(
 
     for (let i = 0; i < allKeys.length; i++) {
       const key = allKeys[i].toBase58();
-      if (key === senderAddress) senderIndex = i;
-      if (key === getTreasuryWallet()) treasuryIndex = i;
+      if (key === senderAddress) {
+        senderIndex = i;
+      }
+      if (key === getTreasuryWallet()) {
+        treasuryIndex = i;
+      }
     }
 
     if (senderIndex === -1 || treasuryIndex === -1) {
@@ -163,8 +166,12 @@ async function verifySPLTokenPayment(
 
     for (let i = 0; i < allKeys.length; i++) {
       const keyStr = allKeys[i].toBase58();
-      if (keyStr === senderTokenAccount.toBase58()) senderTokenIndex = i;
-      if (keyStr === treasuryTokenAccount.toBase58()) treasuryTokenIndex = i;
+      if (keyStr === senderTokenAccount.toBase58()) {
+        senderTokenIndex = i;
+      }
+      if (keyStr === treasuryTokenAccount.toBase58()) {
+        treasuryTokenIndex = i;
+      }
     }
 
     if (senderTokenIndex === -1 || treasuryTokenIndex === -1) {
@@ -266,7 +273,7 @@ export const processSubscriptionPayment = httpAction(async (ctx, request) => {
     let body: PaymentRequest;
     try {
       body = await request.json();
-    } catch (error) {
+    } catch (_error) {
       return new Response(
         JSON.stringify({ error: 'Invalid JSON in request body' }),
         { status: 400, headers }
@@ -343,24 +350,6 @@ export const processSubscriptionPayment = httpAction(async (ctx, request) => {
       confirmations: verification.confirmations || 0,
     });
 
-    // Log successful payment
-    console.log('Payment processed successfully', {
-      userId: currentUser._id,
-      walletAddress,
-      tier,
-      txSignature,
-      amountSol,
-      ...(tokenAddress && tokenAddress !== 'native'
-        ? {
-            tokenAddress,
-            tokenAmount,
-            tokenSymbol,
-            paymentType: 'SPL_TOKEN',
-          }
-        : { paymentType: 'SOL' }),
-      confirmations: verification.confirmations,
-    });
-
     return new Response(
       JSON.stringify({
         success: true,
@@ -370,8 +359,7 @@ export const processSubscriptionPayment = httpAction(async (ctx, request) => {
       }),
       { status: 200, headers }
     );
-  } catch (error) {
-    console.error('Payment processing error:', error);
+  } catch (_error) {
     return new Response(
       JSON.stringify({ error: 'Failed to process payment' }),
       { status: 500, headers }

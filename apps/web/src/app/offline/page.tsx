@@ -2,9 +2,9 @@
 
 export default function OfflinePage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-muted to-accent/20">
       <div className="mx-4 w-full max-w-md">
-        <div className="rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-lg">
+        <div className="rounded-2xl border border-border bg-card/80 p-8 shadow-2xl backdrop-blur-lg">
           <div className="text-center">
             {/* Offline Icon */}
             <div className="relative mx-auto mb-6 h-24 w-24">
@@ -23,7 +23,7 @@ export default function OfflinePage() {
               </svg>
               <div className="-bottom-2 -right-2 absolute flex h-8 w-8 items-center justify-center rounded-full bg-red-500">
                 <svg
-                  className="h-5 w-5 text-white"
+                  className="h-5 w-5 text-primary-foreground"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -36,18 +36,18 @@ export default function OfflinePage() {
               </div>
             </div>
 
-            <h1 className="mb-3 font-bold text-3xl text-white">
+            <h1 className="mb-3 font-bold text-3xl text-foreground">
               You're Offline
             </h1>
 
-            <p className="mb-8 text-gray-300">
+            <p className="mb-8 text-muted-foreground">
               It looks like you've lost your internet connection. Please check
               your connection and try again.
             </p>
 
             <div className="space-y-4">
               <button
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-purple-700"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors duration-200 hover:bg-primary/90"
                 onClick={() => window.location.reload()}
               >
                 <svg
@@ -67,18 +67,18 @@ export default function OfflinePage() {
               </button>
 
               <button
-                className="w-full rounded-lg border border-white/20 bg-white/10 px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-white/20"
+                className="w-full rounded-lg border border-border bg-muted px-6 py-3 font-medium text-foreground transition-colors duration-200 hover:bg-muted/80"
                 onClick={() => window.history.back()}
               >
                 Go Back
               </button>
             </div>
 
-            <div className="mt-8 border-white/20 border-t pt-8">
-              <h2 className="mb-3 font-semibold text-lg text-white">
+            <div className="mt-8 border-border border-t pt-8">
+              <h2 className="mb-3 font-semibold text-foreground text-lg">
                 What you can do offline:
               </h2>
-              <ul className="space-y-2 text-left text-gray-300">
+              <ul className="space-y-2 text-left text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <svg
                     className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-400"
@@ -127,7 +127,7 @@ export default function OfflinePage() {
         </div>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             Your messages will be synced automatically when you're back online.
           </p>
         </div>

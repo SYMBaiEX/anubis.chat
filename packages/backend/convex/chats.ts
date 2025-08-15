@@ -9,6 +9,34 @@ type TitleGenerationResult =
   | { success: true; title: string; skipped?: boolean }
   | { success: false; error: string };
 
+// List chats for current user
+export const list = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      return [];
+    }
+
+    const limit = Math.min(args.limit ?? 10, 50);
+
+    const chats = await ctx.db
+      .query('chats')
+      .withIndex('by_owner', (q) => q.eq('ownerId', user._id))
+      .order('desc')
+      .take(limit);
+
+    return chats;
+  },
+});
+
 // Get chats by owner
 export const getByOwner = query({
   args: {

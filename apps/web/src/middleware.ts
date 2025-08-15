@@ -48,7 +48,7 @@ export function middleware(request: NextRequest) {
   // Security Headers
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.fontshare.com https://vercel.live https://*.vercel-analytics.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.fontshare.com https://vercel.live https://*.vercel-analytics.com https://va.vercel-scripts.com;
     style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com;
     font-src 'self' data: https://api.fontshare.com https://fonts.gstatic.com;
     img-src 'self' data: blob: https: http:;

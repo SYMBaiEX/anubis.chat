@@ -14,7 +14,7 @@ enum PrefetchPriority {
 }
 
 // Resource hints for browser
-const resourceHints = {
+const _resourceHints = {
   dns: 'dns-prefetch',
   preconnect: 'preconnect',
   prefetch: 'prefetch',
@@ -60,7 +60,9 @@ function prefetchResource(
   url: string,
   priority: PrefetchPriority = PrefetchPriority.MEDIUM
 ) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
 
   // Create link element for prefetching
   const link = document.createElement('link');
@@ -145,17 +147,7 @@ export function ResourceHints() {
   return (
     <>
       {/* DNS prefetch for third-party domains */}
-      <link href="https://fonts.googleapis.com" rel="dns-prefetch" />
-      <link href="https://fonts.gstatic.com" rel="dns-prefetch" />
       <link href="https://cdn.jsdelivr.net" rel="dns-prefetch" />
-
-      {/* Preconnect to critical origins */}
-      <link href="https://fonts.googleapis.com" rel="preconnect" />
-      <link
-        crossOrigin="anonymous"
-        href="https://fonts.gstatic.com"
-        rel="preconnect"
-      />
 
       {/* Prefetch critical resources - Using Convex for auth/preferences */}
     </>
@@ -167,7 +159,9 @@ export function useAdaptiveLoading() {
   const connection = useNetworkInformation();
 
   const shouldPrefetch = () => {
-    if (!connection) return true; // Default to prefetching
+    if (!connection) {
+      return true; // Default to prefetching
+    }
 
     // Don't prefetch on slow connections
     if (
@@ -186,7 +180,9 @@ export function useAdaptiveLoading() {
   };
 
   const getImageQuality = () => {
-    if (!connection) return 'high';
+    if (!connection) {
+      return 'high';
+    }
 
     switch (connection.effectiveType) {
       case 'slow-2g':
@@ -194,7 +190,6 @@ export function useAdaptiveLoading() {
         return 'low';
       case '3g':
         return 'medium';
-      case '4g':
       default:
         return 'high';
     }
@@ -246,11 +241,6 @@ export function PreloadStyles() {
       {isProduction && (
         <link as="style" href="/_next/static/css/app.css" rel="preload" />
       )}
-      <link
-        as="style"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        rel="preload"
-      />
     </>
   );
 }

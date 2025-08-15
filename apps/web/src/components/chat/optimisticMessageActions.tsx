@@ -74,7 +74,9 @@ export function OptimisticMessageActions({
 
   const handleReaction = useCallback(
     async (newReaction: 'like' | 'dislike') => {
-      if (disabled || !onReaction) return;
+      if (disabled || !onReaction) {
+        return;
+      }
 
       // Optimistic update
       const previousReaction = reaction;
@@ -111,7 +113,9 @@ export function OptimisticMessageActions({
   );
 
   const handleCopy = useCallback(async () => {
-    if (disabled || !onCopy) return;
+    if (disabled || !onCopy) {
+      return;
+    }
 
     updateActionState('copy', { isLoading: true, error: undefined });
 
@@ -141,7 +145,9 @@ export function OptimisticMessageActions({
   }, [disabled, onCopy, messageId, content, updateActionState]);
 
   const handleRegenerate = useCallback(async () => {
-    if (disabled || !onRegenerate) return;
+    if (disabled || !onRegenerate) {
+      return;
+    }
 
     updateActionState('regenerate', { isLoading: true, error: undefined });
 
@@ -165,7 +171,9 @@ export function OptimisticMessageActions({
   }, [disabled, onRegenerate, messageId, updateActionState]);
 
   const handleShare = useCallback(async () => {
-    if (disabled || !onShare) return;
+    if (disabled || !onShare) {
+      return;
+    }
 
     updateActionState('share', { isLoading: true, error: undefined });
 

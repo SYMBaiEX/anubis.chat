@@ -2,11 +2,13 @@
 
 import { api } from '@convex/_generated/api';
 import { useMutation, useQuery } from 'convex/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Clock,
   Copy,
   Crown,
   DollarSign,
+  Medal,
   MessageCircle,
   Send,
   Star,
@@ -60,9 +62,6 @@ export default function ReferralsPage() {
   const subscriptionStatus = useQuery(api.subscriptions.getSubscriptionStatus);
   const userReferralCode = useQuery(api.referrals.getUserReferralCode);
   const userReferralStats = useQuery(api.referrals.getUserReferralStats);
-  const leaderboardData = useQuery(api.referrals.getEnhancedLeaderboard, {
-    limit: 20,
-  });
   const claimStatus = useQuery(api.referrals.getReferralClaimStatus);
   const referredUsers = useQuery(api.referrals.getReferredUsers, { limit: 10 });
   const referrerInfo = useQuery(api.referrals.getReferrerPayoutInfo, {});
@@ -165,311 +164,491 @@ export default function ReferralsPage() {
     }
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring' as const,
+        stiffness: 100,
+        damping: 12,
+      },
+    },
+  };
+
+  const headerVariants = {
+    hidden: { y: -20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring' as const,
+        stiffness: 100,
+        damping: 15,
+      },
+    },
+  };
+
   return (
-    <div className="w-full bg-gradient-to-b from-primary/5 dark:from-primary/10">
-      {/* Header Strip */}
-      <div className="w-full p-3 sm:p-4 md:p-6">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <h1 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl md:text-4xl">
-            Referrals
-          </h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Earn up to 5% on successful referrals
-          </p>
+    <AnimatePresence mode="wait">
+      <motion.div
+        animate={{ opacity: 1 }}
+        className="min-h-screen bg-gradient-to-b from-background to-background/95"
+        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }}
+        key="referrals"
+      >
+        {/* Subtle Background Effect */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-1/4 h-72 w-72 rounded-full bg-primary/5 blur-3xl" />
+          <div className="absolute right-1/4 bottom-0 h-72 w-72 rounded-full bg-secondary/5 blur-3xl" />
         </div>
-      </div>
 
-      {/* Constrained content */}
-      <div className="mx-auto w-full max-w-6xl space-y-4 p-3 sm:space-y-6 sm:p-4 md:space-y-6 md:p-6">
-        {/* System Stats */}
-        {leaderboardData?.systemStats && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  <div className="ml-3">
-                    <p className="font-medium text-muted-foreground text-xs">
-                      Total Paid Out
-                    </p>
-                    <div className="font-semibold text-xl">
-                      {leaderboardData.systemStats.totalPayoutsSOL.toFixed(4)}{' '}
-                      SOL
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Users className="h-5 w-5 text-primary" />
-                  <div className="ml-3">
-                    <p className="font-medium text-muted-foreground text-xs">
-                      Active Referrers
-                    </p>
-                    <div className="font-semibold text-xl">
-                      {leaderboardData.systemStats.totalReferrers}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <div className="ml-3">
-                    <p className="font-medium text-muted-foreground text-xs">
-                      Total Referrals
-                    </p>
-                    <div className="font-semibold text-xl">
-                      {leaderboardData.systemStats.totalReferrals}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
-          {/* Left Column - Referral Code Management - Responsive */}
-          <div className="order-1 space-y-4 lg:order-1 lg:col-span-1">
-            {/* Your Referrer (if any) */}
-            {referrerInfo?.hasReferrer && (
-              <Card className="h-fit">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <UserPlus className="h-4 w-4" />
-                    Your Referrer
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex items-center gap-3">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage
-                      alt={referrerInfo.referrerDisplayName}
-                      src={referrerInfo.referrerAvatar}
-                    />
-                    <AvatarFallback>
-                      {(referrerInfo.referrerDisplayName || 'R')
-                        .charAt(0)
-                        .toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <div className="truncate font-medium text-sm">
-                      {referrerInfo.referrerDisplayName}
-                    </div>
-                    <div className="truncate font-mono text-muted-foreground text-xs">
-                      {referrerInfo.referralCode}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            {/* Add Your Referrer - Above Your Referral Code */}
-            {claimStatus?.canClaim && claimStatus.timeRemaining && (
-              <Card className="h-fit">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <UserPlus className="h-4 w-4" />
-                      Add Your Referrer
-                    </CardTitle>
-                    <div className="flex items-center gap-1 text-xs">
-                      <Clock className="h-3 w-3 text-orange-500" />
-                      <span className="font-semibold text-orange-600">
-                        {formatTimeCompact(claimStatus.timeRemaining)}
-                      </span>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-muted-foreground text-xs">
-                    Give credit to whoever referred you and they'll earn
-                    commissions on your future payments.
+        {/* Header Section - Matching Dashboard/Agents Style */}
+        <div className="relative">
+          <motion.div
+            animate={{ opacity: 0.5 }}
+            className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent"
+            initial={{ opacity: 0 }}
+          >
+            <div className="aurora-primary opacity-20" />
+          </motion.div>
+          <div className="relative px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+            <div className="mx-auto max-w-7xl">
+              <motion.div
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center"
+                initial={{ opacity: 0, y: -10 }}
+              >
+                <div>
+                  <h1 className="animate-gradient-x bg-gradient-to-r from-primary via-accent to-primary bg-clip-text font-bold text-3xl text-transparent sm:text-4xl">
+                    Referral Program
+                  </h1>
+                  <p className="mt-1 text-muted-foreground text-sm">
+                    Earn rewards by sharing ANUBIS Chat with your network
                   </p>
-                  <div className="flex gap-2">
-                    <Input
-                      className="font-mono text-sm"
-                      maxLength={12}
-                      onChange={(e) =>
-                        setClaimCode(e.target.value.toUpperCase())
-                      }
-                      placeholder="Enter code"
-                      type="text"
-                      value={claimCode}
-                    />
-                    <Button onClick={handleClaimReferral} size="sm">
-                      Add
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card className="h-fit">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <Star className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Your Referral Code
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {canCreateReferral ? (
-                  userReferralCode ? (
-                    <ReferralCodeDisplay
-                      onCopy={copyToClipboard}
-                      referralCode={userReferralCode}
-                      stats={userReferralStats ?? undefined}
-                    />
-                  ) : (
-                    <CreateReferralCode
-                      customCode={customCode}
-                      onCreateCode={handleCreateReferralCode}
-                      onCustomCodeChange={setCustomCode}
-                    />
-                  )
-                ) : (
-                  <ReferralUpgradePrompt
-                    currentTier={currentTier}
-                    onUpgrade={() => {
-                      window.location.href = '/subscription';
-                    }}
-                  />
-                )}
-              </CardContent>
-            </Card>
+                </div>
+              </motion.div>
+            </div>
           </div>
+        </div>
 
-          {/* Right Column - Tabs for My Referrals and Leaderboard - Responsive */}
-          <div className="order-2 lg:order-2 lg:col-span-2">
-            <Tabs className="w-full" defaultValue="my-referrals">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger
-                  className="flex items-center gap-2"
-                  value="my-referrals"
-                >
-                  <Users className="h-4 w-4" />
-                  My Referrals
-                  {referredUsers && referredUsers.totalCount > 0 && (
-                    <span className="ml-1 rounded-full bg-primary/20 px-1.5 py-0.5 text-xs">
-                      {referredUsers.totalCount}
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger
-                  className="flex items-center gap-2"
-                  value="leaderboard"
-                >
-                  <Trophy className="h-4 w-4" />
-                  Leaderboard
-                </TabsTrigger>
-              </TabsList>
+        {/* Main Content */}
+        <motion.div
+          animate="visible"
+          className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
+          initial="hidden"
+          variants={containerVariants}
+        >
+          {/* User Stats Section - Above everything */}
+          {(userReferralStats || canCreateReferral) && (
+            <motion.div
+              className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+              variants={containerVariants}
+            >
+              {/* Total Referrals */}
+              <motion.div variants={itemVariants}>
+                <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50 dark:border-blue-800 dark:from-blue-950/20 dark:to-cyan-950/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-blue-600 text-sm dark:text-blue-400">
+                          Total Referrals
+                        </p>
+                        <p className="font-bold text-2xl text-blue-700 dark:text-blue-300">
+                          {userReferralStats?.totalReferrals || 0}
+                        </p>
+                      </div>
+                      <Users className="h-8 w-8 text-blue-500 opacity-50 dark:text-blue-400" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
 
-              <TabsContent className="mt-4 space-y-4" value="my-referrals">
-                {/* Your Referred Users */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Users className="h-4 w-4" />
-                      Your Referred Users
-                      {referredUsers && referredUsers.totalCount > 0 && (
-                        <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-xs">
-                          {referredUsers.totalCount}
-                        </span>
-                      )}
+              {/* Total Earnings */}
+              <motion.div variants={itemVariants}>
+                <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 dark:border-green-800 dark:from-green-950/20 dark:to-emerald-950/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-green-600 text-sm dark:text-green-400">
+                          Total Earnings
+                        </p>
+                        <p className="font-bold text-2xl text-green-700 dark:text-green-300">
+                          {(userReferralStats?.totalEarnings || 0).toFixed(4)}{' '}
+                          SOL
+                        </p>
+                      </div>
+                      <DollarSign className="h-8 w-8 text-green-500 opacity-50 dark:text-green-400" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Commission Rate */}
+              <motion.div variants={itemVariants}>
+                <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 dark:border-purple-800 dark:from-purple-950/20 dark:to-pink-950/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-purple-600 text-sm dark:text-purple-400">
+                          Commission Rate
+                        </p>
+                        <p className="font-bold text-2xl text-purple-700 dark:text-purple-300">
+                          {(
+                            (userReferralStats?.currentCommissionRate || 0.03) *
+                            100
+                          ).toFixed(0)}
+                          %
+                        </p>
+                      </div>
+                      <TrendingUp className="h-8 w-8 text-purple-500 opacity-50 dark:text-purple-400" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Current Tier */}
+              <motion.div variants={itemVariants}>
+                <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-red-50 dark:border-orange-800 dark:from-orange-950/20 dark:to-red-950/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-orange-600 text-sm dark:text-orange-400">
+                          Current Tier
+                        </p>
+                        <p className="font-bold text-2xl text-orange-700 dark:text-orange-300">
+                          Tier {userReferralStats?.tier || 1}
+                        </p>
+                      </div>
+                      <Trophy className="h-8 w-8 text-orange-500 opacity-50 dark:text-orange-400" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Main Content Grid - 2x2 Layout */}
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            {/* Left Column - Your Referral Setup */}
+            <motion.div className="space-y-6" variants={itemVariants}>
+              {/* Referral Code Section */}
+              <motion.div
+                animate={{ scale: 1, opacity: 1 }}
+                initial={{ scale: 0.9, opacity: 0 }}
+                transition={{ delay: 0.3, type: 'spring', stiffness: 100 }}
+              >
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Star className="h-5 w-5 text-primary" />
+                      Your Referral Code
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {referredUsers ? (
-                      <MyReferralsDisplay
-                        referredUsers={referredUsers.referredUsers.map(
-                          (u: {
-                            userId: string;
-                            displayName: string;
-                            avatar?: string;
-                            walletAddress?: string;
-                            referredAt?: number;
-                            subscriptionTier: string;
-                            totalPayments: number;
-                            totalCommissionsEarned: number;
-                            lastActiveAt?: number;
-                            isActive: boolean;
-                          }) => ({
-                            userId: u.userId,
-                            displayName: u.displayName,
-                            avatar: u.avatar,
-                            referredAt: u.referredAt ?? Date.now(),
-                            totalCommissionsEarned: u.totalCommissionsEarned,
-                            isActive: u.isActive,
-                            subscriptionTier: u.subscriptionTier as
-                              | 'admin'
-                              | 'free'
-                              | 'pro'
-                              | 'pro_plus'
-                              | undefined,
-                          })
-                        )}
-                      />
+                    {canCreateReferral ? (
+                      userReferralCode ? (
+                        <ReferralCodeDisplay
+                          onCopy={copyToClipboard}
+                          referralCode={userReferralCode}
+                          stats={userReferralStats ?? undefined}
+                        />
+                      ) : (
+                        <CreateReferralCode
+                          customCode={customCode}
+                          onCreateCode={handleCreateReferralCode}
+                          onCustomCodeChange={setCustomCode}
+                        />
+                      )
                     ) : (
-                      <div className="py-6 text-center text-muted-foreground">
-                        <Users className="mx-auto mb-2 h-8 w-8 opacity-50" />
-                        <p className="text-sm">Loading referrals...</p>
-                      </div>
+                      <ReferralUpgradePrompt
+                        currentTier={currentTier}
+                        onUpgrade={() => {
+                          window.location.href = '/subscription';
+                        }}
+                      />
                     )}
                   </CardContent>
                 </Card>
+              </motion.div>
 
-                {/* Commission Tiers Info */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <TrendingUp className="h-4 w-4" />
-                      Commission Tiers
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CompactTierDisplay
-                      currentTier={userReferralStats?.tierInfo?.currentTier}
-                    />
-                  </CardContent>
+              {/* Your Referrer / Add Referrer */}
+              {referrerInfo?.hasReferrer ? (
+                <motion.div
+                  animate={{ scale: 1, opacity: 1 }}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
+                >
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <UserPlus className="h-5 w-5 text-green-600" />
+                        Your Referrer
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage
+                            alt={referrerInfo.referrerDisplayName}
+                            src={referrerInfo.referrerAvatar}
+                          />
+                          <AvatarFallback>
+                            {(referrerInfo.referrerDisplayName || 'R')
+                              .charAt(0)
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">
+                            {referrerInfo.referrerDisplayName}
+                          </div>
+                          <div className="font-mono text-muted-foreground text-sm">
+                            {referrerInfo.referralCode}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ) : claimStatus?.canClaim && claimStatus.timeRemaining ? (
+                <motion.div
+                  animate={{ scale: 1, opacity: 1 }}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
+                >
+                  <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2">
+                          <Clock className="h-5 w-5 text-amber-600" />
+                          Add Your Referrer
+                        </CardTitle>
+                        <span className="font-medium text-amber-600 text-sm">
+                          {formatTimeCompact(claimStatus.timeRemaining)}
+                        </span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-muted-foreground text-sm">
+                        Credit your referrer to help them earn commissions on
+                        your payments.
+                      </p>
+                      <div className="flex gap-2">
+                        <Input
+                          className="font-mono"
+                          maxLength={12}
+                          onChange={(e) =>
+                            setClaimCode(e.target.value.toUpperCase())
+                          }
+                          placeholder="Enter referral code"
+                          value={claimCode}
+                        />
+                        <Button onClick={handleClaimReferral} size="sm">
+                          Add
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ) : null}
+            </motion.div>
+
+            {/* Right Column - Two Row Layout */}
+            <motion.div
+              className="grid grid-rows-2 gap-6"
+              variants={itemVariants}
+            >
+              {/* Top Row - My Referrals & Commission Structure */}
+              <motion.div
+                animate={{ scale: 1, opacity: 1 }}
+                initial={{ scale: 0.9, opacity: 0 }}
+                transition={{ delay: 0.3, type: 'spring', stiffness: 100 }}
+              >
+                <Card className="h-full">
+                  <Tabs
+                    className="flex h-full flex-col"
+                    defaultValue="my-referrals"
+                  >
+                    <CardHeader className="pb-3">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger
+                          className="flex items-center gap-2"
+                          value="my-referrals"
+                        >
+                          <Users className="h-4 w-4" />
+                          My Network
+                          {referredUsers && referredUsers.totalCount > 0 && (
+                            <span className="ml-1 rounded-full bg-primary/20 px-1.5 py-0.5 text-xs">
+                              {referredUsers.totalCount}
+                            </span>
+                          )}
+                        </TabsTrigger>
+                        <TabsTrigger
+                          className="flex items-center gap-2"
+                          value="commission-structure"
+                        >
+                          <TrendingUp className="h-4 w-4" />
+                          Commission Rates
+                        </TabsTrigger>
+                      </TabsList>
+                    </CardHeader>
+
+                    <CardContent className="flex-1 overflow-hidden">
+                      <TabsContent
+                        className="h-full overflow-y-auto"
+                        value="my-referrals"
+                      >
+                        {referredUsers ? (
+                          <MyReferralsDisplay
+                            referredUsers={referredUsers.referredUsers.map(
+                              (u: {
+                                userId: string;
+                                displayName: string;
+                                avatar?: string;
+                                walletAddress?: string;
+                                referredAt?: number;
+                                subscriptionTier: string;
+                                totalPayments: number;
+                                totalCommissionsEarned: number;
+                                lastActiveAt?: number;
+                                isActive: boolean;
+                              }) => ({
+                                userId: u.userId,
+                                displayName: u.displayName,
+                                avatar: u.avatar,
+                                referredAt: u.referredAt ?? Date.now(),
+                                totalCommissionsEarned:
+                                  u.totalCommissionsEarned,
+                                isActive: u.isActive,
+                                subscriptionTier: u.subscriptionTier as
+                                  | 'admin'
+                                  | 'free'
+                                  | 'pro'
+                                  | 'pro_plus'
+                                  | undefined,
+                              })
+                            )}
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-muted-foreground">
+                            <div className="text-center">
+                              <Users className="mx-auto mb-4 h-12 w-12 opacity-50" />
+                              <p>Loading your referrals...</p>
+                            </div>
+                          </div>
+                        )}
+                      </TabsContent>
+
+                      <TabsContent
+                        className="h-full overflow-y-auto"
+                        value="commission-structure"
+                      >
+                        <div className="space-y-4">
+                          <div className="mb-6 text-center">
+                            <p className="text-muted-foreground text-sm">
+                              Earn higher rates as you refer more users
+                            </p>
+                          </div>
+                          <CompactTierDisplay
+                            currentTier={
+                              userReferralStats?.tierInfo?.currentTier
+                            }
+                          />
+                        </div>
+                      </TabsContent>
+                    </CardContent>
+                  </Tabs>
                 </Card>
-              </TabsContent>
+              </motion.div>
 
-              <TabsContent className="mt-4" value="leaderboard">
-                <Card>
-                  <CardHeader className="pb-2">
+              {/* Bottom Row - Referral Stats or Additional Info */}
+              <motion.div
+                animate={{ scale: 1, opacity: 1 }}
+                initial={{ scale: 0.9, opacity: 0 }}
+                transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
+              >
+                <Card className="h-full">
+                  <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Trophy className="h-5 w-5" />
-                      Top Referrers Leaderboard
+                      <Star className="h-5 w-5" />
+                      Your Performance
                     </CardTitle>
-                    <p className="text-muted-foreground text-xs">
-                      Earn higher commission rates as you climb the ranks
+                    <p className="text-muted-foreground text-sm">
+                      Track your referral progress and earnings
                     </p>
                   </CardHeader>
                   <CardContent>
-                    {leaderboardData?.leaderboard ? (
-                      <LeaderboardDisplay
-                        leaderboard={
-                          leaderboardData.leaderboard as unknown as LeaderboardEntry[]
-                        }
-                      />
+                    {userReferralStats ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="rounded-lg bg-muted/30 p-4 text-center">
+                          <div className="font-bold text-2xl text-primary">
+                            {userReferralStats.totalReferrals || 0}
+                          </div>
+                          <p className="text-muted-foreground text-sm">
+                            Total Referrals
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-muted/30 p-4 text-center">
+                          <div className="font-bold text-2xl text-green-600">
+                            {(userReferralStats.totalEarnings || 0).toFixed(4)}{' '}
+                            SOL
+                          </div>
+                          <p className="text-muted-foreground text-sm">
+                            Total Earned
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-muted/30 p-4 text-center">
+                          <div className="font-bold text-2xl text-blue-600">
+                            {(
+                              (userReferralStats.currentCommissionRate || 0) *
+                              100
+                            ).toFixed(1)}
+                            %
+                          </div>
+                          <p className="text-muted-foreground text-sm">
+                            Current Rate
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-muted/30 p-4 text-center">
+                          <div className="font-bold text-2xl text-purple-600">
+                            Tier {userReferralStats.tierInfo?.currentTier || 1}
+                          </div>
+                          <p className="text-muted-foreground text-sm">
+                            Current Tier
+                          </p>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="py-8 text-center text-muted-foreground">
-                        <Trophy className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                        <p>Loading leaderboard...</p>
+                      <div className="py-8 text-center">
+                        <Star className="mx-auto mb-4 h-12 w-12 opacity-50" />
+                        <p className="text-muted-foreground">
+                          No referral stats available yet
+                        </p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
+              </motion.div>
+            </motion.div>
           </div>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -761,71 +940,6 @@ function ReferralUpgradePrompt({
 }
 
 // Component for leaderboard display
-type LeaderboardEntry = {
-  referralCode: string;
-  rank: number;
-  displayName: string;
-  avatar?: string;
-  totalReferrals: number;
-  currentCommissionRate: number;
-  lifetimePayouts: number;
-};
-
-function LeaderboardDisplay({
-  leaderboard,
-}: {
-  leaderboard: LeaderboardEntry[];
-}) {
-  return (
-    <div className="space-y-3">
-      {leaderboard.map((referrer, index) => (
-        <div
-          className="flex items-center justify-between rounded-lg border p-3"
-          key={referrer.referralCode}
-        >
-          <div className="flex items-center space-x-4">
-            {/* Rank */}
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted font-bold">
-              {index < 3 ? <Trophy className="h-4 w-4" /> : referrer.rank}
-            </div>
-
-            {/* Avatar */}
-            <Avatar className="h-10 w-10">
-              <AvatarImage alt={referrer.displayName} src={referrer.avatar} />
-              <AvatarFallback>
-                {referrer.displayName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-
-            {/* Name and Stats */}
-            <div>
-              <div className="font-semibold">{referrer.displayName}</div>
-              <div className="text-muted-foreground text-sm">
-                {referrer.totalReferrals} referrals •{' '}
-                {(referrer.currentCommissionRate * 100).toFixed(1)}% rate
-              </div>
-            </div>
-          </div>
-
-          {/* Earnings */}
-          <div className="text-right">
-            <div className="font-semibold">
-              {referrer.lifetimePayouts.toFixed(4)} SOL
-            </div>
-            <div className="text-muted-foreground text-sm">earned</div>
-          </div>
-        </div>
-      ))}
-
-      {leaderboard.length === 0 && (
-        <div className="py-8 text-center text-muted-foreground">
-          <Trophy className="mx-auto mb-4 h-12 w-12 opacity-50" />
-          <p>No referrers yet. Be the first to start earning!</p>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // Compact tier display with interactive hover states
 function CompactTierDisplay({ currentTier }: { currentTier?: number }) {

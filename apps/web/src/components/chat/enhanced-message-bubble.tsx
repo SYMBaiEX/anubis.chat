@@ -17,12 +17,18 @@ interface WebSearchPayload {
 
 // Runtime type guard to narrow ToolCallResult.data for webSearch
 const isWebSearchPayload = (data: unknown): data is WebSearchPayload => {
-  if (typeof data !== 'object' || data === null) return false;
+  if (typeof data !== 'object' || data === null) {
+    return false;
+  }
   const candidate = data as Record<string, unknown>;
   const results = candidate.results;
-  if (!Array.isArray(results)) return false;
+  if (!Array.isArray(results)) {
+    return false;
+  }
   return results.every((item) => {
-    if (typeof item !== 'object' || item === null) return false;
+    if (typeof item !== 'object' || item === null) {
+      return false;
+    }
     const obj = item as Record<string, unknown>;
     return (
       typeof obj.title === 'string' &&
@@ -46,10 +52,14 @@ interface DocumentArtifactPayload {
 }
 
 const isDocumentPayload = (data: unknown): data is DocumentArtifactPayload => {
-  if (typeof data !== 'object' || data === null) return false;
+  if (typeof data !== 'object' || data === null) {
+    return false;
+  }
   const candidate = data as Record<string, unknown>;
   const doc = candidate.document;
-  if (typeof doc !== 'object' || doc === null) return false;
+  if (typeof doc !== 'object' || doc === null) {
+    return false;
+  }
   const d = doc as Record<string, unknown>;
   // minimally ensure required shape
   return typeof d.type === 'string';
@@ -450,7 +460,7 @@ export const EnhancedMessageBubble = memo(
                   width={600}
                 />
                 {part.filename && (
-                  <div className="absolute right-0 bottom-0 left-0 bg-black/50 px-2 py-1 text-white text-xs">
+                  <div className="absolute right-0 bottom-0 left-0 bg-background/80 px-2 py-1 text-foreground text-xs">
                     {part.filename}
                   </div>
                 )}

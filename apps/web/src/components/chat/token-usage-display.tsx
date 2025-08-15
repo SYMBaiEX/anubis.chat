@@ -43,14 +43,22 @@ export function TokenUsageDisplay({
       : 0;
 
   const formatCost = (cost: number) => {
-    if (cost === 0) return 'Free';
-    if (cost < 0.01) return '<$0.01';
+    if (cost === 0) {
+      return 'Free';
+    }
+    if (cost < 0.01) {
+      return '<$0.01';
+    }
     return `$${cost.toFixed(3)}`;
   };
 
   const formatNumber = (num: number) => {
-    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    if (num >= 1_000_000) {
+      return `${(num / 1_000_000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
     return num.toString();
   };
 

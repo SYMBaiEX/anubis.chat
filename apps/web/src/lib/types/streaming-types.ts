@@ -6,11 +6,8 @@
 
 import type {
   ChatId,
-  ConvexStreamingArtifact,
   ConvexStreamingSession,
-  ConvexStreamingToolCall,
   MessageId,
-  StreamingSessionId,
   UserId,
 } from './convex-integration';
 import type { Result } from './result';

@@ -34,7 +34,7 @@ export default function LandingHeader() {
   // Close mobile menu when route changes
   React.useEffect(() => {
     setMenuState(false);
-  }, [pathname]);
+  }, []);
 
   return (
     <header>

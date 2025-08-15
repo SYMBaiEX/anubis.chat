@@ -5,13 +5,12 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import {
   Connection,
-  LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
   Transaction,
 } from '@solana/web3.js';
 import { useConvexAuth, useQuery } from 'convex/react';
-import { Check, ChevronDown, ExternalLink, Loader2, X } from 'lucide-react';
+import { Check, ExternalLink, Loader2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,7 +30,6 @@ import {
 } from '@/components/ui/select';
 import {
   createSPLTokenTransferTransaction,
-  formatTokenAmount,
   validateSPLTokenTransfer,
 } from '@/lib/solana-spl';
 

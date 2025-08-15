@@ -22,7 +22,9 @@ export async function getAgentConfig(
   ctx: any,
   agentId: Id<'agents'> | undefined
 ): Promise<Doc<'agents'> | null> {
-  if (!agentId) return null;
+  if (!agentId) {
+    return null;
+  }
 
   const cacheKey = agentId.toString();
   const cached = agentCache.get(cacheKey);
@@ -35,7 +37,9 @@ export async function getAgentConfig(
 
   // Fetch agent from database
   const agent = await ctx.db.get(agentId);
-  if (!agent) return null;
+  if (!agent) {
+    return null;
+  }
 
   // Apply optimizations for known agents
   const optimizedAgent = optimizeAgent(agent);
@@ -247,7 +251,7 @@ export function truncateToTokenLimit(text: string, maxTokens: number): string {
     return truncated.substring(0, lastSentenceEnd + 1);
   }
 
-  return truncated + '...';
+  return `${truncated}...`;
 }
 
 export type { AgentConfig } from './anubisAgent';

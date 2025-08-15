@@ -138,7 +138,7 @@ export function useAgentManagement() {
   const createAgent = useCreateAgent();
   const updateAgent = useUpdateAgent();
   const deleteAgent = useDeleteAgent();
-  const updatePreferences = useUpdateUserPreferences();
+  const _updatePreferences = useUpdateUserPreferences();
 
   const createAndSetDefault = async (agentData: {
     name: string;

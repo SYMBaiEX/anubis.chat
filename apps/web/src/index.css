@@ -28,9 +28,9 @@ html {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
   }
 }
 
@@ -107,12 +107,12 @@ html {
     border-color 300ms ease-in-out,
     color 300ms ease-in-out,
     fill 300ms ease-in-out,
-    stroke 300ms ease-in-out !important;
+    stroke 300ms ease-in-out;
 }
 
 /* Disable transitions on page load */
 .preload * {
-  transition: none !important;
+  transition: none;
 }
 
 /* Custom Animations */
@@ -189,16 +189,20 @@ html {
   font-size: calc(16px * var(--font-scale));
 }
 
-/* Define dark mode variant for Tailwind v4 */
-@variant dark (&:is(.dark, .dark *));
-@variant light (&:is(.light, .light *));
+/* Custom dark mode variant for Tailwind v4 - class-based strategy */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Tailwind v4 Theme Configuration */
 @theme {
-  /* Typography System */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", "SF Mono", "Monaco", monospace;
-  --font-heading: "Satoshi", "Inter", ui-sans-serif, sans-serif;
+  /* Typography System - Using Geist fonts */
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+    sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Consolas,
+    "Liberation Mono", Menlo, monospace;
+  --font-heading: var(--font-geist-sans), ui-sans-serif, sans-serif;
 
   /* Spacing & Sizing */
   --spacing-sidebar: 16rem;
@@ -220,7 +224,9 @@ html {
 }
 
 /* CSS Custom Properties for Theme Colors */
-:root {
+:root,
+:root.light,
+.light {
   /* Border Radius System */
   --radius: 0.5rem;
   --radius-sm: 0.25rem;
@@ -249,79 +255,79 @@ html {
   --egypt-papyrus: #f5f2e8;
   --egypt-sand: #e8dcc0;
 
-  /* Light Theme Colors - More Vibrant */
-  --background: 0 0% 99%;
-  --foreground: 240 15% 10%;
-  --card: 0 0% 100%;
-  --card-foreground: 240 15% 10%;
+  /* Light Theme Colors - Bright, Clean Light Theme */
+  --background: 0 0% 100%; /* Pure white background #ffffff */
+  --foreground: 222 84% 4.9%; /* Very dark blue-gray text #0f172a */
+  --card: 0 0% 100%; /* Pure white cards */
+  --card-foreground: 222 84% 4.9%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 15% 10%;
-  --primary: 162 95% 42%; /* More saturated green */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 269 60% 94%; /* Slight purple tint */
-  --secondary-foreground: 269 70% 35%;
-  --muted: 240 10% 92%;
-  --muted-foreground: 240 10% 35%;
-  --accent: 269 85% 52%; /* More vibrant purple */
-  --accent-foreground: 0 0% 100%;
-  --destructive: 3 100% 60%;
+  --popover-foreground: 222 84% 4.9%;
+  --primary: 162 84% 46%; /* ANUBIS green #14f195 */
+  --primary-foreground: 0 0% 0%; /* Black text on green primary */
+  --secondary: 210 40% 98%; /* Very light blue-gray #f8fafc */
+  --secondary-foreground: 222 84% 4.9%;
+  --muted: 210 40% 96%; /* Light blue-gray for muted elements #f1f5f9 */
+  --muted-foreground: 215 16% 47%; /* Medium gray text #64748b */
+  --accent: 162 84% 46%; /* Green accent matching primary */
+  --accent-foreground: 0 0% 0%; /* Black text on green accent */
+  --destructive: 0 84% 60%; /* Error red #ef4444 */
   --destructive-foreground: 0 0% 100%;
-  --border: 162 30% 85%; /* Slight green tint to borders */
-  --input: 162 20% 88%; /* Slight green tint to inputs */
-  --ring: 162 95% 42%;
-  --chart-1: 162 84% 51%;
-  --chart-2: 269 72% 56%;
-  --chart-3: 51 100% 50%;
-  --chart-4: 3 100% 67%;
-  --chart-5: 30 54% 53%;
+  --border: 214 32% 91%; /* Light border #e2e8f0 */
+  --input: 214 32% 91%; /* Light input border */
+  --ring: 162 84% 46%; /* Green focus ring */
+  --chart-1: 162 84% 46%; /* Green */
+  --chart-2: 269 72% 56%; /* Purple */
+  --chart-3: 43 96% 56%; /* Gold */
+  --chart-4: 0 84% 60%; /* Red */
+  --chart-5: 199 89% 48%; /* Blue */
 
-  /* Sidebar Light Theme - More Vibrant */
-  --sidebar-background: 0 0% 100%;
-  --sidebar-foreground: 240 15% 10%;
-  --sidebar-primary: 162 95% 42%;
+  /* Sidebar Light Theme */
+  --sidebar-background: 0 0% 100%; /* Pure white sidebar */
+  --sidebar-foreground: 222 84% 4.9%;
+  --sidebar-primary: 162 84% 46%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 269 40% 96%; /* Light purple tint */
-  --sidebar-accent-foreground: 269 70% 35%;
-  --sidebar-border: 162 25% 88%; /* Green tinted border */
-  --sidebar-ring: 162 95% 42%;
+  --sidebar-accent: 210 40% 98%; /* Very light blue-gray accent */
+  --sidebar-accent-foreground: 222 84% 4.9%;
+  --sidebar-border: 214 32% 91%;
+  --sidebar-ring: 162 84% 46%;
 }
 
 .dark,
 [data-theme="dark"] {
-  /* Dark Theme Colors */
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 8%;
+  /* Dark Theme Colors - Deep Black with Bright Green Accents */
+  --background: 0 0% 4%; /* Deep black background #0a0a0a */
+  --foreground: 0 0% 98%; /* Bright white text #fafafa */
+  --card: 0 0% 7%; /* Very dark cards #121212 */
   --card-foreground: 0 0% 98%;
-  --popover: 240 10% 8%;
+  --popover: 0 0% 7%;
   --popover-foreground: 0 0% 98%;
-  --primary: 162 84% 51%;
-  --primary-foreground: 0 0% 0%;
-  --secondary: 240 3.7% 15.9%;
+  --primary: 162 84% 51%; /* ANUBIS bright green #14f195 */
+  --primary-foreground: 0 0% 0%; /* Black text on green primary */
+  --secondary: 0 0% 12%; /* Dark gray #1f1f1f */
   --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --accent: 269 72% 56%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 3 100% 67%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 240 3.7% 20%;
-  --input: 240 3.7% 20%;
-  --ring: 162 84% 51%;
-  --chart-1: 162 84% 51%;
-  --chart-2: 269 72% 56%;
-  --chart-3: 51 100% 50%;
-  --chart-4: 3 100% 67%;
-  --chart-5: 30 54% 53%;
+  --muted: 0 0% 12%; /* Dark gray for muted elements #1f1f1f */
+  --muted-foreground: 0 0% 65%; /* Light gray text #a5a5a5 */
+  --accent: 162 84% 51%; /* Green accent matching primary */
+  --accent-foreground: 0 0% 0%; /* Black text on green accent */
+  --destructive: 0 84% 60%; /* Bright red #ef4444 */
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 18%; /* Dark border #2e2e2e */
+  --input: 0 0% 18%; /* Dark input border */
+  --ring: 162 84% 51%; /* Bright green focus ring */
+  --chart-1: 162 84% 51%; /* Bright green */
+  --chart-2: 269 72% 56%; /* Purple */
+  --chart-3: 43 96% 56%; /* Gold */
+  --chart-4: 0 84% 60%; /* Red */
+  --chart-5: 162 60% 40%; /* Darker green */
 
   /* Sidebar Dark Theme */
-  --sidebar-background: 240 10% 6%;
+  --sidebar-background: 0 0% 3%; /* Darker black sidebar #080808 */
   --sidebar-foreground: 0 0% 98%;
   --sidebar-primary: 162 84% 51%;
   --sidebar-primary-foreground: 0 0% 0%;
-  --sidebar-accent: 240 3.7% 12%;
+  --sidebar-accent: 0 0% 9%; /* Very dark gray #171717 */
   --sidebar-accent-foreground: 0 0% 98%;
-  --sidebar-border: 240 3.7% 15%;
+  --sidebar-border: 0 0% 15%; /* Dark border #262626 */
   --sidebar-ring: 162 84% 51%;
 }
 
@@ -411,6 +417,54 @@ html {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    position: relative;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  /* Explicit light theme styles */
+  :root:not(.dark) body,
+  .light body {
+    background-color: hsl(0 0% 100%);
+    color: hsl(222 84% 4.9%);
+  }
+
+  /* Explicit dark theme styles */
+  :root.dark body,
+  .dark body {
+    background-color: hsl(0 0% 4%);
+    color: hsl(0 0% 98%);
+  }
+
+  /* Add subtle gradient overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100vh;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.015) 0%,
+      transparent 30%,
+      transparent 70%,
+      hsl(var(--accent) / 0.015) 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Dark theme gradient overlay */
+  .dark body::before {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.08) 0%,
+      transparent 40%,
+      transparent 60%,
+      hsl(var(--primary) / 0.05) 100%
+    );
   }
 
   /* Heading typography: use display font and tighten leading */
@@ -471,10 +525,9 @@ html {
   }
 
   /* Enhanced gradients for light theme */
-  .light .text-gradient,
   :root:not(.dark) .text-gradient {
     @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent font-semibold;
-    filter: saturate(1.2);
+    filter: saturate(1.4) brightness(0.9);
   }
 
   /* Glass Morphism */
@@ -572,7 +625,6 @@ html {
   }
 
   /* Enhanced aurora for light theme */
-  .light .aurora-primary,
   :root:not(.dark) .aurora-primary {
     background:
       radial-gradient(
@@ -603,7 +655,6 @@ html {
   }
 
   /* Enhanced aurora gold for light theme */
-  .light .aurora-gold,
   :root:not(.dark) .aurora-gold {
     background:
       radial-gradient(
@@ -683,18 +734,15 @@ html {
   }
 
   /* Enhanced cards for light theme */
-  .light .card-hover,
   :root:not(.dark) .card-hover {
     @apply shadow-sm hover:shadow-xl border-primary/10;
   }
 
   /* Light theme surface enhancements */
-  .light .ring-1,
   :root:not(.dark) .ring-1 {
     @apply ring-primary/15;
   }
 
-  .light .ring-border\/40,
   :root:not(.dark) .ring-border\/40 {
     @apply ring-primary/20;
   }
@@ -705,13 +753,11 @@ html {
   }
 
   /* Enhanced button styles for light theme */
-  .light .button-press,
   :root:not(.dark) .button-press {
     @apply shadow-md hover:shadow-lg;
   }
 
   /* Make primary buttons pop in light theme */
-  .light [data-variant="default"],
   :root:not(.dark) [data-variant="default"] {
     @apply shadow-md hover:shadow-xl;
   }

@@ -5,6 +5,7 @@ import Script from 'next/script';
 import '../index.css';
 import { Analytics } from '@vercel/analytics/next';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { GlobalErrorHandler } from '@/components/error-boundary/global-error-handler';
 import { globalCommandPalette as GlobalCommandPalette } from '@/components/globalCommandPalette';
 import {
   PreloadScripts,
@@ -25,11 +26,10 @@ import {
 } from '@/components/ui/smooth-scroll';
 import { Toaster } from '@/components/ui/toaster';
 import { WebVitals } from '@/components/web-vitals';
-import { initSmoothScrolling } from '@/lib/smooth-scroll';
 import { themeInitScript } from '@/lib/theme-script';
 
-// PRD Typography: Geist Sans for body, Geist Mono for code
-// Note: Satoshi Variable for headers will be loaded via CSS for better Bun runtime performance
+// Typography: Geist Sans for body and headers, Geist Mono for code
+// Optimized for Next.js font loading and Bun runtime performance
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://anubis.chat'),
@@ -131,38 +131,23 @@ export default function RootLayout({
         <Script id="theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>
-        {/* Smooth scrolling initialization */}
-        <Script id="smooth-scroll-init" strategy="afterInteractive">
-          {`
-            // Initialize smooth scrolling for anchor links
-            if (typeof window !== 'undefined') {
-              const { initSmoothScrolling } = require('@/lib/smooth-scroll');
-              initSmoothScrolling();
-            }
-          `}
-        </Script>
-        {/* Load Satoshi font stylesheet without client event handlers */}
-        <link
-          crossOrigin="anonymous"
-          href="https://api.fontshare.com"
-          rel="preconnect"
-        />
-        <link
-          href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap"
-          rel="stylesheet"
-        />
+        {/* Smooth scrolling is enabled via CSS in index.css */}
+        {/* Geist fonts are loaded via Next.js font optimization */}
       </head>
       <body
-        className={`${GeistSans.variable} ${GeistMono.variable} bg-gradient-to-b from-primary/5 font-sans antialiased dark:from-primary/10`}
+        className={`${GeistSans.variable} ${GeistMono.variable} ${GeistSans.className} min-h-screen bg-background antialiased transition-colors duration-300`}
       >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           disableTransitionOnChange
           enableSystem
+          storageKey="anubis-theme"
+          themes={['light', 'dark']}
         >
           <ErrorBoundary>
             <Providers>
+              <GlobalErrorHandler />
               <WebVitals />
               <SchemaMarkup />
               <ServiceWorkerManager />
@@ -171,7 +156,7 @@ export default function RootLayout({
               <ResourceHints />
               <PreloadStyles />
               <PreloadScripts />
-              <main className="min-h-screen w-full overflow-x-hidden">
+              <main className="relative z-10 min-h-screen w-full overflow-x-hidden">
                 {children}
               </main>
               <GlobalCommandPalette />

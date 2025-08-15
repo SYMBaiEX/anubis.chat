@@ -241,13 +241,7 @@ export default function AuthPage() {
           />
         )}
         {/* Theme-aware overlay for better contrast */}
-        <div
-          className={`absolute inset-0 transition-all duration-700 ${
-            isLightMode
-              ? 'bg-gradient-to-b from-white/90 via-white/85 to-white/80 backdrop-blur-[2px]'
-              : 'bg-gradient-to-b from-black/40 via-black/30 to-transparent'
-          }`}
-        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/85 to-background/80 backdrop-blur-[2px] transition-all duration-700 dark:from-background/40 dark:via-background/30 dark:to-transparent" />
       </div>
 
       {/* Animated Background Gradient with smoother theme transition */}
@@ -309,7 +303,7 @@ export default function AuthPage() {
               initial={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.6, delay: 0.4 }}
             >
-              <span className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text font-bold text-3xl text-transparent sm:text-3xl dark:from-white dark:via-primary dark:to-primary">
+              <span className="bg-gradient-to-r from-foreground via-primary to-primary bg-clip-text font-bold text-3xl text-transparent sm:text-3xl">
                 Welcome to
               </span>
               <Logo
@@ -366,7 +360,7 @@ export default function AuthPage() {
                   initial={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.6, delay: 0.3 }}
                 >
-                  <span className="bg-gradient-to-r from-black via-primary to-primary bg-clip-text font-bold text-3xl text-transparent xl:text-4xl dark:from-white dark:via-primary dark:to-primary">
+                  <span className="bg-gradient-to-r from-foreground via-primary to-primary bg-clip-text font-bold text-3xl text-transparent xl:text-4xl">
                     Welcome to
                   </span>
                   <Logo
@@ -657,7 +651,7 @@ export default function AuthPage() {
                                       stiffness: 500,
                                     }}
                                   >
-                                    <CheckCircle className="h-3 w-3 text-white" />
+                                    <CheckCircle className="h-3 w-3 text-primary-foreground" />
                                   </motion.div>
                                 </motion.div>
                                 <div>
@@ -748,14 +742,14 @@ export default function AuthPage() {
                             >
                               <motion.div variants={itemVariants}>
                                 <Button
-                                  className="group relative w-full overflow-hidden bg-gradient-to-r from-primary to-emerald-500 font-bold text-white hover:from-primary/90 hover:to-emerald-600"
+                                  className="group relative w-full overflow-hidden bg-gradient-to-r from-primary to-emerald-500 font-bold text-primary-foreground hover:from-primary/90 hover:to-emerald-600"
                                   disabled={isSigningIn}
                                   onClick={handleWalletSignIn}
                                   size="lg"
                                   type="button"
                                 >
                                   <motion.span
-                                    className="absolute inset-0 bg-white/20"
+                                    className="absolute inset-0 bg-primary-foreground/20"
                                     initial={{ x: '-100%' }}
                                     transition={{ duration: 0.5 }}
                                     whileHover={{ x: '100%' }}

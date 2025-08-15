@@ -213,7 +213,7 @@ Provide a balanced response with clear reasoning.`;
 
     return {
       steps,
-      conclusion: steps[steps.length - 1]?.thought,
+      conclusion: steps.at(-1)?.thought,
       totalConfidence:
         steps.reduce((sum, s) => sum + s.confidence, 0) / steps.length,
     };
@@ -253,7 +253,9 @@ class ReasoningCacheManager {
     // Implement LRU cache
     if (this.cache.size >= this.maxCacheSize) {
       const firstKey = this.cache.keys().next().value;
-      if (firstKey) this.cache.delete(firstKey);
+      if (firstKey) {
+        this.cache.delete(firstKey);
+      }
     }
 
     this.cache.set(key, {

@@ -125,7 +125,7 @@ function ReferralProgram() {
                         },
                       }}
                     >
-                      <Icon className="h-6 w-6 text-white" />
+                      <Icon className="h-6 w-6 text-primary-foreground" />
                     </motion.div>
                     <CardTitle className="text-lg">{feature.title}</CardTitle>
                   </CardHeader>

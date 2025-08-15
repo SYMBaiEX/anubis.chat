@@ -2,7 +2,7 @@
 
 import { Bot } from 'lucide-react';
 import { useState } from 'react';
-import type { Agent } from '@/components/providers/solana-agent-provider';
+import type { Agent } from '@/components/providers/solanaAgentProvider';
 import { AgentCard } from '@/components/ui/agent-card';
 import {
   AgentTypeFilter,

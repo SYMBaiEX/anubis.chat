@@ -3,7 +3,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 const progressVariants = cva(
-  'relative h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800',
+  'relative h-2 w-full overflow-hidden rounded-full bg-secondary',
   {
     variants: {
       size: {
@@ -23,10 +23,10 @@ const progressBarVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-blue-600 dark:bg-blue-500',
-        success: 'bg-green-600 dark:bg-green-500',
-        warning: 'bg-yellow-600 dark:bg-yellow-500',
-        error: 'bg-red-600 dark:bg-red-500',
+        default: 'bg-primary',
+        success: 'bg-green-500',
+        warning: 'bg-yellow-500',
+        error: 'bg-destructive',
       },
     },
     defaultVariants: {
@@ -64,7 +64,7 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
           />
         </div>
         {showValue && (
-          <div className="flex justify-between text-gray-600 text-sm dark:text-gray-400">
+          <div className="flex justify-between text-muted-foreground text-sm">
             <span>{Math.round(percentage)}%</span>
             <span>
               {value} / {max}

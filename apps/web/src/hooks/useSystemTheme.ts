@@ -7,7 +7,9 @@ export function useSystemTheme() {
 
   useEffect(() => {
     // Check if window is available
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     // Get initial system preference
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');

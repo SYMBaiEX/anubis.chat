@@ -4,7 +4,7 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
 import type { FunctionReference } from 'convex/server';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface OptimisticUpdate<T> {
   id: string;
@@ -33,9 +33,20 @@ export function useOptimisticConvex<T, Args extends Record<string, any>>(
   const [isLoading, setIsLoading] = useState(false);
   const timeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all timeouts when component unmounts
+      timeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
+      timeoutRefs.current.clear();
+    };
+  }, []);
+
   // Merge optimistic updates with real data
   const mergedData = useCallback(() => {
-    if (!queryData) return optimisticUpdates.map((u) => u.data);
+    if (!queryData) {
+      return optimisticUpdates.map((u) => u.data);
+    }
 
     const pendingUpdates = optimisticUpdates.filter(
       (u) => u.status === 'pending'
@@ -70,11 +81,16 @@ export function useOptimisticConvex<T, Args extends Record<string, any>>(
 
   // Remove optimistic update
   const removeOptimisticUpdate = useCallback((updateId: string) => {
-    const timeout = timeoutRefs.current.get(updateId);
-    if (timeout) {
-      clearTimeout(timeout);
-      timeoutRefs.current.delete(updateId);
-    }
+    // Clear all timeouts associated with this update
+    const timeouts = [updateId, `success-${updateId}`, `error-${updateId}`];
+
+    timeouts.forEach((key) => {
+      const timeout = timeoutRefs.current.get(key);
+      if (timeout) {
+        clearTimeout(timeout);
+        timeoutRefs.current.delete(key);
+      }
+    });
 
     setOptimisticUpdates((prev) => prev.filter((u) => u.id !== updateId));
   }, []);
@@ -87,9 +103,12 @@ export function useOptimisticConvex<T, Args extends Record<string, any>>(
       );
 
       // Remove after a delay to allow for smooth transition
-      setTimeout(() => {
+      const successTimeout = setTimeout(() => {
         removeOptimisticUpdate(updateId);
       }, 500);
+
+      // Store timeout for cleanup
+      timeoutRefs.current.set(`success-${updateId}`, successTimeout);
     },
     [removeOptimisticUpdate]
   );
@@ -102,9 +121,12 @@ export function useOptimisticConvex<T, Args extends Record<string, any>>(
       );
 
       // Remove after showing error state
-      setTimeout(() => {
+      const errorTimeout = setTimeout(() => {
         removeOptimisticUpdate(updateId);
       }, 2000);
+
+      // Store timeout for cleanup
+      timeoutRefs.current.set(`error-${updateId}`, errorTimeout);
     },
     [removeOptimisticUpdate]
   );

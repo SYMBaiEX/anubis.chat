@@ -5,7 +5,6 @@ import {
   Component,
   type ReactNode,
   Suspense,
-  startTransition,
   useCallback,
   useTransition,
 } from 'react';
@@ -64,12 +63,6 @@ class StreamingErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error(
-      'StreamingSuspenseWrapper error boundary caught an error:',
-      error,
-      errorInfo
-    );
-
     // Report to error monitoring system
     errorMonitor.captureError(error, {
       category: 'javascript',
@@ -143,7 +136,6 @@ export function StreamingSuspenseWrapper({
       if (onError) {
         onError(error);
       }
-      console.error('StreamingSuspenseWrapper caught error:', error);
     },
     [onError]
   );

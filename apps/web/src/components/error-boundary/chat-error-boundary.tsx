@@ -72,8 +72,7 @@ export function ChatErrorBoundary({ children }: { children: React.ReactNode }) {
     <ErrorBoundary
       fallback={ChatErrorFallback}
       level="section"
-      onError={(error) => {
-        console.error('[Chat Error]:', error);
+      onError={(_error) => {
         // Could send to error tracking service
       }}
       resetOnPropsChange

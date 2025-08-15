@@ -57,7 +57,9 @@ class PerformanceMonitor {
    * Initialize Web Vitals monitoring
    */
   private initializeWebVitals() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     // Monitor Core Web Vitals
     this.observeMetric('CLS', () => {
@@ -99,7 +101,9 @@ class PerformanceMonitor {
    * Initialize Performance Observer for custom metrics
    */
   private initializePerformanceObserver() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     // Monitor navigation timing
     window.addEventListener('load', () => {
@@ -317,12 +321,10 @@ class PerformanceMonitor {
     return thresholds[name] ? value > thresholds[name] : false;
   }
 
-  private sendToAnalytics(type: string, data: unknown) {
+  private sendToAnalytics(_type: string, _data: unknown) {
     // In production, send to your analytics service
     // For now, we'll just log important events
     if (process.env.NODE_ENV === 'production') {
-      // Example: analytics.track(type, data);
-      console.log(`Analytics: ${type}`, data);
     }
   }
 

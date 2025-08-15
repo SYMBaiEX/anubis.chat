@@ -42,7 +42,9 @@ export function Card3D({
   );
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      return;
+    }
 
     const rect = ref.current.getBoundingClientRect();
     const width = rect.width;
@@ -182,7 +184,9 @@ export function Parallax3D({
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      return;
+    }
 
     const rect = ref.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;

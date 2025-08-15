@@ -7,7 +7,6 @@
 
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
-import { requireAuth } from './authHelpers';
 import { createModuleLogger } from './utils/logger';
 
 // Create logger instance for this module
@@ -556,7 +555,9 @@ export const getServersNeedingAttention = query({
 
     const needingAttention = servers.filter((server) => {
       // Server has error status
-      if (server.status === 'error') return true;
+      if (server.status === 'error') {
+        return true;
+      }
 
       // Server is enabled but disconnected for more than 1 hour
       if (

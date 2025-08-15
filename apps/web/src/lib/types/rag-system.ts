@@ -5,10 +5,6 @@
  */
 
 import type {
-  ConvexDocument,
-  ConvexDocumentChunk,
-  ConvexKnowledgeBase,
-  ConvexVectorStore,
   DocumentChunkId,
   DocumentId,
   KnowledgeBaseId,

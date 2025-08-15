@@ -65,7 +65,9 @@ class ErrorMonitor {
    * Initialize global error handlers
    */
   private initializeGlobalErrorHandlers() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     // JavaScript errors
     window.addEventListener('error', (event) => {
@@ -336,11 +338,9 @@ class ErrorMonitor {
     });
   }
 
-  private reportError(error: CapturedError) {
+  private reportError(_error: CapturedError) {
     // In production, send to error reporting service
     if (process.env.NODE_ENV === 'production') {
-      // Example: Sentry.captureException(error);
-      console.error('Error reported:', error);
     }
   }
 
@@ -406,7 +406,7 @@ class ErrorMonitor {
   private sanitizeUserInput(input: unknown): unknown {
     if (typeof input === 'string') {
       // Limit string length and remove potential PII
-      return input.length > 1000 ? input.substring(0, 1000) + '...' : input;
+      return input.length > 1000 ? `${input.substring(0, 1000)}...` : input;
     }
     return input;
   }

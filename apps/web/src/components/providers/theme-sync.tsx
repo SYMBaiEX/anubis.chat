@@ -23,9 +23,10 @@ export function ThemeSync() {
     isAuthenticated ? {} : 'skip'
   );
 
-  // Sync theme from database to next-themes
+  // Sync theme from database to next-themes (only for authenticated users)
   useEffect(() => {
-    if (!userPreferences) {
+    // Only sync if user is authenticated and has preferences
+    if (!(isAuthenticated && userPreferences)) {
       return;
     }
 
@@ -52,7 +53,13 @@ export function ThemeSync() {
     if (typeof window !== 'undefined' && dbTheme) {
       document.cookie = `theme=${dbTheme};path=/;max-age=31536000;samesite=strict`;
     }
-  }, [userPreferences?.theme, theme, setTheme, userPreferences]);
+  }, [
+    userPreferences?.theme,
+    theme,
+    setTheme,
+    userPreferences,
+    isAuthenticated,
+  ]);
 
   // Set initial theme from cookie on mount
   useEffect(() => {

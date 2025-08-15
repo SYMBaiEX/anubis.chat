@@ -20,9 +20,6 @@ export const optimizeAnubisTokenUsage = mutation({
       .unique();
 
     if (!existingAnubis) {
-      console.log(
-        'Anubis agent not found - may need to run initializeDefaults first'
-      );
       return {
         success: false,
         message: 'Anubis agent not found',
@@ -31,7 +28,6 @@ export const optimizeAnubisTokenUsage = mutation({
 
     // Check if already optimized
     if (existingAnubis.systemPrompt.includes('IDENTITY:')) {
-      console.log('Anubis agent already optimized');
       return {
         success: true,
         message: 'Anubis agent already optimized',
@@ -70,13 +66,6 @@ export const optimizeAnubisTokenUsage = mutation({
         updatedChats++;
       }
     }
-
-    console.log(`Migration complete:
-      - Anubis agent optimized
-      - Tokens saved per message: ~${tokensSaved}
-      - Chats updated: ${updatedChats}
-      - Estimated cost reduction: 75%
-    `);
 
     return {
       success: true,

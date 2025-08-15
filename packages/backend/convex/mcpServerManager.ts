@@ -14,9 +14,9 @@
  */
 
 import { v } from 'convex/values';
-import { api, internal } from './_generated/api';
-import type { Doc, Id } from './_generated/dataModel';
-import { action, mutation, query } from './_generated/server';
+import { api } from './_generated/api';
+import type { Id } from './_generated/dataModel';
+import { action, query } from './_generated/server';
 import type { ToolExecutionContext, ToolExecutionResult } from './toolRegistry';
 import { createModuleLogger } from './utils/logger';
 
@@ -268,7 +268,7 @@ export class McpServerManager {
   private async establishConnection(
     config: McpServerConfig,
     serverId: string,
-    userId: string
+    _userId: string
   ): Promise<McpServerConnection> {
     // Mock connection establishment for now
     // In a real implementation, this would connect to actual MCP servers
@@ -469,7 +469,7 @@ export class McpServerManager {
   /**
    * Get tool category based on server and tool name
    */
-  private getToolCategory(toolName: string, serverName: string): string {
+  private getToolCategory(_toolName: string, serverName: string): string {
     const categories: Record<string, string> = {
       context7: 'documentation',
       sequential: 'analysis',
@@ -489,24 +489,42 @@ export class McpServerManager {
     let score = 100;
 
     // Penalize for connection issues
-    if (connection.status === 'error') score = 0;
-    if (connection.status === 'disconnected') score = 0;
-    if (connection.status === 'disabled') score = 0;
-    if (connection.status === 'connecting') score = 50;
-    if (connection.status === 'reconnecting') score = 25;
+    if (connection.status === 'error') {
+      score = 0;
+    }
+    if (connection.status === 'disconnected') {
+      score = 0;
+    }
+    if (connection.status === 'disabled') {
+      score = 0;
+    }
+    if (connection.status === 'connecting') {
+      score = 50;
+    }
+    if (connection.status === 'reconnecting') {
+      score = 25;
+    }
 
     // Penalize for slow response times
     if (connection.responseTimeMs) {
-      if (connection.responseTimeMs > 5000) score -= 30;
-      else if (connection.responseTimeMs > 2000) score -= 15;
-      else if (connection.responseTimeMs > 1000) score -= 5;
+      if (connection.responseTimeMs > 5000) {
+        score -= 30;
+      } else if (connection.responseTimeMs > 2000) {
+        score -= 15;
+      } else if (connection.responseTimeMs > 1000) {
+        score -= 5;
+      }
     }
 
     // Penalize for errors
-    if (connection.errorMessage) score -= 20;
+    if (connection.errorMessage) {
+      score -= 20;
+    }
 
     // Bonus for having tools available
-    if (connection.tools.length > 0) score += 10;
+    if (connection.tools.length > 0) {
+      score += 10;
+    }
 
     return Math.max(0, Math.min(100, score));
   }
@@ -542,7 +560,7 @@ export class McpServerManager {
       this.serverRegistry.delete(serverId);
 
       // Remove from agent contexts
-      for (const [contextKey, context] of this.agentContexts.entries()) {
+      for (const [_contextKey, context] of this.agentContexts.entries()) {
         for (const [serverName, conn] of context.connections.entries()) {
           if (conn.serverId === serverId) {
             context.connections.delete(serverName);
@@ -584,14 +602,16 @@ export class McpServerManager {
 
     // Try to find userId from existing agent contexts if not provided
     if (!userId) {
-      for (const [contextKey, context] of this.agentContexts.entries()) {
+      for (const [_contextKey, context] of this.agentContexts.entries()) {
         for (const conn of context.connections.values()) {
           if (conn.serverId === serverId) {
             userId = context.userId;
             break;
           }
         }
-        if (userId) break;
+        if (userId) {
+          break;
+        }
       }
     }
 
@@ -801,7 +821,7 @@ export class McpServerManager {
   private async executeContext7Tool(
     toolName: string,
     input: any,
-    context: ToolExecutionContext
+    _context: ToolExecutionContext
   ): Promise<ToolExecutionResult> {
     try {
       // This would integrate with actual Context7 MCP server
@@ -846,7 +866,7 @@ export class McpServerManager {
   private async executeSequentialTool(
     toolName: string,
     input: any,
-    context: ToolExecutionContext
+    _context: ToolExecutionContext
   ): Promise<ToolExecutionResult> {
     try {
       switch (toolName) {
@@ -879,9 +899,9 @@ export class McpServerManager {
    * Execute Filesystem MCP server tools
    */
   private async executeFilesystemTool(
-    toolName: string,
-    input: any,
-    context: ToolExecutionContext
+    _toolName: string,
+    _input: any,
+    _context: ToolExecutionContext
   ): Promise<ToolExecutionResult> {
     // This would integrate with actual filesystem MCP server
     return {
@@ -894,9 +914,9 @@ export class McpServerManager {
    * Execute Playwright MCP server tools
    */
   private async executePlaywrightTool(
-    toolName: string,
-    input: any,
-    context: ToolExecutionContext
+    _toolName: string,
+    _input: any,
+    _context: ToolExecutionContext
   ): Promise<ToolExecutionResult> {
     // This would integrate with actual Playwright MCP server
     return {
@@ -909,9 +929,9 @@ export class McpServerManager {
    * Execute Grep MCP server tools
    */
   private async executeGrepTool(
-    toolName: string,
-    input: any,
-    context: ToolExecutionContext
+    _toolName: string,
+    _input: any,
+    _context: ToolExecutionContext
   ): Promise<ToolExecutionResult> {
     // This would integrate with actual Grep MCP server
     return {
@@ -1073,7 +1093,7 @@ export const getAgentMcpTools = query({
     agentId: v.id('agents'),
     userId: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const tools = globalMcpServerManager.getToolsForAgent(
       args.agentId,
       args.userId
@@ -1141,7 +1161,7 @@ export const getMcpServerHealth = query({
     agentId: v.id('agents'),
     userId: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const agentContext = globalMcpServerManager.getAgentContext(
       args.agentId,
       args.userId

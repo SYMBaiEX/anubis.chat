@@ -10,6 +10,7 @@ import {
   Transaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery } from 'convex/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertCircle,
   Check,
@@ -18,6 +19,8 @@ import {
   Loader,
   Plus,
   Wallet,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -522,16 +525,16 @@ export function MessageCreditsModal({
           </div>
 
           {numberOfPacks > 1 && (
-            <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
-              <h5 className="font-medium text-green-800 dark:text-green-200">
+            <div className="rounded-lg bg-green-500/10 p-4">
+              <h5 className="font-medium text-green-600 dark:text-green-400">
                 Total Purchase:
               </h5>
               <div className="mt-2 flex flex-col gap-3 text-sm sm:flex-row sm:justify-between">
                 <div className="space-y-1">
-                  <div className="font-bold text-green-800 dark:text-green-200">
+                  <div className="font-bold text-green-600 dark:text-green-400">
                     {totalStandardCredits} Standard
                   </div>
-                  <div className="font-bold text-green-800 dark:text-green-200">
+                  <div className="font-bold text-green-600 dark:text-green-400">
                     {totalPremiumCredits} Premium
                   </div>
                 </div>
@@ -654,13 +657,13 @@ export function MessageCreditsModal({
         </p>
       </div>
 
-      <Card className="bg-gray-50 p-6 dark:bg-gray-800/50">
+      <Card className="bg-muted/50 p-6">
         <div className="space-y-4">
           <div>
-            <div className="font-medium text-gray-700 text-sm dark:text-gray-300">
+            <div className="font-medium text-foreground text-sm">
               Purchase Summary
             </div>
-            <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
+            <div className="mt-1 rounded-lg border bg-card p-3">
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Packs:</span>
@@ -683,17 +686,17 @@ export function MessageCreditsModal({
           </div>
 
           <div>
-            <div className="font-medium text-gray-700 text-sm dark:text-gray-300">
+            <div className="font-medium text-foreground text-sm">
               Your Wallet
             </div>
-            <div className="mt-1 rounded-lg border bg-white p-3 dark:bg-gray-900">
+            <div className="mt-1 rounded-lg border bg-card p-3">
               <div className="flex items-center justify-between">
                 {connected && publicKey ? (
                   <span className="break-all font-mono text-sm">
                     {publicKey.toString()}
                   </span>
                 ) : (
-                  <span className="text-gray-500 text-sm">
+                  <span className="text-muted-foreground text-sm">
                     Wallet not connected
                   </span>
                 )}
@@ -707,10 +710,10 @@ export function MessageCreditsModal({
           </div>
 
           <div>
-            <div className="font-medium text-gray-700 text-sm dark:text-gray-300">
+            <div className="font-medium text-foreground text-sm">
               Payment Address
             </div>
-            <div className="mt-1 rounded-lg border bg-white p-3 font-mono text-sm dark:bg-gray-900">
+            <div className="mt-1 rounded-lg border bg-card p-3 font-mono text-sm">
               <div className="flex items-center justify-between">
                 <span className="break-all">
                   {solanaConfig.paymentAddress ||
@@ -734,9 +737,9 @@ export function MessageCreditsModal({
         </div>
       </Card>
 
-      <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
-        <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-        <AlertDescription className="text-green-800 dark:text-green-200">
+      <Alert className="border-green-500/20 bg-green-500/10">
+        <AlertCircle className="h-4 w-4 text-green-500" />
+        <AlertDescription className="text-green-600 dark:text-green-400">
           <div className="space-y-2">
             <p>
               <strong>Important:</strong> Send exactly {totalCost} SOL to avoid
@@ -795,7 +798,7 @@ export function MessageCreditsModal({
 
       {paymentDetails.txSignature && (
         <div className="space-y-3">
-          <div className="rounded-lg border bg-gray-50 p-3 dark:bg-gray-800/50">
+          <div className="rounded-lg border bg-muted/50 p-3">
             <p className="font-medium text-sm">Transaction ID:</p>
             <p className="break-all font-mono text-muted-foreground text-xs">
               {paymentDetails.txSignature}
@@ -833,12 +836,12 @@ export function MessageCreditsModal({
         <p className="text-muted-foreground">
           Your message credits have been added to your account.
         </p>
-        <div className="mt-4 rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
+        <div className="mt-4 rounded-lg bg-green-500/10 p-4">
           <div className="space-y-1">
-            <div className="font-medium text-green-800 dark:text-green-200">
+            <div className="font-medium text-green-600 dark:text-green-400">
               Credits Added:
             </div>
-            <div className="text-green-700 dark:text-green-300">
+            <div className="text-green-500">
               {totalStandardCredits} Standard + {totalPremiumCredits} Premium
             </div>
           </div>
@@ -866,8 +869,8 @@ export function MessageCreditsModal({
 
   const renderErrorState = () => (
     <div className="space-y-6 py-8 text-center">
-      <div className="inline-flex rounded-full bg-red-100 p-4 dark:bg-red-900/20">
-        <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+      <div className="inline-flex rounded-full bg-destructive/10 p-4">
+        <AlertCircle className="h-8 w-8 text-destructive" />
       </div>
 
       <div>
@@ -890,7 +893,7 @@ export function MessageCreditsModal({
         </div>
 
         {paymentDetails.txSignature && (
-          <div className="rounded-lg border bg-gray-50 p-3 text-left dark:bg-gray-800/50">
+          <div className="rounded-lg border bg-muted/50 p-3 text-left">
             <p className="font-medium text-sm">Transaction ID for Support:</p>
             <p className="break-all font-mono text-muted-foreground text-xs">
               {paymentDetails.txSignature}
@@ -906,7 +909,19 @@ export function MessageCreditsModal({
       <DialogContent className="max-h-[90vh] w-[95vw] max-w-4xl overflow-y-auto sm:w-full">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <Plus className="h-5 w-5" />
+            <motion.div
+              animate={{ 
+                rotate: [0, 360],
+                scale: [1, 1.2, 1]
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <CreditCard className="h-5 w-5 text-green-600" />
+            </motion.div>
             <span>Purchase Message Credits</span>
           </DialogTitle>
           <DialogDescription>
@@ -914,13 +929,28 @@ export function MessageCreditsModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-6">
-          {paymentStep === 'select' && renderPackSelector()}
-          {paymentStep === 'payment' && renderPaymentInstructions()}
-          {paymentStep === 'processing' && renderProcessingState()}
-          {paymentStep === 'success' && renderSuccessState()}
-          {paymentStep === 'error' && renderErrorState()}
-        </div>
+        <motion.div 
+          className="mt-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={paymentStep}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              {paymentStep === 'select' && renderPackSelector()}
+              {paymentStep === 'payment' && renderPaymentInstructions()}
+              {paymentStep === 'processing' && renderProcessingState()}
+              {paymentStep === 'success' && renderSuccessState()}
+              {paymentStep === 'error' && renderErrorState()}
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );

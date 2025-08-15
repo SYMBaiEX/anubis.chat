@@ -133,7 +133,9 @@ export function useOptimisticMutation<TData = any, TVariables = any>(
   >({
     mutationFn: (variables) => apiClient.post<TData>(path, variables),
     onMutate: async (variables) => {
-      if (!options?.optimisticUpdate) return;
+      if (!options?.optimisticUpdate) {
+        return;
+      }
 
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey });
@@ -153,7 +155,7 @@ export function useOptimisticMutation<TData = any, TVariables = any>(
       // Return context with snapshot
       return { previousData };
     },
-    onError: (error, variables, context) => {
+    onError: (error, _variables, context) => {
       // Rollback on error
       if (context?.previousData) {
         queryClient.setQueryData(queryKey, context.previousData);

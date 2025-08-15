@@ -14,7 +14,7 @@ import {
   Sparkles,
   Trash2,
   X,
-  Zap,
+  Zap, // Re-enabled to prevent errors
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/tooltip';
 import type { ChatHeaderProps } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
-import { TokenUsageDisplay } from './token-usage-display';
+// import { TokenUsageDisplay } from './token-usage-display'; // Temporarily disabled
 
 /**
  * ChatHeader component - Header for individual chats
@@ -137,11 +137,11 @@ export function ChatHeader({
 
   return (
     <>
-      {/* Mobile Token Usage Modal */}
-      {chat.tokenUsage && showTokenUsage && (
+      {/* Mobile Token Usage Modal - Temporarily disabled */}
+      {/* {chat.tokenUsage && showTokenUsage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:hidden">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-background/50"
             onClick={() => setShowTokenUsage(false)}
           />
           <div className="relative z-10 w-full max-w-sm">
@@ -160,7 +160,7 @@ export function ChatHeader({
             </Button>
           </div>
         </div>
-      )}
+      )} */}
 
       <div className={cn('flex items-center gap-2', className)}>
         {/* Actions Menu on mobile - moved to left side */}
@@ -185,15 +185,15 @@ export function ChatHeader({
                 </DropdownMenuItem>
               )}
 
-              {/* Token Usage - Mobile */}
-              {chat.tokenUsage && (
+              {/* Token Usage - Mobile - Temporarily disabled */}
+              {/* {chat.tokenUsage && (
                 <DropdownMenuItem
                   onClick={() => setShowTokenUsage(!showTokenUsage)}
                 >
                   <Zap className="mr-2 h-4 w-4" />
                   Token Usage
                 </DropdownMenuItem>
-              )}
+              )} */}
 
               {/* Model and Agent selection */}
               {onModelSelectorClick && (
@@ -299,7 +299,7 @@ export function ChatHeader({
                     title="Click to rename chat"
                     variant="ghost"
                   >
-                    <span className="truncate font-medium text-black text-sm dark:text-white">
+                    <span className="truncate font-medium text-foreground text-sm">
                       {chat.title}
                     </span>
                   </Button>
@@ -374,8 +374,8 @@ export function ChatHeader({
           </div>
         )}
 
-        {/* Token Usage Button - Desktop */}
-        {chat.tokenUsage && (
+        {/* Token Usage Button - Desktop - Temporarily disabled */}
+        {/* {chat.tokenUsage && (
           <div className="hidden flex-shrink-0 sm:block">
             <TooltipProvider>
               <Tooltip onOpenChange={setShowTokenUsage} open={showTokenUsage}>
@@ -398,7 +398,7 @@ export function ChatHeader({
               </Tooltip>
             </TooltipProvider>
           </div>
-        )}
+        )} */}
 
         {/* Desktop Actions Menu - three dots */}
         <div className="hidden flex-shrink-0 sm:block">

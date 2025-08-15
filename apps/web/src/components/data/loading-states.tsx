@@ -29,21 +29,18 @@ const spinnerVariants = cva('animate-spin', {
   },
 });
 
-const skeletonVariants = cva(
-  'animate-pulse rounded bg-gray-200 dark:bg-gray-800',
-  {
-    variants: {
-      size: {
-        sm: 'h-4',
-        md: 'h-6',
-        lg: 'h-8',
-      },
+const skeletonVariants = cva('animate-pulse rounded bg-muted', {
+  variants: {
+    size: {
+      sm: 'h-4',
+      md: 'h-6',
+      lg: 'h-8',
     },
-    defaultVariants: {
-      size: 'md',
-    },
-  }
-);
+  },
+  defaultVariants: {
+    size: 'md',
+  },
+});
 
 /**
  * LoadingStates component - Various loading state indicators
@@ -59,12 +56,7 @@ export function LoadingStates({
     switch (variant) {
       case 'spinner':
         return (
-          <Loader2
-            className={cn(
-              spinnerVariants({ size }),
-              'text-blue-600 dark:text-blue-400'
-            )}
-          />
+          <Loader2 className={cn(spinnerVariants({ size }), 'text-primary')} />
         );
 
       case 'dots':
@@ -73,7 +65,7 @@ export function LoadingStates({
             {[0, 1, 2].map((i) => (
               <div
                 className={cn(
-                  'animate-bounce rounded-full bg-blue-600 dark:bg-blue-400',
+                  'animate-bounce rounded-full bg-primary',
                   size === 'sm' && 'h-1 w-1',
                   size === 'md' && 'h-1.5 w-1.5',
                   size === 'lg' && 'h-2 w-2'
@@ -91,7 +83,7 @@ export function LoadingStates({
         return (
           <div
             className={cn(
-              'animate-pulse rounded-full bg-blue-600 dark:bg-blue-400',
+              'animate-pulse rounded-full bg-primary',
               size === 'sm' && 'h-4 w-4',
               size === 'md' && 'h-6 w-6',
               size === 'lg' && 'h-8 w-8'
@@ -110,12 +102,7 @@ export function LoadingStates({
 
       default:
         return (
-          <Loader2
-            className={cn(
-              spinnerVariants({ size }),
-              'text-blue-600 dark:text-blue-400'
-            )}
-          />
+          <Loader2 className={cn(spinnerVariants({ size }), 'text-primary')} />
         );
     }
   };
@@ -128,7 +115,7 @@ export function LoadingStates({
       {text && (
         <p
           className={cn(
-            'text-center text-gray-600 dark:text-gray-400',
+            'text-center text-muted-foreground',
             size === 'sm' && 'text-xs',
             size === 'md' && 'text-sm',
             size === 'lg' && 'text-base'

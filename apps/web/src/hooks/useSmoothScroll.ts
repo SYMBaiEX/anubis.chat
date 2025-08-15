@@ -9,8 +9,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getScrollDirection,
   getScrollPosition,
-  isInViewport,
-  prefersReducedMotion,
   type ScrollToOptions,
   type SmoothScrollOptions,
   scrollIntoView,
@@ -142,7 +140,9 @@ export const useInViewport = (
 
   useEffect(() => {
     const element = elementRef.current;
-    if (!element) return;
+    if (!element) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -194,7 +194,9 @@ export const useScrollAnimation = (
 
   useEffect(() => {
     const element = elementRef.current;
-    if (!element) return;
+    if (!element) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -235,7 +237,7 @@ export const useParallaxScroll = (
   elementRef?: React.RefObject<Element>
 ) => {
   const [offset, setOffset] = useState(0);
-  const element = elementRef?.current || document.documentElement;
+  const _element = elementRef?.current || document.documentElement;
 
   useEffect(() => {
     const updateParallax = () => {
@@ -300,10 +302,14 @@ export const useInfiniteScroll = (
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
 
     const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    if (!sentinel) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       async ([entry]) => {

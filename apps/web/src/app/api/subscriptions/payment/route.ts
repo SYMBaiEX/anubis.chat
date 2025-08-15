@@ -4,7 +4,7 @@
  */
 
 import { api } from '@convex/_generated/api';
-import { getAccount, getAssociatedTokenAddress } from '@solana/spl-token';
+import { getAssociatedTokenAddress } from '@solana/spl-token';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { ConvexHttpClient } from 'convex/browser';
 import { type NextRequest, NextResponse } from 'next/server';

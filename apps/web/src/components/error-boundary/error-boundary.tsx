@@ -9,7 +9,7 @@ interface Props {
   children: ReactNode;
   fallback?: React.ComponentType<ErrorBoundaryFallbackProps>;
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
-  resetKeys?: ReadonlyArray<unknown>;
+  resetKeys?: readonly unknown[];
   resetOnPropsChange?: boolean;
   isolate?: boolean;
   level?: 'page' | 'section' | 'component';
@@ -34,7 +34,7 @@ export interface ErrorBoundaryFallbackProps {
 
 class ErrorBoundary extends React.Component<Props, State> {
   private resetTimeoutId: NodeJS.Timeout | null = null;
-  private previousResetKeys: ReadonlyArray<unknown> = [];
+  private previousResetKeys: readonly unknown[] = [];
 
   constructor(props: Props) {
     super(props);
@@ -60,7 +60,6 @@ class ErrorBoundary extends React.Component<Props, State> {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error caught by boundary:', error, errorInfo);
     }
 
     // Call custom error handler
