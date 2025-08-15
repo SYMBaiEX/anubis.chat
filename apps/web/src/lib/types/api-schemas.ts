@@ -497,22 +497,28 @@ export const apiResponseSchema = <T extends z.ZodType>(dataSchema: T) =>
 // Type Exports
 // =============================================================================
 
-export type UserPreferences = z.infer<typeof userPreferencesSchema>;
-export type UserProfile = z.infer<typeof userProfileSchema>;
-export type WalletAuthChallenge = z.infer<typeof walletAuthChallengeSchema>;
-export type WalletAuthVerification = z.infer<
+export type UserPreferencesSchema = z.infer<typeof userPreferencesSchema>;
+export type UserProfileSchema = z.infer<typeof userProfileSchema>;
+export type WalletAuthChallengeSchema = z.infer<
+  typeof walletAuthChallengeSchema
+>;
+export type WalletAuthVerificationSchema = z.infer<
   typeof walletAuthVerificationSchema
 >;
-export type AuthSession = z.infer<typeof authSessionSchema>;
-export type CreateChatRequest = z.infer<typeof createChatRequestSchema>;
-export type UpdateChatRequest = z.infer<typeof updateChatRequestSchema>;
-export type ChatMessage = z.infer<typeof chatMessageSchema>;
-export type SendMessageRequest = z.infer<typeof sendMessageRequestSchema>;
-export type AIModel = z.infer<typeof aiModelSchema>;
-export type ChatCompletionRequest = z.infer<typeof chatCompletionRequestSchema>;
-export type SearchRequest = z.infer<typeof searchRequestSchema>;
-export type DocumentUpload = z.infer<typeof documentUploadSchema>;
-export type DocumentUpdate = z.infer<typeof documentUpdateSchema>;
-export type WebhookEvent = z.infer<typeof webhookEventSchema>;
-export type WebhookSubscription = z.infer<typeof webhookSubscriptionSchema>;
-export type APIError = z.infer<typeof apiErrorSchema>;
+export type AuthSessionSchema = z.infer<typeof authSessionSchema>;
+export type CreateChatRequestSchema = z.infer<typeof createChatRequestSchema>;
+export type UpdateChatRequestSchema = z.infer<typeof updateChatRequestSchema>;
+export type ChatMessageSchema = z.infer<typeof chatMessageSchema>;
+export type SendMessageRequestSchema = z.infer<typeof sendMessageRequestSchema>;
+export type AIModelSchema = z.infer<typeof aiModelSchema>;
+export type ChatCompletionRequestSchema = z.infer<
+  typeof chatCompletionRequestSchema
+>;
+export type SearchRequestSchema = z.infer<typeof searchRequestSchema>;
+export type DocumentUploadSchema = z.infer<typeof documentUploadSchema>;
+export type DocumentUpdateSchema = z.infer<typeof documentUpdateSchema>;
+export type WebhookEventSchema = z.infer<typeof webhookEventSchema>;
+export type WebhookSubscriptionSchema = z.infer<
+  typeof webhookSubscriptionSchema
+>;
+export type APIErrorSchema = z.infer<typeof apiErrorSchema>;

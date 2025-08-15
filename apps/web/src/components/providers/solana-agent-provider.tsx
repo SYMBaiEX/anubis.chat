@@ -154,6 +154,7 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSelectingAgent, setIsSelectingAgent] = useState(false);
 
   // Fetch available agents
   const agents = useQuery(
@@ -225,12 +226,22 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
 
   const selectAgent = useCallback(
     (agentId: string) => {
+      // Prevent unnecessary updates if the same agent is already selected
+      if (selectedAgent?._id === agentId || isSelectingAgent) {
+        return;
+      }
+
+      setIsSelectingAgent(true);
+
       const agent = agents?.find((a: Agent) => a._id === agentId);
       if (agent) {
         setSelectedAgent(agent);
       }
+
+      // Reset the selecting flag after a brief delay
+      setTimeout(() => setIsSelectingAgent(false), 100);
     },
-    [agents]
+    [agents, selectedAgent?._id, isSelectingAgent]
   );
 
   const createCustomAgent = useCallback(
@@ -250,7 +261,7 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
   );
 
   const executeTool = useCallback(
-    async (execution: ToolExecution): Promise<any> => {
+    async (execution: ToolExecution): Promise<unknown> => {
       if (!(agentKit && selectedAgent && wallet.isConnected)) {
         throw new Error(
           'Agent kit not initialized, no agent selected, or wallet not connected'
@@ -320,7 +331,9 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
     }
   }, [wallet.isConnected]);
 
-  const refreshData = useCallback(() => {}, []);
+  const refreshData = useCallback(() => {
+    // Placeholder for data refresh logic
+  }, []);
 
   const clearError = useCallback(() => {
     setError(null);

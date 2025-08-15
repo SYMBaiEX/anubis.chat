@@ -32,5 +32,11 @@
     "./next-env.d.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["./node_modules"]
+  "exclude": [
+    "./node_modules",
+    "./e2e/**",
+    "./src/**/__tests__/**",
+    "./**/*.spec.ts",
+    "./**/*.spec.tsx"
+  ]
 }

@@ -4,15 +4,14 @@
  */
 
 import type { ReactNode } from 'react';
+import type { AIModel } from '@/lib/constants/ai-models';
 import type {
-  APIAIModel,
   Chat,
   ChatMessage,
   Document,
   SearchResult,
   StreamingMessage,
   User,
-  SearchFilters as APISearchFilters,
 } from './api';
 
 // =============================================================================
@@ -203,7 +202,7 @@ export interface DocumentViewerProps extends BaseComponentProps {
 }
 
 export interface DocumentSearchProps extends BaseComponentProps {
-  onSearch: (query: string, filters?: SearchFilters) => void;
+  onSearch: (query: string, filters?: ComponentDocumentSearchFilters) => void;
   initialQuery?: string;
   loading?: boolean;
 }
@@ -215,7 +214,7 @@ export interface SearchResultsProps extends BaseComponentProps {
   onResultSelect?: (result: SearchResult) => void;
 }
 
-export interface SearchFilters {
+export interface ComponentDocumentSearchFilters {
   documentTypes?: Document['type'][];
   dateRange?: { start: Date; end: Date };
   categories?: string[];
@@ -239,7 +238,7 @@ export interface ComponentSearchFilters {
 // =============================================================================
 
 export interface ModelSelectorProps extends BaseComponentProps {
-  models: APIAIModel[];
+  models: AIModel[];
   selectedModel?: string;
   onModelSelect: (modelId: string) => void;
   disabled?: boolean;
@@ -255,7 +254,7 @@ export interface AISettingsPanelProps extends BaseComponentProps {
   onSettingsChange: (
     settings: Partial<AISettingsPanelProps['settings']>
   ) => void;
-  models: APIAIModel[];
+  models: AIModel[];
 }
 
 export interface StreamingResponseProps extends BaseComponentProps {
@@ -347,7 +346,12 @@ export interface SearchBarProps extends BaseComponentProps {
   onSearch: (query: string) => void;
   placeholder?: string;
   showFilters?: boolean;
-  onFiltersChange?: (filters: SearchFilters) => void;
+  onFiltersChange?: (filters: {
+    // Keep lightweight to avoid importing API schemas in UI layer
+    documentTypes?: Array<Document['type']>;
+    dateRange?: { start: Date; end: Date };
+    categories?: string[];
+  }) => void;
 }
 
 export interface PaginationProps extends BaseComponentProps {
@@ -518,8 +522,8 @@ export type ComponentVariant =
 export type ComponentState = 'idle' | 'loading' | 'success' | 'error';
 
 // Export all interfaces for easy importing
+export type { AIModel } from '@/lib/constants/ai-models';
 export type {
-  APIAIModel,
   // Re-export from API types for convenience
   Chat,
   ChatMessage,

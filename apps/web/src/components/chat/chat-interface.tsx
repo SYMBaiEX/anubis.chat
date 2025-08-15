@@ -291,7 +291,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   }, [userPreferences, isAuthenticated]);
 
   // Debug logging
-  useEffect(() => {}, []);
+  useEffect(() => {
+    // Placeholder for debug logging
+  }, []);
 
   // Convex queries and mutations - modern 2025 pattern
   const chats = useChats(user?._id || '', { isActive: true });
@@ -403,17 +405,18 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       selectedAgent?.systemPrompt &&
       selectedChatId &&
       isAuthenticated &&
-      currentChatQuery
+      currentChat
     ) {
-      // Check if this agent is different from what's already set in the chat
-      if (currentChat?.agentId !== selectedAgent._id) {
-        setChatSettings((prev) => ({
-          ...prev,
-          agentPrompt: selectedAgent.systemPrompt,
-        }));
+      // Always update settings to reflect the current agent
+      setChatSettings((prev) => ({
+        ...prev,
+        agentPrompt: selectedAgent.systemPrompt,
+      }));
 
-        // Update the current chat's agent prompt and reference
-        if (user?._id) {
+      // Only update database if this agent is different from what's already set in the chat
+      // Add debouncing to prevent rapid database updates
+      if (currentChat.agentId !== selectedAgent._id && user?._id) {
+        const timeoutId = setTimeout(() => {
           updateChat({
             id: selectedChatId as Id<'chats'>,
             ownerId: user._id,
@@ -424,13 +427,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               error: error instanceof Error ? error.message : String(error),
             });
           });
-        }
-      } else {
-        // Just update the settings without triggering a database update
-        setChatSettings((prev) => ({
-          ...prev,
-          agentPrompt: selectedAgent.systemPrompt,
-        }));
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(timeoutId);
       }
     }
   }, [
@@ -438,8 +437,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     selectedAgent?.systemPrompt,
     selectedChatId,
     isAuthenticated,
-    updateChat,
     currentChat?.agentId,
+    user?._id,
+    updateChat,
   ]);
 
   // Quick suggestions removed per product request
@@ -492,7 +492,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         'content' in candidate &&
         typeof (candidate as { content: unknown }).content === 'string'
       ) {
-        void handleSendMessage((candidate as { content: string }).content);
+        handleSendMessage((candidate as { content: string }).content);
         break;
       }
     }
@@ -525,6 +525,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         router.push(`/chat?chatId=${newChat._id}`);
       }
     } catch (_error) {
+      // Error is logged elsewhere
     } finally {
       setIsCreatingChat(false);
     }
@@ -574,7 +575,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   };
 
   const handleDeleteChat = async (chatId: string) => {
-    if (!user?._id) return;
+    if (!user?._id) {
+      return;
+    }
 
     try {
       await deleteChat({
@@ -686,7 +689,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           defaultFrequencyPenalty: newSettings.frequencyPenalty,
           defaultPresencePenalty: newSettings.presencePenalty,
         });
-      } catch (_error: unknown) {}
+      } catch (_error: unknown) {
+        // Error is logged elsewhere
+      }
     }
 
     // Update chat-specific settings in database if needed
@@ -1075,33 +1080,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               <AgentGrid
                 agents={allAgents}
                 columns={5}
-                onAgentSelect={async (agent) => {
+                onAgentSelect={(agent) => {
+                  // Only select the agent immediately, let the useEffect handle database updates
                   selectAgent(agent._id);
                   setShowMobileAgentSelector(false);
-
-                  // Update the current chat's agent prompt and reference
-                  if (
-                    selectedChatId &&
-                    isAuthenticated &&
-                    currentChatQuery &&
-                    user?._id
-                  ) {
-                    try {
-                      await updateChat({
-                        id: selectedChatId as Id<'chats'>,
-                        ownerId: user._id,
-                        agentPrompt: agent.systemPrompt,
-                        agentId: agent._id,
-                      });
-                    } catch (error: unknown) {
-                      log.error('Failed to update chat agent', {
-                        error:
-                          error instanceof Error
-                            ? error.message
-                            : String(error),
-                      });
-                    }
-                  }
                 }}
                 selectedAgentId={selectedAgent?._id}
               />
@@ -1154,33 +1136,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               <AgentGrid
                 agents={allAgents}
                 columns={5}
-                onAgentSelect={async (agent) => {
+                onAgentSelect={(agent) => {
+                  // Only select the agent immediately, let the useEffect handle database updates
                   selectAgent(agent._id);
                   setShowDesktopAgentSelector(false);
-
-                  // Update the current chat's agent prompt and reference
-                  if (
-                    selectedChatId &&
-                    isAuthenticated &&
-                    currentChatQuery &&
-                    user?._id
-                  ) {
-                    try {
-                      await updateChat({
-                        id: selectedChatId as Id<'chats'>,
-                        ownerId: user._id,
-                        agentPrompt: agent.systemPrompt,
-                        agentId: agent._id,
-                      });
-                    } catch (error: unknown) {
-                      log.error('Failed to update chat agent', {
-                        error:
-                          error instanceof Error
-                            ? error.message
-                            : String(error),
-                      });
-                    }
-                  }
                 }}
                 selectedAgentId={selectedAgent?._id}
               />

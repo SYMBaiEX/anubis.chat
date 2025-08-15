@@ -1,15 +1,17 @@
-import type { UIMessage as Message } from 'ai';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
-interface ChatMessage extends Message {
+interface ChatMessage {
+  id: string;
+  content: string;
+  role?: 'user' | 'assistant' | 'system';
   timestamp: number;
   edited?: boolean;
   editedAt?: number;
   reactions?: string[];
   threadId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface Chat {
@@ -156,7 +158,11 @@ export const useChatStore = create<ChatState>()(
             );
             if (messageIndex !== -1) {
               Object.assign(chat.messages[messageIndex], updates);
-              if (updates.content) {
+              const updated = chat.messages[messageIndex] as ChatMessage;
+              if (
+                typeof updated.content === 'string' &&
+                updated.content.length > 0
+              ) {
                 chat.messages[messageIndex].edited = true;
                 chat.messages[messageIndex].editedAt = Date.now();
               }
