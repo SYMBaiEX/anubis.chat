@@ -12,6 +12,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@solana/spl-token": "^0.4.13",
     "@ai-sdk/anthropic": "^2.0.1",
     "@ai-sdk/google": "^2.0.3",
     "@ai-sdk/openai": "^2.0.7",
