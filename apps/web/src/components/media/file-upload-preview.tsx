@@ -155,7 +155,13 @@ export function FileUploadPreview({
         if (uploadLimits.error) {
           toast.error(uploadLimits.error);
         }
-        if (showUpgradePrompt && subscription && subscription.tier !== 'pro' && subscription.tier !== 'pro_plus' && subscription.tier !== 'admin') {
+        if (
+          showUpgradePrompt &&
+          subscription &&
+          subscription.tier !== 'pro' &&
+          subscription.tier !== 'pro_plus' &&
+          subscription.tier !== 'admin'
+        ) {
           setShowUpgrade(true);
         }
         return;
@@ -328,9 +334,20 @@ export function FileUploadPreview({
 
         <Button
           className="mt-4"
-          disabled={!!uploadLimits.error && !!subscription && (subscription.tier === 'pro' || subscription.tier === 'pro_plus' || subscription.tier === 'admin')}
+          disabled={
+            !!uploadLimits.error &&
+            !!subscription &&
+            (subscription.tier === 'pro' ||
+              subscription.tier === 'pro_plus' ||
+              subscription.tier === 'admin')
+          }
           onClick={() => {
-            if (!uploadLimits.canUpload && subscription && (subscription.tier !== 'pro' && subscription.tier !== 'pro_plus' && subscription.tier !== 'admin')) {
+            if (
+              !uploadLimits.canUpload &&
+              subscription &&
+              subscription.tier !== 'pro' && subscription.tier !== 'pro_plus' &&
+              subscription.tier !== 'admin'
+            ) {
               setShowUpgrade(true);
             } else {
               fileInputRef.current?.click();

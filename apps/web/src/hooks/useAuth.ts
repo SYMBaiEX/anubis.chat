@@ -31,14 +31,15 @@ export const useAuth = (): UseAuthReturn => {
   const { publicKey, signMessage, isConnected } = useWallet();
   const { signIn, signOut } = useAuthActions();
   const token = useAuthToken();
-  const { autoAssignIfEligible, getStoredReferralCode } = useReferralAttribution();
+  const { autoAssignIfEligible, getStoredReferralCode } =
+    useReferralAttribution();
 
   // Convex mutations for wallet auth
   const createWalletChallenge = useMutation(api.auth.createWalletChallenge);
   const getReferralCodeOwnerInfo = useQuery(
     api.referrals.getReferralCodeOwnerInfo,
-    getStoredReferralCode() 
-      ? { referralCode: getStoredReferralCode()! } 
+    getStoredReferralCode()
+      ? { referralCode: getStoredReferralCode()! }
       : 'skip'
   );
 
@@ -109,42 +110,48 @@ export const useAuth = (): UseAuthReturn => {
       // After successful login, try to automatically assign referral if eligible
       const walletAddress = publicKey.toString();
       const storedReferralCode = getStoredReferralCode();
-      
+
       if (storedReferralCode && walletAddress) {
-        log.info('Attempting automatic referral assignment', { 
+        log.info('Attempting automatic referral assignment', {
           referralCode: storedReferralCode,
-          walletAddress 
+          walletAddress,
         });
 
         try {
           const assignmentResult = await autoAssignIfEligible(walletAddress);
-          
+
           if (assignmentResult.success) {
             // Get referrer name for the toast notification
-            const referrerName = getReferralCodeOwnerInfo?.ownerDisplayName || 'your referrer';
-            
+            const referrerName =
+              getReferralCodeOwnerInfo?.ownerDisplayName || 'your referrer';
+
             toast.success(
               `Congratulations! ${referrerName} has been set as your referral.`,
               {
                 duration: 5000,
-                description: 'You\'ll support them with your future transactions.',
+                description:
+                  "You'll support them with your future transactions.",
               }
             );
-            
-            log.info('Referral successfully assigned', { 
+
+            log.info('Referral successfully assigned', {
               referralCode: storedReferralCode,
-              referrerName 
+              referrerName,
             });
           } else {
-            log.info('Referral assignment not successful', { 
+            log.info('Referral assignment not successful', {
               referralCode: storedReferralCode,
-              reason: 'User may already have a referrer or grace period expired' 
+              reason:
+                'User may already have a referrer or grace period expired',
             });
           }
         } catch (referralError) {
-          log.warn('Failed to assign referral', { 
-            error: referralError instanceof Error ? referralError.message : 'Unknown error',
-            referralCode: storedReferralCode 
+          log.warn('Failed to assign referral', {
+            error:
+              referralError instanceof Error
+                ? referralError.message
+                : 'Unknown error',
+            referralCode: storedReferralCode,
           });
           // Don't throw - referral assignment failure shouldn't break login
         }

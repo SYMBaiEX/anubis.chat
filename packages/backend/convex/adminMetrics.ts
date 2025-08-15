@@ -3,8 +3,8 @@
  * Comprehensive token usage, chat analytics, and system metrics
  */
 
-import { v } from 'convex/values';
 import { paginationOptsValidator } from 'convex/server';
+import { v } from 'convex/values';
 import { query } from './_generated/server';
 import { requireAdmin } from './authHelpers';
 
@@ -216,9 +216,9 @@ export const getChatTokenMetrics = query({
 
     // Filter by user if specified
     const chatsQuery = args.userId
-      ? ctx.db.query('chats').withIndex('by_owner', (q) =>
-          q.eq('ownerId', args.userId!)
-        )
+      ? ctx.db
+          .query('chats')
+          .withIndex('by_owner', (q) => q.eq('ownerId', args.userId!))
       : ctx.db.query('chats');
 
     // Apply pagination

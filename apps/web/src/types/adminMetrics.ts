@@ -94,11 +94,14 @@ export interface SystemTokenMetrics {
   averageTokensPerChat: number;
   averageTokensPerMessage: number;
   cacheSavingsRate: number;
-  modelUsage: Record<string, {
-    count: number;
-    tokens: number;
-    cost: number;
-  }>;
+  modelUsage: Record<
+    string,
+    {
+      count: number;
+      tokens: number;
+      cost: number;
+    }
+  >;
 }
 
 // Export data result

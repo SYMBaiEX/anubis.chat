@@ -207,7 +207,8 @@ export function MemoryCard({
           </div>
           <div>
             <Label htmlFor="importance">
-              Importance Score ({formatImportanceScore(editData.importance || 0.5)})
+              Importance Score (
+              {formatImportanceScore(editData.importance || 0.5)})
             </Label>
             <Input
               className="mt-1"

@@ -13,16 +13,22 @@ import {
   Zap,
 } from 'lucide-react';
 import { useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { toast } from 'sonner';
-import type {
-  UserTokenMetrics,
-  ModelUsageStats,
-  TokenUsageTrend,
-  TierMetrics,
-  ChatTokenMetrics,
-  SystemTokenMetrics,
-  ExportResult,
-} from '@/types/adminMetrics';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -44,21 +50,15 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+import type {
+  ChatTokenMetrics,
+  ExportResult,
+  ModelUsageStats,
+  SystemTokenMetrics,
+  TierMetrics,
+  TokenUsageTrend,
+  UserTokenMetrics,
+} from '@/types/adminMetrics';
 
 // Chart colors
 const COLORS = [
@@ -126,9 +126,13 @@ function MetricCard({
 }
 
 export function TokenMetricsDashboard() {
-  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | 'all'>('7d');
+  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | 'all'>(
+    '7d'
+  );
   const [sortBy, setSortBy] = useState<'tokens' | 'cost' | 'chats'>('tokens');
-  const [selectedUserId, setSelectedUserId] = useState<Id<'users'> | undefined>();
+  const [selectedUserId, setSelectedUserId] = useState<
+    Id<'users'> | undefined
+  >();
   const [isExporting, setIsExporting] = useState(false);
 
   // Export actions
@@ -155,7 +159,9 @@ export function TokenMetricsDashboard() {
     limit: 30,
   }) as { period: string; data: TokenUsageTrend[] } | undefined;
 
-  const tierMetrics = useQuery(api.adminMetrics.getCostBySubscriptionTier) as TierMetrics[] | undefined;
+  const tierMetrics = useQuery(api.adminMetrics.getCostBySubscriptionTier) as
+    | TierMetrics[]
+    | undefined;
 
   // Paginated chat metrics
   const {
@@ -187,20 +193,23 @@ export function TokenMetricsDashboard() {
       let result: ExportResult | undefined;
       switch (type) {
         case 'metrics':
-          result = await exportTokenMetrics({ timeRange, format: 'csv' }) as ExportResult;
+          result = (await exportTokenMetrics({
+            timeRange,
+            format: 'csv',
+          })) as ExportResult;
           break;
         case 'models':
-          result = await exportModelStats({ timeRange }) as ExportResult;
+          result = (await exportModelStats({ timeRange })) as ExportResult;
           break;
         case 'tiers':
-          result = await exportTierAnalysis({}) as ExportResult;
+          result = (await exportTierAnalysis({})) as ExportResult;
           break;
       }
 
       if (result) {
         // Create download link
-        const blob = new Blob([result.data], { 
-          type: result.type === 'csv' ? 'text/csv' : 'application/json' 
+        const blob = new Blob([result.data], {
+          type: result.type === 'csv' ? 'text/csv' : 'application/json',
         });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -210,7 +219,7 @@ export function TokenMetricsDashboard() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
+
         toast.success('Data exported successfully');
       }
     } catch (error) {
@@ -236,8 +245,8 @@ export function TokenMetricsDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => handleExport('metrics')}
             disabled={isExporting}
+            onClick={() => handleExport('metrics')}
             size="sm"
             variant="outline"
           >
@@ -245,8 +254,8 @@ export function TokenMetricsDashboard() {
             Export Data
           </Button>
           <Select
-            value={timeRange}
             onValueChange={(v) => setTimeRange(v as typeof timeRange)}
+            value={timeRange}
           >
             <SelectTrigger className="w-32">
               <SelectValue />
@@ -265,43 +274,43 @@ export function TokenMetricsDashboard() {
       {systemMetrics && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <MetricCard
+            icon={<Zap className="h-4 w-4" />}
+            subtitle="All models combined"
             title="Total Tokens"
             value={formatNumber(systemMetrics.totalTokens)}
-            subtitle="All models combined"
-            icon={<Zap className="h-4 w-4" />}
           />
           <MetricCard
+            icon={<DollarSign className="h-4 w-4" />}
+            subtitle="Estimated spend"
             title="Total Cost"
             value={formatCost(systemMetrics.totalEstimatedCost)}
-            subtitle="Estimated spend"
-            icon={<DollarSign className="h-4 w-4" />}
           />
           <MetricCard
-            title="Cache Savings"
-            value={`${systemMetrics.cacheSavingsRate}%`}
-            subtitle={`${formatNumber(systemMetrics.totalCachedTokens)} cached`}
             icon={<Activity className="h-4 w-4" />}
+            subtitle={`${formatNumber(systemMetrics.totalCachedTokens)} cached`}
+            title="Cache Savings"
             trend={{
               value: systemMetrics.cacheSavingsRate,
               isPositive: systemMetrics.cacheSavingsRate > 50,
             }}
+            value={`${systemMetrics.cacheSavingsRate}%`}
           />
           <MetricCard
+            icon={<Activity className="h-4 w-4" />}
+            subtitle="Tokens per conversation"
             title="Avg per Chat"
             value={formatNumber(systemMetrics.averageTokensPerChat)}
-            subtitle="Tokens per conversation"
-            icon={<Activity className="h-4 w-4" />}
           />
           <MetricCard
+            icon={<Users className="h-4 w-4" />}
+            subtitle="With token usage"
             title="Active Chats"
             value={systemMetrics.totalChatsWithUsage}
-            subtitle="With token usage"
-            icon={<Users className="h-4 w-4" />}
           />
         </div>
       )}
 
-      <Tabs defaultValue="trends" className="space-y-4">
+      <Tabs className="space-y-4" defaultValue="trends">
         <TabsList>
           <TabsTrigger value="trends">Usage Trends</TabsTrigger>
           <TabsTrigger value="users">Top Users</TabsTrigger>
@@ -311,11 +320,11 @@ export function TokenMetricsDashboard() {
         </TabsList>
 
         {/* Usage Trends Tab */}
-        <TabsContent value="trends" className="space-y-4">
+        <TabsContent className="space-y-4" value="trends">
           {trends?.data && trends.data.length > 0 && (
             <Card className="p-6">
               <h3 className="mb-4 font-medium">Token Usage Over Time</h3>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer height={300} width="100%">
                 <LineChart data={trends.data}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
@@ -334,16 +343,16 @@ export function TokenMetricsDashboard() {
                   />
                   <Legend />
                   <Line
-                    type="monotone"
                     dataKey="tokens"
-                    stroke="#8884d8"
                     name="Tokens"
+                    stroke="#8884d8"
+                    type="monotone"
                   />
                   <Line
-                    type="monotone"
                     dataKey="messages"
-                    stroke="#82ca9d"
                     name="Messages"
+                    stroke="#82ca9d"
+                    type="monotone"
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -353,7 +362,7 @@ export function TokenMetricsDashboard() {
           {trends?.data && trends.data.length > 0 && (
             <Card className="p-6">
               <h3 className="mb-4 font-medium">Cost Trend</h3>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer height={200} width="100%">
                 <BarChart data={trends.data}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
@@ -375,10 +384,13 @@ export function TokenMetricsDashboard() {
         </TabsContent>
 
         {/* Top Users Tab */}
-        <TabsContent value="users" className="space-y-4">
+        <TabsContent className="space-y-4" value="users">
           <div className="flex items-center justify-between">
             <h3 className="font-medium">Top Token Consumers</h3>
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+            <Select
+              onValueChange={(v) => setSortBy(v as typeof sortBy)}
+              value={sortBy}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -407,8 +419,8 @@ export function TokenMetricsDashboard() {
                 <TableBody>
                   {userMetrics.map((user) => (
                     <TableRow
-                      key={user.userId}
                       className="cursor-pointer hover:bg-muted/50"
+                      key={user.userId}
                       onClick={() => setSelectedUserId(user.userId)}
                     >
                       <TableCell>
@@ -427,15 +439,19 @@ export function TokenMetricsDashboard() {
                             user.subscription?.tier === 'pro_plus'
                               ? 'default'
                               : user.subscription?.tier === 'pro'
-                              ? 'secondary'
-                              : 'outline'
+                                ? 'secondary'
+                                : 'outline'
                           }
                         >
                           {user.subscription?.tier || 'free'}
                         </Badge>
                       </TableCell>
-                      <TableCell>{formatNumber(user.metrics.totalTokens)}</TableCell>
-                      <TableCell>{formatCost(user.metrics.totalCost)}</TableCell>
+                      <TableCell>
+                        {formatNumber(user.metrics.totalTokens)}
+                      </TableCell>
+                      <TableCell>
+                        {formatCost(user.metrics.totalCost)}
+                      </TableCell>
                       <TableCell>{user.metrics.chatCount}</TableCell>
                       <TableCell>
                         {formatNumber(user.metrics.averageTokensPerChat)}
@@ -443,8 +459,8 @@ export function TokenMetricsDashboard() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Progress
-                            value={user.metrics.cacheSavingsRate}
                             className="h-2 w-16"
+                            value={user.metrics.cacheSavingsRate}
                           />
                           <span className="text-sm">
                             {user.metrics.cacheSavingsRate}%
@@ -460,49 +476,53 @@ export function TokenMetricsDashboard() {
         </TabsContent>
 
         {/* Model Stats Tab */}
-        <TabsContent value="models" className="space-y-4">
+        <TabsContent className="space-y-4" value="models">
           {modelStats && modelStats.length > 0 && (
             <>
               <div className="grid gap-4 md:grid-cols-2">
                 <Card className="p-6">
                   <h3 className="mb-4 font-medium">Model Usage Distribution</h3>
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer height={300} width="100%">
                     <PieChart>
                       <Pie
-                        data={modelStats}
-                        dataKey="totalTokens"
-                        nameKey="model"
                         cx="50%"
                         cy="50%"
-                        outerRadius={100}
+                        data={modelStats}
+                        dataKey="totalTokens"
                         fill="#8884d8"
                         label={(entry) => entry.model}
+                        nameKey="model"
+                        outerRadius={100}
                       >
                         {modelStats.map((_stat, index) => (
                           <Cell
-                            key={`cell-${index}`}
                             fill={COLORS[index % COLORS.length]}
+                            key={`cell-${index}`}
                           />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: number) => formatNumber(value)} />
+                      <Tooltip
+                        formatter={(value: number) => formatNumber(value)}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </Card>
 
                 <Card className="p-6">
                   <h3 className="mb-4 font-medium">Cost by Model</h3>
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer height={300} width="100%">
                     <BarChart data={modelStats.slice(0, 8)}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
-                        dataKey="model"
                         angle={-45}
-                        textAnchor="end"
+                        dataKey="model"
                         height={80}
+                        textAnchor="end"
                       />
                       <YAxis tickFormatter={(v) => formatCost(v)} />
-                      <Tooltip formatter={(value: number) => formatCost(value)} />
+                      <Tooltip
+                        formatter={(value: number) => formatCost(value)}
+                      />
                       <Bar dataKey="totalCost" fill="#00C49F" />
                     </BarChart>
                   </ResponsiveContainer>
@@ -525,9 +545,13 @@ export function TokenMetricsDashboard() {
                   <TableBody>
                     {modelStats.map((model) => (
                       <TableRow key={model.model}>
-                        <TableCell className="font-medium">{model.model}</TableCell>
+                        <TableCell className="font-medium">
+                          {model.model}
+                        </TableCell>
                         <TableCell>{model.chatCount}</TableCell>
-                        <TableCell>{formatNumber(model.messageCount)}</TableCell>
+                        <TableCell>
+                          {formatNumber(model.messageCount)}
+                        </TableCell>
                         <TableCell>{formatNumber(model.totalTokens)}</TableCell>
                         <TableCell>{formatCost(model.totalCost)}</TableCell>
                         <TableCell>
@@ -544,14 +568,14 @@ export function TokenMetricsDashboard() {
         </TabsContent>
 
         {/* Chat Details Tab */}
-        <TabsContent value="chats" className="space-y-4">
+        <TabsContent className="space-y-4" value="chats">
           {selectedUserId && (
             <div className="rounded-lg bg-muted/50 p-3">
               <p className="text-sm">
                 Showing chats for selected user.{' '}
                 <button
-                  onClick={() => setSelectedUserId(undefined)}
                   className="text-primary underline"
+                  onClick={() => setSelectedUserId(undefined)}
                 >
                   Clear filter
                 </button>
@@ -602,8 +626,8 @@ export function TokenMetricsDashboard() {
                           chat.efficiency < 500
                             ? 'text-green-600'
                             : chat.efficiency < 1000
-                            ? 'text-yellow-600'
-                            : 'text-red-600'
+                              ? 'text-yellow-600'
+                              : 'text-red-600'
                         )}
                       >
                         {formatNumber(chat.efficiency)} tok/msg
@@ -619,9 +643,9 @@ export function TokenMetricsDashboard() {
             {chatStatus === 'CanLoadMore' && (
               <div className="p-4 text-center">
                 <button
-                  onClick={() => loadMoreChats(10)}
-                  disabled={false}
                   className="text-primary underline"
+                  disabled={false}
+                  onClick={() => loadMoreChats(10)}
                 >
                   Load More
                 </button>
@@ -631,16 +655,20 @@ export function TokenMetricsDashboard() {
         </TabsContent>
 
         {/* Subscription Analysis Tab */}
-        <TabsContent value="tiers" className="space-y-4">
+        <TabsContent className="space-y-4" value="tiers">
           {tierMetrics && (
             <>
               <div className="grid gap-4 md:grid-cols-3">
                 {tierMetrics.map((tier) => (
-                  <Card key={tier.tier} className="p-6">
-                    <h3 className="mb-4 font-medium capitalize">{tier.tier} Tier</h3>
+                  <Card className="p-6" key={tier.tier}>
+                    <h3 className="mb-4 font-medium capitalize">
+                      {tier.tier} Tier
+                    </h3>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground text-sm">Users</span>
+                        <span className="text-muted-foreground text-sm">
+                          Users
+                        </span>
                         <span className="font-medium">{tier.userCount}</span>
                       </div>
                       <div className="flex justify-between">
@@ -668,7 +696,9 @@ export function TokenMetricsDashboard() {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground text-sm">Chats</span>
+                        <span className="text-muted-foreground text-sm">
+                          Chats
+                        </span>
                         <span className="font-medium">{tier.totalChats}</span>
                       </div>
                     </div>
@@ -678,33 +708,38 @@ export function TokenMetricsDashboard() {
 
               <Card className="p-6">
                 <h3 className="mb-4 font-medium">Tier Comparison</h3>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer height={300} width="100%">
                   <BarChart data={tierMetrics}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="tier" />
-                    <YAxis yAxisId="left" tickFormatter={(v) => formatNumber(v)} />
                     <YAxis
-                      yAxisId="right"
+                      tickFormatter={(v) => formatNumber(v)}
+                      yAxisId="left"
+                    />
+                    <YAxis
                       orientation="right"
                       tickFormatter={(v) => formatCost(v)}
+                      yAxisId="right"
                     />
                     <Tooltip
                       formatter={(value: number, name: string) =>
-                        name.includes('Cost') ? formatCost(value) : formatNumber(value)
+                        name.includes('Cost')
+                          ? formatCost(value)
+                          : formatNumber(value)
                       }
                     />
                     <Legend />
                     <Bar
-                      yAxisId="left"
                       dataKey="totalTokens"
                       fill="#8884d8"
                       name="Total Tokens"
+                      yAxisId="left"
                     />
                     <Bar
-                      yAxisId="right"
                       dataKey="averageCostPerUser"
                       fill="#82ca9d"
                       name="Avg Cost/User"
+                      yAxisId="right"
                     />
                   </BarChart>
                 </ResponsiveContainer>
