@@ -8,10 +8,19 @@ import type { ChatMessage, StreamingMessage } from '@/lib/types/api';
 import type { MinimalMessage } from '@/lib/types/components';
 import { nanoid } from 'nanoid';
 
-type OptimisticMessage = (ChatMessage | StreamingMessage | MinimalMessage) & {
+type OptimisticMessageBase = {
+  _id?: string;
+  id?: string; // streaming id
+  retryCount?: number;
+};
+
+type OptimisticMessage = (
+  (Omit<ChatMessage, '_id'> & { _id: string }) |
+  (StreamingMessage & { id?: string }) |
+  (MinimalMessage & { _id: string })
+) & OptimisticMessageBase & {
   isOptimistic?: boolean;
   isFailed?: boolean;
-  retryCount?: number;
 };
 
 type OptimisticAction = 
@@ -59,7 +68,7 @@ function optimisticMessagesReducer(
 
     case 'update_streaming_content': {
       return messages.map(msg => 
-        (msg._id === action.messageId || ('id' in msg && msg.id === action.messageId))
+        ((msg._id && msg._id === action.messageId) || (msg.id && msg.id === action.messageId))
           ? { ...msg, content: action.content }
           : msg
       );
@@ -67,7 +76,7 @@ function optimisticMessagesReducer(
 
     case 'finalize_message': {
       return messages.map(msg => 
-        (msg._id === action.messageId || ('id' in msg && msg.id === action.messageId))
+        ((msg._id && msg._id === action.messageId) || (msg.id && msg.id === action.messageId))
           ? { 
               ...msg, 
               content: action.finalContent,
@@ -81,7 +90,7 @@ function optimisticMessagesReducer(
 
     case 'mark_failed': {
       return messages.map(msg => 
-        (msg._id === action.messageId || ('id' in msg && msg.id === action.messageId))
+        ((msg._id && msg._id === action.messageId) || (msg.id && msg.id === action.messageId))
           ? { 
               ...msg, 
               isFailed: true,
@@ -94,7 +103,7 @@ function optimisticMessagesReducer(
 
     case 'retry_message': {
       return messages.map(msg => 
-        (msg._id === action.messageId || ('id' in msg && msg.id === action.messageId))
+        ((msg._id && msg._id === action.messageId) || (msg.id && msg.id === action.messageId))
           ? { 
               ...msg, 
               isFailed: false,
@@ -106,8 +115,8 @@ function optimisticMessagesReducer(
 
     case 'remove_optimistic': {
       return messages.filter(msg => 
-        msg._id !== action.messageId && 
-        !('id' in msg && msg.id === action.messageId)
+        (msg._id && msg._id !== action.messageId) && 
+        !(msg.id && msg.id === action.messageId)
       );
     }
 
