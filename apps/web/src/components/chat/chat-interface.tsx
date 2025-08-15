@@ -955,9 +955,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                         agentPrompt: agent.systemPrompt,
                         agentId: agent._id,
                       });
-                    } catch (error: any) {
+                    } catch (error: unknown) {
                       log.error('Failed to update chat agent', {
-                        error: error?.message,
+                        error: error instanceof Error ? error.message : String(error),
                       });
                     }
                   }
@@ -1025,9 +1025,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                         agentPrompt: agent.systemPrompt,
                         agentId: agent._id,
                       });
-                    } catch (error: any) {
+                    } catch (error: unknown) {
                       log.error('Failed to update chat agent', {
-                        error: error?.message,
+                        error: error instanceof Error ? error.message : String(error),
                       });
                     }
                   }

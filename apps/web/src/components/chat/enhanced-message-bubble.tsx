@@ -2,6 +2,14 @@
 
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import type { ToolCallResult } from '@/lib/types/api';
+
+// Type for search results
+interface SearchResult {
+  title?: string;
+  url?: string;
+  description?: string;
+}
 import type { UIMessage } from 'ai';
 import { useMutation } from 'convex/react';
 import { motion } from 'framer-motion';
@@ -64,7 +72,7 @@ interface EnhancedMessageBubbleProps {
     toolCalls?: Array<{
       type: string;
       name?: string;
-      result?: any;
+      result?: ToolCallResult;
     }>;
   };
   onRegenerate?: () => void;
@@ -532,7 +540,7 @@ export function EnhancedMessageBubble({
                         <div className="space-y-2">
                           {toolCall.result.data.results
                             .slice(0, 3)
-                            .map((result: any, idx: number) => (
+                            .map((result: SearchResult, idx: number) => (
                               <div className="text-sm" key={idx}>
                                 <a
                                   className="font-medium text-primary hover:underline"

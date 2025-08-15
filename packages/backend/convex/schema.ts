@@ -482,6 +482,27 @@ export default defineSchema({
             })
           )
         ),
+        // Message editing and regeneration tracking
+        edited: v.optional(v.boolean()),
+        editedAt: v.optional(v.number()),
+        regenerated: v.optional(v.boolean()),
+        regeneratedAt: v.optional(v.number()),
+        // Message reactions system
+        reactions: v.optional(
+          v.record(
+            v.string(), // userId (walletAddress)
+            v.array(
+              v.union(
+                v.literal('like'),
+                v.literal('dislike'),
+                v.literal('love'),
+                v.literal('celebrate'),
+                v.literal('insightful')
+              )
+            )
+          )
+        ),
+        lastReactionAt: v.optional(v.number()),
       })
     ),
     status: v.optional(v.string()),

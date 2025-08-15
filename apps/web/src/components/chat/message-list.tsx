@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { ChatMessage, StreamingMessage } from '@/lib/types/api';
+import type { ChatMessage, StreamingMessage, ToolCall } from '@/lib/types/api';
 import type { MessageListProps, MinimalMessage } from '@/lib/types/components';
 import { cn } from '@/lib/utils';
 import { type FontSize, getFontSizeClasses } from '@/lib/utils/fontSizes';
@@ -337,7 +337,7 @@ export function MessageList({
                               ),
                               rating: (message as MinimalMessage).rating,
                               actions: (message as MinimalMessage).actions,
-                              toolCalls: (message as any).toolCalls,
+                              toolCalls: (message as MinimalMessage & { toolCalls?: ToolCall[] }).toolCalls,
                             }}
                             onArtifactClick={onArtifactClick}
                             onRegenerate={() =>

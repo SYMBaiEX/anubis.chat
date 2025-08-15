@@ -65,6 +65,7 @@ import type * as tokenPrices from "../tokenPrices.js";
 import type * as toolRegistry from "../toolRegistry.js";
 import type * as toolRegistryHelpers from "../toolRegistryHelpers.js";
 import type * as tools from "../tools.js";
+import type * as types_chat from "../types/chat.js";
 import type * as typing from "../typing.js";
 import type * as userPreferences from "../userPreferences.js";
 import type * as users from "../users.js";
@@ -146,6 +147,7 @@ declare const fullApi: ApiFromModules<{
   toolRegistry: typeof toolRegistry;
   toolRegistryHelpers: typeof toolRegistryHelpers;
   tools: typeof tools;
+  "types/chat": typeof types_chat;
   typing: typeof typing;
   userPreferences: typeof userPreferences;
   users: typeof users;

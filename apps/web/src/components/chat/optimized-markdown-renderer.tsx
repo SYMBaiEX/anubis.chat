@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useMemo } from 'react';
+import { memo, useMemo, type ReactNode, type HTMLProps } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -119,7 +119,7 @@ export const OptimizedMarkdownRenderer = memo(
         ),
 
         // Blockquotes
-        blockquote: ({ children, ...props }: any) => (
+        blockquote: ({ children, ...props }: { children: ReactNode } & HTMLProps<HTMLElement>) => (
           <blockquote
             className="my-4 border-muted-foreground/30 border-l-4 pl-4 italic last:mb-0"
             {...props}
@@ -129,30 +129,30 @@ export const OptimizedMarkdownRenderer = memo(
         ),
 
         // Tables with simple styling
-        table: ({ children, ...props }: any) => (
+        table: ({ children, ...props }: { children: ReactNode } & HTMLProps<HTMLElement>) => (
           <div className="my-3 overflow-x-auto">
             <table className="min-w-full divide-y divide-border" {...props}>
               {children}
             </table>
           </div>
         ),
-        thead: ({ children, ...props }: any) => (
+        thead: ({ children, ...props }: { children: ReactNode } & HTMLProps<HTMLElement>) => (
           <thead className="bg-muted" {...props}>
             {children}
           </thead>
         ),
-        tbody: ({ children, ...props }: any) => (
+        tbody: ({ children, ...props }: { children: ReactNode } & HTMLProps<HTMLElement>) => (
           <tbody className="divide-y divide-border" {...props}>
             {children}
           </tbody>
         ),
-        tr: ({ children, ...props }: any) => <tr {...props}>{children}</tr>,
-        th: ({ children, ...props }: any) => (
+        tr: ({ children, ...props }: { children: ReactNode } & HTMLProps<HTMLElement>) => <tr {...props}>{children}</tr>,
+        th: ({ children, ...props }: { children: ReactNode } & HTMLProps<HTMLElement>) => (
           <th className="px-3 py-2 text-left font-semibold text-sm" {...props}>
             {children}
           </th>
         ),
-        td: ({ children, ...props }: any) => (
+        td: ({ children, ...props }: { children: ReactNode } & HTMLProps<HTMLElement>) => (
           <td className="px-3 py-2 text-sm" {...props}>
             {children}
           </td>
@@ -162,12 +162,12 @@ export const OptimizedMarkdownRenderer = memo(
         hr: () => <hr className="my-4 border-border" />,
 
         // Strong and emphasis
-        strong: ({ children, ...props }: any) => (
+        strong: ({ children, ...props }: { children: ReactNode } & HTMLProps<HTMLElement>) => (
           <strong className="font-semibold" {...props}>
             {children}
           </strong>
         ),
-        em: ({ children, ...props }: any) => (
+        em: ({ children, ...props }: { children: ReactNode } & HTMLProps<HTMLElement>) => (
           <em className="italic" {...props}>
             {children}
           </em>
