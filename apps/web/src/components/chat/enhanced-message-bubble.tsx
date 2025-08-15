@@ -73,7 +73,7 @@ import {
 } from 'lucide-react';
 import NextImage from 'next/image';
 import { useTheme } from 'next-themes';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, memo } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -138,7 +138,7 @@ interface EnhancedMessageBubbleProps {
  * Enhanced message bubble with AI SDK message parts support
  * Handles text, tool calls, attachments, and streaming
  */
-export function EnhancedMessageBubble({
+export const EnhancedMessageBubble = memo(function EnhancedMessageBubbleComponent({
   message,
   onRegenerate,
   onArtifactClick,
@@ -842,4 +842,4 @@ export function EnhancedMessageBubble({
       </motion.div>
     </TooltipProvider>
   );
-}
+});

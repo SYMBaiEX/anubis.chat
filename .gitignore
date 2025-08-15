@@ -16,3 +16,5 @@ packages/backend/.claude-flow/
 packages/backend/.swarm/
 .env.local
 .vercel
+ 
+checklist.md

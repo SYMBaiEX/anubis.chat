@@ -10,7 +10,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -50,7 +50,7 @@ interface EnhancedMessageInputProps {
  * Enhanced message input with AI SDK integration
  * Modern design with smooth animations and attachment support
  */
-export function EnhancedMessageInput({
+export const EnhancedMessageInput = memo(function EnhancedMessageInputComponent({
   onSend,
   onTyping,
   disabled = false,
@@ -445,4 +445,4 @@ export function EnhancedMessageInput({
       </div>
     </TooltipProvider>
   );
-}
+});

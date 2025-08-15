@@ -8,7 +8,7 @@ import { LoadingStates } from '@/components/data/loading-states';
 import { Button } from '@/components/ui/button';
 import type { MessageListProps } from '@/lib/types/components';
 import type { FontSize } from '@/lib/utils/fontSizes';
-import { MessageList } from './message-list';
+import { useAdaptiveMessageList, VIRTUAL_SCROLL_THRESHOLD } from '@/hooks/use-adaptive-message-list';
 
 interface MessageListSuspenseProps extends MessageListProps {
   isTyping?: boolean;
@@ -89,8 +89,19 @@ class MessageListErrorBoundary extends Component<
 /**
  * MessageListSuspense - Wraps MessageList with React 18+ Suspense and Error Boundaries
  * Provides proper loading states and error recovery for message streams
+ * Automatically switches to virtual scrolling when messages exceed threshold
  */
 export function MessageListSuspense(props: MessageListSuspenseProps) {
+  const AdaptiveMessageList = useAdaptiveMessageList();
+  
+  // Log when switching to virtual scrolling (development only)
+  if (process.env.NODE_ENV === 'development' && props.messages) {
+    const messageCount = props.messages.length;
+    if (messageCount > VIRTUAL_SCROLL_THRESHOLD) {
+      console.log(`Using virtual scrolling for ${messageCount} messages`);
+    }
+  }
+  
   return (
     <MessageListErrorBoundary
       onReset={() => {
@@ -99,7 +110,7 @@ export function MessageListSuspense(props: MessageListSuspenseProps) {
       }}
     >
       <Suspense fallback={<MessageListSkeleton />}>
-        <MessageList {...props} />
+        <AdaptiveMessageList {...props} />
       </Suspense>
     </MessageListErrorBoundary>
   );
