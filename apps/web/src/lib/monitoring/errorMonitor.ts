@@ -75,21 +75,23 @@ class ErrorMonitor {
         context: {
           url: event.filename,
           line: event.lineno,
-          column: event.colno
-        }
+          column: event.colno,
+        },
       });
     });
 
     // Unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
       this.captureError(
-        event.reason instanceof Error ? event.reason : new Error(String(event.reason)),
+        event.reason instanceof Error
+          ? event.reason
+          : new Error(String(event.reason)),
         {
           category: 'javascript',
           severity: 'high',
           context: {
-            type: 'unhandledRejection'
-          }
+            type: 'unhandledRejection',
+          },
         }
       );
     });
@@ -102,7 +104,7 @@ class ErrorMonitor {
    * Capture and categorize an error
    */
   public captureError(
-    error: Error | string, 
+    error: Error | string,
     options: {
       category?: CapturedError['category'];
       severity?: CapturedError['severity'];
@@ -112,10 +114,10 @@ class ErrorMonitor {
     } = {}
   ): string {
     const errorObj = typeof error === 'string' ? new Error(error) : error;
-    
+
     const errorId = this.generateErrorId();
     const fingerprint = this.generateFingerprint(errorObj, options.context);
-    
+
     // Increment error count for this fingerprint
     const currentCount = this.errorCounts.get(fingerprint) || 0;
     this.errorCounts.set(fingerprint, currentCount + 1);
@@ -131,13 +133,16 @@ class ErrorMonitor {
       context: {
         userId: this.userId,
         sessionId: this.sessionId,
-        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
+        userAgent:
+          typeof window !== 'undefined'
+            ? window.navigator.userAgent
+            : undefined,
         url: typeof window !== 'undefined' ? window.location.href : undefined,
         timestamp: Date.now(),
         component: options.component,
-        ...options.context
+        ...options.context,
       },
-      retryCount: currentCount
+      retryCount: currentCount,
     };
 
     this.errors.push(capturedError);
@@ -171,8 +176,8 @@ class ErrorMonitor {
         endpoint,
         method,
         statusCode,
-        responseData: this.sanitizeResponseData(responseData)
-      }
+        responseData: this.sanitizeResponseData(responseData),
+      },
     });
   }
 
@@ -190,8 +195,8 @@ class ErrorMonitor {
       context: {
         url,
         method,
-        type: 'network'
-      }
+        type: 'network',
+      },
     });
   }
 
@@ -210,8 +215,8 @@ class ErrorMonitor {
       component,
       context: {
         action,
-        userInput: this.sanitizeUserInput(userInput)
-      }
+        userInput: this.sanitizeUserInput(userInput),
+      },
     });
   }
 
@@ -219,7 +224,7 @@ class ErrorMonitor {
    * Mark error as resolved
    */
   public resolveError(errorId: string) {
-    const errorIndex = this.errors.findIndex(e => e.id === errorId);
+    const errorIndex = this.errors.findIndex((e) => e.id === errorId);
     if (errorIndex !== -1) {
       this.errors.splice(errorIndex, 1);
       log.info('Error resolved', { errorId });
@@ -231,7 +236,7 @@ class ErrorMonitor {
    */
   public getErrorSummary() {
     const recentErrors = this.errors.filter(
-      e => Date.now() - e.context.timestamp < 24 * 60 * 60 * 1000 // Last 24 hours
+      (e) => Date.now() - e.context.timestamp < 24 * 60 * 60 * 1000 // Last 24 hours
     );
 
     const errorsByCategory = this.groupBy(recentErrors, 'category');
@@ -241,17 +246,21 @@ class ErrorMonitor {
     return {
       total: this.errors.length,
       recent: recentErrors.length,
-      byCategory: Object.entries(errorsByCategory).map(([category, errors]) => ({
-        category,
-        count: errors.length
-      })),
-      bySeverity: Object.entries(errorsBySeverity).map(([severity, errors]) => ({
-        severity,
-        count: errors.length
-      })),
+      byCategory: Object.entries(errorsByCategory).map(
+        ([category, errors]) => ({
+          category,
+          count: errors.length,
+        })
+      ),
+      bySeverity: Object.entries(errorsBySeverity).map(
+        ([severity, errors]) => ({
+          severity,
+          count: errors.length,
+        })
+      ),
       topErrors,
       sessionId: this.sessionId,
-      userId: this.userId
+      userId: this.userId,
     };
   }
 
@@ -259,13 +268,16 @@ class ErrorMonitor {
     return `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private generateFingerprint(error: Error, context?: Partial<ErrorContext>): string {
+  private generateFingerprint(
+    error: Error,
+    context?: Partial<ErrorContext>
+  ): string {
     // Create a unique fingerprint for grouping similar errors
     const components = [
       error.name,
       error.message.replace(/\d+/g, 'N'), // Replace numbers with N
       context?.component,
-      context?.action
+      context?.action,
     ].filter(Boolean);
 
     return btoa(components.join('|')).substr(0, 16);
@@ -273,38 +285,38 @@ class ErrorMonitor {
 
   private inferSeverity(error: Error): CapturedError['severity'] {
     const message = error.message.toLowerCase();
-    
+
     if (message.includes('network') || message.includes('fetch')) {
       return 'medium';
     }
-    
+
     if (message.includes('syntax') || message.includes('reference')) {
       return 'high';
     }
-    
+
     if (message.includes('permission') || message.includes('auth')) {
       return 'high';
     }
-    
+
     return 'medium';
   }
 
   private inferCategory(error: Error): CapturedError['category'] {
     const message = error.message.toLowerCase();
     const stack = error.stack?.toLowerCase() || '';
-    
+
     if (message.includes('fetch') || message.includes('network')) {
       return 'network';
     }
-    
+
     if (message.includes('api') || stack.includes('api')) {
       return 'api';
     }
-    
+
     if (message.includes('user') || message.includes('input')) {
       return 'user';
     }
-    
+
     return 'javascript';
   }
 
@@ -313,14 +325,14 @@ class ErrorMonitor {
       low: 'info',
       medium: 'warn',
       high: 'error',
-      critical: 'error'
+      critical: 'error',
     }[error.severity] as 'info' | 'warn' | 'error';
 
     log[logLevel](`${error.category} error: ${error.message}`, {
       errorId: error.id,
       fingerprint: error.fingerprint,
       retryCount: error.retryCount,
-      context: error.context
+      context: error.context,
     });
   }
 
@@ -335,19 +347,19 @@ class ErrorMonitor {
   private checkErrorFrequency(fingerprint: string, count: number) {
     // Alert if the same error occurs frequently
     const alertThresholds = [5, 10, 25, 50];
-    
+
     if (alertThresholds.includes(count)) {
-      log.error(`High frequency error detected`, {
+      log.error('High frequency error detected', {
         fingerprint,
         count,
         recentOccurrences: this.errors
-          .filter(e => e.fingerprint === fingerprint)
+          .filter((e) => e.fingerprint === fingerprint)
           .slice(-5)
-          .map(e => ({
+          .map((e) => ({
             timestamp: e.context.timestamp,
             component: e.context.component,
-            userId: e.context.userId
-          }))
+            userId: e.context.userId,
+          })),
       });
     }
   }
@@ -358,13 +370,15 @@ class ErrorMonitor {
       .slice(0, 10);
 
     return errorFrequency.map(([fingerprint, count]) => {
-      const sampleError = this.errors.find(e => e.fingerprint === fingerprint);
+      const sampleError = this.errors.find(
+        (e) => e.fingerprint === fingerprint
+      );
       return {
         fingerprint,
         count,
         message: sampleError?.message,
         category: sampleError?.category,
-        severity: sampleError?.severity
+        severity: sampleError?.severity,
       };
     });
   }
@@ -375,11 +389,13 @@ class ErrorMonitor {
     }
 
     // Remove sensitive data
-    const sanitized = { ...data as Record<string, unknown> };
+    const sanitized = { ...(data as Record<string, unknown>) };
     const sensitiveKeys = ['password', 'token', 'key', 'secret', 'auth'];
-    
+
     for (const key of Object.keys(sanitized)) {
-      if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+      if (
+        sensitiveKeys.some((sensitive) => key.toLowerCase().includes(sensitive))
+      ) {
         sanitized[key] = '[REDACTED]';
       }
     }
@@ -396,12 +412,15 @@ class ErrorMonitor {
   }
 
   private groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
-    return array.reduce((groups, item) => {
-      const groupKey = String(item[key]);
-      groups[groupKey] = groups[groupKey] || [];
-      groups[groupKey].push(item);
-      return groups;
-    }, {} as Record<string, T[]>);
+    return array.reduce(
+      (groups, item) => {
+        const groupKey = String(item[key]);
+        groups[groupKey] = groups[groupKey] || [];
+        groups[groupKey].push(item);
+        return groups;
+      },
+      {} as Record<string, T[]>
+    );
   }
 }
 
@@ -419,7 +438,7 @@ export function useErrorMonitor() {
     captureUserError: errorMonitor.captureUserError.bind(errorMonitor),
     resolveError: errorMonitor.resolveError.bind(errorMonitor),
     getErrorSummary: errorMonitor.getErrorSummary.bind(errorMonitor),
-    setUserId: errorMonitor.setUserId.bind(errorMonitor)
+    setUserId: errorMonitor.setUserId.bind(errorMonitor),
   };
 }
 

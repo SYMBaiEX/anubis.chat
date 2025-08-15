@@ -1,29 +1,23 @@
 /**
- * Chat-related Convex hooks with Result pattern and real-time updates
+ * Modern 2025 Chat hooks using direct Convex patterns
+ * Clean, performant hooks following Convex best practices
  */
 
-import { api } from '@convex/_generated/api';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { useCallback } from 'react';
+import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import { createModuleLogger } from '@/lib/utils/logger';
-import type { Result } from '@/lib/utils/result';
-import { success } from '@/lib/utils/result';
 
 const log = createModuleLogger('hooks/convex/useChats');
 
-import {
-  useConvexMutation,
-  useConvexQuery,
-  useOptimisticMutation,
-} from './useConvexResult';
-
-type Id<T> = string & { __tableName: T };
-
 // =============================================================================
-// Chat Queries
+// Chat Queries - Direct useQuery pattern
 // =============================================================================
 
 /**
  * Get chats by owner with real-time updates
+ * Modern pattern: direct useQuery for optimal performance
  */
 export function useChats(
   ownerId: string,
@@ -32,299 +26,256 @@ export function useChats(
     isActive?: boolean;
   }
 ) {
-  return useConvexQuery(api.chats.getByOwner, {
-    ownerId,
-    limit: options?.limit,
-    isActive: options?.isActive,
-  });
+  return useQuery(
+    api.chats.getByOwner,
+    ownerId
+      ? {
+          ownerId,
+          limit: options?.limit,
+          isActive: options?.isActive,
+        }
+      : 'skip'
+  );
 }
 
 /**
  * Get specific chat by ID with real-time updates
  */
-export function useChat(id: Id<'chats'>) {
-  return useConvexQuery(api.chats.getById, { id });
+export function useChat(id: Id<'chats'> | undefined) {
+  return useQuery(api.chats.getById, id ? { id } : 'skip');
 }
 
 /**
  * Get chat statistics for owner
  */
-export function useChatStats(ownerId: string) {
-  return useConvexQuery(api.chats.getStats, { ownerId });
+export function useChatStats(ownerId: string | undefined) {
+  return useQuery(api.chats.getStats, ownerId ? { ownerId } : 'skip');
 }
 
 // =============================================================================
-// Chat Mutations
+// Chat Mutations - Direct useMutation pattern
 // =============================================================================
 
 /**
- * Create new chat with optimistic updates
+ * Create new chat
+ * Returns mutation function directly - cleanest pattern
  */
 export function useCreateChat() {
-  return useOptimisticMutation(api.chats.create, {
-    rollbackOnError: true,
-    onOptimisticSuccess: (chat: any) => {
-      log.info('Chat created', { chatId: chat?._id });
-    },
-    onRollbackError: (error: Error) => {
-      log.error('Chat creation failed', { error: error.message });
-    },
-  });
+  return useMutation(api.chats.create);
 }
 
 /**
- * Update existing chat with optimistic updates
+ * Update existing chat
  */
 export function useUpdateChat() {
-  return useOptimisticMutation(api.chats.update, {
-    rollbackOnError: true,
-    onOptimisticSuccess: (chat: any) => {
-      log.info('Chat updated', { chatId: chat?._id });
-    },
-    onRollbackError: (error: Error) => {
-      log.error('Chat update failed', { error: error.message });
-    },
-  });
+  return useMutation(api.chats.update);
 }
 
 /**
  * Delete chat permanently
  */
 export function useDeleteChat() {
-  return useOptimisticMutation(api.chats.remove, {
-    rollbackOnError: true,
-    onOptimisticSuccess: (chat: any) => {
-      log.info('Chat deleted', { chatId: chat?.chatId });
-    },
-    onRollbackError: (error: Error) => {
-      log.error('Chat deletion failed', { error: error.message });
-    },
-  });
+  return useMutation(api.chats.remove);
 }
 
 /**
  * Archive chat (soft delete)
  */
 export function useArchiveChat() {
-  return useOptimisticMutation(api.chats.archive, {
-    rollbackOnError: true,
-    onOptimisticSuccess: (chat: any) => {
-      log.info('Chat archived', { chatId: chat?._id });
-    },
-    onRollbackError: (error: Error) => {
-      log.error('Chat archiving failed', { error: error.message });
-    },
-  });
+  return useMutation(api.chats.archive);
 }
 
 /**
  * Restore archived chat
  */
 export function useRestoreChat() {
-  return useConvexMutation(api.chats.restore);
+  return useMutation(api.chats.restore);
 }
 
 /**
  * Update last message timestamp
  */
 export function useUpdateLastMessageTime() {
-  return useConvexMutation(api.chats.updateLastMessageTime);
+  return useMutation(api.chats.updateLastMessageTime);
+}
+
+/**
+ * Toggle pin status
+ */
+export function useTogglePin() {
+  return useMutation(api.chats.togglePin);
+}
+
+/**
+ * Clear chat history
+ */
+export function useClearHistory() {
+  return useMutation(api.chats.clearHistory);
+}
+
+/**
+ * Update token usage
+ */
+export function useUpdateTokenUsage() {
+  return useMutation(api.chats.updateTokenUsage);
+}
+
+/**
+ * Get token usage for chat
+ */
+export function useTokenUsage(chatId: Id<'chats'> | undefined) {
+  return useQuery(api.chats.getTokenUsage, chatId ? { chatId } : 'skip');
 }
 
 // =============================================================================
-// Composite Chat Operations
+// Composite Chat Operations - Higher-order patterns
 // =============================================================================
 
 /**
- * Create chat with initial message
+ * Chat creation with automatic title generation
+ * Combines chat creation with title generation workflow
  */
-export function useCreateChatWithMessage() {
-  const { mutate: createChat } = useCreateChat();
+export function useChatCreation() {
+  const createChat = useCreateChat();
+  const generateTitle = useAction(api.chats.generateAndUpdateTitle);
 
-  return useCallback(
+  const createChatWithAutoTitle = useCallback(
     async (chatData: {
       title: string;
       ownerId: string;
       model: string;
       systemPrompt?: string;
+      agentPrompt?: string;
+      agentId?: Id<'agents'>;
       temperature?: number;
       maxTokens?: number;
       initialMessage?: string;
-    }): Promise<Result<any, Error>> => {
-      // Create the chat first
-      const chatResult = await createChat({
+    }) => {
+      log.info('Creating chat with auto-title', { title: chatData.title });
+
+      // Create the chat
+      const chat = await createChat({
         title: chatData.title,
         ownerId: chatData.ownerId,
         model: chatData.model,
         systemPrompt: chatData.systemPrompt,
+        agentPrompt: chatData.agentPrompt,
+        agentId: chatData.agentId,
         temperature: chatData.temperature,
         maxTokens: chatData.maxTokens,
       });
 
-      if (!chatResult.success) {
-        return chatResult;
+      if (!chat) {
+        throw new Error('Failed to create chat');
       }
 
-      // If initial message provided, we would add message here
-      // For now, just return the chat
-      return success({
-        chat: chatResult.data,
+      return {
+        chat,
         initialMessage: chatData.initialMessage,
-      });
+      };
     },
     [createChat]
   );
-}
-
-/**
- * Duplicate chat with all settings
- */
-export function useDuplicateChat() {
-  const { mutate: createChat } = useCreateChat();
-
-  return useCallback(
-    async (
-      _originalChatId: Id<'chats'>,
-      ownerId: string,
-      newTitle?: string
-    ): Promise<Result<any, Error>> => {
-      // Note: In a real implementation, we'd need to fetch the original chat data
-      // This is a simplified version
-      const duplicateResult = await createChat({
-        title: newTitle || 'Copy of Chat',
-        ownerId,
-        model: 'gpt-4o', // Default model
-        systemPrompt: undefined,
-        temperature: 0.7,
-        maxTokens: 4000,
-      });
-
-      return duplicateResult;
-    },
-    [createChat]
-  );
-}
-
-/**
- * Batch archive multiple chats
- */
-export function useBatchArchiveChats() {
-  const { mutate: archiveChat } = useArchiveChat();
-
-  return useCallback(
-    async (
-      chatIds: Id<'chats'>[],
-      ownerId: string
-    ): Promise<Result<any[], Error>> => {
-      const results = [];
-
-      for (const chatId of chatIds) {
-        const result = await archiveChat({ id: chatId, ownerId });
-
-        if (!result.success) {
-          return result;
-        }
-
-        results.push(result.data);
-      }
-
-      return success(results);
-    },
-    [archiveChat]
-  );
-}
-
-/**
- * Batch delete multiple chats
- */
-export function useBatchDeleteChats() {
-  const { mutate: deleteChat } = useDeleteChat();
-
-  return useCallback(
-    async (
-      chatIds: Id<'chats'>[],
-      ownerId: string
-    ): Promise<Result<any[], Error>> => {
-      const results = [];
-
-      for (const chatId of chatIds) {
-        const result = await deleteChat({ id: chatId, ownerId });
-
-        if (!result.success) {
-          return result;
-        }
-
-        results.push(result.data);
-      }
-
-      return success(results);
-    },
-    [deleteChat]
-  );
-}
-
-// =============================================================================
-// Chat State Management Hooks
-// =============================================================================
-
-/**
- * Manage active chat state with real-time updates
- */
-export function useActiveChatState(ownerId: string) {
-  const {
-    data: chats,
-    isLoading,
-    error,
-  } = useChats(ownerId, { isActive: true });
 
   return {
+    createChat,
+    createChatWithAutoTitle,
+    generateTitle,
+  };
+}
+
+/**
+ * Chat management hook
+ * Combines common chat operations
+ */
+export function useChatManagement(ownerId: string) {
+  const chats = useChats(ownerId, { isActive: true });
+  const archivedChats = useChats(ownerId, { isActive: false });
+  const stats = useChatStats(ownerId);
+  
+  const updateChat = useUpdateChat();
+  const deleteChat = useDeleteChat();
+  const archiveChat = useArchiveChat();
+  const restoreChat = useRestoreChat();
+  const togglePin = useTogglePin();
+
+  const bulkArchive = useCallback(
+    async (chatIds: Id<'chats'>[]) => {
+      const results = [];
+      for (const chatId of chatIds) {
+        try {
+          const result = await archiveChat({ id: chatId, ownerId });
+          results.push(result);
+        } catch (error) {
+          log.error('Failed to archive chat', { chatId, error });
+          throw error;
+        }
+      }
+      return results;
+    },
+    [archiveChat, ownerId]
+  );
+
+  const bulkDelete = useCallback(
+    async (chatIds: Id<'chats'>[]) => {
+      const results = [];
+      for (const chatId of chatIds) {
+        try {
+          const result = await deleteChat({ id: chatId, ownerId });
+          results.push(result);
+        } catch (error) {
+          log.error('Failed to delete chat', { chatId, error });
+          throw error;
+        }
+      }
+      return results;
+    },
+    [deleteChat, ownerId]
+  );
+
+  return {
+    // Data
     activeChats: chats || [],
-    isLoading,
-    error,
+    archivedChats: archivedChats || [],
+    stats: stats || {},
+    
+    // Loading states
+    isLoading: chats === undefined || archivedChats === undefined,
+    
+    // Single operations
+    updateChat,
+    deleteChat,
+    archiveChat,
+    restoreChat,
+    togglePin,
+    
+    // Bulk operations
+    bulkArchive,
+    bulkDelete,
+    
+    // Computed
     hasActiveChats: (chats?.length || 0) > 0,
+    hasArchivedChats: (archivedChats?.length || 0) > 0,
+    totalChats: (chats?.length || 0) + (archivedChats?.length || 0),
   };
 }
 
 /**
- * Manage archived chat state with real-time updates
+ * Chat state management with active selection
+ * Manages current chat selection and state
  */
-export function useArchivedChatState(ownerId: string) {
-  const {
-    data: chats,
-    isLoading,
-    error,
-  } = useChats(ownerId, { isActive: false });
-
+export function useChatState(ownerId: string, selectedChatId?: string) {
+  const chats = useChats(ownerId, { isActive: true });
+  const currentChat = useChat(selectedChatId as Id<'chats'>);
+  
+  const selectedChat = currentChat;
+  const hasChatSelected = !!selectedChatId && !!selectedChat;
+  
   return {
-    archivedChats: chats || [],
-    isLoading,
-    error,
-    hasArchivedChats: (chats?.length || 0) > 0,
-  };
-}
-
-/**
- * Combined chat state management
- */
-export function useChatState(ownerId: string) {
-  const activeChatsState = useActiveChatState(ownerId);
-  const archivedChatsState = useArchivedChatState(ownerId);
-  const statsQuery = useChatStats(ownerId);
-
-  return {
-    active: activeChatsState,
-    archived: archivedChatsState,
-    stats: statsQuery,
-    isLoading:
-      activeChatsState.isLoading ||
-      archivedChatsState.isLoading ||
-      statsQuery.isLoading,
-    hasError: !!(
-      activeChatsState.error ||
-      archivedChatsState.error ||
-      statsQuery.error
-    ),
-    error:
-      activeChatsState.error || archivedChatsState.error || statsQuery.error,
+    chats: chats || [],
+    selectedChat,
+    hasChatSelected,
+    isLoading: chats === undefined || (selectedChatId && currentChat === undefined),
+    isEmpty: (chats?.length || 0) === 0,
   };
 }

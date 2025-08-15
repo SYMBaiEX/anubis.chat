@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Brain, Database, Globe, Network, Shield, Zap } from 'lucide-react';
+import { Card3D } from '@/components/animations/3dCard';
 import AnimatedSection from '@/components/landing/animated-section';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -87,75 +88,73 @@ function Features() {
                   ease: [0.25, 0.46, 0.45, 0.94],
                 }}
                 viewport={{ margin: '-100px' }}
-                whileHover={{
-                  scale: 1.05,
-                  transition: { type: 'spring', stiffness: 400, damping: 25 },
-                }}
                 whileInView={{ opacity: 1, y: 0, scale: 1 }}
               >
-                <Card className="group relative h-full overflow-hidden border-primary/10 bg-gradient-to-br from-background to-background/50 backdrop-blur-sm transition-all hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
-                  <motion.div
-                    className={`pointer-events-none absolute inset-0 z-0 bg-gradient-to-br ${f.gradient}`}
-                    initial={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    whileHover={{ opacity: 0.1 }}
-                  />
-
-                  <CardHeader className="relative z-10">
+                <Card3D>
+                  <Card className="group relative h-full overflow-hidden border-primary/10 bg-gradient-to-br from-background to-background/50 backdrop-blur-sm transition-all hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
                     <motion.div
-                      className={`mb-3 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${f.gradient} shadow-lg`}
-                      initial={{ scale: 0.95 }}
-                      transition={{
-                        delay: index * 0.1 + 0.2,
-                        duration: 0.4,
-                        type: 'spring',
-                        stiffness: 280,
-                        damping: 24,
-                      }}
-                      viewport={{ once: true, margin: '-100px' }}
-                      whileHover={{
-                        scale: 1.1,
-                        transition: {
-                          type: 'spring',
-                          stiffness: 400,
-                          damping: 25,
-                        },
-                      }}
-                      whileInView={{ scale: 1 }}
-                    >
-                      <Icon className="h-6 w-6 text-white" />
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      transition={{
-                        delay: index * 0.1 + 0.3,
-                        duration: 0.5,
-                      }}
-                      viewport={{ margin: '-100px' }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                    >
-                      <CardTitle className="text-lg leading-snug">
-                        {f.title}
-                      </CardTitle>
-                    </motion.div>
-                  </CardHeader>
-
-                  <CardContent className="relative z-10">
-                    <motion.p
-                      className="text-muted-foreground text-sm leading-relaxed"
+                      className={`pointer-events-none absolute inset-0 z-0 bg-gradient-to-br ${f.gradient}`}
                       initial={{ opacity: 0 }}
-                      transition={{
-                        delay: index * 0.1 + 0.4,
-                        duration: 0.5,
-                      }}
-                      viewport={{ once: true, margin: '-100px' }}
-                      whileInView={{ opacity: 1 }}
-                    >
-                      {f.description}
-                    </motion.p>
-                  </CardContent>
-                </Card>
+                      transition={{ duration: 0.3 }}
+                      whileHover={{ opacity: 0.1 }}
+                    />
+
+                    <CardHeader className="relative z-10">
+                      <motion.div
+                        className={`mb-3 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${f.gradient} shadow-lg`}
+                        initial={{ scale: 0.95 }}
+                        transition={{
+                          delay: index * 0.1 + 0.2,
+                          duration: 0.4,
+                          type: 'spring',
+                          stiffness: 280,
+                          damping: 24,
+                        }}
+                        viewport={{ once: true, margin: '-100px' }}
+                        whileHover={{
+                          scale: 1.1,
+                          transition: {
+                            type: 'spring',
+                            stiffness: 400,
+                            damping: 25,
+                          },
+                        }}
+                        whileInView={{ scale: 1 }}
+                      >
+                        <Icon className="h-6 w-6 text-white" />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        transition={{
+                          delay: index * 0.1 + 0.3,
+                          duration: 0.5,
+                        }}
+                        viewport={{ margin: '-100px' }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                      >
+                        <CardTitle className="text-lg leading-snug">
+                          {f.title}
+                        </CardTitle>
+                      </motion.div>
+                    </CardHeader>
+
+                    <CardContent className="relative z-10">
+                      <motion.p
+                        className="text-muted-foreground text-sm leading-relaxed"
+                        initial={{ opacity: 0 }}
+                        transition={{
+                          delay: index * 0.1 + 0.4,
+                          duration: 0.5,
+                        }}
+                        viewport={{ once: true, margin: '-100px' }}
+                        whileInView={{ opacity: 1 }}
+                      >
+                        {f.description}
+                      </motion.p>
+                    </CardContent>
+                  </Card>
+                </Card3D>
               </motion.div>
             );
           })}

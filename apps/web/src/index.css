@@ -4,6 +4,27 @@
 /* Import animation library after Tailwind */
 @import "tw-animate-css";
 
+/* Import design tokens */
+@import "./styles/design-tokens.css";
+
+/* Theme Transition Animations */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 300ms ease-in-out,
+    border-color 300ms ease-in-out,
+    color 300ms ease-in-out,
+    fill 300ms ease-in-out,
+    stroke 300ms ease-in-out !important;
+}
+
+/* Disable transitions on page load */
+.preload * {
+  transition: none !important;
+}
+
 /* Custom Animations */
 @keyframes gradient-x {
   0%,
@@ -649,6 +670,16 @@ html {
   .animate-delay-500 {
     animation-delay: 500ms;
   }
+
+  /* Ripple animation for buttons */
+  .animate-ripple {
+    animation: ripple 0.6s ease-out;
+  }
+
+  /* Shake animation */
+  .animate-shake {
+    animation: shake 0.4s ease-in-out;
+  }
 }
 
 /* Animations */
@@ -768,6 +799,37 @@ html {
   100% {
     width: 100%;
     opacity: 1;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(2px);
   }
 }
 

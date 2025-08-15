@@ -2,14 +2,14 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown, MessageSquare } from 'lucide-react';
-import { 
-  useCallback, 
-  useEffect, 
-  useMemo, 
-  useRef, 
-  useState,
+import {
   forwardRef,
-  memo
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from 'react';
 import { VariableSizeList as List } from 'react-window';
 import { EmptyState } from '@/components/data/empty-states';
@@ -24,9 +24,13 @@ import { StreamingMessage as StreamingMessageComponent } from './streaming-messa
 import { TypingIndicator } from './typing-indicator';
 
 // Types for virtual list items
-type ListItem = 
+type ListItem =
   | { type: 'date-separator'; date: string; id: string }
-  | { type: 'message'; message: ChatMessage | StreamingMessage | MinimalMessage; id: string }
+  | {
+      type: 'message';
+      message: ChatMessage | StreamingMessage | MinimalMessage;
+      id: string;
+    }
   | { type: 'typing'; id: string };
 
 // Normalize roles to those supported by the UI bubble component
@@ -123,7 +127,7 @@ const Row = memo(({ index, style, data }: RowProps) => {
     // Streaming message
     if ('isStreaming' in message && (message as StreamingMessage).isStreaming) {
       return (
-        <div style={style} className="px-2 sm:px-3 md:px-4">
+        <div className="px-2 sm:px-3 md:px-4" style={style}>
           <motion.div
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -140,7 +144,7 @@ const Row = memo(({ index, style, data }: RowProps) => {
 
     // Regular message
     return (
-      <div style={style} className="px-2 sm:px-3 md:px-4">
+      <div className="px-2 sm:px-3 md:px-4" style={style}>
         <motion.div
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
@@ -162,11 +166,15 @@ const Row = memo(({ index, style, data }: RowProps) => {
               ),
               rating: (message as MinimalMessage).rating,
               actions: (message as MinimalMessage).actions,
-              toolCalls: (message as MinimalMessage & { toolCalls?: ToolCall[] }).toolCalls,
+              toolCalls: (
+                message as MinimalMessage & { toolCalls?: ToolCall[] }
+              ).toolCalls,
             }}
             onArtifactClick={onArtifactClick}
             onRegenerate={() =>
-              onMessageRegenerate?.((message as ChatMessage | MinimalMessage)._id)
+              onMessageRegenerate?.(
+                (message as ChatMessage | MinimalMessage)._id
+              )
             }
           />
         </motion.div>
@@ -182,8 +190,8 @@ Row.displayName = 'VirtualRow';
 // Custom scrollbar component
 const CustomScrollbar = forwardRef<HTMLDivElement>((props, ref) => (
   <div
-    ref={ref}
     className="scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500"
+    ref={ref}
     {...props}
   />
 ));
@@ -208,7 +216,7 @@ export function VirtualMessageList({
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
   const itemSizeCache = useRef<{ [key: string]: number }>({});
-  
+
   // Get dynamic font size classes
   const fontSizes = useMemo(() => getFontSizeClasses(fontSize), [fontSize]);
 
@@ -237,11 +245,13 @@ export function VirtualMessageList({
       }
 
       // Add message
-      const messageId = 
-        'id' in message ? (message as StreamingMessage).id :
-        '_id' in message ? (message as ChatMessage | MinimalMessage)._id :
-        `msg-${Date.now()}`;
-      
+      const messageId =
+        'id' in message
+          ? (message as StreamingMessage).id
+          : '_id' in message
+            ? (message as ChatMessage | MinimalMessage)._id
+            : `msg-${Date.now()}`;
+
       items.push({
         type: 'message',
         message,
@@ -261,56 +271,64 @@ export function VirtualMessageList({
   }, [messages, isTyping]);
 
   // Calculate item sizes dynamically
-  const getItemSize = useCallback((index: number) => {
-    const item = listItems[index];
-    if (!item) return 100; // Default height
+  const getItemSize = useCallback(
+    (index: number) => {
+      const item = listItems[index];
+      if (!item) return 100; // Default height
 
-    // Return cached size if available
-    const cachedSize = itemSizeCache.current[item.id];
-    if (cachedSize) return cachedSize;
+      // Return cached size if available
+      const cachedSize = itemSizeCache.current[item.id];
+      if (cachedSize) return cachedSize;
 
-    // Estimate sizes based on item type
-    if (item.type === 'date-separator') {
-      return 40; // Date separators are small
-    }
-    
-    if (item.type === 'typing') {
-      return 60; // Typing indicator height
-    }
+      // Estimate sizes based on item type
+      if (item.type === 'date-separator') {
+        return 40; // Date separators are small
+      }
 
-    // For messages, estimate based on content length
-    if (item.type === 'message') {
-      const message = item.message;
-      const content = 
-        'content' in message ? (message as any).content : '';
-      
-      // Base height + estimated height based on content
-      const lines = Math.ceil(content.length / 80); // Rough estimate
-      const estimatedHeight = Math.min(100 + lines * 24, 800); // Cap at 800px
-      
-      return estimatedHeight;
-    }
+      if (item.type === 'typing') {
+        return 60; // Typing indicator height
+      }
 
-    return 100; // Default
-  }, [listItems]);
+      // For messages, estimate based on content length
+      if (item.type === 'message') {
+        const message = item.message;
+        const content = 'content' in message ? (message as any).content : '';
+
+        // Base height + estimated height based on content
+        const lines = Math.ceil(content.length / 80); // Rough estimate
+        const estimatedHeight = Math.min(100 + lines * 24, 800); // Cap at 800px
+
+        return estimatedHeight;
+      }
+
+      return 100; // Default
+    },
+    [listItems]
+  );
 
   // Handle item size changes
-  const handleItemSizeChange = useCallback((index: number, size: number) => {
-    const item = listItems[index];
-    if (item && itemSizeCache.current[item.id] !== size) {
-      itemSizeCache.current[item.id] = size;
-      listRef.current?.resetAfterIndex(index);
-    }
-  }, [listItems]);
+  const handleItemSizeChange = useCallback(
+    (index: number, size: number) => {
+      const item = listItems[index];
+      if (item && itemSizeCache.current[item.id] !== size) {
+        itemSizeCache.current[item.id] = size;
+        listRef.current?.resetAfterIndex(index);
+      }
+    },
+    [listItems]
+  );
 
   // Scroll to bottom
-  const scrollToBottom = useCallback((smooth = true) => {
-    if (!listRef.current || listItems.length === 0) return;
-    
-    const lastIndex = listItems.length - 1;
-    listRef.current.scrollToItem(lastIndex, smooth ? 'end' : 'auto');
-    setIsAutoScrolling(true);
-  }, [listItems]);
+  const scrollToBottom = useCallback(
+    (smooth = true) => {
+      if (!listRef.current || listItems.length === 0) return;
+
+      const lastIndex = listItems.length - 1;
+      listRef.current.scrollToItem(lastIndex, smooth ? 'end' : 'auto');
+      setIsAutoScrolling(true);
+    },
+    [listItems]
+  );
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -320,19 +338,25 @@ export function VirtualMessageList({
   }, [listItems, isAutoScrolling, scrollToBottom]);
 
   // Handle scroll events
-  const handleScroll = useCallback(({ scrollOffset, scrollUpdateWasRequested }: any) => {
-    if (!listRef.current || scrollUpdateWasRequested) return;
-    
-    const list = listRef.current;
-    const totalHeight = listItems.reduce((acc, _, index) => acc + getItemSize(index), 0);
-    const viewportHeight = (list as any)._outerRef?.clientHeight || 0;
-    const maxScroll = totalHeight - viewportHeight;
-    const distanceFromBottom = maxScroll - scrollOffset;
-    const isNearBottom = distanceFromBottom < 100;
+  const handleScroll = useCallback(
+    ({ scrollOffset, scrollUpdateWasRequested }: any) => {
+      if (!listRef.current || scrollUpdateWasRequested) return;
 
-    setShowScrollButton(!isNearBottom && listItems.length > 0);
-    setIsAutoScrolling(isNearBottom);
-  }, [listItems, getItemSize]);
+      const list = listRef.current;
+      const totalHeight = listItems.reduce(
+        (acc, _, index) => acc + getItemSize(index),
+        0
+      );
+      const viewportHeight = (list as any)._outerRef?.clientHeight || 0;
+      const maxScroll = totalHeight - viewportHeight;
+      const distanceFromBottom = maxScroll - scrollOffset;
+      const isNearBottom = distanceFromBottom < 100;
+
+      setShowScrollButton(!isNearBottom && listItems.length > 0);
+      setIsAutoScrolling(isNearBottom);
+    },
+    [listItems, getItemSize]
+  );
 
   if (loading) {
     return (
@@ -365,20 +389,20 @@ export function VirtualMessageList({
       className={cn('relative flex h-full flex-col overflow-hidden', className)}
     >
       <List
-        ref={listRef}
+        className="scrollbar-thin"
         height={window.innerHeight - 200} // Adjust based on your layout
-        width="100%"
         itemCount={listItems.length}
-        itemSize={getItemSize}
         itemData={{
           items: listItems,
           fontSizes,
           onMessageRegenerate,
           onArtifactClick,
         }}
+        itemSize={getItemSize}
         onScroll={handleScroll}
         outerElementType={CustomScrollbar}
-        className="scrollbar-thin"
+        ref={listRef}
+        width="100%"
       >
         {Row}
       </List>

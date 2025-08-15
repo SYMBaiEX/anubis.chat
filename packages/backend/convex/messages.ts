@@ -1,19 +1,19 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { api } from './_generated/api';
-import type { Id, Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import {
-  mutation,
-  query,
   type DatabaseReader,
   type DatabaseWriter,
+  mutation,
+  query,
 } from './_generated/server';
-import type { 
-  MessageReaction, 
-  MessageMetadata,
+import type {
   CreateMessageParams,
+  MessageMetadata,
+  MessageReaction,
+  MessageStats,
   MessageWithReactions,
-  MessageStats
 } from './types/chat';
 
 // Helper context types for database operations

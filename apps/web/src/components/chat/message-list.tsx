@@ -90,6 +90,20 @@ export function MessageList({
     setIsAutoScrolling(true);
   }, []);
 
+  // Initial scroll to bottom when messages first load
+  useEffect(() => {
+    if (!messages || messages.length === 0) {
+      return;
+    }
+
+    // If this is the first time we have messages (initial load)
+    if (lastMessageCount === 0 && messages.length > 0) {
+      setLastMessageCount(messages.length);
+      // Scroll to bottom without animation on initial load
+      setTimeout(() => scrollToBottom(false), 100);
+    }
+  }, [messages, lastMessageCount, scrollToBottom]);
+
   // Enhanced auto-scroll with streaming support
   useEffect(() => {
     if (!messages) {
@@ -267,9 +281,10 @@ export function MessageList({
         onScrollCapture={handleScroll}
         ref={scrollRef}
       >
-        <div 
+        <div
+          className="mx-auto w-full max-w-full space-y-2 overflow-x-hidden p-2 sm:max-w-6xl sm:space-y-4 sm:p-3 md:max-w-7xl md:p-4 lg:p-6 xl:px-8"
           data-chat-messages
-          className="mx-auto w-full max-w-full space-y-2 overflow-x-hidden p-2 sm:max-w-6xl sm:space-y-4 sm:p-3 md:max-w-7xl md:p-4 lg:p-6 xl:px-8">
+        >
           {messageGroups.map((group, _groupIndex) => (
             <div key={group.date}>
               {/* Date Separator */}
@@ -339,7 +354,11 @@ export function MessageList({
                               ),
                               rating: (message as MinimalMessage).rating,
                               actions: (message as MinimalMessage).actions,
-                              toolCalls: (message as MinimalMessage & { toolCalls?: ToolCall[] }).toolCalls,
+                              toolCalls: (
+                                message as MinimalMessage & {
+                                  toolCalls?: ToolCall[];
+                                }
+                              ).toolCalls,
                             }}
                             onArtifactClick={onArtifactClick}
                             onRegenerate={() =>

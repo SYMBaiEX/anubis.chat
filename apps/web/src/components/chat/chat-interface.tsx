@@ -4,8 +4,8 @@ import type { Doc, Id } from '@convex/_generated/dataModel';
 import { MessageSquare, Plus, Sidebar } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTheme } from 'next-themes';
-import { useEffect, useState, useMemo } from 'react';
+import { useTheme as useNextTheme } from 'next-themes';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { UpgradePrompt } from '@/components/auth/upgradePrompt';
 import { EmptyState } from '@/components/data/empty-states';
@@ -29,14 +29,23 @@ import {
 import { ModelGrid } from '@/components/ui/model-grid';
 
 import { useConvexChat } from '@/hooks/use-convex-chat';
-import { 
-  useUserPreferences,
-  useUpdateUserPreferences,
+import {
+  useUpdateChat,
+  useDeleteChat,
+  useCreateChat,
   useChats,
   useChat,
-  useChatManagement,
-  useAgents
-} from '@/hooks/use-convex-chat-typed';
+} from '@/hooks/convex/useChats';
+import {
+  useAgents,
+  useUserPreferences,
+  useUpdateUserPreferences,
+  useGenerateTitle,
+  useTheme,
+  useSettings,
+  useAgentManagement,
+} from '@/hooks/convex/useConvexHooks';
+import { api } from '@convex/_generated/api';
 import { useTypingIndicator } from '@/hooks/use-typing-indicator';
 import { AI_MODELS, DEFAULT_MODEL } from '@/lib/constants/ai-models';
 import type { Chat, StreamingMessage, ToolCall } from '@/lib/types/api';
@@ -48,8 +57,8 @@ import { ChatHeader } from './chatHeader';
 import { ChatSettingsDialog } from './chatSettingsDialog';
 import { ChatWelcome } from './chatWelcome';
 import { EnhancedMessageInput } from './enhanced-message-input';
-import { ModelSelector } from './model-selector';
 import { MessageListSuspense } from './messageListSuspense';
+import { ModelSelector } from './model-selector';
 import { StreamingSuspenseWrapper } from './streamingSuspenseWrapper';
 
 const log = createModuleLogger('components/chat/chat-interface');
@@ -97,41 +106,47 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const limits = useSubscriptionLimits();
   const upgradePrompt = useUpgradePrompt();
   const canSendMessage = useCanSendMessage();
-  const { agents: solanaAgents, selectedAgent, selectAgent, isInitialized } =
-    useSolanaAgent();
-  
+  const {
+    agents: solanaAgents,
+    selectedAgent,
+    selectAgent,
+    isInitialized,
+  } = useSolanaAgent();
+
   // Fetch public agents from Convex backend to complement Solana agents
-  const publicAgents = useAgents(isAuthenticated);
-  
+  const publicAgents = useAgents();
+
   // Merge Solana agents with public agents for comprehensive agent management
   const allAgents = useMemo(() => {
     const combined = [...(solanaAgents || [])];
-    
+
     // Add public agents that aren't already in the Solana agent list
     if (publicAgents) {
       for (const publicAgent of publicAgents) {
-        const exists = combined.some(agent => 
-          agent._id === publicAgent._id || 
-          agent.name === publicAgent.name
+        const exists = combined.some(
+          (agent) =>
+            agent._id === publicAgent._id || agent.name === publicAgent.name
         );
         if (!exists) {
           combined.push(publicAgent);
         }
       }
     }
-    
+
     return combined;
   }, [solanaAgents, publicAgents]);
 
   // Debug logging for authentication and limits
   useEffect(() => {
     if (isAuthenticated && token) {
-      log.info('Chat interface authenticated', { 
+      log.info('Chat interface authenticated', {
         userWalletAddress,
         hasToken: !!token,
-        limits: limits ? {
-          messagesRemaining: limits.messagesRemaining
-        } : 'loading'
+        limits: limits
+          ? {
+              messagesRemaining: limits.messagesRemaining,
+            }
+          : 'loading',
       });
     }
   }, [isAuthenticated, token, userWalletAddress, limits]);
@@ -145,10 +160,17 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         totalAgentsCount: allAgents?.length || 0,
         selectedAgentId: selectedAgent?._id,
         selectedAgentName: selectedAgent?.name,
-        isInitialized
+        isInitialized,
       });
     }
-  }, [isAuthenticated, solanaAgents, publicAgents, allAgents, selectedAgent, isInitialized]);
+  }, [
+    isAuthenticated,
+    solanaAgents,
+    publicAgents,
+    allAgents,
+    selectedAgent,
+    isInitialized,
+  ]);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -185,10 +207,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const [showArtifact, setShowArtifact] = useState(false);
 
   // Theme hook from next-themes
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useNextTheme();
 
-  // User preferences from Convex (using typed hooks)
-  const userPreferences = useUserPreferences(isAuthenticated);
+  // User preferences from Convex - modern 2025 pattern
+  const userPreferences = useUserPreferences();
   const updateUserPreferences = useUpdateUserPreferences();
 
   // Theme sync is now handled globally in ThemeSync component
@@ -272,21 +294,29 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   // Debug logging
   useEffect(() => {}, []);
 
-  // Convex queries and mutations - using typed hooks
-  const chats = useChats(isAuthenticated);
-  const currentChatQuery = useChat(
-    selectedChatId && isAuthenticated ? selectedChatId as Id<'chats'> : undefined,
-    isAuthenticated
+  // Convex queries and mutations - modern 2025 pattern
+  const chats = useChats(
+    user?._id || '', 
+    { isActive: true }
   );
-  const { createChat, updateChat, deleteChat, generateTitle } = useChatManagement();
+  const currentChatQuery = useChat(
+    selectedChatId && isAuthenticated
+      ? (selectedChatId as Id<'chats'>)
+      : undefined
+  );
+  const createChat = useCreateChat();
+  const updateChat = useUpdateChat();
+  const deleteChat = useDeleteChat();
+  const generateTitle = useGenerateTitle();
 
   // Use our new Convex chat hook for real-time streaming
-  const { messages, sendMessage, isStreaming } =
-    useConvexChat(selectedChatId);
+  const { messages, sendMessage, isStreaming } = useConvexChat(selectedChatId);
 
   // Use typing indicators
-  const { startTyping, isAnyoneTyping } =
-    useTypingIndicator(selectedChatId, userWalletAddress);
+  const { startTyping, isAnyoneTyping } = useTypingIndicator(
+    selectedChatId,
+    userWalletAddress
+  );
 
   // Use the dedicated query for the current chat instead of filtering from the list
   const currentChat = currentChatQuery as
@@ -359,12 +389,26 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         }
       }
     }
-  }, [currentChat?.model, currentChat?.agentId, currentChat?.systemPrompt, currentChat?.agentPrompt, currentChat?.temperature, allAgents, selectAgent, selectedAgent?._id]);
+  }, [
+    currentChat?.model,
+    currentChat?.agentId,
+    currentChat?.systemPrompt,
+    currentChat?.agentPrompt,
+    currentChat?.temperature,
+    allAgents,
+    selectAgent,
+    selectedAgent?._id,
+  ]);
 
   // Update agent prompt when agent changes (keep system prompt separate)
   // Only update if the agent actually changed to prevent feedback loops
   useEffect(() => {
-    if (selectedAgent?.systemPrompt && selectedChatId && isAuthenticated) {
+    if (
+      selectedAgent?.systemPrompt &&
+      selectedChatId &&
+      isAuthenticated &&
+      currentChatQuery
+    ) {
       // Check if this agent is different from what's already set in the chat
       if (currentChat?.agentId !== selectedAgent._id) {
         setChatSettings((prev) => ({
@@ -373,15 +417,18 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         }));
 
         // Update the current chat's agent prompt and reference
-        updateChat({
-          id: selectedChatId as Id<'chats'>,
-          agentPrompt: selectedAgent.systemPrompt,
-          agentId: selectedAgent._id,
-        }).catch((error: unknown) => {
-          log.error('Failed to update chat agent', {
-            error: error instanceof Error ? error.message : String(error),
+        if (user?._id) {
+          updateChat({
+            id: selectedChatId as Id<'chats'>,
+            ownerId: user._id,
+            agentPrompt: selectedAgent.systemPrompt,
+            agentId: selectedAgent._id,
+          }).catch((error: unknown) => {
+            log.error('Failed to update chat agent', {
+              error: error instanceof Error ? error.message : String(error),
+            });
           });
-        });
+        }
       } else {
         // Just update the settings without triggering a database update
         setChatSettings((prev) => ({
@@ -390,7 +437,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         }));
       }
     }
-  }, [selectedAgent?._id, selectedAgent?.systemPrompt, selectedChatId, isAuthenticated, updateChat, currentChat?.agentId]);
+  }, [
+    selectedAgent?._id,
+    selectedAgent?.systemPrompt,
+    selectedChatId,
+    isAuthenticated,
+    updateChat,
+    currentChat?.agentId,
+  ]);
 
   // Quick suggestions removed per product request
 
@@ -448,7 +502,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   };
 
-
   // Define handleCreateChat before using it
   const handleCreateChat = async () => {
     if (!isAuthenticated) {
@@ -457,8 +510,13 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
     setIsCreatingChat(true);
     try {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const newChat = await createChat({
         title: `New Chat ${new Date().toLocaleTimeString()}`,
+        ownerId: user._id,
         model: selectedModel || DEFAULT_MODEL.id,
         systemPrompt: '', // User's custom system prompt starts empty
         agentPrompt: selectedAgent?.systemPrompt || '', // Copy agent's prompt
@@ -520,9 +578,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   };
 
   const handleDeleteChat = async (chatId: string) => {
+    if (!user?._id) return;
+    
     try {
       await deleteChat({
         id: chatId as Id<'chats'>,
+        ownerId: user._id,
       });
       if (selectedChatId === chatId) {
         const remainingChats = chats?.filter(
@@ -576,15 +637,16 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     setChatSettings((prev) => ({ ...prev, model: newModel }));
 
     // Update the chat's model in the database
-    if (selectedChatId && isAuthenticated) {
+    if (selectedChatId && isAuthenticated && currentChatQuery && user?._id) {
       try {
-        await updateChat({
+        const result = await updateChat({
           id: selectedChatId as Id<'chats'>,
+          ownerId: user._id,
           model: newModel,
         });
       } catch (error: unknown) {
-        log.error('Failed to update chat model', { 
-          error: error instanceof Error ? error.message : String(error) 
+        log.error('Failed to update chat model', {
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
@@ -632,7 +694,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
 
     // Update chat-specific settings in database if needed
-    if (selectedChatId && isAuthenticated) {
+    if (selectedChatId && isAuthenticated && currentChatQuery) {
       const updates: {
         model?: string;
         systemPrompt?: string;
@@ -654,9 +716,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       }
 
       // Only update if there are actual changes
-      if (Object.keys(updates).length > 0) {
+      if (Object.keys(updates).length > 0 && user?._id) {
         updateChat({
           id: selectedChatId as Id<'chats'>,
+          ownerId: user._id,
           ...updates,
         }).catch((error: unknown) => {
           log.error('Failed to update chat settings', {
@@ -739,13 +802,17 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   onGenerateTitle={handleGenerateTitle}
                   onModelSelectorClick={() => setShowMobileModelSelector(true)}
                   onRename={(newTitle) => {
-                    if (selectedChatId && isAuthenticated) {
+                    if (selectedChatId && isAuthenticated && currentChatQuery && user?._id) {
                       updateChat({
                         id: selectedChatId as Id<'chats'>,
+                        ownerId: user._id,
                         title: newTitle,
                       }).catch((error: unknown) => {
                         log.error('Failed to rename chat', {
-                          error: error instanceof Error ? error.message : String(error),
+                          error:
+                            error instanceof Error
+                              ? error.message
+                              : String(error),
                         });
                       });
                     }
@@ -816,7 +883,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 <StreamingSuspenseWrapper
                   isStreaming={isStreaming}
                   onError={(error) => {
-                    log.error('Message list streaming error', { error: error.message });
+                    log.error('Message list streaming error', {
+                      error: error.message,
+                    });
                   }}
                   onRetry={() => {
                     // Refresh the message list
@@ -851,7 +920,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                           tools?: ToolCall[];
                         };
                       };
-                      const normalized: MinimalMessage & { toolCalls?: ToolCall[] } = {
+                      const normalized: MinimalMessage & {
+                        toolCalls?: ToolCall[];
+                      } = {
                         _id: String(doc._id),
                         content: doc.content,
                         role: doc.role,
@@ -925,13 +996,13 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     }}
                     onTyping={startTyping}
                     placeholder={
-                      !isInitialized
-                        ? 'Initializing agent system...'
-                        : canSendMessage
+                      isInitialized
+                        ? canSendMessage
                           ? isStreaming
                             ? 'Anubis is responding...'
                             : `Ask Anubis anything...${limits?.messagesRemaining ? ` (${limits.messagesRemaining} messages remaining)` : ''}`
                           : 'Message limit reached - Upgrade to continue'
+                        : 'Initializing agent system...'
                     }
                   />
                 </div>
@@ -1008,16 +1079,20 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   setShowMobileAgentSelector(false);
 
                   // Update the current chat's agent prompt and reference
-                  if (selectedChatId && isAuthenticated) {
+                  if (selectedChatId && isAuthenticated && currentChatQuery && user?._id) {
                     try {
                       await updateChat({
                         id: selectedChatId as Id<'chats'>,
+                        ownerId: user._id,
                         agentPrompt: agent.systemPrompt,
                         agentId: agent._id,
                       });
                     } catch (error: unknown) {
                       log.error('Failed to update chat agent', {
-                        error: error instanceof Error ? error.message : String(error),
+                        error:
+                          error instanceof Error
+                            ? error.message
+                            : String(error),
                       });
                     }
                   }
@@ -1078,16 +1153,20 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   setShowDesktopAgentSelector(false);
 
                   // Update the current chat's agent prompt and reference
-                  if (selectedChatId && isAuthenticated) {
+                  if (selectedChatId && isAuthenticated && currentChatQuery && user?._id) {
                     try {
                       await updateChat({
                         id: selectedChatId as Id<'chats'>,
+                        ownerId: user._id,
                         agentPrompt: agent.systemPrompt,
                         agentId: agent._id,
                       });
                     } catch (error: unknown) {
                       log.error('Failed to update chat agent', {
-                        error: error instanceof Error ? error.message : String(error),
+                        error:
+                          error instanceof Error
+                            ? error.message
+                            : String(error),
                       });
                     }
                   }

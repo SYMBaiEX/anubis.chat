@@ -4,6 +4,7 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { useCallback, useEffect, useState } from 'react';
+import { useOptimisticMessages } from '@/hooks/useOptimisticConvex';
 import type { StreamingMessage as UIStreamingMessage } from '@/lib/types/api';
 import { MessageRole } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -26,11 +27,9 @@ export function useConvexChat(chatId: string | undefined) {
   );
   const [lastRequestAt, setLastRequestAt] = useState<number | null>(null);
 
-  // Convex queries and mutations - using authenticated queries
-  const messages = useQuery(
-    api.messagesAuth.getMyMessages,
-    chatId ? { chatId: chatId as Id<'chats'> } : 'skip'
-  );
+  // Use optimistic messages hook for instant UI updates
+  const { messages: optimisticMessages, sendMessage: sendOptimisticMessage } =
+    useOptimisticMessages(chatId as Id<'chats'>);
 
   const createMessage = useMutation(api.messagesAuth.createMyMessage);
   const createSession = useMutation(api.streaming.createStreamingSession);
@@ -101,22 +100,17 @@ export function useConvexChat(chatId: string | undefined) {
       setLastRequestAt(Date.now());
 
       try {
-        // Create user message first
-        const userMessageId = await createMessage({
-          chatId: chatId as Id<'chats'>,
-          content,
-          role: 'user',
-          attachments,
-        });
+        // Use optimistic update for instant UI feedback
+        const userMessage = await sendOptimisticMessage(content);
 
-        if (!userMessageId) {
+        if (!userMessage) {
           throw new Error('Failed to create user message');
         }
 
         // Create streaming session for WebSocket
         const newSessionId = await createSession({
           chatId: chatId as Id<'chats'>,
-          messageId: userMessageId,
+          messageId: userMessage._id,
         });
 
         if (!newSessionId) {
@@ -153,17 +147,17 @@ export function useConvexChat(chatId: string | undefined) {
     [chatId, createMessage, createSession, streamWithWebSocket]
   );
 
-  // Combine regular messages with streaming message
+  // Combine optimistic messages with streaming message
   const allMessages = [
-    ...(messages || []),
+    ...(optimisticMessages || []),
     ...(streamingMessage ? [streamingMessage] : []),
   ];
 
   // When a new assistant message arrives from Convex after a request, clear the placeholder
   // so the persisted message replaces the streaming UI seamlessly.
   // This ensures the 3-dot/streaming UI disappears only when the agent message appears.
-  if (streamingMessage && lastRequestAt && Array.isArray(messages)) {
-    const hasNewAssistant = (messages as any[]).some((m) => {
+  if (streamingMessage && lastRequestAt && Array.isArray(optimisticMessages)) {
+    const hasNewAssistant = (optimisticMessages as any[]).some((m) => {
       try {
         const role = (m as any).role;
         const createdAt = (m as any).createdAt ?? (m as any)._creationTime ?? 0;

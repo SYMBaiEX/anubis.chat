@@ -3,9 +3,9 @@
 import { Suspense } from 'react';
 import { ChatInterface } from '@/components/chat/chat-interface';
 import { ChatSkeleton } from '@/components/chat/chat-skeleton';
-import { useAuthContext } from '@/components/providers/auth-provider';
-import { ChatErrorBoundary } from '@/components/error-boundary/chat-error-boundary';
 import { AsyncErrorBoundary } from '@/components/error-boundary/async-error-boundary';
+import { ChatErrorBoundary } from '@/components/error-boundary/chat-error-boundary';
+import { useAuthContext } from '@/components/providers/auth-provider';
 
 export default function ChatPage() {
   const { isLoading } = useAuthContext();

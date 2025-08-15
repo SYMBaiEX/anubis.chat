@@ -345,7 +345,8 @@ export function FileUploadPreview({
             if (
               !uploadLimits.canUpload &&
               subscription &&
-              subscription.tier !== 'pro' && subscription.tier !== 'pro_plus' &&
+              subscription.tier !== 'pro' &&
+              subscription.tier !== 'pro_plus' &&
               subscription.tier !== 'admin'
             ) {
               setShowUpgrade(true);

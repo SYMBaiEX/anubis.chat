@@ -1,6 +1,6 @@
 /**
  * Enhanced Reasoning System for ANUBIS Chat
- * 
+ *
  * This module provides advanced reasoning capabilities without the overhead
  * of MCP servers, optimized for serverless deployment on Vercel/Convex.
  */
@@ -98,10 +98,11 @@ Think through each step carefully before responding.`;
    */
   private getAdaptiveReasoningPrompt(query: string, context?: string): string {
     const complexity = this.assessComplexity(query);
-    
+
     if (complexity < 0.3) {
       return this.getFastReasoningPrompt(query, context);
-    } else if (complexity > 0.7) {
+    }
+    if (complexity > 0.7) {
       return this.getDeepReasoningPrompt(query, context);
     }
 
@@ -132,12 +133,24 @@ Provide a balanced response with clear reasoning.`;
 
   private countComplexKeywords(query: string): number {
     const complexKeywords = [
-      'analyze', 'compare', 'evaluate', 'explain why', 'how does',
-      'what if', 'relationship', 'impact', 'implications', 'trade-offs',
-      'optimize', 'strategy', 'architecture', 'design', 'implement'
+      'analyze',
+      'compare',
+      'evaluate',
+      'explain why',
+      'how does',
+      'what if',
+      'relationship',
+      'impact',
+      'implications',
+      'trade-offs',
+      'optimize',
+      'strategy',
+      'architecture',
+      'design',
+      'implement',
     ];
 
-    const count = complexKeywords.filter(keyword => 
+    const count = complexKeywords.filter((keyword) =>
       query.toLowerCase().includes(keyword)
     ).length;
 
@@ -146,22 +159,33 @@ Provide a balanced response with clear reasoning.`;
 
   private analyzeStructure(query: string): number {
     const hasMultipleParts = query.includes('and') || query.includes('or');
-    const hasComparison = query.includes('vs') || query.includes('versus') || query.includes('compare');
+    const hasComparison =
+      query.includes('vs') ||
+      query.includes('versus') ||
+      query.includes('compare');
     const hasConditions = query.includes('if') || query.includes('when');
-    
-    const score = [hasMultipleParts, hasComparison, hasConditions]
-      .filter(Boolean).length / 3;
-    
+
+    const score =
+      [hasMultipleParts, hasComparison, hasConditions].filter(Boolean).length /
+      3;
+
     return score;
   }
 
   private assessDomain(query: string): number {
     const technicalDomains = [
-      'algorithm', 'architecture', 'database', 'security', 'performance',
-      'scalability', 'blockchain', 'cryptography', 'machine learning'
+      'algorithm',
+      'architecture',
+      'database',
+      'security',
+      'performance',
+      'scalability',
+      'blockchain',
+      'cryptography',
+      'machine learning',
     ];
 
-    const matches = technicalDomains.filter(domain => 
+    const matches = technicalDomains.filter((domain) =>
       query.toLowerCase().includes(domain)
     ).length;
 
@@ -173,10 +197,10 @@ Provide a balanced response with clear reasoning.`;
    */
   parseReasoningSteps(response: string): ReasoningChain {
     const steps: ReasoningStep[] = [];
-    
+
     // Simple parsing - in production, use more sophisticated parsing
-    const lines = response.split('\n').filter(line => line.trim());
-    
+    const lines = response.split('\n').filter((line) => line.trim());
+
     for (const line of lines) {
       if (line.match(/^\d+\.|^-|^•/)) {
         steps.push({
@@ -190,7 +214,8 @@ Provide a balanced response with clear reasoning.`;
     return {
       steps,
       conclusion: steps[steps.length - 1]?.thought,
-      totalConfidence: steps.reduce((sum, s) => sum + s.confidence, 0) / steps.length,
+      totalConfidence:
+        steps.reduce((sum, s) => sum + s.confidence, 0) / steps.length,
     };
   }
 }
@@ -209,28 +234,28 @@ interface ReasoningCache {
 class ReasoningCacheManager {
   private cache = new Map<string, ReasoningCache>();
   private maxCacheSize = 100;
-  private cacheDuration = 3600000; // 1 hour
+  private cacheDuration = 3_600_000; // 1 hour
 
   getCached(query: string): ReasoningCache | null {
     const cached = this.cache.get(this.hashQuery(query));
-    
+
     if (cached && Date.now() - cached.timestamp < this.cacheDuration) {
       logger.debug('Reasoning cache hit', { query });
       return cached;
     }
-    
+
     return null;
   }
 
   setCached(query: string, response: string, reasoning: ReasoningChain): void {
     const key = this.hashQuery(query);
-    
+
     // Implement LRU cache
     if (this.cache.size >= this.maxCacheSize) {
       const firstKey = this.cache.keys().next().value;
       if (firstKey) this.cache.delete(firstKey);
     }
-    
+
     this.cache.set(key, {
       query,
       response,

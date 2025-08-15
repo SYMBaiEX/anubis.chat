@@ -58,7 +58,13 @@ export const anubisAgent: AgentConfig = {
   description:
     'Ancient Egyptian god of the afterlife - wise guide with millennia of knowledge',
   systemPrompt: ANUBIS_OPTIMIZED_PROMPT,
-  capabilities: ['webSearch', 'calculator', 'createDocument', 'generateCode', 'summarizeText'],
+  capabilities: [
+    'webSearch',
+    'calculator',
+    'createDocument',
+    'generateCode',
+    'summarizeText',
+  ],
   temperature: 0.7,
   maxTokens: 2000, // Reduced from 4000 for efficiency
   tokenOptimized: true,
@@ -68,7 +74,7 @@ export const anubisAgent: AgentConfig = {
       enabled: true,
       config: {
         maxResults: 5,
-        timeout: 10000,
+        timeout: 10_000,
       },
     },
   ],

@@ -11,7 +11,9 @@
     "test:watch": "npx vitest --watch",
     "test:ui": "npx vitest --ui",
     "test:coverage": "npx vitest --coverage",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.3",

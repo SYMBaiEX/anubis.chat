@@ -5,17 +5,25 @@
 
 'use client';
 
-import { useState, useCallback, useTransition } from 'react';
-import { Heart, Copy, RotateCcw, Share, Check, Loader2 } from 'lucide-react';
+import { Check, Copy, Heart, Loader2, RotateCcw, Share } from 'lucide-react';
+import { useCallback, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 interface OptimisticMessageActionsProps {
   messageId: string;
   content: string;
-  onReaction?: (messageId: string, reaction: 'like' | 'dislike') => Promise<void>;
+  onReaction?: (
+    messageId: string,
+    reaction: 'like' | 'dislike'
+  ) => Promise<void>;
   onCopy?: (messageId: string) => Promise<void>;
   onRegenerate?: (messageId: string) => Promise<void>;
   onShare?: (messageId: string) => Promise<void>;
@@ -44,48 +52,63 @@ export function OptimisticMessageActions({
   className,
   isAssistant = false,
   initialReaction = null,
-  disabled = false
+  disabled = false,
 }: OptimisticMessageActionsProps) {
   const [isPending, startTransition] = useTransition();
-  const [reaction, setReaction] = useState<'like' | 'dislike' | null>(initialReaction);
-  const [actionStates, setActionStates] = useState<Record<string, ActionState>>({});
+  const [reaction, setReaction] = useState<'like' | 'dislike' | null>(
+    initialReaction
+  );
+  const [actionStates, setActionStates] = useState<Record<string, ActionState>>(
+    {}
+  );
 
-  const updateActionState = useCallback((action: string, state: Partial<ActionState>) => {
-    setActionStates(prev => ({
-      ...prev,
-      [action]: { ...prev[action], ...state }
-    }));
-  }, []);
+  const updateActionState = useCallback(
+    (action: string, state: Partial<ActionState>) => {
+      setActionStates((prev) => ({
+        ...prev,
+        [action]: { ...prev[action], ...state },
+      }));
+    },
+    []
+  );
 
-  const handleReaction = useCallback(async (newReaction: 'like' | 'dislike') => {
-    if (disabled || !onReaction) return;
+  const handleReaction = useCallback(
+    async (newReaction: 'like' | 'dislike') => {
+      if (disabled || !onReaction) return;
 
-    // Optimistic update
-    const previousReaction = reaction;
-    const finalReaction = reaction === newReaction ? null : newReaction;
-    setReaction(finalReaction);
+      // Optimistic update
+      const previousReaction = reaction;
+      const finalReaction = reaction === newReaction ? null : newReaction;
+      setReaction(finalReaction);
 
-    updateActionState('reaction', { isLoading: true, error: undefined });
+      updateActionState('reaction', { isLoading: true, error: undefined });
 
-    startTransition(async () => {
-      try {
-        await onReaction(messageId, newReaction);
-        updateActionState('reaction', { isLoading: false, isSuccess: true });
-        
-        // Show success feedback
-        toast.success(finalReaction ? `Reaction ${finalReaction}d` : 'Reaction removed');
-      } catch (error) {
-        // Revert optimistic update on error
-        setReaction(previousReaction);
-        updateActionState('reaction', { 
-          isLoading: false, 
-          isSuccess: false, 
-          error: error instanceof Error ? error.message : 'Failed to update reaction' 
-        });
-        toast.error('Failed to update reaction');
-      }
-    });
-  }, [reaction, disabled, onReaction, messageId, updateActionState]);
+      startTransition(async () => {
+        try {
+          await onReaction(messageId, newReaction);
+          updateActionState('reaction', { isLoading: false, isSuccess: true });
+
+          // Show success feedback
+          toast.success(
+            finalReaction ? `Reaction ${finalReaction}d` : 'Reaction removed'
+          );
+        } catch (error) {
+          // Revert optimistic update on error
+          setReaction(previousReaction);
+          updateActionState('reaction', {
+            isLoading: false,
+            isSuccess: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : 'Failed to update reaction',
+          });
+          toast.error('Failed to update reaction');
+        }
+      });
+    },
+    [reaction, disabled, onReaction, messageId, updateActionState]
+  );
 
   const handleCopy = useCallback(async () => {
     if (disabled || !onCopy) return;
@@ -97,19 +120,20 @@ export function OptimisticMessageActions({
         // Optimistic clipboard update
         await navigator.clipboard.writeText(content);
         await onCopy(messageId);
-        
+
         updateActionState('copy', { isLoading: false, isSuccess: true });
         toast.success('Message copied to clipboard');
-        
+
         // Reset success state after a delay
         setTimeout(() => {
           updateActionState('copy', { isSuccess: false });
         }, 2000);
       } catch (error) {
-        updateActionState('copy', { 
-          isLoading: false, 
-          isSuccess: false, 
-          error: error instanceof Error ? error.message : 'Failed to copy message' 
+        updateActionState('copy', {
+          isLoading: false,
+          isSuccess: false,
+          error:
+            error instanceof Error ? error.message : 'Failed to copy message',
         });
         toast.error('Failed to copy message');
       }
@@ -127,10 +151,13 @@ export function OptimisticMessageActions({
         updateActionState('regenerate', { isLoading: false, isSuccess: true });
         toast.success('Regenerating response...');
       } catch (error) {
-        updateActionState('regenerate', { 
-          isLoading: false, 
-          isSuccess: false, 
-          error: error instanceof Error ? error.message : 'Failed to regenerate message' 
+        updateActionState('regenerate', {
+          isLoading: false,
+          isSuccess: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Failed to regenerate message',
         });
         toast.error('Failed to regenerate message');
       }
@@ -147,16 +174,17 @@ export function OptimisticMessageActions({
         await onShare(messageId);
         updateActionState('share', { isLoading: false, isSuccess: true });
         toast.success('Message shared');
-        
+
         // Reset success state after a delay
         setTimeout(() => {
           updateActionState('share', { isSuccess: false });
         }, 2000);
       } catch (error) {
-        updateActionState('share', { 
-          isLoading: false, 
-          isSuccess: false, 
-          error: error instanceof Error ? error.message : 'Failed to share message' 
+        updateActionState('share', {
+          isLoading: false,
+          isSuccess: false,
+          error:
+            error instanceof Error ? error.message : 'Failed to share message',
         });
         toast.error('Failed to share message');
       }
@@ -170,33 +198,40 @@ export function OptimisticMessageActions({
 
   return (
     <TooltipProvider>
-      <div className={cn(
-        'flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100',
-        (isPending || Object.values(actionStates).some(state => state.isLoading)) && 'opacity-100',
-        className
-      )}>
+      <div
+        className={cn(
+          'flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100',
+          (isPending ||
+            Object.values(actionStates).some((state) => state.isLoading)) &&
+            'opacity-100',
+          className
+        )}
+      >
         {/* Reaction buttons */}
         {onReaction && (
           <div className="flex items-center gap-0.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleReaction('like')}
-                  disabled={disabled || reactionState.isLoading}
                   className={cn(
                     'h-6 w-6 p-0',
-                    reaction === 'like' && 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400'
+                    reaction === 'like' &&
+                      'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400'
                   )}
+                  disabled={disabled || reactionState.isLoading}
+                  onClick={() => handleReaction('like')}
+                  size="sm"
+                  variant="ghost"
                 >
                   {reactionState.isLoading ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
-                    <Heart className={cn(
-                      'h-3 w-3',
-                      reaction === 'like' && 'fill-current'
-                    )} />
+                    <Heart
+                      className={cn(
+                        'h-3 w-3',
+                        reaction === 'like' && 'fill-current'
+                      )}
+                    />
                   )}
                 </Button>
               </TooltipTrigger>
@@ -212,11 +247,11 @@ export function OptimisticMessageActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCopy}
-                disabled={disabled || copyState.isLoading}
                 className="h-6 w-6 p-0"
+                disabled={disabled || copyState.isLoading}
+                onClick={handleCopy}
+                size="sm"
+                variant="ghost"
               >
                 {copyState.isLoading ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -238,11 +273,11 @@ export function OptimisticMessageActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRegenerate}
-                disabled={disabled || regenerateState.isLoading}
                 className="h-6 w-6 p-0"
+                disabled={disabled || regenerateState.isLoading}
+                onClick={handleRegenerate}
+                size="sm"
+                variant="ghost"
               >
                 {regenerateState.isLoading ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -262,11 +297,11 @@ export function OptimisticMessageActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleShare}
-                disabled={disabled || shareState.isLoading}
                 className="h-6 w-6 p-0"
+                disabled={disabled || shareState.isLoading}
+                onClick={handleShare}
+                size="sm"
+                variant="ghost"
               >
                 {shareState.isLoading ? (
                   <Loader2 className="h-3 w-3 animate-spin" />

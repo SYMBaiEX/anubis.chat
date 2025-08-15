@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useMemo, type ReactNode, type HTMLProps } from 'react';
+import { type HTMLProps, memo, type ReactNode, useMemo } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -133,15 +133,9 @@ export const OptimizedMarkdownRenderer = memo(
             </table>
           </div>
         ),
-        thead: ({ children }) => (
-          <thead className="bg-muted">
-            {children}
-          </thead>
-        ),
+        thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
         tbody: ({ children }) => (
-          <tbody className="divide-y divide-border">
-            {children}
-          </tbody>
+          <tbody className="divide-y divide-border">{children}</tbody>
         ),
         tr: ({ children }) => <tr>{children}</tr>,
         th: ({ children }) => (
@@ -149,26 +143,16 @@ export const OptimizedMarkdownRenderer = memo(
             {children}
           </th>
         ),
-        td: ({ children }) => (
-          <td className="px-3 py-2 text-sm">
-            {children}
-          </td>
-        ),
+        td: ({ children }) => <td className="px-3 py-2 text-sm">{children}</td>,
 
         // Horizontal rule
         hr: () => <hr className="my-4 border-border" />,
 
         // Strong and emphasis
         strong: ({ children }) => (
-          <strong className="font-semibold">
-            {children}
-          </strong>
+          <strong className="font-semibold">{children}</strong>
         ),
-        em: ({ children }) => (
-          <em className="italic">
-            {children}
-          </em>
-        ),
+        em: ({ children }) => <em className="italic">{children}</em>,
       }),
       [isStreaming]
     );

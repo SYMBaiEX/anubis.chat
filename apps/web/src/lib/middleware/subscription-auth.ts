@@ -77,9 +77,7 @@ type SubscriptionLike = {
   isAdmin?: boolean;
 };
 
-function toSubscription(
-  raw: unknown
-): SubscriptionSession['subscription'] {
+function toSubscription(raw: unknown): SubscriptionSession['subscription'] {
   // Be permissive in parsing to avoid runtime failures when backend evolves
   const obj = (raw ?? {}) as Partial<Record<string, unknown>>;
 

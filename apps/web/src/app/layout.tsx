@@ -3,11 +3,19 @@ import { IBM_Plex_Mono, Inter } from 'next/font/google';
 import Script from 'next/script';
 import '../index.css';
 import { Analytics } from '@vercel/analytics/next';
-import BreadcrumbSchema from '@/components/breadcrumbSchema';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { globalCommandPalette as GlobalCommandPalette } from '@/components/globalCommandPalette';
+import {
+  PreloadScripts,
+  PreloadStyles,
+  ResourceHints,
+} from '@/components/prefetch/prefetchLinks';
 import Providers from '@/components/providers';
 import SchemaMarkup from '@/components/schema-markup';
+import {
+  OrganizationJsonLd,
+  WebApplicationJsonLd,
+} from '@/components/seo/jsonLd';
 import ServiceWorkerManager from '@/components/service-worker-manager';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
@@ -69,6 +77,12 @@ export const metadata: Metadata = {
     url: 'https://anubis.chat',
     siteName: 'ANUBIS AI Chat',
     images: [
+      {
+        url: '/api/og?title=ANUBIS%20Chat&description=Next-generation%20AI-powered%20chat%20platform&theme=dark',
+        width: 1200,
+        height: 630,
+        alt: 'ANUBIS AI Chat – Web3 AI Assistant',
+      },
       {
         url: '/assets/hero-preview-dark.png',
         width: 1200,
@@ -147,8 +161,12 @@ export default function RootLayout({
             <Providers>
               <WebVitals />
               <SchemaMarkup />
-              <BreadcrumbSchema />
               <ServiceWorkerManager />
+              <OrganizationJsonLd />
+              <WebApplicationJsonLd />
+              <ResourceHints />
+              <PreloadStyles />
+              <PreloadScripts />
               <main className="min-h-screen w-full overflow-x-hidden">
                 {children}
               </main>

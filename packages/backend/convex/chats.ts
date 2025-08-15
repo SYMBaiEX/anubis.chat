@@ -662,13 +662,15 @@ export const getTokenUsage = query({
       throw new Error('Chat not found or access denied');
     }
 
-    return chat.tokenUsage || {
-      totalPromptTokens: 0,
-      totalCompletionTokens: 0,
-      totalTokens: 0,
-      totalCachedTokens: 0,
-      totalEstimatedCost: 0,
-      messageCount: 0,
-    };
+    return (
+      chat.tokenUsage || {
+        totalPromptTokens: 0,
+        totalCompletionTokens: 0,
+        totalTokens: 0,
+        totalCachedTokens: 0,
+        totalEstimatedCost: 0,
+        messageCount: 0,
+      }
+    );
   },
 });

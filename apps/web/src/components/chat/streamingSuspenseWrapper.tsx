@@ -1,11 +1,18 @@
 'use client';
 
-import { Suspense, useTransition, startTransition, useCallback, Component, type ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { errorMonitor } from '@/lib/monitoring/errorMonitor';
+import {
+  Component,
+  type ReactNode,
+  Suspense,
+  startTransition,
+  useCallback,
+  useTransition,
+} from 'react';
 import { LoadingStates } from '@/components/data/loading-states';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { errorMonitor } from '@/lib/monitoring/errorMonitor';
 import { cn } from '@/lib/utils';
 
 interface StreamingSuspenseWrapperProps {
@@ -25,8 +32,8 @@ function StreamingFallback({ isStreaming }: { isStreaming?: boolean }) {
     <div className="flex h-full items-center justify-center">
       <LoadingStates
         size="lg"
-        text={isStreaming ? "Streaming response..." : "Loading..."}
-        variant={isStreaming ? "pulse" : "spinner"}
+        text={isStreaming ? 'Streaming response...' : 'Loading...'}
+        variant={isStreaming ? 'pulse' : 'spinner'}
       />
     </div>
   );
@@ -36,10 +43,18 @@ function StreamingFallback({ isStreaming }: { isStreaming?: boolean }) {
  * Custom Error Boundary for streaming content
  */
 class StreamingErrorBoundary extends Component<
-  { children: ReactNode; onError?: (error: Error) => void; onRetry?: () => void },
+  {
+    children: ReactNode;
+    onError?: (error: Error) => void;
+    onRetry?: () => void;
+  },
   { hasError: boolean; error?: Error }
 > {
-  constructor(props: { children: ReactNode; onError?: (error: Error) => void; onRetry?: () => void }) {
+  constructor(props: {
+    children: ReactNode;
+    onError?: (error: Error) => void;
+    onRetry?: () => void;
+  }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -49,8 +64,12 @@ class StreamingErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error('StreamingSuspenseWrapper error boundary caught an error:', error, errorInfo);
-    
+    console.error(
+      'StreamingSuspenseWrapper error boundary caught an error:',
+      error,
+      errorInfo
+    );
+
     // Report to error monitoring system
     errorMonitor.captureError(error, {
       category: 'javascript',
@@ -58,10 +77,10 @@ class StreamingErrorBoundary extends Component<
       component: 'StreamingSuspenseWrapper',
       context: {
         componentStack: errorInfo.componentStack,
-        errorBoundary: 'StreamingErrorBoundary'
-      }
+        errorBoundary: 'StreamingErrorBoundary',
+      },
     });
-    
+
     if (this.props.onError) {
       this.props.onError(error);
     }
@@ -78,18 +97,15 @@ class StreamingErrorBoundary extends Component<
     if (this.state.hasError) {
       return (
         <div className="flex h-full items-center justify-center p-4">
-          <Alert variant="destructive" className="max-w-md">
+          <Alert className="max-w-md" variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Something went wrong</AlertTitle>
             <AlertDescription className="mt-2">
-              {this.state.error?.message || "An unexpected error occurred while loading the content."}
+              {this.state.error?.message ||
+                'An unexpected error occurred while loading the content.'}
             </AlertDescription>
             <div className="mt-4 flex gap-2">
-              <Button
-                onClick={this.handleRetry}
-                variant="outline"
-                size="sm"
-              >
+              <Button onClick={this.handleRetry} size="sm" variant="outline">
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Try Again
               </Button>
@@ -105,7 +121,7 @@ class StreamingErrorBoundary extends Component<
 
 /**
  * StreamingSuspenseWrapper - Enhanced Suspense wrapper for streaming content
- * 
+ *
  * Features:
  * - React 18+ concurrent features with useTransition
  * - Streaming-aware loading states
@@ -118,16 +134,19 @@ export function StreamingSuspenseWrapper({
   isStreaming = false,
   className,
   onError,
-  onRetry
+  onRetry,
 }: StreamingSuspenseWrapperProps) {
   const [isPending, startTransition] = useTransition();
 
-  const handleErrorBoundary = useCallback((error: Error) => {
-    if (onError) {
-      onError(error);
-    }
-    console.error('StreamingSuspenseWrapper caught error:', error);
-  }, [onError]);
+  const handleErrorBoundary = useCallback(
+    (error: Error) => {
+      if (onError) {
+        onError(error);
+      }
+      console.error('StreamingSuspenseWrapper caught error:', error);
+    },
+    [onError]
+  );
 
   const wrappedRetry = useCallback(() => {
     startTransition(() => {
@@ -143,15 +162,15 @@ export function StreamingSuspenseWrapper({
         onError={handleErrorBoundary}
         onRetry={wrappedRetry}
       >
-        <Suspense 
-          fallback={
-            fallback || <StreamingFallback isStreaming={isStreaming} />
-          }
+        <Suspense
+          fallback={fallback || <StreamingFallback isStreaming={isStreaming} />}
         >
-          <div className={cn(
-            'h-full transition-opacity duration-200',
-            isPending && 'opacity-50'
-          )}>
+          <div
+            className={cn(
+              'h-full transition-opacity duration-200',
+              isPending && 'opacity-50'
+            )}
+          >
             {children}
           </div>
         </Suspense>
@@ -165,16 +184,16 @@ export function StreamingSuspenseWrapper({
  */
 export function useStreamingTransition() {
   const [isPending, startTransition] = useTransition();
-  
+
   const updateStreamingContent = useCallback((updateFn: () => void) => {
     startTransition(() => {
       updateFn();
     });
   }, []);
-  
+
   return {
     isPending,
-    updateStreamingContent
+    updateStreamingContent,
   };
 }
 

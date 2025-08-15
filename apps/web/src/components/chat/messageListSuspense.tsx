@@ -1,14 +1,17 @@
 'use client';
 
-import { Suspense, Component, type ReactNode } from 'react';
 import { MessageSquare } from 'lucide-react';
-import { errorMonitor } from '@/lib/monitoring/errorMonitor';
+import { Component, type ReactNode, Suspense } from 'react';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import { Button } from '@/components/ui/button';
+import {
+  useAdaptiveMessageList,
+  VIRTUAL_SCROLL_THRESHOLD,
+} from '@/hooks/use-adaptive-message-list';
+import { errorMonitor } from '@/lib/monitoring/errorMonitor';
 import type { MessageListProps } from '@/lib/types/components';
 import type { FontSize } from '@/lib/utils/fontSizes';
-import { useAdaptiveMessageList, VIRTUAL_SCROLL_THRESHOLD } from '@/hooks/use-adaptive-message-list';
 
 interface MessageListSuspenseProps extends MessageListProps {
   isTyping?: boolean;
@@ -47,8 +50,12 @@ class MessageListErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error('MessageList error boundary caught an error:', error, errorInfo);
-    
+    console.error(
+      'MessageList error boundary caught an error:',
+      error,
+      errorInfo
+    );
+
     // Report to error monitoring system
     errorMonitor.captureError(error, {
       category: 'javascript',
@@ -56,8 +63,8 @@ class MessageListErrorBoundary extends Component<
       component: 'MessageList',
       context: {
         componentStack: errorInfo.componentStack,
-        errorBoundary: 'MessageListErrorBoundary'
-      }
+        errorBoundary: 'MessageListErrorBoundary',
+      },
     });
   }
 
@@ -73,10 +80,13 @@ class MessageListErrorBoundary extends Component<
       return (
         <div className="flex h-full items-center justify-center p-4">
           <EmptyState
-            title="Failed to Load Messages"
-            description={this.state.error?.message || "An error occurred while loading the conversation"}
-            icon={<MessageSquare className="h-12 w-12 text-destructive" />}
             action={{ label: 'Try Again', onClick: this.handleReset }}
+            description={
+              this.state.error?.message ||
+              'An error occurred while loading the conversation'
+            }
+            icon={<MessageSquare className="h-12 w-12 text-destructive" />}
+            title="Failed to Load Messages"
           />
         </div>
       );
@@ -93,7 +103,7 @@ class MessageListErrorBoundary extends Component<
  */
 export function MessageListSuspense(props: MessageListSuspenseProps) {
   const AdaptiveMessageList = useAdaptiveMessageList();
-  
+
   // Log when switching to virtual scrolling (development only)
   if (process.env.NODE_ENV === 'development' && props.messages) {
     const messageCount = props.messages.length;
@@ -101,7 +111,7 @@ export function MessageListSuspense(props: MessageListSuspenseProps) {
       console.log(`Using virtual scrolling for ${messageCount} messages`);
     }
   }
-  
+
   return (
     <MessageListErrorBoundary
       onReset={() => {

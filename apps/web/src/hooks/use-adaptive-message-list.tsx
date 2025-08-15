@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { MessageListProps } from '@/lib/types/components';
 import { MessageList } from '@/components/chat/message-list';
 import { VirtualMessageList } from '@/components/chat/virtual-message-list';
+import type { MessageListProps } from '@/lib/types/components';
 
 // Threshold for switching to virtual scrolling
 const VIRTUAL_SCROLL_THRESHOLD = 50; // Switch to virtual scrolling after 50 messages
@@ -18,12 +18,12 @@ export function useAdaptiveMessageList() {
       props: MessageListProps & { isTyping?: boolean; fontSize?: any }
     ) {
       const messageCount = props.messages?.length || 0;
-      
+
       // Use virtual scrolling for large message lists
       if (messageCount > VIRTUAL_SCROLL_THRESHOLD) {
         return <VirtualMessageList {...props} />;
       }
-      
+
       // Use regular scrolling for smaller lists (better for animations)
       return <MessageList {...props} />;
     };

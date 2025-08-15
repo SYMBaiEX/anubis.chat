@@ -1,12 +1,15 @@
 /**
  * Real MCP Client Implementation using @modelcontextprotocol/sdk
- * 
+ *
  * This replaces the mock MCP infrastructure with actual MCP server connections
  * and implements proper tool execution through the MCP protocol.
  */
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import type { ServerCapabilities, Tool } from '@modelcontextprotocol/sdk/types.js';
+import type {
+  ServerCapabilities,
+  Tool,
+} from '@modelcontextprotocol/sdk/types.js';
 import { createModuleLogger } from '../../utils/logger';
 
 const logger = createModuleLogger('mcpClient');
@@ -103,7 +106,7 @@ export class McpClientManager {
 
       // Store client and mark as connected
       this.clients.set(serverId, client);
-      
+
       // Initialize server status
       const status: McpServerStatus = {
         connected: true,
@@ -118,10 +121,10 @@ export class McpClientManager {
         name: config.name,
         toolCount: status.tools.length,
       });
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Connection failed';
-      
+      const errorMessage =
+        error instanceof Error ? error.message : 'Connection failed';
+
       this.serverStatus.set(serverId, {
         connected: false,
         tools: [],
@@ -185,7 +188,7 @@ export class McpClientManager {
     const client = this.clients.get(serverId);
     const status = this.serverStatus.get(serverId);
 
-    if (!client || !status?.connected) {
+    if (!(client && status?.connected)) {
       return {
         success: false,
         error: `MCP server ${serverId} is not connected`,
@@ -209,10 +212,10 @@ export class McpClientManager {
         success: false,
         error: `Tool ${execution.toolName} not yet implemented`,
       };
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Tool execution failed';
-      
+      const errorMessage =
+        error instanceof Error ? error.message : 'Tool execution failed';
+
       logger.error('MCP tool execution failed', error, {
         serverId,
         toolName: execution.toolName,
@@ -246,11 +249,12 @@ export class McpClientManager {
       // Use SearchAPI.io for web search
       // This requires an API key to be set in environment variables
       const searchApiKey = process.env.SEARCHAPI_API_KEY;
-      
+
       if (!searchApiKey) {
         return {
           success: false,
-          error: 'SearchAPI key not configured. Please set SEARCHAPI_API_KEY environment variable for web search functionality.',
+          error:
+            'SearchAPI key not configured. Please set SEARCHAPI_API_KEY environment variable for web search functionality.',
           isError: true,
         };
       }
@@ -260,7 +264,7 @@ export class McpClientManager {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${searchApiKey}`,
+          Authorization: `Bearer ${searchApiKey}`,
         },
         body: JSON.stringify({
           q: query,
@@ -270,17 +274,20 @@ export class McpClientManager {
       });
 
       if (!response.ok) {
-        throw new Error(`Search API error: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Search API error: ${response.status} ${response.statusText}`
+        );
       }
 
       const searchData = await response.json();
-      
+
       // Transform search results to our format
-      const results = searchData.organic_results?.map((result: any) => ({
-        title: result.title,
-        url: result.link,
-        snippet: result.snippet,
-      })) || [];
+      const results =
+        searchData.organic_results?.map((result: any) => ({
+          title: result.title,
+          url: result.link,
+          snippet: result.snippet,
+        })) || [];
 
       return {
         success: true,
@@ -291,10 +298,9 @@ export class McpClientManager {
           source: 'searchapi-websearch',
         },
       };
-
     } catch (error) {
       logger.error('Web search execution failed', error, { query });
-      
+
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Web search failed',
@@ -335,12 +341,12 @@ export class McpClientManager {
    */
   async disconnectServer(serverId: string): Promise<void> {
     const client = this.clients.get(serverId);
-    
+
     if (client) {
       try {
         // In a real implementation, we would properly close the connection
         this.clients.delete(serverId);
-        
+
         const status = this.serverStatus.get(serverId);
         if (status) {
           status.connected = false;
@@ -348,7 +354,9 @@ export class McpClientManager {
 
         logger.info('Disconnected from MCP server', { serverId });
       } catch (error) {
-        logger.error('Error disconnecting from MCP server', error, { serverId });
+        logger.error('Error disconnecting from MCP server', error, {
+          serverId,
+        });
       }
     }
   }
@@ -358,9 +366,9 @@ export class McpClientManager {
    */
   async cleanup(): Promise<void> {
     const serverIds = Array.from(this.clients.keys());
-    
+
     await Promise.all(
-      serverIds.map(serverId => this.disconnectServer(serverId))
+      serverIds.map((serverId) => this.disconnectServer(serverId))
     );
 
     this.clients.clear();
@@ -384,7 +392,7 @@ globalMcpClient.registerServer({
   command: 'websearch-mcp-server', // This would be the actual MCP server command
   args: [],
   env: {},
-  timeout: 10000,
+  timeout: 10_000,
 });
 
 export default globalMcpClient;

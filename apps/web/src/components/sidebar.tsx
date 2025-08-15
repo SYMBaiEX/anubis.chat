@@ -14,7 +14,6 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -32,6 +31,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
 import { Progress } from '@/components/ui/progress';
+import { ThemeImage } from '@/components/ui/themeImage';
 import { WalletConnectButton } from '@/components/wallet/wallet-connect-button';
 import type { NavItem } from '@/constants/navigation';
 import { getSidebarNav } from '@/constants/navigation';
@@ -190,11 +190,12 @@ export default function Sidebar() {
                     ease: 'easeInOut',
                   }}
                 />
-                <Image
+                <ThemeImage
                   alt="Anubis mark"
                   className="relative drop-shadow-[0_0_4px_rgba(16,185,129,0.06)]"
+                  darkSrc="/assets/logoNoText.png"
                   height={28}
-                  src="/assets/logoNoText.png"
+                  lightSrc="/assets/logoNoText.png"
                   width={28}
                 />
               </div>
@@ -231,11 +232,12 @@ export default function Sidebar() {
                       ease: 'easeInOut',
                     }}
                   />
-                  <Image
+                  <ThemeImage
                     alt="Anubis mark"
                     className="relative drop-shadow-[0_0_4px_rgba(16,185,129,0.06)]"
+                    darkSrc="/assets/logoNoText.png"
                     height={42}
-                    src="/assets/logoNoText.png"
+                    lightSrc="/assets/logoNoText.png"
                     width={42}
                   />
                 </span>

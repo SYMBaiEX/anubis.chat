@@ -35,7 +35,9 @@ export function WebVitals() {
     // For now, we'll use console.log and prepare for Vercel Analytics
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('event', metric.name, {
-        value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
+        value: Math.round(
+          metric.name === 'CLS' ? metric.value * 1000 : metric.value
+        ),
         event_label: metric.id,
         non_interaction: true,
       });
@@ -100,12 +102,15 @@ export function WebVitals() {
     // Track time to first AI response
     if (typeof window !== 'undefined') {
       const measureFirstAIResponse = () => {
-        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+        const navigation = performance.getEntriesByType(
+          'navigation'
+        )[0] as PerformanceNavigationTiming;
         const firstResponse = performance.mark('first-ai-response');
-        
+
         if (navigation && firstResponse) {
-          const timeToFirstResponse = firstResponse.startTime - navigation.fetchStart;
-          
+          const timeToFirstResponse =
+            firstResponse.startTime - navigation.fetchStart;
+
           // Report custom metric
           if (process.env.NODE_ENV === 'development') {
             console.log('Time to First AI Response:', timeToFirstResponse);

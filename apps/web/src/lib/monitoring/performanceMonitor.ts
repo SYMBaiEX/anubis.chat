@@ -64,7 +64,10 @@ class PerformanceMonitor {
       // Cumulative Layout Shift
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          if (entry.entryType === 'layout-shift' && !(entry as any).hadRecentInput) {
+          if (
+            entry.entryType === 'layout-shift' &&
+            !(entry as any).hadRecentInput
+          ) {
             this.recordMetric('CLS', (entry as any).value);
           }
         }
@@ -100,11 +103,22 @@ class PerformanceMonitor {
 
     // Monitor navigation timing
     window.addEventListener('load', () => {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      
-      this.recordMetric('Page Load Time', navigation.loadEventEnd - navigation.fetchStart);
-      this.recordMetric('DOM Content Loaded', navigation.domContentLoadedEventEnd - navigation.fetchStart);
-      this.recordMetric('Time to Interactive', navigation.loadEventEnd - navigation.fetchStart);
+      const navigation = performance.getEntriesByType(
+        'navigation'
+      )[0] as PerformanceNavigationTiming;
+
+      this.recordMetric(
+        'Page Load Time',
+        navigation.loadEventEnd - navigation.fetchStart
+      );
+      this.recordMetric(
+        'DOM Content Loaded',
+        navigation.domContentLoadedEventEnd - navigation.fetchStart
+      );
+      this.recordMetric(
+        'Time to Interactive',
+        navigation.loadEventEnd - navigation.fetchStart
+      );
     });
   }
 
@@ -119,16 +133,20 @@ class PerformanceMonitor {
   /**
    * Record a performance metric
    */
-  public recordMetric(name: string, value: number, context?: Record<string, unknown>) {
+  public recordMetric(
+    name: string,
+    value: number,
+    context?: Record<string, unknown>
+  ) {
     const metric: PerformanceMetric = {
       name,
       value,
       timestamp: Date.now(),
-      context
+      context,
     };
 
     this.metrics.push(metric);
-    
+
     // Log important metrics
     if (this.shouldLogMetric(name, value)) {
       log.info(`Performance metric: ${name}`, { value, context });
@@ -141,16 +159,20 @@ class PerformanceMonitor {
   /**
    * Record user interaction timing
    */
-  public recordInteraction(action: string, component: string, startTime: number) {
+  public recordInteraction(
+    action: string,
+    component: string,
+    startTime: number
+  ) {
     const duration = Date.now() - startTime;
-    
+
     const interaction: UserInteractionMetric = {
       action,
       component,
       duration,
       timestamp: Date.now(),
       userId: this.userId,
-      sessionId: this.sessionId
+      sessionId: this.sessionId,
     };
 
     this.interactions.push(interaction);
@@ -167,33 +189,33 @@ class PerformanceMonitor {
    * Record API call performance
    */
   public recordApiCall(
-    endpoint: string, 
-    method: string, 
-    statusCode: number, 
-    startTime: number, 
+    endpoint: string,
+    method: string,
+    statusCode: number,
+    startTime: number,
     error?: string
   ) {
     const duration = Date.now() - startTime;
-    
+
     const apiCall: ApiCallMetric = {
       endpoint,
       method,
       statusCode,
       duration,
       timestamp: Date.now(),
-      error
+      error,
     };
 
     this.apiCalls.push(apiCall);
 
     // Log slow or failed API calls
     if (duration > 1000 || statusCode >= 400) {
-      log.warn(`API call performance issue`, { 
-        endpoint, 
-        method, 
-        statusCode, 
-        duration, 
-        error 
+      log.warn('API call performance issue', {
+        endpoint,
+        method,
+        statusCode,
+        duration,
+        error,
       });
     }
 
@@ -203,12 +225,15 @@ class PerformanceMonitor {
   /**
    * Monitor streaming message performance
    */
-  public recordStreamingMetrics(messageId: string, metrics: {
-    timeToFirstToken?: number;
-    totalStreamTime?: number;
-    tokenCount?: number;
-    wordsPerSecond?: number;
-  }) {
+  public recordStreamingMetrics(
+    messageId: string,
+    metrics: {
+      timeToFirstToken?: number;
+      totalStreamTime?: number;
+      tokenCount?: number;
+      wordsPerSecond?: number;
+    }
+  ) {
     Object.entries(metrics).forEach(([key, value]) => {
       if (value !== undefined) {
         this.recordMetric(`Streaming.${key}`, value, { messageId });
@@ -225,21 +250,24 @@ class PerformanceMonitor {
       interactions: this.getInteractionsSummary(),
       apiCalls: this.getApiCallsSummary(),
       sessionId: this.sessionId,
-      userId: this.userId
+      userId: this.userId,
     };
   }
 
   private getMetricsSummary() {
     const grouped = this.groupBy(this.metrics, 'name');
-    const summary: Record<string, { avg: number; min: number; max: number; count: number }> = {};
+    const summary: Record<
+      string,
+      { avg: number; min: number; max: number; count: number }
+    > = {};
 
     Object.entries(grouped).forEach(([name, metrics]) => {
-      const values = metrics.map(m => m.value);
+      const values = metrics.map((m) => m.value);
       summary[name] = {
         avg: values.reduce((a, b) => a + b, 0) / values.length,
         min: Math.min(...values),
         max: Math.max(...values),
-        count: values.length
+        count: values.length,
       };
     });
 
@@ -248,36 +276,42 @@ class PerformanceMonitor {
 
   private getInteractionsSummary() {
     const recentInteractions = this.interactions.filter(
-      i => Date.now() - i.timestamp < 5 * 60 * 1000 // Last 5 minutes
+      (i) => Date.now() - i.timestamp < 5 * 60 * 1000 // Last 5 minutes
     );
 
     return {
       total: this.interactions.length,
       recent: recentInteractions.length,
-      avgDuration: recentInteractions.reduce((sum, i) => sum + i.duration, 0) / recentInteractions.length || 0
+      avgDuration:
+        recentInteractions.reduce((sum, i) => sum + i.duration, 0) /
+          recentInteractions.length || 0,
     };
   }
 
   private getApiCallsSummary() {
     const recentCalls = this.apiCalls.filter(
-      call => Date.now() - call.timestamp < 5 * 60 * 1000 // Last 5 minutes
+      (call) => Date.now() - call.timestamp < 5 * 60 * 1000 // Last 5 minutes
     );
 
     return {
       total: this.apiCalls.length,
       recent: recentCalls.length,
-      avgDuration: recentCalls.reduce((sum, call) => sum + call.duration, 0) / recentCalls.length || 0,
-      errorRate: recentCalls.filter(call => call.statusCode >= 400).length / recentCalls.length || 0
+      avgDuration:
+        recentCalls.reduce((sum, call) => sum + call.duration, 0) /
+          recentCalls.length || 0,
+      errorRate:
+        recentCalls.filter((call) => call.statusCode >= 400).length /
+          recentCalls.length || 0,
     };
   }
 
   private shouldLogMetric(name: string, value: number): boolean {
     const thresholds: Record<string, number> = {
-      'CLS': 0.1,
-      'FCP': 3000,
-      'LCP': 4000,
+      CLS: 0.1,
+      FCP: 3000,
+      LCP: 4000,
       'Page Load Time': 5000,
-      'Time to Interactive': 5000
+      'Time to Interactive': 5000,
     };
 
     return thresholds[name] ? value > thresholds[name] : false;
@@ -293,12 +327,15 @@ class PerformanceMonitor {
   }
 
   private groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
-    return array.reduce((groups, item) => {
-      const groupKey = String(item[key]);
-      groups[groupKey] = groups[groupKey] || [];
-      groups[groupKey].push(item);
-      return groups;
-    }, {} as Record<string, T[]>);
+    return array.reduce(
+      (groups, item) => {
+        const groupKey = String(item[key]);
+        groups[groupKey] = groups[groupKey] || [];
+        groups[groupKey].push(item);
+        return groups;
+      },
+      {} as Record<string, T[]>
+    );
   }
 }
 
@@ -311,10 +348,13 @@ export const performanceMonitor = new PerformanceMonitor();
 export function usePerformanceMonitor() {
   return {
     recordMetric: performanceMonitor.recordMetric.bind(performanceMonitor),
-    recordInteraction: performanceMonitor.recordInteraction.bind(performanceMonitor),
+    recordInteraction:
+      performanceMonitor.recordInteraction.bind(performanceMonitor),
     recordApiCall: performanceMonitor.recordApiCall.bind(performanceMonitor),
-    recordStreamingMetrics: performanceMonitor.recordStreamingMetrics.bind(performanceMonitor),
-    getPerformanceSummary: performanceMonitor.getPerformanceSummary.bind(performanceMonitor),
-    setUserId: performanceMonitor.setUserId.bind(performanceMonitor)
+    recordStreamingMetrics:
+      performanceMonitor.recordStreamingMetrics.bind(performanceMonitor),
+    getPerformanceSummary:
+      performanceMonitor.getPerformanceSummary.bind(performanceMonitor),
+    setUserId: performanceMonitor.setUserId.bind(performanceMonitor),
   };
 }

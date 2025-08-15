@@ -466,10 +466,8 @@ export const streamWithWebSocket = action({
       const { getToolsForAgent, executeToolByName } = await import(
         './toolRegistry'
       );
-      const { 
-        shouldRouteThroughRealMcp, 
-        getEnhancedCapabilitiesWithRealMcp 
-      } = await import('./lib/mcp/realMcpIntegration');
+      const { shouldRouteThroughRealMcp, getEnhancedCapabilitiesWithRealMcp } =
+        await import('./lib/mcp/realMcpIntegration');
 
       // Get agent and determine available tools
       let availableCapabilities: string[] = [
@@ -672,28 +670,41 @@ export const streamWithWebSocket = action({
 
               // Execute through real MCP integration directly
               const { globalMcpClient } = await import('./lib/mcp/mcpClient');
-              
+
               // Ensure MCP server is connected
               try {
                 await globalMcpClient.connectServer('websearch-mcp');
               } catch (error) {
-                logger.warn('MCP server connection failed, continuing with mock response', {
-                  error: error instanceof Error ? error.message : String(error),
-                });
+                logger.warn(
+                  'MCP server connection failed, continuing with mock response',
+                  {
+                    error:
+                      error instanceof Error ? error.message : String(error),
+                  }
+                );
               }
-              
+
               // Map tool name for MCP execution
-              const mcpToolName = toolCall.toolName === 'webSearch' ? 'web_search' : toolCall.toolName;
-              
-              const mcpResult = await globalMcpClient.executeTool('websearch-mcp', {
-                toolName: mcpToolName,
-                arguments: toolCall.input,
-              });
-              
+              const mcpToolName =
+                toolCall.toolName === 'webSearch'
+                  ? 'web_search'
+                  : toolCall.toolName;
+
+              const mcpResult = await globalMcpClient.executeTool(
+                'websearch-mcp',
+                {
+                  toolName: mcpToolName,
+                  arguments: toolCall.input,
+                }
+              );
+
               if (mcpResult.success) {
                 toolResult = {
                   success: true,
-                  data: mcpResult.content as Record<string, string | number | boolean | null>,
+                  data: mcpResult.content as Record<
+                    string,
+                    string | number | boolean | null
+                  >,
                 };
               } else {
                 // MCP failed, fallback to regular tool
@@ -701,7 +712,7 @@ export const streamWithWebSocket = action({
                   toolName: toolCall.toolName,
                   mcpError: mcpResult.error,
                 });
-                
+
                 toolResult = await executeToolByName(
                   toolCall.toolName,
                   toolCall.input,

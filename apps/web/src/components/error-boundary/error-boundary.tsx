@@ -1,9 +1,9 @@
 'use client';
 
+import { AlertCircle, Home, RefreshCw } from 'lucide-react';
 import React, { type ErrorInfo, type ReactNode } from 'react';
-import { AlertCircle, RefreshCw, Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   children: ReactNode;
@@ -82,7 +82,7 @@ class ErrorBoundary extends React.Component<Props, State> {
 
     // Auto-reset after 3 errors to prevent infinite loops
     if (errorCount >= 2) {
-      this.scheduleReset(10000); // Reset after 10 seconds
+      this.scheduleReset(10_000); // Reset after 10 seconds
     }
   }
 
@@ -91,7 +91,11 @@ class ErrorBoundary extends React.Component<Props, State> {
     const { hasError } = this.state;
 
     // Reset on prop changes if enabled
-    if (hasError && resetOnPropsChange && prevProps.children !== this.props.children) {
+    if (
+      hasError &&
+      resetOnPropsChange &&
+      prevProps.children !== this.props.children
+    ) {
       this.resetError();
     }
 
@@ -137,17 +141,22 @@ class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     const { hasError, error, errorInfo, errorCount } = this.state;
-    const { children, fallback: Fallback, level = 'component', showDetails = process.env.NODE_ENV === 'development' } = this.props;
+    const {
+      children,
+      fallback: Fallback,
+      level = 'component',
+      showDetails = process.env.NODE_ENV === 'development',
+    } = this.props;
 
     if (hasError && error) {
       if (Fallback) {
         return (
           <Fallback
             error={error}
-            errorInfo={errorInfo}
-            resetError={this.resetError}
             errorCount={errorCount}
+            errorInfo={errorInfo}
             level={level}
+            resetError={this.resetError}
             showDetails={showDetails}
           />
         );
@@ -156,10 +165,10 @@ class ErrorBoundary extends React.Component<Props, State> {
       return (
         <DefaultErrorFallback
           error={error}
-          errorInfo={errorInfo}
-          resetError={this.resetError}
           errorCount={errorCount}
+          errorInfo={errorInfo}
           level={level}
+          resetError={this.resetError}
           showDetails={showDetails}
         />
       );
@@ -181,12 +190,18 @@ export function DefaultErrorFallback({
   const isSectionLevel = level === 'section';
 
   return (
-    <div className={`flex ${isPageLevel ? 'min-h-screen' : isSectionLevel ? 'min-h-[400px]' : 'min-h-[200px]'} items-center justify-center p-4`}>
+    <div
+      className={`flex ${isPageLevel ? 'min-h-screen' : isSectionLevel ? 'min-h-[400px]' : 'min-h-[200px]'} items-center justify-center p-4`}
+    >
       <div className="w-full max-w-md space-y-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>
-            {isPageLevel ? 'Page Error' : isSectionLevel ? 'Section Error' : 'Component Error'}
+            {isPageLevel
+              ? 'Page Error'
+              : isSectionLevel
+                ? 'Section Error'
+                : 'Component Error'}
           </AlertTitle>
           <AlertDescription>
             {error.message || 'An unexpected error occurred'}
@@ -200,7 +215,9 @@ export function DefaultErrorFallback({
 
         {showDetails && errorInfo && (
           <details className="rounded-lg border bg-muted/50 p-4">
-            <summary className="cursor-pointer font-medium">Error Details</summary>
+            <summary className="cursor-pointer font-medium">
+              Error Details
+            </summary>
             <pre className="mt-2 overflow-auto text-xs">
               {error.stack}
               {'\n\nComponent Stack:'}
@@ -210,15 +227,15 @@ export function DefaultErrorFallback({
         )}
 
         <div className="flex gap-2">
-          <Button onClick={resetError} variant="default" size="sm">
+          <Button onClick={resetError} size="sm" variant="default">
             <RefreshCw className="mr-2 h-4 w-4" />
             Try Again
           </Button>
           {isPageLevel && (
             <Button
-              onClick={() => window.location.href = '/'}
-              variant="outline"
+              onClick={() => (window.location.href = '/')}
               size="sm"
+              variant="outline"
             >
               <Home className="mr-2 h-4 w-4" />
               Go Home
@@ -227,7 +244,7 @@ export function DefaultErrorFallback({
         </div>
 
         {errorCount >= 3 && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             Auto-refreshing in 10 seconds...
           </p>
         )}
@@ -248,8 +265,8 @@ export function withErrorBoundary<P extends object>(
       <Component {...props} />
     </ErrorBoundary>
   );
-  
+
   WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
-  
+
   return WrappedComponent;
 }

@@ -11,11 +11,11 @@ interface StructuredDataProps {
 export function StructuredData({ data }: StructuredDataProps) {
   return (
     <Script
-      id="structured-data"
-      type="application/ld+json"
       dangerouslySetInnerHTML={{
         __html: JSON.stringify(data),
       }}
+      id="structured-data"
+      type="application/ld+json"
     />
   );
 }
@@ -37,7 +37,8 @@ export const websiteStructuredData = {
     ratingValue: '4.8',
     ratingCount: '150',
   },
-  description: 'Advanced AI chat platform with Web3 integration and multiple AI models',
+  description:
+    'Advanced AI chat platform with Web3 integration and multiple AI models',
   url: 'https://anubis.chat',
   image: 'https://anubis.chat/assets/hero-preview-dark.png',
   author: {
@@ -58,10 +59,7 @@ export const organizationStructuredData = {
   url: 'https://anubis.chat',
   logo: 'https://anubis.chat/favicon.png',
   description: 'Web3-native AI chat platform with Solana integration',
-  sameAs: [
-    'https://twitter.com/anubischat',
-    'https://github.com/anubischat',
-  ],
+  sameAs: ['https://twitter.com/anubischat', 'https://github.com/anubischat'],
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'customer support',

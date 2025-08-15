@@ -1,7 +1,7 @@
 'use client';
 
+import { AlertCircle, Loader2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
@@ -24,7 +24,7 @@ export function AsyncErrorBoundary({
   children,
   fallback,
   onError,
-  timeout = 30000,
+  timeout = 30_000,
   retryCount = 3,
 }: AsyncErrorBoundaryProps) {
   const [state, setState] = useState<AsyncErrorState>({
@@ -38,7 +38,7 @@ export function AsyncErrorBoundary({
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (!state.hasError && !state.isRetrying) {
+      if (!(state.hasError || state.isRetrying)) {
         setIsTimeout(true);
       }
     }, timeout);
@@ -47,7 +47,7 @@ export function AsyncErrorBoundary({
   }, [timeout, state.hasError, state.isRetrying]);
 
   const handleError = (error: Error) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       hasError: true,
       error,
@@ -61,7 +61,7 @@ export function AsyncErrorBoundary({
       return;
     }
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isRetrying: true,
       hasError: false,
@@ -69,9 +69,11 @@ export function AsyncErrorBoundary({
     }));
 
     // Wait a bit before retrying
-    await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, state.attempts)));
+    await new Promise((resolve) =>
+      setTimeout(resolve, 1000 * 2 ** state.attempts)
+    );
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isRetrying: false,
     }));
@@ -92,8 +94,10 @@ export function AsyncErrorBoundary({
     return (
       <div className="flex flex-col items-center justify-center p-8">
         <Loader2 className="mb-4 h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="text-muted-foreground">Loading is taking longer than expected...</p>
-        <Button onClick={reset} variant="outline" size="sm" className="mt-4">
+        <p className="text-muted-foreground">
+          Loading is taking longer than expected...
+        </p>
+        <Button className="mt-4" onClick={reset} size="sm" variant="outline">
           Refresh
         </Button>
       </div>
@@ -120,7 +124,7 @@ export function AsyncErrorBoundary({
 
     return (
       <div className="flex flex-col items-center justify-center p-8">
-        <Alert variant="destructive" className="max-w-md">
+        <Alert className="max-w-md" variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             {state.error.message || 'An error occurred while loading'}
@@ -131,14 +135,14 @@ export function AsyncErrorBoundary({
             )}
           </AlertDescription>
         </Alert>
-        
+
         <div className="mt-4 flex gap-2">
           {canRetry && (
             <Button onClick={retry} size="sm">
               Try Again
             </Button>
           )}
-          <Button onClick={reset} variant="outline" size="sm">
+          <Button onClick={reset} size="sm" variant="outline">
             Reset
           </Button>
         </div>
@@ -148,9 +152,7 @@ export function AsyncErrorBoundary({
 
   // Wrap children to catch async errors
   return (
-    <AsyncErrorCatcher onError={handleError}>
-      {children}
-    </AsyncErrorCatcher>
+    <AsyncErrorCatcher onError={handleError}>{children}</AsyncErrorCatcher>
   );
 }
 
@@ -168,7 +170,11 @@ function AsyncErrorCatcher({
     };
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    return () => window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    return () =>
+      window.removeEventListener(
+        'unhandledrejection',
+        handleUnhandledRejection
+      );
   }, [onError]);
 
   return <>{children}</>;
@@ -177,7 +183,7 @@ function AsyncErrorCatcher({
 // Hook for manual async error handling
 export function useAsyncError() {
   const [, setError] = useState();
-  
+
   return React.useCallback(
     (error: Error) => {
       setError(() => {

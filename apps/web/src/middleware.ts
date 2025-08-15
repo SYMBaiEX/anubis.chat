@@ -29,13 +29,13 @@ if (typeof globalThis !== 'undefined') {
         rateLimitMap.delete(key);
       }
     }
-  }, 60000); // Clean every minute
+  }, 60_000); // Clean every minute
 }
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const response = NextResponse.next();
-  
+
   // Skip middleware for static assets
   if (
     pathname.startsWith('/_next/static') ||
@@ -49,26 +49,31 @@ export function middleware(request: NextRequest) {
   const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.fontshare.com https://vercel.live https://*.vercel-analytics.com;
-    style-src 'self' 'unsafe-inline' https://api.fontshare.com;
-    font-src 'self' data: https://api.fontshare.com;
+    style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com;
+    font-src 'self' data: https://api.fontshare.com https://fonts.gstatic.com;
     img-src 'self' data: blob: https: http:;
     media-src 'self' blob:;
-    connect-src 'self' wss://*.convex.cloud https://*.convex.cloud https://api.openai.com https://api.anthropic.com https://api.google.com https://openrouter.ai https://*.vercel-analytics.com ws://localhost:* http://localhost:*;
+    connect-src 'self' wss://*.convex.cloud https://*.convex.cloud https://api.openai.com https://api.anthropic.com https://api.google.com https://openrouter.ai https://*.vercel-analytics.com https://api.devnet.solana.com https://api.mainnet-beta.solana.com https://api.testnet.solana.com https://*.helius-rpc.com https://*.quicknode.pro ws://localhost:* http://localhost:*;
     frame-src 'self';
     object-src 'none';
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
     upgrade-insecure-requests;
-  `.replace(/\s{2,}/g, ' ').trim();
+  `
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 
   response.headers.set('Content-Security-Policy', cspHeader);
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=()'
+  );
+
   // HSTS (only in production)
   if (process.env.NODE_ENV === 'production') {
     response.headers.set(
@@ -79,23 +84,19 @@ export function middleware(request: NextRequest) {
 
   // Basic Rate Limiting for API routes
   if (pathname.startsWith('/api')) {
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
-               'unknown';
-    
+    const ip =
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
+
     const rateLimitKey = `${ip}:${pathname}`;
     const now = Date.now();
     const windowMs = 60 * 1000; // 1 minute window
     const maxRequests = 60; // 60 requests per minute
-    
+
     const current = rateLimitMap.get(rateLimitKey);
-    
-    if (!current) {
-      rateLimitMap.set(rateLimitKey, {
-        count: 1,
-        resetTime: now + windowMs,
-      });
-    } else {
+
+    if (current) {
       if (current.resetTime < now) {
         // Reset window
         rateLimitMap.set(rateLimitKey, {
@@ -104,25 +105,38 @@ export function middleware(request: NextRequest) {
         });
       } else {
         current.count++;
-        
+
         if (current.count > maxRequests) {
           // Rate limit exceeded
           return new NextResponse('Too Many Requests', {
             status: 429,
             headers: {
-              'Retry-After': String(Math.ceil((current.resetTime - now) / 1000)),
+              'Retry-After': String(
+                Math.ceil((current.resetTime - now) / 1000)
+              ),
               'X-RateLimit-Limit': String(maxRequests),
               'X-RateLimit-Remaining': '0',
               'X-RateLimit-Reset': new Date(current.resetTime).toISOString(),
             },
           });
         }
-        
+
         // Add rate limit headers
         response.headers.set('X-RateLimit-Limit', String(maxRequests));
-        response.headers.set('X-RateLimit-Remaining', String(maxRequests - current.count));
-        response.headers.set('X-RateLimit-Reset', new Date(current.resetTime).toISOString());
+        response.headers.set(
+          'X-RateLimit-Remaining',
+          String(maxRequests - current.count)
+        );
+        response.headers.set(
+          'X-RateLimit-Reset',
+          new Date(current.resetTime).toISOString()
+        );
       }
+    } else {
+      rateLimitMap.set(rateLimitKey, {
+        count: 1,
+        resetTime: now + windowMs,
+      });
     }
   }
 

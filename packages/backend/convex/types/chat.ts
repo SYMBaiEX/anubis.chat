@@ -1,14 +1,19 @@
 // Comprehensive TypeScript interfaces for the Chat system
 // This file provides type safety for all chat-related operations
 
-import type { Id, Doc } from '../_generated/dataModel';
+import type { Doc, Id } from '../_generated/dataModel';
 
 // =============================================================================
 // Message Types
 // =============================================================================
 
 export type MessageRole = 'user' | 'assistant' | 'system';
-export type MessageReaction = 'like' | 'dislike' | 'love' | 'celebrate' | 'insightful';
+export type MessageReaction =
+  | 'like'
+  | 'dislike'
+  | 'love'
+  | 'celebrate'
+  | 'insightful';
 export type AttachmentType = 'image' | 'file' | 'video';
 
 export interface MessageAttachment {
@@ -207,7 +212,7 @@ export interface StreamingSession {
 // Utility Types
 // =============================================================================
 
-export type ChatEvent = 
+export type ChatEvent =
   | { type: 'message_created'; message: Message }
   | { type: 'message_updated'; message: Message }
   | { type: 'message_deleted'; messageId: Id<'messages'> }

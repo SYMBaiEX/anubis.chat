@@ -1,6 +1,6 @@
 /**
  * Real MCP Integration for ANUBIS Chat
- * 
+ *
  * This module replaces the mock MCP infrastructure with real MCP server
  * connections using the @modelcontextprotocol/sdk.
  */
@@ -8,10 +8,13 @@
 import { v } from 'convex/values';
 import type { Id } from '../../_generated/dataModel';
 import { action, query } from '../../_generated/server';
-import type { ToolExecutionContext, ToolExecutionResult } from '../../toolRegistry';
+import type {
+  ToolExecutionContext,
+  ToolExecutionResult,
+} from '../../toolRegistry';
 import { createModuleLogger } from '../../utils/logger';
-import { globalMcpClient, type McpToolExecution } from './mcpClient';
 import type { McpServerConfig } from '../agents/anubisAgent';
+import { globalMcpClient, type McpToolExecution } from './mcpClient';
 
 const logger = createModuleLogger('realMcpIntegration');
 
@@ -26,11 +29,13 @@ export const initializeAgentMcpServers = action({
   args: {
     agentId: v.id('agents'),
     userId: v.string(),
-    mcpServers: v.array(v.object({
-      name: v.string(),
-      enabled: v.boolean(),
-      config: v.optional(v.any()),
-    })),
+    mcpServers: v.array(
+      v.object({
+        name: v.string(),
+        enabled: v.boolean(),
+        config: v.optional(v.any()),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     try {
@@ -41,7 +46,7 @@ export const initializeAgentMcpServers = action({
       });
 
       const initResults = [];
-      
+
       // Initialize each enabled MCP server
       for (const serverConfig of args.mcpServers) {
         if (serverConfig.enabled) {
@@ -49,13 +54,13 @@ export const initializeAgentMcpServers = action({
             // Connect to the MCP server
             const serverId = `${serverConfig.name}-${args.userId}`;
             await globalMcpClient.connectServer('websearch-mcp'); // Use our registered server ID
-            
+
             const status = globalMcpClient.getServerStatus('websearch-mcp');
-            
+
             initResults.push({
               name: serverConfig.name,
               serverId,
-              connected: status?.connected || false,
+              connected: status?.connected,
               toolCount: status?.tools.length || 0,
               error: status?.error,
             });
@@ -65,10 +70,10 @@ export const initializeAgentMcpServers = action({
               connected: status?.connected,
               toolCount: status?.tools.length,
             });
-
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Connection failed';
-            
+            const errorMessage =
+              error instanceof Error ? error.message : 'Connection failed';
+
             initResults.push({
               name: serverConfig.name,
               serverId: `${serverConfig.name}-${args.userId}`,
@@ -84,8 +89,11 @@ export const initializeAgentMcpServers = action({
         }
       }
 
-      const connectedCount = initResults.filter(r => r.connected).length;
-      const totalToolCount = initResults.reduce((sum, r) => sum + r.toolCount, 0);
+      const connectedCount = initResults.filter((r) => r.connected).length;
+      const totalToolCount = initResults.reduce(
+        (sum, r) => sum + r.toolCount,
+        0
+      );
 
       logger.info('MCP server initialization completed', {
         agentId: args.agentId,
@@ -103,7 +111,6 @@ export const initializeAgentMcpServers = action({
           totalTools: totalToolCount,
         },
       };
-
     } catch (error) {
       logger.error('Failed to initialize MCP servers', error, {
         agentId: args.agentId,
@@ -152,8 +159,11 @@ export const executeRealMcpTool = action({
       };
 
       // Execute through the real MCP client
-      const result = await globalMcpClient.executeTool('websearch-mcp', mcpExecution);
-      
+      const result = await globalMcpClient.executeTool(
+        'websearch-mcp',
+        mcpExecution
+      );
+
       const executionTime = Date.now() - startTime;
 
       if (result.success) {
@@ -164,26 +174,28 @@ export const executeRealMcpTool = action({
 
         return {
           success: true,
-          data: result.content as Record<string, string | number | boolean | null>,
-          executionTime,
-        };
-      } else {
-        logger.warn('Real MCP tool execution failed', {
-          toolName: args.toolName,
-          error: result.error,
-          executionTime,
-        });
-
-        return {
-          success: false,
-          error: result.error || 'MCP tool execution failed',
+          data: result.content as Record<
+            string,
+            string | number | boolean | null
+          >,
           executionTime,
         };
       }
+      logger.warn('Real MCP tool execution failed', {
+        toolName: args.toolName,
+        error: result.error,
+        executionTime,
+      });
 
+      return {
+        success: false,
+        error: result.error || 'MCP tool execution failed',
+        executionTime,
+      };
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : 'Tool execution failed';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Tool execution failed';
 
       logger.error('Real MCP tool execution error', error, {
         toolName: args.toolName,
@@ -212,21 +224,20 @@ export const getAgentMcpTools = query({
     try {
       // Get all available tools from connected MCP servers
       const allTools = globalMcpClient.getAllTools();
-      
+
       // Transform to our expected format
-      return allTools.map(tool => ({
+      return allTools.map((tool) => ({
         name: tool.name,
         description: tool.description,
         serverId: tool.serverId,
         inputSchema: tool.inputSchema,
       }));
-
     } catch (error) {
       logger.error('Failed to get MCP tools', error, {
         agentId: args.agentId,
         userId: args.userId,
       });
-      
+
       return [];
     }
   },
@@ -243,7 +254,7 @@ export const getMcpServerHealth = query({
   handler: async (ctx, args) => {
     try {
       const status = globalMcpClient.getServerStatus('websearch-mcp');
-      
+
       if (!status) {
         return {
           servers: [],
@@ -268,7 +279,6 @@ export const getMcpServerHealth = query({
         connectedCount: status.connected ? 1 : 0,
         totalCount: 1,
       };
-
     } catch (error) {
       logger.error('Failed to get MCP server health', error, {
         agentId: args.agentId,
@@ -294,8 +304,8 @@ export const getMcpServerHealth = query({
  */
 function mapToolNameToMcp(toolName: string): string {
   const toolMap: Record<string, string> = {
-    'webSearch': 'web_search',
-    'search': 'web_search',
+    webSearch: 'web_search',
+    search: 'web_search',
     // Add more mappings as we integrate additional MCP servers
   };
 
@@ -315,8 +325,8 @@ export function shouldRouteThroughRealMcp(
 
   // Check if webSearch tool should use MCP
   if (toolName === 'webSearch' || toolName === 'search') {
-    const webSearchServer = mcpServers.find(s => s.name === 'websearch');
-    return webSearchServer?.enabled || false;
+    const webSearchServer = mcpServers.find((s) => s.name === 'websearch');
+    return webSearchServer?.enabled ?? false;
   }
 
   return false;
