@@ -101,8 +101,8 @@ const TIER_CONFIG = {
   },
   pro_plus: {
     name: 'Pro+',
-    priceSOL: paymentConfig.subscription.proPLus.priceSOL,
-    priceUSD: paymentConfig.subscription.proPLus.priceUSD,
+    priceSOL: paymentConfig.subscription.proPlus.priceSOL,
+    priceUSD: paymentConfig.subscription.proPlus.priceUSD,
     messages: 1000,
     premiumMessages: 300,
     color: 'from-purple-500 to-purple-600',
