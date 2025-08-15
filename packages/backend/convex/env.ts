@@ -50,6 +50,36 @@ const convexEnvSchema = z.object({
     .enum(['processed', 'confirmed', 'finalized'])
     .default('confirmed'),
 
+  // SPL Token Configuration
+  ENABLE_SPL_TOKENS: z
+    .string()
+    .default('true')
+    .transform((val) => val === 'true'),
+
+  // Individual SPL Token Addresses (JSON format: [{"symbol": "SYMX", "address": "...", "decimals": 6}, ...])
+  SPL_TOKEN_CONFIG: z
+    .string()
+    .optional()
+    .transform((val) => {
+      if (!val) return [];
+      try {
+        const tokens = JSON.parse(val);
+        return Array.isArray(tokens) ? tokens : [];
+      } catch {
+        return [];
+      }
+    }),
+
+  // Price Feed Configuration
+  PRICE_FEED_API: z
+    .enum(['jupiter', 'birdeye', 'coingecko'])
+    .default('jupiter'),
+  PRICE_FEED_API_KEY: z.string().optional(),
+  PRICE_CACHE_TTL_SECONDS: z
+    .string()
+    .default('60')
+    .transform((val) => Number.parseInt(val, 10)),
+
   // Subscription Configuration
   SUBSCRIPTION_PRO_PRICE_SOL: z
     .string()
@@ -162,6 +192,13 @@ function parseConvexEnv() {
       process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com',
     SOLANA_PAYMENT_ADDRESS: process.env.SOLANA_PAYMENT_ADDRESS,
     SOLANA_COMMITMENT_LEVEL: process.env.SOLANA_COMMITMENT_LEVEL || 'confirmed',
+
+    // SPL Token Configuration
+    ENABLE_SPL_TOKENS: process.env.ENABLE_SPL_TOKENS || 'true',
+    SPL_TOKEN_CONFIG: process.env.SPL_TOKEN_CONFIG,
+    PRICE_FEED_API: process.env.PRICE_FEED_API || 'jupiter',
+    PRICE_FEED_API_KEY: process.env.PRICE_FEED_API_KEY,
+    PRICE_CACHE_TTL_SECONDS: process.env.PRICE_CACHE_TTL_SECONDS || '60',
     SUBSCRIPTION_PRO_PRICE_SOL:
       process.env.SUBSCRIPTION_PRO_PRICE_SOL || '0.05',
     SUBSCRIPTION_PRO_PLUS_PRICE_SOL:
@@ -269,6 +306,17 @@ export const solanaConfig = {
   paymentAddress: convexEnv.SOLANA_PAYMENT_ADDRESS,
   commitmentLevel: convexEnv.SOLANA_COMMITMENT_LEVEL,
   enabled: !!convexEnv.SOLANA_PAYMENT_ADDRESS,
+
+  // SPL Token Configuration
+  splTokens: {
+    enabled: convexEnv.ENABLE_SPL_TOKENS,
+    tokens: convexEnv.SPL_TOKEN_CONFIG,
+    priceFeed: {
+      api: convexEnv.PRICE_FEED_API,
+      apiKey: convexEnv.PRICE_FEED_API_KEY,
+      cacheTtlSeconds: convexEnv.PRICE_CACHE_TTL_SECONDS,
+    },
+  },
 };
 
 // Subscription configuration

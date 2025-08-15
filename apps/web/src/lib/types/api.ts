@@ -192,6 +192,14 @@ export interface Chat {
   isPinned: boolean;
   messageCount: number;
   tokensUsed: number;
+  tokenUsage?: {
+    totalPromptTokens: number;
+    totalCompletionTokens: number;
+    totalTokens: number;
+    totalCachedTokens: number;
+    totalEstimatedCost: number;
+    messageCount: number;
+  };
   createdAt: number;
   updatedAt: number;
   lastMessageAt?: number;

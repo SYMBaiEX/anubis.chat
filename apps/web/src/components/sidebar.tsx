@@ -104,7 +104,7 @@ export default function Sidebar() {
   // Close mobile sidebar on route change
   useEffect(() => {
     setIsMobileOpen(false);
-  }, []);
+  }, [pathname]);
 
   // Handle escape key
   useEffect(() => {
@@ -203,6 +203,7 @@ export default function Sidebar() {
                 aria-label="Dashboard"
                 className="inline-flex items-center gap-2"
                 href="/dashboard"
+                onClick={() => setIsMobileOpen(false)}
               >
                 <span className="relative inline-flex items-center justify-center">
                   <span
@@ -289,6 +290,7 @@ export default function Sidebar() {
                         isCollapsed && 'justify-center'
                       )}
                       href={item.href}
+                      onClick={() => setIsMobileOpen(false)}
                     >
                       {item.icon && (
                         <item.icon
@@ -360,6 +362,7 @@ export default function Sidebar() {
                   )}
                   href={item.href}
                   key={item.href}
+                  onClick={() => setIsMobileOpen(false)}
                 >
                   {item.icon}
                   {!isCollapsed && <span>{item.label}</span>}

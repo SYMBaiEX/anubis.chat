@@ -83,6 +83,7 @@ export interface ChatHeaderProps extends BaseComponentProps {
     | 'updatedAt'
     | 'systemPrompt'
     | 'temperature'
+    | 'tokenUsage'
   > & {
     _id: string;
     agentPrompt?: string;

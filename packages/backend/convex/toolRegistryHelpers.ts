@@ -1,10 +1,14 @@
 /**
  * Tool Registry Helper Functions
- * 
+ *
  * Utility functions for managing and using the tool registry system
  */
 
-import { globalToolRegistry, getAvailableCapabilities, validateAgentCapabilities } from './toolRegistry';
+import {
+  getAvailableCapabilities,
+  globalToolRegistry,
+  validateAgentCapabilities,
+} from './toolRegistry';
 
 // =============================================================================
 // Registry Management Helpers
@@ -30,14 +34,14 @@ export function listAvailableTools() {
 export function getToolsByCategory() {
   const tools = listAvailableTools();
   const grouped: Record<string, typeof tools> = {};
-  
+
   for (const tool of tools) {
     if (!grouped[tool.category]) {
       grouped[tool.category] = [];
     }
     grouped[tool.category].push(tool);
   }
-  
+
   return grouped;
 }
 
@@ -46,15 +50,16 @@ export function getToolsByCategory() {
  */
 export function processAgentCapabilities(capabilities: string[]) {
   const { valid, invalid } = validateAgentCapabilities(capabilities);
-  
+
   return {
     validCapabilities: valid,
     invalidCapabilities: invalid,
     hasInvalidCapabilities: invalid.length > 0,
     toolsAvailable: valid.length,
-    recommendedCapabilities: valid.length === 0 
-      ? ['webSearch', 'calculator', 'summarizeText'] // Default safe capabilities
-      : valid,
+    recommendedCapabilities:
+      valid.length === 0
+        ? ['webSearch', 'calculator', 'summarizeText'] // Default safe capabilities
+        : valid,
   };
 }
 
@@ -63,7 +68,13 @@ export function processAgentCapabilities(capabilities: string[]) {
  */
 export function getRecommendedCapabilities(agentType: string) {
   const recommendations: Record<string, string[]> = {
-    general: ['webSearch', 'calculator', 'createDocument', 'generateCode', 'summarizeText'],
+    general: [
+      'webSearch',
+      'calculator',
+      'createDocument',
+      'generateCode',
+      'summarizeText',
+    ],
     trading: ['webSearch', 'calculator', 'summarizeText'],
     defi: ['webSearch', 'calculator', 'summarizeText'],
     nft: ['webSearch', 'createDocument', 'summarizeText'],
@@ -108,7 +119,7 @@ export function getToolInfo(capability: string) {
  * Batch validate multiple capabilities
  */
 export function validateCapabilities(capabilities: string[]) {
-  const results = capabilities.map(capability => ({
+  const results = capabilities.map((capability) => ({
     capability,
     available: isToolAvailable(capability),
     info: getToolInfo(capability),
@@ -116,9 +127,9 @@ export function validateCapabilities(capabilities: string[]) {
 
   return {
     results,
-    allValid: results.every(r => r.available),
-    validCount: results.filter(r => r.available).length,
-    invalidCount: results.filter(r => !r.available).length,
+    allValid: results.every((r) => r.available),
+    validCount: results.filter((r) => r.available).length,
+    invalidCount: results.filter((r) => !r.available).length,
   };
 }
 
@@ -131,15 +142,19 @@ export function validateCapabilities(capabilities: string[]) {
  */
 export function prepareAgentTools(capabilities: string[]) {
   const processed = processAgentCapabilities(capabilities);
-  const toolsData = globalToolRegistry.getToolsForCapabilities(processed.validCapabilities);
-  const aiTools = globalToolRegistry.getAIToolsForCapabilities(processed.validCapabilities);
+  const toolsData = globalToolRegistry.getToolsForCapabilities(
+    processed.validCapabilities
+  );
+  const aiTools = globalToolRegistry.getAIToolsForCapabilities(
+    processed.validCapabilities
+  );
 
   return {
     capabilities: processed.validCapabilities,
     invalidCapabilities: processed.invalidCapabilities,
     toolsCount: toolsData.length,
     aiTools,
-    toolMetadata: toolsData.map(tool => ({
+    toolMetadata: toolsData.map((tool) => ({
       name: tool.metadata.name,
       description: tool.metadata.description,
       category: tool.metadata.category,
@@ -150,14 +165,21 @@ export function prepareAgentTools(capabilities: string[]) {
 /**
  * Get capability diff between two capability arrays
  */
-export function getCapabilityDiff(oldCapabilities: string[], newCapabilities: string[]) {
-  const added = newCapabilities.filter(cap => !oldCapabilities.includes(cap));
-  const removed = oldCapabilities.filter(cap => !newCapabilities.includes(cap));
-  const unchanged = oldCapabilities.filter(cap => newCapabilities.includes(cap));
+export function getCapabilityDiff(
+  oldCapabilities: string[],
+  newCapabilities: string[]
+) {
+  const added = newCapabilities.filter((cap) => !oldCapabilities.includes(cap));
+  const removed = oldCapabilities.filter(
+    (cap) => !newCapabilities.includes(cap)
+  );
+  const unchanged = oldCapabilities.filter((cap) =>
+    newCapabilities.includes(cap)
+  );
 
   return {
     added,
-    removed, 
+    removed,
     unchanged,
     hasChanges: added.length > 0 || removed.length > 0,
     addedCount: added.length,

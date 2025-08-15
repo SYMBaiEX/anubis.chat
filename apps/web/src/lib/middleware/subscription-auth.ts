@@ -95,7 +95,7 @@ async function getSubscriptionStatus(walletAddress: string) {
   }
 }
 
-function calculateLimits(subscription: any) {
+function calculateLimits(subscription: SubscriptionSession['subscription']) {
   const isAdmin = subscription.tier === 'admin' || subscription.isAdmin;
 
   // Admins have unlimited access
@@ -140,8 +140,8 @@ export interface AuthResult {
   success: boolean;
   walletAddress?: string;
   publicKey?: string;
-  subscription?: any;
-  limits?: any;
+  subscription?: SubscriptionSession['subscription'];
+  limits?: SubscriptionSession['limits'];
   error?: string;
   errorCode?: APIErrorCode;
 }

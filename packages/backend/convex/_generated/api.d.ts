@@ -10,6 +10,8 @@
 
 import type * as admin from "../admin.js";
 import type * as adminAuth from "../adminAuth.js";
+import type * as adminExport from "../adminExport.js";
+import type * as adminMetrics from "../adminMetrics.js";
 import type * as agents from "../agents.js";
 import type * as auth from "../auth.js";
 import type * as authHelpers from "../authHelpers.js";
@@ -30,6 +32,8 @@ import type * as files from "../files.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
 import type * as httpAuth from "../httpAuth.js";
+import type * as lib_agents_agentManager from "../lib/agents/agentManager.js";
+import type * as lib_agents_anubisAgent from "../lib/agents/anubisAgent.js";
 import type * as mcpIntegration from "../mcpIntegration.js";
 import type * as mcpServerManager from "../mcpServerManager.js";
 import type * as mcpServers from "../mcpServers.js";
@@ -40,6 +44,8 @@ import type * as messages from "../messages.js";
 import type * as messagesAuth from "../messagesAuth.js";
 import type * as migrations_fixBlacklistedTokens from "../migrations/fixBlacklistedTokens.js";
 import type * as migrations_fixChatOwnership from "../migrations/fixChatOwnership.js";
+import type * as migrations_initializeTokenUsage from "../migrations/initializeTokenUsage.js";
+import type * as migrations_optimizeAnubisTokenUsage from "../migrations/optimizeAnubisTokenUsage.js";
 import type * as migrations_removeUpdatedAt from "../migrations/removeUpdatedAt.js";
 import type * as migrations_updateDefaultAgents from "../migrations/updateDefaultAgents.js";
 import type * as migrations_updateGeneralAssistantToAnubis from "../migrations/updateGeneralAssistantToAnubis.js";
@@ -51,7 +57,9 @@ import type * as rag from "../rag.js";
 import type * as ragSecurity from "../ragSecurity.js";
 import type * as referrals from "../referrals.js";
 import type * as solanaPayouts from "../solanaPayouts.js";
+import type * as splTokens from "../splTokens.js";
 import type * as streaming from "../streaming.js";
+import type * as subscriptionPayment from "../subscriptionPayment.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as tokenPrices from "../tokenPrices.js";
 import type * as toolRegistry from "../toolRegistry.js";
@@ -83,6 +91,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   adminAuth: typeof adminAuth;
+  adminExport: typeof adminExport;
+  adminMetrics: typeof adminMetrics;
   agents: typeof agents;
   auth: typeof auth;
   authHelpers: typeof authHelpers;
@@ -103,6 +113,8 @@ declare const fullApi: ApiFromModules<{
   healthCheck: typeof healthCheck;
   http: typeof http;
   httpAuth: typeof httpAuth;
+  "lib/agents/agentManager": typeof lib_agents_agentManager;
+  "lib/agents/anubisAgent": typeof lib_agents_anubisAgent;
   mcpIntegration: typeof mcpIntegration;
   mcpServerManager: typeof mcpServerManager;
   mcpServers: typeof mcpServers;
@@ -113,6 +125,8 @@ declare const fullApi: ApiFromModules<{
   messagesAuth: typeof messagesAuth;
   "migrations/fixBlacklistedTokens": typeof migrations_fixBlacklistedTokens;
   "migrations/fixChatOwnership": typeof migrations_fixChatOwnership;
+  "migrations/initializeTokenUsage": typeof migrations_initializeTokenUsage;
+  "migrations/optimizeAnubisTokenUsage": typeof migrations_optimizeAnubisTokenUsage;
   "migrations/removeUpdatedAt": typeof migrations_removeUpdatedAt;
   "migrations/updateDefaultAgents": typeof migrations_updateDefaultAgents;
   "migrations/updateGeneralAssistantToAnubis": typeof migrations_updateGeneralAssistantToAnubis;
@@ -124,7 +138,9 @@ declare const fullApi: ApiFromModules<{
   ragSecurity: typeof ragSecurity;
   referrals: typeof referrals;
   solanaPayouts: typeof solanaPayouts;
+  splTokens: typeof splTokens;
   streaming: typeof streaming;
+  subscriptionPayment: typeof subscriptionPayment;
   subscriptions: typeof subscriptions;
   tokenPrices: typeof tokenPrices;
   toolRegistry: typeof toolRegistry;

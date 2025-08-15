@@ -1,7 +1,7 @@
 'use client';
 
-import LandingFooter from '@/components/landing/landing-footer';
-import LandingHeader from '@/components/landing/landing-header';
+import LandingFooter from '@/components/landing/landingFooter';
+import LandingHeader from '@/components/landing/landingHeader';
 import CTA from './(landing)/components/cta';
 import FAQ from './(landing)/components/faq';
 import Features from './(landing)/components/features';

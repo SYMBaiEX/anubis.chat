@@ -21,11 +21,11 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import SiteLinksSection from '@/app/(landing)/components/siteLinksSection';
 import { EmptyState } from '@/components/data/empty-states';
-import LandingFooter from '@/components/landing/landing-footer';
-import LandingHeader from '@/components/landing/landing-header';
+import LandingFooter from '@/components/landing/landingFooter';
+import LandingHeader from '@/components/landing/landingHeader';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -159,7 +159,7 @@ export default function AuthPage() {
   }, [isAuthenticated, user, router, searchParams]);
 
   // Handle Solana wallet sign-in using Convex Auth
-  const handleWalletSignIn = async () => {
+  const handleWalletSignIn = useCallback(async () => {
     if (!(isConnected && publicKey)) {
       setAuthError('Please connect your wallet first');
       return;
@@ -183,7 +183,32 @@ export default function AuthPage() {
     } finally {
       setIsSigningIn(false);
     }
-  };
+  }, [isConnected, publicKey, authenticateWithConvex]);
+
+  // Auto-trigger verification (Convex auth) once after wallet connects
+  const autoSignInTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (isConnected && publicKey && !isAuthenticated && !isSigningIn) {
+      if (!autoSignInTriggeredRef.current) {
+        autoSignInTriggeredRef.current = true;
+        // Fire and forget; internal state handles loading/errors
+        handleWalletSignIn().catch((err) => {
+          log.debug('Auto wallet sign-in attempt completed with error', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+      }
+    } else if (!(isConnected && publicKey)) {
+      // Reset when wallet disconnects so re-connect can auto-trigger again
+      autoSignInTriggeredRef.current = false;
+    }
+  }, [
+    isConnected,
+    publicKey,
+    isAuthenticated,
+    isSigningIn,
+    handleWalletSignIn,
+  ]);
 
   const clearError = () => {
     setAuthError(null);

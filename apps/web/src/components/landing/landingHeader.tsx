@@ -31,6 +31,11 @@ export default function LandingHeader() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close mobile menu when route changes
+  React.useEffect(() => {
+    setMenuState(false);
+  }, [pathname]);
+
   return (
     <header>
       <nav
@@ -49,6 +54,7 @@ export default function LandingHeader() {
                 aria-label="anubis.chat Home"
                 className="inline-flex items-center gap-2"
                 href={isAuthenticated ? '/dashboard' : '/'}
+                onClick={() => setMenuState(false)}
               >
                 <span className="relative inline-flex items-center justify-center">
                   {/* Subtle layered glow */}
@@ -146,6 +152,7 @@ export default function LandingHeader() {
                             isActive && 'border-primary text-foreground'
                           )}
                           href={item.href}
+                          onClick={() => setMenuState(false)}
                         >
                           <span>{item.name}</span>
                         </Link>
@@ -157,7 +164,10 @@ export default function LandingHeader() {
               <div className="flex w-full flex-col items-center gap-3 sm:flex-row sm:gap-3 md:w-fit">
                 <ModeToggle />
                 <Button asChild size="sm">
-                  <Link href={isAuthenticated ? '/dashboard' : '/auth'}>
+                  <Link
+                    href={isAuthenticated ? '/dashboard' : '/auth'}
+                    onClick={() => setMenuState(false)}
+                  >
                     <span>
                       {isAuthenticated ? 'Open Dashboard' : 'Enter App'}
                     </span>

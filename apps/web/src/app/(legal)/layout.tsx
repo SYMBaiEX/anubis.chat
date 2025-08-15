@@ -1,8 +1,8 @@
 'use client';
 
 import AnimatedSection from '@/components/landing/animated-section';
-import LandingFooter from '@/components/landing/landing-footer';
-import LandingHeader from '@/components/landing/landing-header';
+import LandingFooter from '@/components/landing/landingFooter';
+import LandingHeader from '@/components/landing/landingHeader';
 import SiteLinksSection from '../(landing)/components/siteLinksSection';
 
 export default function LegalLayout({

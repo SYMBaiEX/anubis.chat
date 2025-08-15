@@ -4,8 +4,10 @@ import { api } from '@convex/_generated/api';
 import { useAuthActions, useAuthToken } from '@convex-dev/auth/react';
 import { useMutation, useQuery } from 'convex/react';
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import type { AuthSession, User } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';
+import { useReferralAttribution } from './use-referral-tracking';
 import { useWallet } from './useWallet';
 
 const log = createModuleLogger('useAuth');
@@ -29,9 +31,16 @@ export const useAuth = (): UseAuthReturn => {
   const { publicKey, signMessage, isConnected } = useWallet();
   const { signIn, signOut } = useAuthActions();
   const token = useAuthToken();
+  const { autoAssignIfEligible, getStoredReferralCode } = useReferralAttribution();
 
   // Convex mutations for wallet auth
   const createWalletChallenge = useMutation(api.auth.createWalletChallenge);
+  const getReferralCodeOwnerInfo = useQuery(
+    api.referrals.getReferralCodeOwnerInfo,
+    getStoredReferralCode() 
+      ? { referralCode: getStoredReferralCode()! } 
+      : 'skip'
+  );
 
   // Get current user from Convex
   const currentUser = useQuery(
@@ -97,6 +106,50 @@ export const useAuth = (): UseAuthReturn => {
 
       log.info('Convex Auth login completed', { result });
 
+      // After successful login, try to automatically assign referral if eligible
+      const walletAddress = publicKey.toString();
+      const storedReferralCode = getStoredReferralCode();
+      
+      if (storedReferralCode && walletAddress) {
+        log.info('Attempting automatic referral assignment', { 
+          referralCode: storedReferralCode,
+          walletAddress 
+        });
+
+        try {
+          const assignmentResult = await autoAssignIfEligible(walletAddress);
+          
+          if (assignmentResult.success) {
+            // Get referrer name for the toast notification
+            const referrerName = getReferralCodeOwnerInfo?.ownerDisplayName || 'your referrer';
+            
+            toast.success(
+              `Congratulations! ${referrerName} has been set as your referral.`,
+              {
+                duration: 5000,
+                description: 'You\'ll support them with your future transactions.',
+              }
+            );
+            
+            log.info('Referral successfully assigned', { 
+              referralCode: storedReferralCode,
+              referrerName 
+            });
+          } else {
+            log.info('Referral assignment not successful', { 
+              referralCode: storedReferralCode,
+              reason: 'User may already have a referrer or grace period expired' 
+            });
+          }
+        } catch (referralError) {
+          log.warn('Failed to assign referral', { 
+            error: referralError instanceof Error ? referralError.message : 'Unknown error',
+            referralCode: storedReferralCode 
+          });
+          // Don't throw - referral assignment failure shouldn't break login
+        }
+      }
+
       // Return session data (token will be available via useAuthToken)
       return {
         walletAddress: publicKey.toString(),
@@ -124,6 +177,9 @@ export const useAuth = (): UseAuthReturn => {
     signIn,
     currentUser,
     token,
+    getStoredReferralCode,
+    autoAssignIfEligible,
+    getReferralCodeOwnerInfo,
   ]);
 
   /**

@@ -7,14 +7,34 @@ import { createModuleLogger } from './utils/logger';
 
 const logger = createModuleLogger('fileValidation');
 
-// File size limits by type (in bytes)
-const FILE_SIZE_LIMITS: Record<string, number> = {
+// Base file size limits by type (in bytes) - used as maximum caps
+const BASE_FILE_SIZE_LIMITS: Record<string, number> = {
   image: 10 * 1024 * 1024, // 10MB for images
   document: 50 * 1024 * 1024, // 50MB for documents
   pdf: 50 * 1024 * 1024, // 50MB for PDFs
   text: 5 * 1024 * 1024, // 5MB for text files
   default: 25 * 1024 * 1024, // 25MB default
 };
+
+// Subscription tier file size limits (in bytes)
+export const TIER_FILE_LIMITS = {
+  free: 0, // No file uploads for free tier
+  pro: {
+    maxFileSize: 1024 * 1024, // 1MB max per file
+    totalStorageLimit: 100 * 1024 * 1024, // 100MB total storage
+    maxFilesPerMonth: 50,
+  },
+  pro_plus: {
+    maxFileSize: 5 * 1024 * 1024, // 5MB max per file
+    totalStorageLimit: 1024 * 1024 * 1024, // 1GB total storage
+    maxFilesPerMonth: 500,
+  },
+  admin: {
+    maxFileSize: 50 * 1024 * 1024, // 50MB max per file
+    totalStorageLimit: 10 * 1024 * 1024 * 1024, // 10GB total storage
+    maxFilesPerMonth: Number.POSITIVE_INFINITY,
+  },
+} as const;
 
 // Allowed MIME types with strict validation
 const ALLOWED_MIME_TYPES: Record<
@@ -75,13 +95,14 @@ export interface FileValidationResult {
 }
 
 /**
- * Validate file before processing
- * Performs comprehensive security checks
+ * Validate file before processing with subscription tier limits
+ * Performs comprehensive security checks and tier-based size validation
  */
 export async function validateFile(
   file: Blob | ArrayBuffer,
   fileName: string,
-  declaredMimeType?: string
+  declaredMimeType?: string,
+  userTier?: keyof typeof TIER_FILE_LIMITS
 ): Promise<FileValidationResult> {
   const warnings: string[] = [];
 
@@ -90,15 +111,39 @@ export async function validateFile(
     const buffer = file instanceof Blob ? await file.arrayBuffer() : file;
     const bytes = new Uint8Array(buffer);
 
-    // 1. Check file size
+    // 1. Check subscription tier file limits first
     const size = bytes.length;
-    const fileType = getFileType(declaredMimeType || '');
-    const sizeLimit = FILE_SIZE_LIMITS[fileType] || FILE_SIZE_LIMITS.default;
 
-    if (size > sizeLimit) {
+    if (userTier !== undefined) {
+      const tierLimit = TIER_FILE_LIMITS[userTier];
+
+      // Free tier cannot upload files
+      if (userTier === 'free') {
+        return {
+          valid: false,
+          error:
+            'File uploads require Pro or Pro+ subscription. Please upgrade to upload documents.',
+        };
+      }
+
+      // Check tier-specific file size limit
+      if (typeof tierLimit === 'object' && size > tierLimit.maxFileSize) {
+        return {
+          valid: false,
+          error: `File size ${formatBytes(size)} exceeds your ${userTier.toUpperCase()} tier limit of ${formatBytes(tierLimit.maxFileSize)}`,
+        };
+      }
+    }
+
+    // 2. Check base file type limits (as fallback/cap)
+    const fileType = getFileType(declaredMimeType || '');
+    const baseSizeLimit =
+      BASE_FILE_SIZE_LIMITS[fileType] || BASE_FILE_SIZE_LIMITS.default;
+
+    if (size > baseSizeLimit) {
       return {
         valid: false,
-        error: `File size ${formatBytes(size)} exceeds limit of ${formatBytes(sizeLimit)}`,
+        error: `File size ${formatBytes(size)} exceeds system limit of ${formatBytes(baseSizeLimit)}`,
       };
     }
 
@@ -421,6 +466,141 @@ export function sanitizeFilename(fileName: string): string {
   }
 
   return sanitized;
+}
+
+/**
+ * Check if user can upload more files based on tier limits and current usage
+ */
+export async function checkUploadLimits(
+  ctx: any,
+  walletAddress: string,
+  userTier: keyof typeof TIER_FILE_LIMITS,
+  fileSize: number
+): Promise<{
+  canUpload: boolean;
+  error?: string;
+  storageUsed?: number;
+  filesThisMonth?: number;
+}> {
+  // Free tier cannot upload
+  if (userTier === 'free') {
+    return {
+      canUpload: false,
+      error:
+        'File uploads require Pro or Pro+ subscription. Please upgrade to upload documents.',
+    };
+  }
+
+  const tierLimit = TIER_FILE_LIMITS[userTier];
+  if (typeof tierLimit !== 'object') {
+    return { canUpload: false, error: 'Invalid subscription tier' };
+  }
+
+  // Get current file statistics
+  const files = await ctx.db
+    .query('files')
+    .withIndex('by_wallet', (q: any) => q.eq('walletAddress', walletAddress))
+    .collect();
+
+  // Calculate current storage usage
+  const currentStorageUsed = files.reduce(
+    (total: number, file: any) => total + file.size,
+    0
+  );
+
+  // Check if adding this file would exceed storage limit
+  if (currentStorageUsed + fileSize > tierLimit.totalStorageLimit) {
+    return {
+      canUpload: false,
+      error: `Adding this file would exceed your ${userTier.toUpperCase()} storage limit of ${formatBytes(tierLimit.totalStorageLimit)}. Current usage: ${formatBytes(currentStorageUsed)}`,
+      storageUsed: currentStorageUsed,
+    };
+  }
+
+  // Check monthly file upload limit
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const filesThisMonth = files.filter(
+    (file: any) => file.createdAt > thirtyDaysAgo
+  ).length;
+
+  if (filesThisMonth >= tierLimit.maxFilesPerMonth) {
+    return {
+      canUpload: false,
+      error: `You have reached your ${userTier.toUpperCase()} monthly limit of ${tierLimit.maxFilesPerMonth} files. Limit resets in ${Math.ceil((thirtyDaysAgo + 30 * 24 * 60 * 60 * 1000 - Date.now()) / (24 * 60 * 60 * 1000))} days.`,
+      filesThisMonth,
+    };
+  }
+
+  return {
+    canUpload: true,
+    storageUsed: currentStorageUsed,
+    filesThisMonth,
+  };
+}
+
+/**
+ * Get user's current file upload statistics and limits
+ */
+export async function getUserFileStats(
+  ctx: any,
+  walletAddress: string,
+  userTier: keyof typeof TIER_FILE_LIMITS
+): Promise<{
+  tier: string;
+  limits: (typeof TIER_FILE_LIMITS)[keyof typeof TIER_FILE_LIMITS];
+  usage: {
+    storageUsed: number;
+    filesThisMonth: number;
+    totalFiles: number;
+  };
+  remaining: {
+    storage: number;
+    filesThisMonth: number;
+  };
+}> {
+  const tierLimit = TIER_FILE_LIMITS[userTier];
+
+  if (userTier === 'free') {
+    return {
+      tier: userTier,
+      limits: 0,
+      usage: { storageUsed: 0, filesThisMonth: 0, totalFiles: 0 },
+      remaining: { storage: 0, filesThisMonth: 0 },
+    };
+  }
+
+  if (typeof tierLimit !== 'object') {
+    throw new Error('Invalid subscription tier');
+  }
+
+  // Get user's files
+  const files = await ctx.db
+    .query('files')
+    .withIndex('by_wallet', (q: any) => q.eq('walletAddress', walletAddress))
+    .collect();
+
+  const currentStorageUsed = files.reduce(
+    (total: number, file: any) => total + file.size,
+    0
+  );
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const filesThisMonth = files.filter(
+    (file: any) => file.createdAt > thirtyDaysAgo
+  ).length;
+
+  return {
+    tier: userTier,
+    limits: tierLimit,
+    usage: {
+      storageUsed: currentStorageUsed,
+      filesThisMonth,
+      totalFiles: files.length,
+    },
+    remaining: {
+      storage: Math.max(0, tierLimit.totalStorageLimit - currentStorageUsed),
+      filesThisMonth: Math.max(0, tierLimit.maxFilesPerMonth - filesThisMonth),
+    },
+  };
 }
 
 /**

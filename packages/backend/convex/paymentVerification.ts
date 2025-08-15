@@ -3,6 +3,7 @@
  * Production-ready blockchain transaction verification for subscription payments
  */
 
+import { getAssociatedTokenAddress } from '@solana/spl-token';
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { internal } from './_generated/api';
 import { httpAction } from './_generated/server';
@@ -12,6 +13,7 @@ import {
   validatePayoutParams,
   verifyDualPayment,
 } from './solanaPayouts';
+import { getConfiguredSPLTokens } from './splTokens';
 
 // Types for transaction verification
 interface VerificationResult {
@@ -43,6 +45,10 @@ interface PaymentVerificationRequest {
   paymentType?: 'subscription' | 'message_credits';
   packType?: 'standard';
   numberOfPacks?: number;
+  // SPL Token fields
+  tokenAddress?: string;
+  tokenAmount?: number;
+  tokenSymbol?: string;
 }
 
 // Initialize Solana connection with proper configuration
@@ -303,6 +309,188 @@ async function verifyTransaction(
       } else if (error.message.includes('finalized')) {
         errorMessage =
           'Transaction still processing - please wait for blockchain confirmation';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+// SPL Token transaction verification function
+async function verifySPLTokenTransaction(
+  signature: string,
+  expectedRecipient: string,
+  expectedAmount: number,
+  senderAddress: string,
+  tokenMintAddress: string
+): Promise<VerificationResult> {
+  try {
+    const connection = createSolanaConnection();
+
+    // Fetch the transaction with full details
+    const transaction = await connection.getTransaction(signature, {
+      commitment: 'finalized',
+      maxSupportedTransactionVersion: 0,
+    });
+
+    if (!transaction) {
+      return {
+        success: false,
+        error:
+          'Transaction not found on blockchain - please check the transaction ID',
+      };
+    }
+
+    // Check if transaction failed
+    if (transaction.meta?.err) {
+      return {
+        success: false,
+        error: 'Transaction failed on blockchain - payment was not successful',
+      };
+    }
+
+    // Get associated token accounts
+    const senderPubkey = new PublicKey(senderAddress);
+    const recipientPubkey = new PublicKey(expectedRecipient);
+    const mintPubkey = new PublicKey(tokenMintAddress);
+
+    const senderTokenAccount = await getAssociatedTokenAddress(
+      mintPubkey,
+      senderPubkey
+    );
+    const recipientTokenAccount = await getAssociatedTokenAddress(
+      mintPubkey,
+      recipientPubkey
+    );
+
+    // Get all account keys from transaction
+    const message = transaction.transaction.message;
+    const messageKeys = message.getAccountKeys({
+      accountKeysFromLookups: transaction.meta?.loadedAddresses,
+    });
+
+    const allAccountKeys: PublicKey[] = [
+      ...messageKeys.staticAccountKeys,
+      ...(messageKeys.accountKeysFromLookups?.writable ?? []),
+      ...(messageKeys.accountKeysFromLookups?.readonly ?? []),
+    ];
+
+    // Find token account indices
+    let senderTokenIndex = -1;
+    let recipientTokenIndex = -1;
+
+    for (let i = 0; i < allAccountKeys.length; i++) {
+      const keyStr = allAccountKeys[i].toBase58();
+      if (keyStr === senderTokenAccount.toBase58()) senderTokenIndex = i;
+      if (keyStr === recipientTokenAccount.toBase58()) recipientTokenIndex = i;
+    }
+
+    if (senderTokenIndex === -1 || recipientTokenIndex === -1) {
+      return {
+        success: false,
+        error: 'SPL token accounts not found in transaction',
+      };
+    }
+
+    // Check token balance changes
+    const preBalances = transaction.meta?.preTokenBalances || [];
+    const postBalances = transaction.meta?.postTokenBalances || [];
+
+    const senderPreToken = preBalances.find(
+      (balance) => balance.accountIndex === senderTokenIndex
+    );
+    const senderPostToken = postBalances.find(
+      (balance) => balance.accountIndex === senderTokenIndex
+    );
+
+    const recipientPreToken = preBalances.find(
+      (balance) => balance.accountIndex === recipientTokenIndex
+    );
+    const recipientPostToken = postBalances.find(
+      (balance) => balance.accountIndex === recipientTokenIndex
+    );
+
+    const senderPreBalance = Number(senderPreToken?.uiTokenAmount?.amount || 0);
+    const senderPostBalance = Number(
+      senderPostToken?.uiTokenAmount?.amount || 0
+    );
+    const recipientPreBalance = Number(
+      recipientPreToken?.uiTokenAmount?.amount || 0
+    );
+    const recipientPostBalance = Number(
+      recipientPostToken?.uiTokenAmount?.amount || 0
+    );
+
+    const tokensTransferred = senderPreBalance - senderPostBalance;
+    const tokensReceived = recipientPostBalance - recipientPreBalance;
+
+    // Verify amounts match (allow small tolerance for rounding)
+    const tolerance = Math.max(1, expectedAmount * 0.001); // 0.1% tolerance or 1 token unit
+
+    if (Math.abs(tokensTransferred - expectedAmount) > tolerance) {
+      return {
+        success: false,
+        error: `Token amount mismatch: expected ${expectedAmount}, sender transferred ${tokensTransferred}`,
+      };
+    }
+
+    if (Math.abs(tokensReceived - expectedAmount) > tolerance) {
+      return {
+        success: false,
+        error: `Token amount mismatch: expected ${expectedAmount}, recipient received ${tokensReceived}`,
+      };
+    }
+
+    // Verify transaction is recent (within last 24 hours for security)
+    const blockTime = transaction.blockTime ?? Date.now() / 1000;
+    const transactionAge = Date.now() / 1000 - blockTime;
+    const maxAge = 24 * 60 * 60; // 24 hours in seconds
+
+    if (transactionAge > maxAge) {
+      return {
+        success: false,
+        error:
+          'Transaction is too old - payments must be verified within 24 hours',
+      };
+    }
+
+    // Get token decimals for proper amount display
+    const decimals = senderPreToken?.uiTokenAmount?.decimals || 6;
+    const uiAmount = tokensReceived / 10 ** decimals;
+
+    return {
+      success: true,
+      transactionDetails: {
+        signature,
+        recipient: expectedRecipient,
+        sender: senderAddress,
+        amount: uiAmount,
+        timestamp: blockTime * 1000, // Convert to milliseconds
+        slot: transaction.slot,
+        confirmationStatus: 'finalized',
+      },
+    };
+  } catch (error) {
+    // Enhanced error categorization
+    let errorMessage = 'SPL token transaction verification failed';
+
+    if (error instanceof Error) {
+      if (
+        error.message.includes('network') ||
+        error.message.includes('timeout')
+      ) {
+        errorMessage = 'Network connectivity issue - please try again';
+      } else if (error.message.includes('not found')) {
+        errorMessage =
+          'Transaction not found - please verify the transaction ID';
+      } else if (error.message.includes('rate limit')) {
+        errorMessage =
+          'RPC rate limit exceeded - please wait a moment and try again';
       } else {
         errorMessage = error.message;
       }
@@ -767,16 +955,33 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       // Later mutation will receive the full amount so commissions are based on gross
       (body as any).expectedAmount = grossPaymentAmount;
     } else {
-      // Single payment verification (original flow)
-      verificationResult = await Promise.race([
-        verifyTransaction(
-          txSignature,
-          solanaConfig.paymentAddress,
-          expectedAmount,
-          walletAddress
-        ),
-        timeoutPromise,
-      ]);
+      // Check if this is an SPL token payment
+      const { tokenAddress, tokenAmount } = body;
+
+      if (tokenAddress && tokenAddress !== 'native' && tokenAmount) {
+        // SPL Token payment verification
+        verificationResult = await Promise.race([
+          verifySPLTokenTransaction(
+            txSignature,
+            solanaConfig.paymentAddress,
+            tokenAmount,
+            walletAddress,
+            tokenAddress
+          ),
+          timeoutPromise,
+        ]);
+      } else {
+        // Single SOL payment verification (original flow)
+        verificationResult = await Promise.race([
+          verifyTransaction(
+            txSignature,
+            solanaConfig.paymentAddress,
+            expectedAmount,
+            walletAddress
+          ),
+          timeoutPromise,
+        ]);
+      }
     }
 
     if (!verificationResult.success) {

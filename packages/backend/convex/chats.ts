@@ -549,6 +549,57 @@ export const updateTitle = mutation({
 });
 
 /**
+ * Update token usage for a chat
+ */
+export const updateTokenUsage = mutation({
+  args: {
+    chatId: v.id('chats'),
+    tokenUsage: v.object({
+      promptTokens: v.number(),
+      completionTokens: v.number(),
+      totalTokens: v.number(),
+      cachedTokens: v.number(),
+      estimatedCost: v.number(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat) {
+      throw new Error('Chat not found');
+    }
+
+    // Get existing token usage or initialize
+    const currentUsage = chat.tokenUsage || {
+      totalPromptTokens: 0,
+      totalCompletionTokens: 0,
+      totalTokens: 0,
+      totalCachedTokens: 0,
+      totalEstimatedCost: 0,
+      messageCount: 0,
+    };
+
+    // Update cumulative token usage
+    await ctx.db.patch(args.chatId, {
+      tokenUsage: {
+        totalPromptTokens:
+          currentUsage.totalPromptTokens + args.tokenUsage.promptTokens,
+        totalCompletionTokens:
+          currentUsage.totalCompletionTokens + args.tokenUsage.completionTokens,
+        totalTokens: currentUsage.totalTokens + args.tokenUsage.totalTokens,
+        totalCachedTokens:
+          currentUsage.totalCachedTokens + args.tokenUsage.cachedTokens,
+        totalEstimatedCost:
+          currentUsage.totalEstimatedCost + args.tokenUsage.estimatedCost,
+        messageCount: currentUsage.messageCount + 1,
+      },
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
  * Clear all messages from a chat (keeps the chat itself)
  */
 export const clearHistory = mutation({

@@ -15,7 +15,7 @@ import { useMemo, useState } from 'react';
 import { AdminGuard } from '@/components/auth/adminGuard';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
-import { MemoryCard } from '@/components/memory/memory-card';
+import { MemoryCard } from '@/components/memory/memoryCard';
 import { MemorySettings } from '@/components/memory/memory-settings';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';

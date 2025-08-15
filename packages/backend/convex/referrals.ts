@@ -344,6 +344,45 @@ export const getReferrerPayoutInfo = query({
   },
 });
 
+/**
+ * Get referral code owner info
+ * Returns the display name and info of the owner of a referral code
+ */
+export const getReferralCodeOwnerInfo = query({
+  args: {
+    referralCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Normalize the code to uppercase for lookup (case-insensitive matching)
+    const normalizedCode = args.referralCode.toUpperCase();
+
+    // Get referral code info
+    const referralCodeRecord = await ctx.db
+      .query('referralCodes')
+      .withIndex('by_code', (q) => q.eq('code', normalizedCode))
+      .first();
+
+    if (!referralCodeRecord) {
+      return null;
+    }
+
+    // Get the owner's user info
+    const owner = await ctx.db.get(referralCodeRecord.userId);
+    if (!owner) {
+      return null;
+    }
+
+    return {
+      referralCode: normalizedCode,
+      ownerId: owner._id,
+      ownerDisplayName: owner.displayName || 'Anonymous User',
+      ownerAvatar: owner.avatar,
+      ownerWalletAddress: owner.walletAddress,
+      isActive: referralCodeRecord.isActive,
+    };
+  },
+});
+
 // =============================================================================
 // Attribution Tracking
 // =============================================================================

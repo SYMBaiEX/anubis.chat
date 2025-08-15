@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,
   CheckCircle,
+  Crown,
   Download,
   Eye,
   File,
@@ -22,10 +23,17 @@ import {
 } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { UpgradePrompt } from '@/components/auth/upgradePrompt';
+import { useAuthContext } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import {
+  getUploadRecommendations,
+  useFileUploadLimits,
+  validateFileUpload,
+} from '@/hooks/use-file-upload-limits';
 import { cn } from '@/lib/utils';
 
 interface FileUploadItem {
@@ -46,10 +54,11 @@ interface FileUploadPreviewProps {
   onUpload?: (files: File[]) => void;
   onPreview?: (file: FileUploadItem) => void;
   maxFiles?: number;
-  maxSize?: number; // in MB
+  maxSize?: number; // in MB - will be overridden by tier limits
   acceptedTypes?: string[];
   variant?: 'grid' | 'list' | 'compact';
   className?: string;
+  showUpgradePrompt?: boolean; // Show tier upgrade messaging
 }
 
 const fileTypeIcons: Record<string, React.ComponentType<any>> = {
@@ -108,13 +117,26 @@ export function FileUploadPreview({
   onUpload,
   onPreview,
   maxFiles = 10,
-  maxSize = 10, // 10MB default
+  maxSize = 10, // 10MB default - overridden by tier limits
   acceptedTypes,
   variant = 'grid',
   className,
+  showUpgradePrompt = true,
 }: FileUploadPreviewProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { subscription } = useAuthContext();
+  const uploadLimits = useFileUploadLimits();
+
+  // Use tier-based limits instead of props
+  const effectiveMaxSize = Math.round(uploadLimits.maxFileSize / (1024 * 1024)); // Convert to MB
+  const effectiveMaxFiles = Math.min(maxFiles, uploadLimits.maxFiles);
+
+  const tierRecommendations = getUploadRecommendations(
+    subscription?.tier || 'free'
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -128,18 +150,34 @@ export function FileUploadPreview({
 
   const handleFiles = useCallback(
     (newFiles: File[]) => {
-      // Validate file count
-      if (files.length + newFiles.length > maxFiles) {
-        toast.error(`Maximum ${maxFiles} files allowed`);
+      // Check if user can upload files at all
+      if (!uploadLimits.canUpload) {
+        if (uploadLimits.error) {
+          toast.error(uploadLimits.error);
+        }
+        if (showUpgradePrompt && subscription && subscription.tier !== 'pro' && subscription.tier !== 'pro_plus' && subscription.tier !== 'admin') {
+          setShowUpgrade(true);
+        }
         return;
       }
 
-      // Validate file size and type
+      // Validate file count
+      if (files.length + newFiles.length > effectiveMaxFiles) {
+        toast.error(
+          `Maximum ${effectiveMaxFiles} files allowed for your ${subscription?.tier?.toUpperCase()} tier`
+        );
+        return;
+      }
+
+      // Validate each file against tier limits
       const validFiles = newFiles.filter((file) => {
-        if (file.size > maxSize * 1024 * 1024) {
-          toast.error(`${file.name} exceeds ${maxSize}MB limit`);
+        const validation = validateFileUpload(file, uploadLimits);
+        if (!validation.valid) {
+          toast.error(validation.error);
           return false;
         }
+
+        // Check file type if specified
         if (
           acceptedTypes &&
           !acceptedTypes.some((type) => file.type.match(type))
@@ -147,6 +185,7 @@ export function FileUploadPreview({
           toast.error(`${file.name} is not an accepted file type`);
           return false;
         }
+
         return true;
       });
 
@@ -154,7 +193,15 @@ export function FileUploadPreview({
         onUpload(validFiles);
       }
     },
-    [files.length, maxFiles, maxSize, acceptedTypes, onUpload]
+    [
+      files.length,
+      effectiveMaxFiles,
+      acceptedTypes,
+      onUpload,
+      uploadLimits,
+      subscription?.tier,
+      showUpgradePrompt,
+    ]
   );
 
   const handleDrop = useCallback(
@@ -175,6 +222,48 @@ export function FileUploadPreview({
   };
 
   if (files.length === 0) {
+    // Free tier cannot upload files - show upgrade prompt
+    if (subscription?.tier === 'free') {
+      return (
+        <>
+          <div
+            className={cn(
+              'relative rounded-lg border-2 border-muted-foreground/25 border-dashed bg-muted/10 p-8 text-center',
+              className
+            )}
+          >
+            <Crown className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-4 font-medium text-lg text-muted-foreground">
+              {tierRecommendations.title}
+            </h3>
+            <p className="mt-2 text-muted-foreground text-sm">
+              {tierRecommendations.description}
+            </p>
+
+            <Button className="mt-4" onClick={() => setShowUpgrade(true)}>
+              <Crown className="mr-2 h-4 w-4" />
+              {tierRecommendations.action}
+            </Button>
+          </div>
+
+          {showUpgrade && (
+            <UpgradePrompt
+              onDismiss={() => setShowUpgrade(false)}
+              prompt={{
+                shouldShow: true,
+                title: 'Upgrade to Upload Files',
+                message:
+                  'Upload documents, images, and more to enhance your AI conversations. Pro tier includes 1MB file uploads.',
+                suggestedTier: 'pro',
+                urgency: 'medium',
+              }}
+              variant="modal"
+            />
+          )}
+        </>
+      );
+    }
+
     return (
       <div
         className={cn(
@@ -182,6 +271,7 @@ export function FileUploadPreview({
           isDragging
             ? 'border-primary bg-primary/5'
             : 'border-muted-foreground/25',
+          uploadLimits.canUpload ? '' : 'pointer-events-none opacity-50',
           className
         )}
         onDragLeave={handleDragLeave}
@@ -191,6 +281,7 @@ export function FileUploadPreview({
         <input
           accept={acceptedTypes?.join(',')}
           className="hidden"
+          disabled={!uploadLimits.canUpload}
           multiple
           onChange={handleFileSelect}
           ref={fileInputRef}
@@ -201,23 +292,68 @@ export function FileUploadPreview({
         <h3 className="mt-4 font-medium text-lg">
           Drop files here or click to browse
         </h3>
-        <p className="mt-2 text-muted-foreground text-sm">
-          Maximum {maxFiles} files, up to {maxSize}MB each
-        </p>
+
+        {/* Tier-based messaging */}
+        <div className="mt-2 space-y-1">
+          <p className="text-muted-foreground text-sm">
+            <Badge className="mr-2" variant="secondary">
+              {subscription?.tier?.toUpperCase() || 'FREE'}
+            </Badge>
+            Up to {effectiveMaxSize}MB per file, {effectiveMaxFiles} files max
+          </p>
+
+          {uploadLimits.storageLimit > 0 && (
+            <p className="text-muted-foreground text-xs">
+              Storage: {formatFileSize(uploadLimits.storageUsed)} /{' '}
+              {formatFileSize(uploadLimits.storageLimit)} used
+              {uploadLimits.filesThisMonth > 0 && (
+                <span className="ml-2">
+                  • Files this month: {uploadLimits.filesThisMonth} /{' '}
+                  {uploadLimits.filesLimit}
+                </span>
+              )}
+            </p>
+          )}
+
+          {uploadLimits.error && (
+            <p className="text-destructive text-xs">{uploadLimits.error}</p>
+          )}
+        </div>
+
         {acceptedTypes && (
-          <p className="mt-1 text-muted-foreground text-xs">
+          <p className="mt-2 text-muted-foreground text-xs">
             Accepted: {acceptedTypes.join(', ')}
           </p>
         )}
 
         <Button
           className="mt-4"
-          onClick={() => fileInputRef.current?.click()}
+          disabled={!!uploadLimits.error && !!subscription && (subscription.tier === 'pro' || subscription.tier === 'pro_plus' || subscription.tier === 'admin')}
+          onClick={() => {
+            if (!uploadLimits.canUpload && subscription && (subscription.tier !== 'pro' && subscription.tier !== 'pro_plus' && subscription.tier !== 'admin')) {
+              setShowUpgrade(true);
+            } else {
+              fileInputRef.current?.click();
+            }
+          }}
           variant="outline"
         >
           <Paperclip className="mr-2 h-4 w-4" />
           Select Files
         </Button>
+
+        {/* Upgrade suggestion for Pro users */}
+        {subscription?.tier === 'pro' && tierRecommendations.action && (
+          <Button
+            className="mt-2"
+            onClick={() => setShowUpgrade(true)}
+            size="sm"
+            variant="ghost"
+          >
+            <Crown className="mr-2 h-3 w-3" />
+            {tierRecommendations.action}
+          </Button>
+        )}
       </div>
     );
   }
@@ -304,7 +440,7 @@ export function FileUploadPreview({
           })}
         </AnimatePresence>
 
-        {files.length < maxFiles && (
+        {files.length < effectiveMaxFiles && uploadLimits.canUpload && (
           <Button
             className="w-full"
             onClick={() => fileInputRef.current?.click()}
@@ -317,11 +453,34 @@ export function FileUploadPreview({
         <input
           accept={acceptedTypes?.join(',')}
           className="hidden"
+          disabled={!uploadLimits.canUpload}
           multiple
           onChange={handleFileSelect}
           ref={fileInputRef}
           type="file"
         />
+
+        {showUpgrade && (
+          <UpgradePrompt
+            onDismiss={() => setShowUpgrade(false)}
+            prompt={{
+              shouldShow: true,
+              title:
+                subscription?.tier === 'free'
+                  ? 'Upgrade to Upload Files'
+                  : `Upgrade to ${subscription?.tier === 'pro' ? 'Pro+' : 'Pro'}`,
+              message:
+                subscription?.tier === 'free'
+                  ? 'Upload documents, images, and more to enhance your AI conversations. Pro tier includes 1MB file uploads.'
+                  : subscription?.tier === 'pro'
+                    ? 'Pro+ tier includes 5MB file uploads and 1GB storage for larger documents.'
+                    : 'Upgrade for enhanced file upload capabilities.',
+              suggestedTier: subscription?.tier === 'free' ? 'pro' : 'pro_plus',
+              urgency: 'medium',
+            }}
+            variant="modal"
+          />
+        )}
       </div>
     );
   }
@@ -355,7 +514,7 @@ export function FileUploadPreview({
           ))}
         </AnimatePresence>
 
-        {files.length < maxFiles && (
+        {files.length < effectiveMaxFiles && uploadLimits.canUpload && (
           <>
             <Button
               onClick={() => fileInputRef.current?.click()}
@@ -367,6 +526,7 @@ export function FileUploadPreview({
             <input
               accept={acceptedTypes?.join(',')}
               className="hidden"
+              disabled={!uploadLimits.canUpload}
               multiple
               onChange={handleFileSelect}
               ref={fileInputRef}
@@ -470,29 +630,79 @@ export function FileUploadPreview({
           })}
         </AnimatePresence>
 
-        {files.length < maxFiles && (
+        {files.length < effectiveMaxFiles && uploadLimits.canUpload && (
           <motion.div animate={{ opacity: 1 }} initial={{ opacity: 0 }}>
             <Card
-              className="flex aspect-square cursor-pointer items-center justify-center border-dashed transition-colors hover:bg-muted/50"
-              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                'flex aspect-square cursor-pointer items-center justify-center border-dashed transition-colors hover:bg-muted/50',
+                !uploadLimits.canUpload && 'cursor-not-allowed opacity-50'
+              )}
+              onClick={() => {
+                if (uploadLimits.canUpload) {
+                  fileInputRef.current?.click();
+                } else if (subscription?.tier === 'free') {
+                  setShowUpgrade(true);
+                }
+              }}
             >
               <div className="text-center">
                 <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="mt-2 text-muted-foreground text-sm">Add File</p>
+                <p className="mt-2 text-muted-foreground text-sm">
+                  {uploadLimits.canUpload ? 'Add File' : 'Upgrade to Upload'}
+                </p>
               </div>
             </Card>
           </motion.div>
         )}
+
+        {/* Show upgrade prompt for free tier when no uploads allowed */}
+        {!uploadLimits.canUpload &&
+          subscription?.tier === 'free' &&
+          files.length === 0 && (
+            <motion.div animate={{ opacity: 1 }} initial={{ opacity: 0 }}>
+              <Card className="flex aspect-square items-center justify-center border-amber-300 border-dashed bg-amber-50/50 dark:bg-amber-950/20">
+                <div className="text-center">
+                  <Crown className="mx-auto h-8 w-8 text-amber-600 dark:text-amber-400" />
+                  <p className="mt-2 text-amber-700 text-sm dark:text-amber-300">
+                    Upgrade to Pro
+                  </p>
+                </div>
+              </Card>
+            </motion.div>
+          )}
       </div>
 
       <input
         accept={acceptedTypes?.join(',')}
         className="hidden"
+        disabled={!uploadLimits.canUpload}
         multiple
         onChange={handleFileSelect}
         ref={fileInputRef}
         type="file"
       />
+
+      {showUpgrade && (
+        <UpgradePrompt
+          onDismiss={() => setShowUpgrade(false)}
+          prompt={{
+            shouldShow: true,
+            title:
+              subscription?.tier === 'free'
+                ? 'Upgrade to Upload Files'
+                : `Upgrade to ${subscription?.tier === 'pro' ? 'Pro+' : 'Pro'}`,
+            message:
+              subscription?.tier === 'free'
+                ? 'Upload documents, images, and more to enhance your AI conversations. Pro tier includes 1MB file uploads.'
+                : subscription?.tier === 'pro'
+                  ? 'Pro+ tier includes 5MB file uploads and 1GB storage for larger documents.'
+                  : 'Upgrade for enhanced file upload capabilities.',
+            suggestedTier: subscription?.tier === 'free' ? 'pro' : 'pro_plus',
+            urgency: 'medium',
+          }}
+          variant="modal"
+        />
+      )}
     </div>
   );
 }

@@ -18,8 +18,8 @@ import {
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
-import LandingFooter from '@/components/landing/landing-footer';
-import LandingHeader from '@/components/landing/landing-header';
+import LandingFooter from '@/components/landing/landingFooter';
+import LandingHeader from '@/components/landing/landingHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';

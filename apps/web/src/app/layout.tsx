@@ -2,9 +2,10 @@ import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, Inter } from 'next/font/google';
 import Script from 'next/script';
 import '../index.css';
+import { Analytics } from '@vercel/analytics/next';
 import BreadcrumbSchema from '@/components/breadcrumbSchema';
 import { ErrorBoundary } from '@/components/error-boundary';
-import { globalCommandPalette as GlobalCommandPalette } from '@/components/global-command-palette';
+import { globalCommandPalette as GlobalCommandPalette } from '@/components/globalCommandPalette';
 import Providers from '@/components/providers';
 import SchemaMarkup from '@/components/schema-markup';
 import ServiceWorkerManager from '@/components/service-worker-manager';
@@ -154,6 +155,7 @@ export default function RootLayout({
             </Providers>
           </ErrorBoundary>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

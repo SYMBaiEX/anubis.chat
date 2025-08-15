@@ -56,7 +56,7 @@ export function useReferralTracking() {
           router.replace(newUrl);
           return true;
         }
-      } catch (_error: any) {
+      } catch (_error) {
         // Still store in localStorage even if tracking fails (for retry later)
         if (referralCode) {
           localStorage.setItem('referralCode', referralCode);
@@ -166,10 +166,10 @@ export function useReferralAttribution() {
         if (result.success && !result.attributed) {
           return { success: false, reason: 'No pending attribution found' };
         }
-      } catch (error: any) {
+      } catch (error) {
         return {
           success: false,
-          reason: error.message || 'Attribution failed',
+          reason: error instanceof Error ? error.message : 'Attribution failed',
         };
       }
 

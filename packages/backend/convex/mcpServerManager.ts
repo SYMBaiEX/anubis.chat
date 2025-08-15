@@ -1,9 +1,9 @@
 /**
  * MCP (Model Context Protocol) Server Manager for ANUBIS Chat
- * 
+ *
  * This module provides dynamic MCP server connection management per agent,
  * server lifecycle management, configuration validation, and health monitoring.
- * 
+ *
  * Features:
  * - Dynamic MCP server connections based on agent configuration
  * - Server lifecycle management (connect, disconnect, reconnect)
@@ -14,11 +14,11 @@
  */
 
 import { v } from 'convex/values';
+import { api, internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { action, mutation, query } from './_generated/server';
-import { api, internal } from './_generated/api';
-import { createModuleLogger } from './utils/logger';
 import type { ToolExecutionContext, ToolExecutionResult } from './toolRegistry';
+import { createModuleLogger } from './utils/logger';
 
 // Create logger instance for this module
 const logger = createModuleLogger('mcpServerManager');
@@ -30,9 +30,9 @@ const logger = createModuleLogger('mcpServerManager');
 /**
  * MCP Server connection states
  */
-export type McpServerStatus = 
+export type McpServerStatus =
   | 'disconnected'
-  | 'connecting' 
+  | 'connecting'
   | 'connected'
   | 'error'
   | 'disabled'
@@ -102,7 +102,7 @@ export interface AgentMcpContext {
 
 /**
  * Main MCP Server Manager class
- * 
+ *
  * Handles server connections, tool discovery, and lifecycle management
  * for each agent's MCP server configuration.
  */
@@ -126,11 +126,11 @@ export class McpServerManager {
     mcpServers: McpServerConfig[]
   ): Promise<AgentMcpContext> {
     const contextKey = `${agentId}_${userId}`;
-    
+
     logger.info('Initializing MCP servers for agent', {
       agentId,
       userId,
-      serverCount: mcpServers.length
+      serverCount: mcpServers.length,
     });
 
     // Create agent context
@@ -139,7 +139,7 @@ export class McpServerManager {
       userId,
       connections: new Map(),
       tools: new Map(),
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     };
 
     // Connect to each enabled server
@@ -148,23 +148,23 @@ export class McpServerManager {
         try {
           const connection = await this.connectServer(serverConfig, userId);
           context.connections.set(serverConfig.name, connection);
-          
+
           // Discover tools from this server
           const tools = await this.discoverServerTools(connection);
           for (const tool of tools) {
             context.tools.set(tool.name, tool);
           }
-          
+
           logger.debug('Server connected successfully', {
             serverName: serverConfig.name,
-            toolCount: tools.length
+            toolCount: tools.length,
           });
         } catch (error) {
           logger.error('Failed to connect server', error, {
             serverName: serverConfig.name,
-            agentId
+            agentId,
           });
-          
+
           // Create failed connection entry
           const failedConnection: McpServerConnection = {
             serverId: this.generateServerId(serverConfig.name, userId),
@@ -172,8 +172,9 @@ export class McpServerManager {
             status: 'error',
             config: serverConfig,
             tools: [],
-            errorMessage: error instanceof Error ? error.message : 'Connection failed',
-            healthScore: 0
+            errorMessage:
+              error instanceof Error ? error.message : 'Connection failed',
+            healthScore: 0,
           };
           context.connections.set(serverConfig.name, failedConnection);
         }
@@ -185,7 +186,7 @@ export class McpServerManager {
           status: 'disabled',
           config: serverConfig,
           tools: [],
-          healthScore: 0
+          healthScore: 0,
         };
         context.connections.set(serverConfig.name, disabledConnection);
       }
@@ -208,7 +209,7 @@ export class McpServerManager {
     logger.info('Connecting to MCP server', {
       serverName: config.name,
       serverId,
-      userId
+      userId,
     });
 
     try {
@@ -216,8 +217,12 @@ export class McpServerManager {
       this.validateServerConfig(config);
 
       // Create connection based on server type
-      const connection = await this.establishConnection(config, serverId, userId);
-      
+      const connection = await this.establishConnection(
+        config,
+        serverId,
+        userId
+      );
+
       const responseTime = Date.now() - startTime;
       connection.responseTimeMs = responseTime;
       connection.healthScore = this.calculateHealthScore(connection);
@@ -230,14 +235,14 @@ export class McpServerManager {
         serverName: config.name,
         serverId,
         responseTime: `${responseTime}ms`,
-        healthScore: connection.healthScore
+        healthScore: connection.healthScore,
       });
 
       return connection;
     } catch (error) {
       logger.error('MCP server connection failed', error, {
         serverName: config.name,
-        serverId
+        serverId,
       });
 
       const failedConnection: McpServerConnection = {
@@ -246,9 +251,10 @@ export class McpServerManager {
         status: 'error',
         config,
         tools: [],
-        errorMessage: error instanceof Error ? error.message : 'Connection failed',
+        errorMessage:
+          error instanceof Error ? error.message : 'Connection failed',
         healthScore: 0,
-        responseTimeMs: Date.now() - startTime
+        responseTimeMs: Date.now() - startTime,
       };
 
       this.serverRegistry.set(serverId, failedConnection);
@@ -269,35 +275,39 @@ export class McpServerManager {
     // like Context7, Sequential, etc.
 
     const connectionMap: Record<string, Partial<McpServerConnection>> = {
-      'context7': {
+      context7: {
         tools: ['resolve-library-id', 'get-library-docs'],
         capabilities: ['documentation', 'library-lookup', 'best-practices'],
       },
-      'sequential': {
-        tools: ['sequential-thinking', 'complex-analysis', 'multi-step-reasoning'],
+      sequential: {
+        tools: [
+          'sequential-thinking',
+          'complex-analysis',
+          'multi-step-reasoning',
+        ],
         capabilities: ['analysis', 'reasoning', 'problem-solving'],
       },
-      'filesystem': {
+      filesystem: {
         tools: ['read-file', 'write-file', 'list-directory'],
         capabilities: ['file-operations', 'directory-navigation'],
       },
-      'playwright': {
+      playwright: {
         tools: ['navigate', 'screenshot', 'click', 'fill', 'evaluate'],
         capabilities: ['browser-automation', 'testing', 'web-interaction'],
       },
-      'grep': {
+      grep: {
         tools: ['search-github', 'code-search'],
         capabilities: ['code-search', 'pattern-matching'],
       },
-      'puppeteer': {
+      puppeteer: {
         tools: ['navigate', 'screenshot', 'click', 'fill', 'evaluate'],
         capabilities: ['browser-automation', 'web-scraping'],
-      }
+      },
     };
 
     const serverDefaults = connectionMap[config.name] || {
       tools: [],
-      capabilities: []
+      capabilities: [],
     };
 
     const connection: McpServerConnection = {
@@ -308,7 +318,7 @@ export class McpServerManager {
       tools: Array.isArray(serverDefaults.tools) ? serverDefaults.tools : [],
       capabilities: (serverDefaults.capabilities as string[]) || [],
       healthScore: 100,
-      lastConnected: Date.now()
+      lastConnected: Date.now(),
     };
 
     return connection;
@@ -331,7 +341,14 @@ export class McpServerManager {
     }
 
     // Validate known server types
-    const knownServers = ['context7', 'sequential', 'filesystem', 'playwright', 'grep', 'puppeteer'];
+    const knownServers = [
+      'context7',
+      'sequential',
+      'filesystem',
+      'playwright',
+      'grep',
+      'puppeteer',
+    ];
     if (!knownServers.includes(config.name)) {
       logger.warn('Unknown MCP server type', { serverName: config.name });
     }
@@ -340,7 +357,9 @@ export class McpServerManager {
   /**
    * Discover available tools from a connected server
    */
-  private async discoverServerTools(connection: McpServerConnection): Promise<McpToolDefinition[]> {
+  private async discoverServerTools(
+    connection: McpServerConnection
+  ): Promise<McpToolDefinition[]> {
     const tools: McpToolDefinition[] = [];
 
     // Convert server tools to tool definitions
@@ -350,14 +369,14 @@ export class McpServerManager {
         description: this.getToolDescription(toolName, connection.name),
         inputSchema: this.getToolInputSchema(toolName, connection.name),
         serverId: connection.serverId,
-        category: this.getToolCategory(toolName, connection.name)
+        category: this.getToolCategory(toolName, connection.name),
       };
       tools.push(toolDef);
     }
 
     logger.debug('Discovered tools from server', {
       serverName: connection.name,
-      toolCount: tools.length
+      toolCount: tools.length,
     });
 
     return tools;
@@ -368,64 +387,82 @@ export class McpServerManager {
    */
   private getToolDescription(toolName: string, serverName: string): string {
     const descriptions: Record<string, Record<string, string>> = {
-      'context7': {
-        'resolve-library-id': 'Resolve a package/library name to Context7-compatible ID',
-        'get-library-docs': 'Fetch up-to-date documentation for a library'
+      context7: {
+        'resolve-library-id':
+          'Resolve a package/library name to Context7-compatible ID',
+        'get-library-docs': 'Fetch up-to-date documentation for a library',
       },
-      'sequential': {
-        'sequential-thinking': 'Multi-step problem solving with structured analysis',
-        'complex-analysis': 'Deep architectural analysis with cross-module dependencies',
-        'multi-step-reasoning': 'Systematic reasoning for complex problems'
+      sequential: {
+        'sequential-thinking':
+          'Multi-step problem solving with structured analysis',
+        'complex-analysis':
+          'Deep architectural analysis with cross-module dependencies',
+        'multi-step-reasoning': 'Systematic reasoning for complex problems',
       },
-      'filesystem': {
+      filesystem: {
         'read-file': 'Read file contents from the filesystem',
         'write-file': 'Write content to a file',
-        'list-directory': 'List files and directories'
+        'list-directory': 'List files and directories',
       },
-      'playwright': {
-        'navigate': 'Navigate to a URL in browser',
-        'screenshot': 'Take screenshot of page or element',
-        'click': 'Click an element on the page',
-        'fill': 'Fill out an input field',
-        'evaluate': 'Execute JavaScript in browser'
+      playwright: {
+        navigate: 'Navigate to a URL in browser',
+        screenshot: 'Take screenshot of page or element',
+        click: 'Click an element on the page',
+        fill: 'Fill out an input field',
+        evaluate: 'Execute JavaScript in browser',
       },
-      'grep': {
+      grep: {
         'search-github': 'Search for code patterns in GitHub repositories',
-        'code-search': 'Search for code patterns with regex support'
-      }
+        'code-search': 'Search for code patterns with regex support',
+      },
     };
 
-    return descriptions[serverName]?.[toolName] || `${toolName} tool from ${serverName} server`;
+    return (
+      descriptions[serverName]?.[toolName] ||
+      `${toolName} tool from ${serverName} server`
+    );
   }
 
   /**
    * Get tool input schema based on server and tool name
    */
-  private getToolInputSchema(toolName: string, serverName: string): Record<string, unknown> {
+  private getToolInputSchema(
+    toolName: string,
+    serverName: string
+  ): Record<string, unknown> {
     // Return basic schemas for common tools
     const schemas: Record<string, Record<string, unknown>> = {
-      'context7': {
+      context7: {
         'resolve-library-id': { libraryName: 'string' },
-        'get-library-docs': { context7CompatibleLibraryID: 'string', tokens: 'number', topic: 'string' }
+        'get-library-docs': {
+          context7CompatibleLibraryID: 'string',
+          tokens: 'number',
+          topic: 'string',
+        },
       },
-      'sequential': {
-        'sequential-thinking': { thought: 'string', nextThoughtNeeded: 'boolean' },
-        'complex-analysis': { problem: 'string', depth: 'number' }
+      sequential: {
+        'sequential-thinking': {
+          thought: 'string',
+          nextThoughtNeeded: 'boolean',
+        },
+        'complex-analysis': { problem: 'string', depth: 'number' },
       },
-      'filesystem': {
+      filesystem: {
         'read-file': { file_path: 'string' },
         'write-file': { file_path: 'string', content: 'string' },
-        'list-directory': { path: 'string' }
+        'list-directory': { path: 'string' },
       },
-      'playwright': {
-        'navigate': { url: 'string' },
-        'screenshot': { name: 'string', selector: 'string' },
-        'click': { selector: 'string' },
-        'fill': { selector: 'string', value: 'string' }
-      }
+      playwright: {
+        navigate: { url: 'string' },
+        screenshot: { name: 'string', selector: 'string' },
+        click: { selector: 'string' },
+        fill: { selector: 'string', value: 'string' },
+      },
     };
 
-    const schema = schemas[serverName]?.[toolName] as Record<string, unknown> | undefined;
+    const schema = schemas[serverName]?.[toolName] as
+      | Record<string, unknown>
+      | undefined;
     return schema || { input: 'string' };
   }
 
@@ -434,12 +471,12 @@ export class McpServerManager {
    */
   private getToolCategory(toolName: string, serverName: string): string {
     const categories: Record<string, string> = {
-      'context7': 'documentation',
-      'sequential': 'analysis',
-      'filesystem': 'utility',
-      'playwright': 'automation',
-      'grep': 'search',
-      'puppeteer': 'automation'
+      context7: 'documentation',
+      sequential: 'analysis',
+      filesystem: 'utility',
+      playwright: 'automation',
+      grep: 'search',
+      puppeteer: 'automation',
     };
 
     return categories[serverName] || 'utility';
@@ -493,7 +530,7 @@ export class McpServerManager {
 
     logger.info('Disconnecting from MCP server', {
       serverName: connection.name,
-      serverId
+      serverId,
     });
 
     try {
@@ -509,7 +546,7 @@ export class McpServerManager {
         for (const [serverName, conn] of context.connections.entries()) {
           if (conn.serverId === serverId) {
             context.connections.delete(serverName);
-            
+
             // Remove tools from this server
             for (const [toolName, tool] of context.tools.entries()) {
               if (tool.serverId === serverId) {
@@ -523,12 +560,12 @@ export class McpServerManager {
 
       logger.info('MCP server disconnected successfully', {
         serverName: connection.name,
-        serverId
+        serverId,
       });
     } catch (error) {
       logger.error('Error disconnecting MCP server', error, {
         serverName: connection.name,
-        serverId
+        serverId,
       });
     }
   }
@@ -536,7 +573,10 @@ export class McpServerManager {
   /**
    * Reconnect to a server
    */
-  async reconnectServer(serverId: string, userId?: string): Promise<McpServerConnection> {
+  async reconnectServer(
+    serverId: string,
+    userId?: string
+  ): Promise<McpServerConnection> {
     const connection = this.serverRegistry.get(serverId);
     if (!connection) {
       throw new Error(`Server ${serverId} not found`);
@@ -562,11 +602,11 @@ export class McpServerManager {
     logger.info('Reconnecting to MCP server', {
       serverName: connection.name,
       serverId,
-      userId
+      userId,
     });
 
     connection.status = 'reconnecting';
-    
+
     try {
       // Re-establish connection
       const newConnection = await this.establishConnection(
@@ -581,18 +621,19 @@ export class McpServerManager {
 
       logger.info('MCP server reconnected successfully', {
         serverName: connection.name,
-        serverId
+        serverId,
       });
 
       return connection;
     } catch (error) {
       connection.status = 'error';
-      connection.errorMessage = error instanceof Error ? error.message : 'Reconnection failed';
+      connection.errorMessage =
+        error instanceof Error ? error.message : 'Reconnection failed';
       connection.healthScore = 0;
 
       logger.error('MCP server reconnection failed', error, {
         serverName: connection.name,
-        serverId
+        serverId,
       });
 
       throw error;
@@ -612,7 +653,7 @@ export class McpServerManager {
         status: 'disconnected',
         responseTime: 0,
         error: 'Server not found',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
 
@@ -620,12 +661,12 @@ export class McpServerManager {
       // Perform basic connectivity check
       // In a real implementation, this would ping the actual server
       const responseTime = Date.now() - startTime;
-      
+
       const healthCheck: McpServerHealthCheck = {
         serverId,
         status: connection.status,
         responseTime,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       // Update connection health
@@ -635,13 +676,13 @@ export class McpServerManager {
       return healthCheck;
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      
+
       return {
         serverId,
         status: 'error',
         responseTime,
         error: error instanceof Error ? error.message : 'Health check failed',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -657,7 +698,7 @@ export class McpServerManager {
       return [];
     }
 
-    return Array.from(context.tools.values()).filter(tool => {
+    return Array.from(context.tools.values()).filter((tool) => {
       const connection = this.serverRegistry.get(tool.serverId);
       return connection && connection.status === 'connected';
     });
@@ -687,11 +728,11 @@ export class McpServerManager {
         }
       }
 
-      if (!targetTool || !targetConnection) {
+      if (!(targetTool && targetConnection)) {
         return {
           success: false,
           error: `MCP tool '${toolName}' not found or server not available`,
-          executionTime: Date.now() - startTime
+          executionTime: Date.now() - startTime,
         };
       }
 
@@ -699,22 +740,28 @@ export class McpServerManager {
         return {
           success: false,
           error: `MCP server '${targetConnection.name}' is not connected (status: ${targetConnection.status})`,
-          executionTime: Date.now() - startTime
+          executionTime: Date.now() - startTime,
         };
       }
 
       // Route to appropriate MCP server implementation
-      const result = await this.routeToolExecution(targetConnection, targetTool, input, context);
+      const result = await this.routeToolExecution(
+        targetConnection,
+        targetTool,
+        input,
+        context
+      );
 
       return {
         ...result,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'MCP tool execution failed',
-        executionTime: Date.now() - startTime
+        error:
+          error instanceof Error ? error.message : 'MCP tool execution failed',
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -743,7 +790,7 @@ export class McpServerManager {
       default:
         return {
           success: false,
-          error: `No implementation available for MCP server: ${connection.name}`
+          error: `No implementation available for MCP server: ${connection.name}`,
         };
     }
   }
@@ -765,27 +812,30 @@ export class McpServerManager {
             success: true,
             data: {
               libraryId: `/example/${input.libraryName}`,
-              resolved: true
-            }
+              resolved: true,
+            },
           };
         case 'get-library-docs':
           return {
             success: true,
             data: {
               documentation: `Documentation for ${input.context7CompatibleLibraryID}`,
-              tokens: input.tokens || 1000
-            }
+              tokens: input.tokens || 1000,
+            },
           };
         default:
           return {
             success: false,
-            error: `Unknown Context7 tool: ${toolName}`
+            error: `Unknown Context7 tool: ${toolName}`,
           };
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Context7 tool execution failed'
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Context7 tool execution failed',
       };
     }
   }
@@ -805,19 +855,22 @@ export class McpServerManager {
             success: true,
             data: {
               thought: input.thought,
-              nextStep: input.nextThoughtNeeded ? 'continue' : 'complete'
-            }
+              nextStep: input.nextThoughtNeeded ? 'continue' : 'complete',
+            },
           };
         default:
           return {
             success: false,
-            error: `Unknown Sequential tool: ${toolName}`
+            error: `Unknown Sequential tool: ${toolName}`,
           };
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Sequential tool execution failed'
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Sequential tool execution failed',
       };
     }
   }
@@ -833,7 +886,7 @@ export class McpServerManager {
     // This would integrate with actual filesystem MCP server
     return {
       success: false,
-      error: 'Filesystem MCP server not implemented yet'
+      error: 'Filesystem MCP server not implemented yet',
     };
   }
 
@@ -848,7 +901,7 @@ export class McpServerManager {
     // This would integrate with actual Playwright MCP server
     return {
       success: false,
-      error: 'Playwright MCP server not implemented yet'
+      error: 'Playwright MCP server not implemented yet',
     };
   }
 
@@ -863,7 +916,7 @@ export class McpServerManager {
     // This would integrate with actual Grep MCP server
     return {
       success: false,
-      error: 'Grep MCP server not implemented yet'
+      error: 'Grep MCP server not implemented yet',
     };
   }
 
@@ -877,8 +930,10 @@ export class McpServerManager {
 
     this.healthCheckInterval = setInterval(async () => {
       const serverIds = Array.from(this.serverRegistry.keys());
-      
-      logger.debug('Performing health checks', { serverCount: serverIds.length });
+
+      logger.debug('Performing health checks', {
+        serverCount: serverIds.length,
+      });
 
       for (const serverId of serverIds) {
         try {
@@ -886,11 +941,11 @@ export class McpServerManager {
         } catch (error) {
           logger.warn('Health check failed for server', {
             serverId,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
         }
       }
-    }, 30000); // Check every 30 seconds
+    }, 30_000); // Check every 30 seconds
   }
 
   /**
@@ -906,7 +961,10 @@ export class McpServerManager {
   /**
    * Get agent context
    */
-  getAgentContext(agentId: Id<'agents'>, userId: string): AgentMcpContext | undefined {
+  getAgentContext(
+    agentId: Id<'agents'>,
+    userId: string
+  ): AgentMcpContext | undefined {
     const contextKey = `${agentId}_${userId}`;
     return this.agentContexts.get(contextKey);
   }
@@ -950,7 +1008,9 @@ export const initializeAgentMcpServers = action({
   handler: async (ctx, args) => {
     try {
       // Get agent configuration
-      const agent = await ctx.runQuery(api.agents.getById, { id: args.agentId });
+      const agent = await ctx.runQuery(api.agents.getById, {
+        id: args.agentId,
+      });
       if (!agent) {
         throw new Error('Agent not found');
       }
@@ -964,7 +1024,10 @@ export const initializeAgentMcpServers = action({
       );
 
       // Store server configurations in database for persistence
-      for (const [serverName, connection] of agentContext.connections.entries()) {
+      for (const [
+        serverName,
+        connection,
+      ] of agentContext.connections.entries()) {
         if (connection.status !== 'disabled') {
           await ctx.runMutation(api.mcpServers.upsertServer, {
             userId: args.userId,
@@ -974,7 +1037,10 @@ export const initializeAgentMcpServers = action({
             url: `mcp://${serverName}`,
             enabled: connection.status === 'connected',
             tools: connection.tools,
-            status: connection.status === 'reconnecting' ? 'connecting' : connection.status,
+            status:
+              connection.status === 'reconnecting'
+                ? 'connecting'
+                : connection.status,
             lastConnected: connection.lastConnected,
             errorMessage: connection.errorMessage,
           });
@@ -986,13 +1052,13 @@ export const initializeAgentMcpServers = action({
         serverCount: agentContext.connections.size,
         toolCount: agentContext.tools.size,
         connectedServers: Array.from(agentContext.connections.values())
-          .filter(c => c.status === 'connected')
-          .map(c => c.name)
+          .filter((c) => c.status === 'connected')
+          .map((c) => c.name),
       };
     } catch (error) {
       logger.error('Failed to initialize agent MCP servers', error, {
         agentId: args.agentId,
-        userId: args.userId
+        userId: args.userId,
       });
       throw error;
     }
@@ -1008,12 +1074,15 @@ export const getAgentMcpTools = query({
     userId: v.string(),
   },
   handler: async (ctx, args) => {
-    const tools = globalMcpServerManager.getToolsForAgent(args.agentId, args.userId);
-    return tools.map(tool => ({
+    const tools = globalMcpServerManager.getToolsForAgent(
+      args.agentId,
+      args.userId
+    );
+    return tools.map((tool) => ({
       name: tool.name,
       description: tool.description,
       category: tool.category,
-      serverId: tool.serverId
+      serverId: tool.serverId,
     }));
   },
 });
@@ -1044,20 +1113,20 @@ export const executeMcpTool = action({
       if (result.success) {
         logger.info('MCP tool executed successfully', {
           toolName: args.toolName,
-          executionTime: result.executionTime
+          executionTime: result.executionTime,
         });
       } else {
         logger.warn('MCP tool execution failed', {
           toolName: args.toolName,
           error: result.error,
-          executionTime: result.executionTime
+          executionTime: result.executionTime,
         });
       }
 
       return result;
     } catch (error) {
       logger.error('MCP tool execution error', error, {
-        toolName: args.toolName
+        toolName: args.toolName,
       });
       throw error;
     }
@@ -1073,28 +1142,35 @@ export const getMcpServerHealth = query({
     userId: v.string(),
   },
   handler: async (ctx, args) => {
-    const agentContext = globalMcpServerManager.getAgentContext(args.agentId, args.userId);
+    const agentContext = globalMcpServerManager.getAgentContext(
+      args.agentId,
+      args.userId
+    );
     if (!agentContext) {
       return { servers: [], totalHealth: 0 };
     }
 
-    const servers = Array.from(agentContext.connections.values()).map(connection => ({
-      name: connection.name,
-      status: connection.status,
-      healthScore: connection.healthScore,
-      responseTimeMs: connection.responseTimeMs,
-      lastConnected: connection.lastConnected,
-      errorMessage: connection.errorMessage,
-      toolCount: connection.tools.length
-    }));
+    const servers = Array.from(agentContext.connections.values()).map(
+      (connection) => ({
+        name: connection.name,
+        status: connection.status,
+        healthScore: connection.healthScore,
+        responseTimeMs: connection.responseTimeMs,
+        lastConnected: connection.lastConnected,
+        errorMessage: connection.errorMessage,
+        toolCount: connection.tools.length,
+      })
+    );
 
-    const totalHealth = servers.reduce((sum, server) => sum + server.healthScore, 0) / Math.max(servers.length, 1);
+    const totalHealth =
+      servers.reduce((sum, server) => sum + server.healthScore, 0) /
+      Math.max(servers.length, 1);
 
     return {
       servers,
       totalHealth: Math.round(totalHealth),
-      connectedCount: servers.filter(s => s.status === 'connected').length,
-      totalCount: servers.length
+      connectedCount: servers.filter((s) => s.status === 'connected').length,
+      totalCount: servers.length,
     };
   },
 });
@@ -1109,12 +1185,18 @@ export const reconnectMcpServer = action({
   },
   handler: async (ctx, args) => {
     try {
-      const connection = await globalMcpServerManager.reconnectServer(args.serverId, args.userId);
-      
+      const connection = await globalMcpServerManager.reconnectServer(
+        args.serverId,
+        args.userId
+      );
+
       // Update database record
       await ctx.runMutation(api.mcpServers.updateServerStatus, {
         serverId: args.serverId,
-        status: connection.status === 'reconnecting' ? 'connecting' : connection.status,
+        status:
+          connection.status === 'reconnecting'
+            ? 'connecting'
+            : connection.status,
         lastConnected: connection.lastConnected,
         errorMessage: connection.errorMessage,
       });
@@ -1123,11 +1205,11 @@ export const reconnectMcpServer = action({
         success: true,
         serverName: connection.name,
         status: connection.status,
-        healthScore: connection.healthScore
+        healthScore: connection.healthScore,
       };
     } catch (error) {
       logger.error('Failed to reconnect MCP server', error, {
-        serverId: args.serverId
+        serverId: args.serverId,
       });
       throw error;
     }
@@ -1141,7 +1223,11 @@ export const reconnectMcpServer = action({
 /**
  * Check if a tool should be routed through MCP servers
  */
-export function shouldUseMcpTool(toolName: string, agentId: Id<'agents'>, userId: string): boolean {
+export function shouldUseMcpTool(
+  toolName: string,
+  agentId: Id<'agents'>,
+  userId: string
+): boolean {
   const agentContext = globalMcpServerManager.getAgentContext(agentId, userId);
   if (!agentContext) {
     return false;
@@ -1152,7 +1238,9 @@ export function shouldUseMcpTool(toolName: string, agentId: Id<'agents'>, userId
     return false;
   }
 
-  const connection = globalMcpServerManager.getAllConnections().get(tool.serverId);
+  const connection = globalMcpServerManager
+    .getAllConnections()
+    .get(tool.serverId);
   return connection ? connection.status === 'connected' : false;
 }
 
@@ -1160,13 +1248,13 @@ export function shouldUseMcpTool(toolName: string, agentId: Id<'agents'>, userId
  * Get enhanced tool capabilities including MCP tools
  */
 export function getEnhancedAgentCapabilities(
-  agentId: Id<'agents'>, 
-  userId: string, 
+  agentId: Id<'agents'>,
+  userId: string,
   baseCapabilities: string[]
 ): string[] {
   const mcpTools = globalMcpServerManager.getToolsForAgent(agentId, userId);
-  const mcpCapabilities = mcpTools.map(tool => `mcp_${tool.name}`);
-  
+  const mcpCapabilities = mcpTools.map((tool) => `mcp_${tool.name}`);
+
   return [...baseCapabilities, ...mcpCapabilities];
 }
 

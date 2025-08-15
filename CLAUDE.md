@@ -219,3 +219,6 @@ chore: Maintenance
 
 - **Key Constraint**:
   - Dont touch auth, convex, or api
+
+- Stop creating .md files unless I request you
+- Explicitly no any types, ALWAYS review for the proper type strcture and if one does not exsist then create it.

@@ -23,10 +23,9 @@ export const maxDuration = 30;
 const getModel = (modelId: string) => {
   // OpenAI models
   if (modelId.startsWith('gpt-')) {
-    // Map gpt-5-nano to gpt-4-turbo-preview for now
-    // TODO: Update when gpt-5-nano is available
+    // GPT-5-nano is now available (as of 8/14/2025)
     if (modelId === 'gpt-5-nano') {
-      return openai('gpt-4-turbo-preview');
+      return openai('gpt-5-nano');
     }
     return openai(modelId);
   }

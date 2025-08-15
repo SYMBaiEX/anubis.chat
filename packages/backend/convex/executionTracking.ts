@@ -1,10 +1,10 @@
 /**
  * Execution Tracking System for ANUBIS Chat
- * 
+ *
  * This module provides comprehensive tracking and logging of agent tool executions,
  * including both regular tools and MCP server tools. It maintains execution history,
  * performance metrics, and provides analytics for agent behavior.
- * 
+ *
  * Features:
  * - Real-time execution tracking with session context
  * - Performance metrics and analytics
@@ -15,11 +15,20 @@
  */
 
 import { ConvexError, v } from 'convex/values';
-import { mutation, query, action, internalMutation, internalQuery, type ActionCtx, type MutationCtx, type QueryCtx } from './_generated/server';
-import type { Doc, Id } from './_generated/dataModel';
 import { api, internal } from './_generated/api';
-import { createModuleLogger } from './utils/logger';
+import type { Doc, Id } from './_generated/dataModel';
+import {
+  type ActionCtx,
+  action,
+  internalMutation,
+  internalQuery,
+  type MutationCtx,
+  mutation,
+  type QueryCtx,
+  query,
+} from './_generated/server';
 import type { ToolExecutionResult } from './toolRegistry';
+import { createModuleLogger } from './utils/logger';
 
 // Create logger instance for this module
 const logger = createModuleLogger('executionTracking');
@@ -90,23 +99,32 @@ export interface ExecutionAnalytics {
   successfulExecutions: number;
   failedExecutions: number;
   averageExecutionTime: number;
-  toolUsageBreakdown: Record<string, {
-    count: number;
-    successRate: number;
-    averageTime: number;
-    lastUsed: number;
-  }>;
-  agentPerformance: Record<string, {
-    executionCount: number;
-    successRate: number;
-    averageTime: number;
-    mostUsedTools: string[];
-  }>;
-  errorPatterns: Record<string, {
-    count: number;
-    lastOccurred: number;
-    affectedTools: string[];
-  }>;
+  toolUsageBreakdown: Record<
+    string,
+    {
+      count: number;
+      successRate: number;
+      averageTime: number;
+      lastUsed: number;
+    }
+  >;
+  agentPerformance: Record<
+    string,
+    {
+      executionCount: number;
+      successRate: number;
+      averageTime: number;
+      mostUsedTools: string[];
+    }
+  >;
+  errorPatterns: Record<
+    string,
+    {
+      count: number;
+      lastOccurred: number;
+      affectedTools: string[];
+    }
+  >;
   timeSeriesData: Array<{
     timestamp: number;
     executions: number;
@@ -129,7 +147,7 @@ interface RateLimitConfig {
 const DEFAULT_RATE_LIMITS: RateLimitConfig = {
   maxExecutionsPerMinute: 60,
   maxExecutionsPerHour: 1000,
-  maxConcurrentExecutions: 10
+  maxConcurrentExecutions: 10,
 };
 
 // =============================================================================
@@ -146,44 +164,50 @@ class ExecutionTracker {
   /**
    * Check rate limits for a user
    */
-  private checkRateLimits(userId: string): { allowed: boolean; reason?: string } {
+  private checkRateLimits(userId: string): {
+    allowed: boolean;
+    reason?: string;
+  } {
     const now = Date.now();
     const userTimestamps = this.rateLimitTracking.get(userId) || [];
-    
+
     // Clean old timestamps
     const oneHourAgo = now - 60 * 60 * 1000;
-    const recentTimestamps = userTimestamps.filter(ts => ts > oneHourAgo);
-    
+    const recentTimestamps = userTimestamps.filter((ts) => ts > oneHourAgo);
+
     // Check concurrent executions
-    const activeUserExecutions = Array.from(this.activeExecutions.values())
-      .filter(e => e.userId === userId && e.status === 'executing').length;
-    
+    const activeUserExecutions = Array.from(
+      this.activeExecutions.values()
+    ).filter((e) => e.userId === userId && e.status === 'executing').length;
+
     if (activeUserExecutions >= this.rateLimitConfig.maxConcurrentExecutions) {
       return {
         allowed: false,
-        reason: `Maximum concurrent executions (${this.rateLimitConfig.maxConcurrentExecutions}) reached`
+        reason: `Maximum concurrent executions (${this.rateLimitConfig.maxConcurrentExecutions}) reached`,
       };
     }
-    
+
     // Check per-minute limit
     const oneMinuteAgo = now - 60 * 1000;
-    const lastMinuteCount = recentTimestamps.filter(ts => ts > oneMinuteAgo).length;
-    
+    const lastMinuteCount = recentTimestamps.filter(
+      (ts) => ts > oneMinuteAgo
+    ).length;
+
     if (lastMinuteCount >= this.rateLimitConfig.maxExecutionsPerMinute) {
       return {
         allowed: false,
-        reason: `Rate limit exceeded: ${this.rateLimitConfig.maxExecutionsPerMinute} executions per minute`
+        reason: `Rate limit exceeded: ${this.rateLimitConfig.maxExecutionsPerMinute} executions per minute`,
       };
     }
-    
+
     // Check per-hour limit
     if (recentTimestamps.length >= this.rateLimitConfig.maxExecutionsPerHour) {
       return {
         allowed: false,
-        reason: `Rate limit exceeded: ${this.rateLimitConfig.maxExecutionsPerHour} executions per hour`
+        reason: `Rate limit exceeded: ${this.rateLimitConfig.maxExecutionsPerHour} executions per hour`,
       };
     }
-    
+
     return { allowed: true };
   }
 
@@ -202,10 +226,10 @@ class ExecutionTracker {
     if (!rateLimitCheck.allowed) {
       throw new Error(`Rate limit exceeded: ${rateLimitCheck.reason}`);
     }
-    
+
     const executionId = this.generateExecutionId();
     const startTime = Date.now();
-    
+
     // Track for rate limiting
     const userTimestamps = this.rateLimitTracking.get(context.userId) || [];
     userTimestamps.push(startTime);
@@ -227,7 +251,7 @@ class ExecutionTracker {
       metadata: {
         model: context.model,
         temperature: context.temperature,
-      }
+      },
     };
 
     this.activeExecutions.set(executionId, execution);
@@ -242,7 +266,7 @@ class ExecutionTracker {
       toolName,
       toolType,
       sessionId: context.sessionId,
-      agentId: context.agentId
+      agentId: context.agentId,
     });
 
     return executionId;
@@ -267,7 +291,7 @@ class ExecutionTracker {
     execution.output = output;
     execution.endTime = endTime;
     execution.executionTime = endTime - execution.startTime;
-    
+
     if (tokenUsage && execution.metadata) {
       execution.metadata.tokenUsage = tokenUsage;
     }
@@ -284,7 +308,7 @@ class ExecutionTracker {
       executionId,
       toolName: execution.toolName,
       executionTime: execution.executionTime,
-      tokenUsageTotal: tokenUsage?.total
+      tokenUsageTotal: tokenUsage?.total,
     });
   }
 
@@ -313,7 +337,7 @@ class ExecutionTracker {
       executionId,
       toolName: execution.toolName,
       error: error.message,
-      executionTime: execution.executionTime
+      executionTime: execution.executionTime,
     });
   }
 
@@ -340,30 +364,37 @@ class ExecutionTracker {
     agentId?: Id<'agents'>
   ): ExecutionAnalytics {
     const allExecutions: ToolExecution[] = [];
-    
+
     // Collect all executions in time range
     for (const sessionExecutions of this.executionHistory.values()) {
       for (const execution of sessionExecutions) {
-        if (execution.startTime >= startTime && execution.startTime <= endTime) {
-          if (!agentId || execution.agentId === agentId) {
-            allExecutions.push(execution);
-          }
+        if (
+          execution.startTime >= startTime &&
+          execution.startTime <= endTime &&
+          (!agentId || execution.agentId === agentId)
+        ) {
+          allExecutions.push(execution);
         }
       }
     }
 
     // Calculate metrics
     const totalExecutions = allExecutions.length;
-    const successfulExecutions = allExecutions.filter(e => e.status === 'completed').length;
-    const failedExecutions = allExecutions.filter(e => e.status === 'failed').length;
-    
+    const successfulExecutions = allExecutions.filter(
+      (e) => e.status === 'completed'
+    ).length;
+    const failedExecutions = allExecutions.filter(
+      (e) => e.status === 'failed'
+    ).length;
+
     const totalTime = allExecutions
-      .filter(e => e.executionTime)
+      .filter((e) => e.executionTime)
       .reduce((sum, e) => sum + (e.executionTime || 0), 0);
-    
-    const averageExecutionTime = totalExecutions > 0 
-      ? totalTime / allExecutions.filter(e => e.executionTime).length
-      : 0;
+
+    const averageExecutionTime =
+      totalExecutions > 0
+        ? totalTime / allExecutions.filter((e) => e.executionTime).length
+        : 0;
 
     // Tool usage breakdown
     const toolUsageBreakdown: Record<string, any> = {};
@@ -373,10 +404,10 @@ class ExecutionTracker {
           count: 0,
           successes: 0,
           totalTime: 0,
-          lastUsed: 0
+          lastUsed: 0,
         };
       }
-      
+
       const tool = toolUsageBreakdown[execution.toolName];
       tool.count++;
       if (execution.status === 'completed') tool.successes++;
@@ -391,7 +422,7 @@ class ExecutionTracker {
         count: tool.count,
         successRate: tool.count > 0 ? (tool.successes / tool.count) * 100 : 0,
         averageTime: tool.totalTime / Math.max(tool.count, 1),
-        lastUsed: tool.lastUsed
+        lastUsed: tool.lastUsed,
       };
     }
 
@@ -404,10 +435,10 @@ class ExecutionTracker {
           executionCount: 0,
           successes: 0,
           totalTime: 0,
-          tools: new Set<string>()
+          tools: new Set<string>(),
         };
       }
-      
+
       const agent = agentPerformance[agentKey];
       agent.executionCount++;
       if (execution.status === 'completed') agent.successes++;
@@ -420,24 +451,29 @@ class ExecutionTracker {
       const agent = agentPerformance[agentKey];
       agentPerformance[agentKey] = {
         executionCount: agent.executionCount,
-        successRate: agent.executionCount > 0 ? (agent.successes / agent.executionCount) * 100 : 0,
+        successRate:
+          agent.executionCount > 0
+            ? (agent.successes / agent.executionCount) * 100
+            : 0,
         averageTime: agent.totalTime / Math.max(agent.executionCount, 1),
-        mostUsedTools: Array.from(agent.tools).slice(0, 5)
+        mostUsedTools: Array.from(agent.tools).slice(0, 5),
       };
     }
 
     // Error patterns
     const errorPatterns: Record<string, any> = {};
-    for (const execution of allExecutions.filter(e => e.status === 'failed' && e.error)) {
+    for (const execution of allExecutions.filter(
+      (e) => e.status === 'failed' && e.error
+    )) {
       const errorCode = execution.error!.code;
       if (!errorPatterns[errorCode]) {
         errorPatterns[errorCode] = {
           count: 0,
           lastOccurred: 0,
-          affectedTools: new Set<string>()
+          affectedTools: new Set<string>(),
         };
       }
-      
+
       const error = errorPatterns[errorCode];
       error.count++;
       error.lastOccurred = Math.max(error.lastOccurred, execution.startTime);
@@ -450,7 +486,7 @@ class ExecutionTracker {
       errorPatterns[errorCode] = {
         count: error.count,
         lastOccurred: error.lastOccurred,
-        affectedTools: Array.from(error.affectedTools)
+        affectedTools: Array.from(error.affectedTools),
       };
     }
 
@@ -460,22 +496,28 @@ class ExecutionTracker {
     for (let time = startTime; time < endTime; time += bucketSize) {
       const bucketEnd = Math.min(time + bucketSize, endTime);
       const bucketExecutions = allExecutions.filter(
-        e => e.startTime >= time && e.startTime < bucketEnd
+        (e) => e.startTime >= time && e.startTime < bucketEnd
       );
-      
+
       if (bucketExecutions.length > 0) {
-        const bucketSuccesses = bucketExecutions.filter(e => e.status === 'completed').length;
-        const bucketFailures = bucketExecutions.filter(e => e.status === 'failed').length;
+        const bucketSuccesses = bucketExecutions.filter(
+          (e) => e.status === 'completed'
+        ).length;
+        const bucketFailures = bucketExecutions.filter(
+          (e) => e.status === 'failed'
+        ).length;
         const bucketTotalTime = bucketExecutions
-          .filter(e => e.executionTime)
+          .filter((e) => e.executionTime)
           .reduce((sum, e) => sum + (e.executionTime || 0), 0);
-        
+
         timeSeriesData.push({
           timestamp: time,
           executions: bucketExecutions.length,
           successes: bucketSuccesses,
           failures: bucketFailures,
-          averageTime: bucketTotalTime / Math.max(bucketExecutions.filter(e => e.executionTime).length, 1)
+          averageTime:
+            bucketTotalTime /
+            Math.max(bucketExecutions.filter((e) => e.executionTime).length, 1),
         });
       }
     }
@@ -488,7 +530,7 @@ class ExecutionTracker {
       toolUsageBreakdown,
       agentPerformance,
       errorPatterns,
-      timeSeriesData
+      timeSeriesData,
     };
   }
 
@@ -504,9 +546,11 @@ class ExecutionTracker {
    */
   clearOldHistory(maxAge: number = 24 * 60 * 60 * 1000): void {
     const cutoffTime = Date.now() - maxAge;
-    
+
     for (const [sessionId, executions] of this.executionHistory.entries()) {
-      const recentExecutions = executions.filter(e => e.startTime > cutoffTime);
+      const recentExecutions = executions.filter(
+        (e) => e.startTime > cutoffTime
+      );
       if (recentExecutions.length > 0) {
         this.executionHistory.set(sessionId, recentExecutions);
       } else {
@@ -515,7 +559,7 @@ class ExecutionTracker {
     }
 
     logger.info('Cleared old execution history', {
-      remainingSessions: this.executionHistory.size
+      remainingSessions: this.executionHistory.size,
     });
   }
 
@@ -526,14 +570,14 @@ class ExecutionTracker {
   cleanup(): void {
     // Clear old history (older than 24 hours by default)
     this.clearOldHistory();
-    
+
     // Clear completed executions from active map
     for (const [id, execution] of this.activeExecutions.entries()) {
       if (execution.status === 'completed' || execution.status === 'failed') {
         this.activeExecutions.delete(id);
       }
     }
-    
+
     // Trim performance metrics to keep only recent data
     for (const [key, metrics] of this.performanceMetrics.entries()) {
       if (metrics.length > 100) {
@@ -541,23 +585,23 @@ class ExecutionTracker {
         this.performanceMetrics.set(key, metrics.slice(-100));
       }
     }
-    
+
     // Clean old rate limiting data (older than 1 hour)
     const oneHourAgo = Date.now() - 60 * 60 * 1000;
     for (const [userId, timestamps] of this.rateLimitTracking.entries()) {
-      const recentTimestamps = timestamps.filter(ts => ts > oneHourAgo);
+      const recentTimestamps = timestamps.filter((ts) => ts > oneHourAgo);
       if (recentTimestamps.length > 0) {
         this.rateLimitTracking.set(userId, recentTimestamps);
       } else {
         this.rateLimitTracking.delete(userId);
       }
     }
-    
+
     logger.debug('ExecutionTracker cleanup completed', {
       activeExecutions: this.activeExecutions.size,
       sessionHistory: this.executionHistory.size,
       performanceMetrics: this.performanceMetrics.size,
-      rateLimitTracking: this.rateLimitTracking.size
+      rateLimitTracking: this.rateLimitTracking.size,
     });
   }
 }
@@ -584,7 +628,11 @@ export const logExecution = internalMutation({
     agentId: v.id('agents'),
     userId: v.string(),
     toolName: v.string(),
-    toolType: v.union(v.literal('regular'), v.literal('mcp'), v.literal('builtin')),
+    toolType: v.union(
+      v.literal('regular'),
+      v.literal('mcp'),
+      v.literal('builtin')
+    ),
     serverId: v.optional(v.string()),
     input: v.any(),
     output: v.optional(v.any()),
@@ -641,7 +689,7 @@ export const logExecution = internalMutation({
     logger.debug('Execution logged to database', {
       executionId: args.executionId,
       toolName: args.toolName,
-      status: args.status
+      status: args.status,
     });
   },
 });
@@ -656,14 +704,14 @@ export const getExecutionHistory = query({
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 50, 200);
-    
+
     const executions = await ctx.db
       .query('agentToolExecutions')
-      .withIndex('by_chat', q => q.eq('chatId', args.chatId))
+      .withIndex('by_chat', (q) => q.eq('chatId', args.chatId))
       .order('desc')
       .take(limit);
 
-    return executions.map(exec => ({
+    return executions.map((exec) => ({
       ...exec,
       input: exec.input ? JSON.parse(exec.input) : undefined,
       output: exec.output ? JSON.parse(exec.output) : undefined,
@@ -681,25 +729,30 @@ export const getAgentAnalytics = query({
     timeRange: v.optional(v.number()), // milliseconds from now
   },
   handler: async (ctx, args) => {
-    const cutoffTime = args.timeRange 
-      ? Date.now() - args.timeRange 
-      : Date.now() - (24 * 60 * 60 * 1000); // Default to last 24 hours
+    const cutoffTime = args.timeRange
+      ? Date.now() - args.timeRange
+      : Date.now() - 24 * 60 * 60 * 1000; // Default to last 24 hours
 
     const executions = await ctx.db
       .query('agentToolExecutions')
-      .withIndex('by_agent', q => q.eq('agentId', args.agentId))
-      .filter(q => q.gte(q.field('createdAt'), cutoffTime))
+      .withIndex('by_agent', (q) => q.eq('agentId', args.agentId))
+      .filter((q) => q.gte(q.field('createdAt'), cutoffTime))
       .collect();
 
     // Calculate statistics
     const totalExecutions = executions.length;
-    const completedExecutions = executions.filter(e => e.status === 'completed').length;
-    const failedExecutions = executions.filter(e => e.status === 'failed').length;
-    
-    const averageExecutionTime = executions
-      .filter(e => e.executionTimeMs)
-      .reduce((sum, e) => sum + (e.executionTimeMs || 0), 0) / 
-      Math.max(executions.filter(e => e.executionTimeMs).length, 1);
+    const completedExecutions = executions.filter(
+      (e) => e.status === 'completed'
+    ).length;
+    const failedExecutions = executions.filter(
+      (e) => e.status === 'failed'
+    ).length;
+
+    const averageExecutionTime =
+      executions
+        .filter((e) => e.executionTimeMs)
+        .reduce((sum, e) => sum + (e.executionTimeMs || 0), 0) /
+      Math.max(executions.filter((e) => e.executionTimeMs).length, 1);
 
     // Tool usage breakdown
     const toolUsage: Record<string, number> = {};
@@ -717,12 +770,11 @@ export const getAgentAnalytics = query({
       totalExecutions,
       completedExecutions,
       failedExecutions,
-      successRate: totalExecutions > 0 
-        ? (completedExecutions / totalExecutions) * 100 
-        : 0,
+      successRate:
+        totalExecutions > 0 ? (completedExecutions / totalExecutions) * 100 : 0,
       averageExecutionTime: Math.round(averageExecutionTime),
       mostUsedTools,
-      timeRange: args.timeRange || (24 * 60 * 60 * 1000),
+      timeRange: args.timeRange || 24 * 60 * 60 * 1000,
     };
   },
 });
@@ -791,7 +843,9 @@ export const trackExecution = action({
     }),
     toolName: v.string(),
     input: v.any(),
-    toolType: v.optional(v.union(v.literal('regular'), v.literal('mcp'), v.literal('builtin'))),
+    toolType: v.optional(
+      v.union(v.literal('regular'), v.literal('mcp'), v.literal('builtin'))
+    ),
     serverId: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<string> => {
@@ -823,8 +877,8 @@ async function completeTrackedExecutionHelper(
   // Update database record
   const endTime = Date.now();
   const executions = globalExecutionTracker.getSessionHistory(args.executionId);
-  const execution = executions.find(e => e.id === args.executionId);
-  
+  const execution = executions.find((e) => e.id === args.executionId);
+
   if (execution) {
     await ctx.runMutation(internal.executionTracking.logExecution, {
       executionId: args.executionId,
@@ -886,8 +940,8 @@ async function failTrackedExecutionHelper(
   // Update database record
   const endTime = Date.now();
   const executions = globalExecutionTracker.getSessionHistory(args.executionId);
-  const execution = executions.find(e => e.id === args.executionId);
-  
+  const execution = executions.find((e) => e.id === args.executionId);
+
   if (execution) {
     await ctx.runMutation(internal.executionTracking.logExecution, {
       executionId: args.executionId,
@@ -934,20 +988,23 @@ export const getExecutionStatus = action({
     sessionId: v.string(),
   },
   handler: async (ctx, args) => {
-    const activeExecutions = globalExecutionTracker.getActiveExecutions()
-      .filter(e => e.sessionId === args.sessionId);
-    
-    const sessionHistory = globalExecutionTracker.getSessionHistory(args.sessionId);
-    
+    const activeExecutions = globalExecutionTracker
+      .getActiveExecutions()
+      .filter((e) => e.sessionId === args.sessionId);
+
+    const sessionHistory = globalExecutionTracker.getSessionHistory(
+      args.sessionId
+    );
+
     return {
-      activeExecutions: activeExecutions.map(e => ({
+      activeExecutions: activeExecutions.map((e) => ({
         id: e.id,
         toolName: e.toolName,
         status: e.status,
         startTime: e.startTime,
         elapsedTime: Date.now() - e.startTime,
       })),
-      recentExecutions: sessionHistory.slice(-10).map(e => ({
+      recentExecutions: sessionHistory.slice(-10).map((e) => ({
         id: e.id,
         toolName: e.toolName,
         status: e.status,
@@ -986,29 +1043,32 @@ async function cleanupExecutionHistoryHelper(
     maxAge?: number;
   }
 ): Promise<{ deletedCount: number; maxAge: number }> {
-  const maxAge = args.maxAge || (24 * 60 * 60 * 1000); // Default 24 hours
+  const maxAge = args.maxAge || 24 * 60 * 60 * 1000; // Default 24 hours
   globalExecutionTracker.clearOldHistory(maxAge);
-  
+
   // Also clean up database records
   const cutoffTime = Date.now() - maxAge;
-  const oldExecutions = await ctx.runQuery(internal.executionTracking.getOldExecutions, {
-    cutoffTime,
-  });
-  
+  const oldExecutions = await ctx.runQuery(
+    internal.executionTracking.getOldExecutions,
+    {
+      cutoffTime,
+    }
+  );
+
   // Batch delete operations for efficiency
-  const deletePromises = oldExecutions.map(exec =>
+  const deletePromises = oldExecutions.map((exec) =>
     ctx.runMutation(internal.executionTracking.deleteExecution, {
       id: exec._id,
     })
   );
-  
+
   await Promise.all(deletePromises);
-  
+
   logger.info('Cleaned up execution history', {
     deletedCount: oldExecutions.length,
     maxAge,
   });
-  
+
   return {
     deletedCount: oldExecutions.length,
     maxAge,
@@ -1039,13 +1099,13 @@ export const getOldExecutions = internalQuery({
     if (args.cutoffTime < 0 || args.cutoffTime > Date.now()) {
       throw new ConvexError({
         code: 'INVALID_CUTOFF_TIME',
-        message: 'Cutoff time must be a valid timestamp in the past'
+        message: 'Cutoff time must be a valid timestamp in the past',
       });
     }
-    
+
     return await ctx.db
       .query('agentToolExecutions')
-      .filter(q => q.lt(q.field('createdAt'), args.cutoffTime))
+      .filter((q) => q.lt(q.field('createdAt'), args.cutoffTime))
       .take(100); // Process in batches
   },
 });
@@ -1059,10 +1119,10 @@ export const deleteExecution = internalMutation({
     if (!execution) {
       throw new ConvexError({
         code: 'EXECUTION_NOT_FOUND',
-        message: `Execution with id ${args.id} not found`
+        message: `Execution with id ${args.id} not found`,
       });
     }
-    
+
     await ctx.db.delete(args.id);
   },
 });
@@ -1073,10 +1133,10 @@ export const deleteExecution = internalMutation({
 
 /**
  * Execution Tracking Module Exports
- * 
+ *
  * This module provides comprehensive tracking and analytics for agent tool executions.
  * It includes real-time tracking, performance metrics, error handling, and rate limiting.
- * 
+ *
  * Key Features:
  * - Real-time execution tracking with session context
  * - Performance metrics and analytics calculation
@@ -1084,18 +1144,18 @@ export const deleteExecution = internalMutation({
  * - Rate limiting to prevent abuse
  * - Memory management and cleanup
  * - Database persistence with Convex integration
- * 
+ *
  * Usage:
  * ```typescript
  * import executionTracking from './executionTracking';
- * 
+ *
  * // Track a tool execution
  * const executionId = await executionTracking.trackExecution({
  *   context: { sessionId, chatId, agentId, userId },
  *   toolName: 'webSearch',
  *   input: { query: 'example' }
  * });
- * 
+ *
  * // Complete the execution
  * await executionTracking.completeTrackedExecution({
  *   executionId,
@@ -1103,7 +1163,7 @@ export const deleteExecution = internalMutation({
  *   tokenUsage: { input: 100, output: 200, total: 300 }
  * });
  * ```
- * 
+ *
  * @see {@link ToolExecution} for execution data structure
  * @see {@link ExecutionAnalytics} for analytics format
  * @see {@link ExecutionContext} for execution context requirements

@@ -8,6 +8,7 @@ import {
 } from './files';
 import { verifyPaymentTransaction } from './paymentVerification';
 import { streamChat } from './streaming';
+import { processSubscriptionPayment } from './subscriptionPayment';
 
 const http = httpRouter();
 
@@ -105,6 +106,19 @@ http.route({
   path: '/verify-payment',
   method: 'POST',
   handler: verifyPaymentTransaction,
+});
+
+// Subscription payment endpoint with CORS support
+http.route({
+  path: '/subscription-payment',
+  method: 'OPTIONS',
+  handler: corsHandler,
+});
+
+http.route({
+  path: '/subscription-payment',
+  method: 'POST',
+  handler: processSubscriptionPayment,
 });
 
 // Note: WebSocket streaming is now handled through Convex's native real-time subscriptions

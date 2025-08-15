@@ -1,15 +1,15 @@
 /**
  * Simplified MCP Integration for ANUBIS Chat
- * 
+ *
  * This module provides basic MCP server integration that works with
  * the existing Convex architecture without complex cross-function calls.
  */
 
 import { v } from 'convex/values';
-import { action } from './_generated/server';
 import type { Id } from './_generated/dataModel';
-import { createModuleLogger } from './utils/logger';
+import { action } from './_generated/server';
 import type { ToolExecutionContext, ToolExecutionResult } from './toolRegistry';
+import { createModuleLogger } from './utils/logger';
 
 // Create logger instance for this module
 const logger = createModuleLogger('mcpIntegration');
@@ -39,7 +39,7 @@ export interface McpToolResponse {
  * Check if a tool should be handled by MCP servers based on agent configuration
  */
 export function shouldRouteThroughMcp(
-  toolName: string, 
+  toolName: string,
   agentMcpServers?: SimpleMcpServerConfig[]
 ): boolean {
   if (!agentMcpServers || agentMcpServers.length === 0) {
@@ -48,17 +48,28 @@ export function shouldRouteThroughMcp(
 
   // Check if any MCP server is configured for this tool
   const mcpToolMap: Record<string, string[]> = {
-    'context7': ['resolve-library-id', 'get-library-docs', 'documentation-lookup'],
-    'sequential': ['sequential-thinking', 'complex-analysis', 'multi-step-reasoning'],
-    'filesystem': ['read-file', 'write-file', 'list-directory'],
-    'playwright': ['navigate', 'screenshot', 'click', 'fill', 'evaluate'],
-    'grep': ['search-github', 'code-search'],
-    'puppeteer': ['navigate', 'screenshot', 'click', 'fill', 'evaluate']
+    context7: [
+      'resolve-library-id',
+      'get-library-docs',
+      'documentation-lookup',
+    ],
+    sequential: [
+      'sequential-thinking',
+      'complex-analysis',
+      'multi-step-reasoning',
+    ],
+    filesystem: ['read-file', 'write-file', 'list-directory'],
+    playwright: ['navigate', 'screenshot', 'click', 'fill', 'evaluate'],
+    grep: ['search-github', 'code-search'],
+    puppeteer: ['navigate', 'screenshot', 'click', 'fill', 'evaluate'],
   };
 
   // Find if any enabled MCP server supports this tool
   for (const serverConfig of agentMcpServers) {
-    if (serverConfig.enabled && mcpToolMap[serverConfig.name]?.includes(toolName)) {
+    if (
+      serverConfig.enabled &&
+      mcpToolMap[serverConfig.name]?.includes(toolName)
+    ) {
       return true;
     }
   }
@@ -79,12 +90,12 @@ export const executeMcpTool = action({
   },
   handler: async (ctx, args): Promise<McpToolResponse> => {
     const startTime = Date.now();
-    
+
     try {
       logger.info('Executing MCP tool', {
         toolName: args.toolName,
         agentId: args.agentId,
-        userId: args.userId
+        userId: args.userId,
       });
 
       // For now, return mock responses for different tool types
@@ -92,31 +103,32 @@ export const executeMcpTool = action({
       const mockResponse = await executeMockMcpTool(args.toolName, args.input);
 
       const executionTime = Date.now() - startTime;
-      
+
       logger.info('MCP tool executed successfully', {
         toolName: args.toolName,
         executionTime,
-        success: mockResponse.success
+        success: mockResponse.success,
       });
 
       return {
         ...mockResponse,
-        executionTime
+        executionTime,
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : 'MCP tool execution failed';
-      
+      const errorMessage =
+        error instanceof Error ? error.message : 'MCP tool execution failed';
+
       logger.error('MCP tool execution failed', error, {
         toolName: args.toolName,
         agentId: args.agentId,
-        executionTime
+        executionTime,
       });
 
       return {
         success: false,
         error: errorMessage,
-        executionTime
+        executionTime,
       };
     }
   },
@@ -124,12 +136,15 @@ export const executeMcpTool = action({
 
 /**
  * Mock MCP tool execution for testing and development
- * 
+ *
  * In production, this would be replaced with actual MCP server connections
  */
-async function executeMockMcpTool(toolName: string, input: any): Promise<Omit<McpToolResponse, 'executionTime'>> {
+async function executeMockMcpTool(
+  toolName: string,
+  input: any
+): Promise<Omit<McpToolResponse, 'executionTime'>> {
   // Simulate some processing time
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50));
+  await new Promise((resolve) => setTimeout(resolve, Math.random() * 100 + 50));
 
   // Return different responses based on tool type
   switch (toolName) {
@@ -139,8 +154,8 @@ async function executeMockMcpTool(toolName: string, input: any): Promise<Omit<Mc
         data: {
           libraryId: `/example/${input.libraryName || 'unknown'}`,
           resolved: true,
-          source: 'context7-mcp'
-        }
+          source: 'context7-mcp',
+        },
       };
 
     case 'get-library-docs':
@@ -149,8 +164,8 @@ async function executeMockMcpTool(toolName: string, input: any): Promise<Omit<Mc
         data: {
           documentation: `Mock documentation for ${input.context7CompatibleLibraryID || 'unknown library'}`,
           tokens: input.tokens || 1000,
-          source: 'context7-mcp'
-        }
+          source: 'context7-mcp',
+        },
       };
 
     case 'sequential-thinking':
@@ -159,8 +174,8 @@ async function executeMockMcpTool(toolName: string, input: any): Promise<Omit<Mc
         data: {
           thought: `Analyzed: ${input.thought || 'No input provided'}`,
           nextStep: input.nextThoughtNeeded ? 'continue' : 'complete',
-          source: 'sequential-mcp'
-        }
+          source: 'sequential-mcp',
+        },
       };
 
     case 'search-github':
@@ -172,11 +187,11 @@ async function executeMockMcpTool(toolName: string, input: any): Promise<Omit<Mc
             {
               file: 'example.ts',
               line: 42,
-              content: `Example code for: ${input.query}`
-            }
+              content: `Example code for: ${input.query}`,
+            },
           ],
-          source: 'grep-mcp'
-        }
+          source: 'grep-mcp',
+        },
       };
 
     case 'navigate':
@@ -190,14 +205,14 @@ async function executeMockMcpTool(toolName: string, input: any): Promise<Omit<Mc
           action: toolName,
           input,
           result: `Mock ${toolName} execution completed`,
-          source: 'playwright-mcp'
-        }
+          source: 'playwright-mcp',
+        },
       };
 
     default:
       return {
         success: false,
-        error: `Unknown MCP tool: ${toolName}`
+        error: `Unknown MCP tool: ${toolName}`,
       };
   }
 }
@@ -214,7 +229,7 @@ export function getEnhancedCapabilities(
   }
 
   const mcpCapabilities: string[] = [];
-  
+
   // Add capabilities based on enabled MCP servers
   for (const serverConfig of agentMcpServers) {
     if (serverConfig.enabled) {
@@ -256,7 +271,7 @@ export const initializeMcpServers = action({
     try {
       logger.info('Initializing MCP servers for agent', {
         agentId: args.agentId,
-        userId: args.userId
+        userId: args.userId,
       });
 
       // In a real implementation, this would:
@@ -270,14 +285,14 @@ export const initializeMcpServers = action({
         success: true,
         message: 'MCP servers initialization simulated',
         serverCount: 0,
-        connectedServers: []
+        connectedServers: [],
       };
     } catch (error) {
       logger.error('Failed to initialize MCP servers', error, {
         agentId: args.agentId,
-        userId: args.userId
+        userId: args.userId,
       });
-      
+
       throw error;
     }
   },

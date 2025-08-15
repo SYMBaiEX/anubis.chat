@@ -17,7 +17,10 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { AdminGuard } from '@/components/auth/adminGuard';
 import { UpgradePrompt } from '@/components/auth/upgradePrompt';
-import { useSubscriptionStatus } from '@/components/providers/auth-provider';
+import {
+  useAuthContext,
+  useSubscriptionStatus,
+} from '@/components/providers/auth-provider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,11 +55,11 @@ function WorkflowsContent() {
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   // user is not used in this component
-  // const { user } = useAuthContext();
+  const { user } = useAuthContext();
   const subscription = useSubscriptionStatus();
 
-  // TODO: Replace with actual wallet address from auth
-  const walletAddress = 'demo-user';
+  // Use actual wallet address from authenticated user
+  const walletAddress = user?.walletAddress || 'demo-user';
 
   // Workflow creation limits based on subscription tier
   const canCreateWorkflows = subscription?.tier === 'pro_plus';

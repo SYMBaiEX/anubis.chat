@@ -18,7 +18,7 @@ import {
   useSubscriptionLimits,
   useUpgradePrompt,
 } from '@/components/providers/auth-provider';
-import { useSolanaAgent } from '@/components/providers/solana-agent-provider';
+import { useSolanaAgent } from '@/components/providers/solanaAgentProvider';
 import { AgentGrid } from '@/components/ui/agent-grid';
 import { Button } from '@/components/ui/button';
 import {
@@ -256,6 +256,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         | 'updatedAt'
         | 'systemPrompt'
         | 'temperature'
+        | 'tokenUsage'
       > & {
         _id: string;
         agentPrompt?: string;

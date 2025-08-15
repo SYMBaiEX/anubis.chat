@@ -1,12 +1,14 @@
 /**
  * File Management Functions
- * Handles file uploads, storage, and retrieval
+ * Handles file uploads, storage, and retrieval with subscription tier limits
  */
 
 import { ConvexError, v } from 'convex/values';
 import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { httpAction, mutation, query } from './_generated/server';
+import { getCurrentUser } from './authHelpers';
+import { checkUploadLimits, TIER_FILE_LIMITS } from './fileValidation';
 
 // =============================================================================
 // Queries
@@ -141,7 +143,7 @@ export const getContent = query({
 // =============================================================================
 
 /**
- * Upload a new file
+ * Upload a new file with tier-based validation
  */
 export const upload = mutation({
   args: {
@@ -165,6 +167,26 @@ export const upload = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+
+    // Get user and subscription info for tier-based validation
+    const user = await getCurrentUser(ctx);
+    if (!user || user.walletAddress !== args.walletAddress) {
+      throw new ConvexError('Unauthorized');
+    }
+
+    const userTier = user.subscription?.tier || 'free';
+
+    // Check upload limits based on subscription tier
+    const uploadCheck = await checkUploadLimits(
+      ctx,
+      args.walletAddress,
+      userTier as keyof typeof TIER_FILE_LIMITS,
+      args.size
+    );
+
+    if (!uploadCheck.canUpload) {
+      throw new ConvexError(uploadCheck.error || 'Upload not allowed');
+    }
 
     // Check if file with same hash already exists for this user
     const existingFile = await ctx.db
@@ -307,19 +329,34 @@ export const deleteFile = mutation({
 });
 
 /**
- * Get file statistics for a user
+ * Get file statistics for a user with tier limits
  */
 export const getStats = query({
   args: {
     walletAddress: v.string(),
   },
   handler: async (ctx, args) => {
+    // Get user to determine tier limits
+    const user = await getCurrentUser(ctx);
+    if (!user || user.walletAddress !== args.walletAddress) {
+      throw new ConvexError('Unauthorized');
+    }
+
+    const userTier = user.subscription?.tier || 'free';
+    const tierLimit =
+      TIER_FILE_LIMITS[userTier as keyof typeof TIER_FILE_LIMITS];
+
     const files = await ctx.db
       .query('files')
       .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
       .collect();
 
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const filesThisMonth = files.filter(
+      (file) => file.createdAt > thirtyDaysAgo
+    ).length;
+
     const byPurpose = files.reduce(
       (acc, file) => {
         acc[file.purpose] = (acc[file.purpose] || 0) + 1;
@@ -337,12 +374,36 @@ export const getStats = query({
       {} as Record<string, number>
     );
 
+    // Calculate tier-specific limits and remaining capacity
+    let limits = null;
+    let remaining = null;
+
+    if (userTier !== 'free' && typeof tierLimit === 'object') {
+      limits = {
+        maxFileSize: tierLimit.maxFileSize,
+        totalStorageLimit: tierLimit.totalStorageLimit,
+        maxFilesPerMonth: tierLimit.maxFilesPerMonth,
+      };
+
+      remaining = {
+        storage: Math.max(0, tierLimit.totalStorageLimit - totalSize),
+        filesThisMonth: Math.max(
+          0,
+          tierLimit.maxFilesPerMonth - filesThisMonth
+        ),
+      };
+    }
+
     return {
       totalFiles: files.length,
       totalSize,
+      filesThisMonth,
       averageSize: files.length > 0 ? totalSize / files.length : 0,
       byPurpose,
       byType,
+      tier: userTier,
+      limits,
+      remaining,
       recentUploads: files
         .sort((a, b) => b.createdAt - a.createdAt)
         .slice(0, 5)
@@ -366,7 +427,7 @@ export const generateUploadUrl = httpAction(async (ctx) => {
 });
 
 /**
- * Internal mutation to create file record from uploaded storage
+ * Internal mutation to create file record from uploaded storage with tier validation
  */
 export const createFileFromStorage = mutation({
   args: {
@@ -389,6 +450,26 @@ export const createFileFromStorage = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const fileId = crypto.randomUUID();
+
+    // Get user and validate tier limits
+    const user = await getCurrentUser(ctx);
+    if (!user || user.walletAddress !== args.walletAddress) {
+      throw new ConvexError('Unauthorized');
+    }
+
+    const userTier = user.subscription?.tier || 'free';
+
+    // Check upload limits based on subscription tier
+    const uploadCheck = await checkUploadLimits(
+      ctx,
+      args.walletAddress,
+      userTier as keyof typeof TIER_FILE_LIMITS,
+      args.size
+    );
+
+    if (!uploadCheck.canUpload) {
+      throw new ConvexError(uploadCheck.error || 'Upload not allowed');
+    }
 
     const fileDocId = await ctx.db.insert('files', {
       walletAddress: args.walletAddress,
@@ -443,15 +524,36 @@ export const registerUpload = httpAction(async (ctx, request) => {
       body.storageId as Id<'_storage'>
     );
     if (!meta) {
-      return new Response(JSON.stringify({ error: 'Invalid storageId' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Invalid storageId',
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Check file size against tier limits before creating file record
+    if (meta.size > 5 * 1024 * 1024) {
+      // 5MB system hard limit
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `File size ${Math.round(meta.size / (1024 * 1024))}MB exceeds system limit of 5MB`,
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const url = await ctx.storage.getUrl(body.storageId as Id<'_storage'>);
 
-    // Use the mutation to create the file record
+    // Use the mutation to create the file record (it will check tier limits)
     const file = await ctx.runMutation(api.files.createFileFromStorage, {
       walletAddress: body.walletAddress,
       storageId: body.storageId,

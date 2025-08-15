@@ -406,6 +406,16 @@ export default defineSchema({
     lastMessageAt: v.optional(v.number()),
     messageCount: v.number(),
     totalTokens: v.number(),
+    tokenUsage: v.optional(
+      v.object({
+        totalPromptTokens: v.number(),
+        totalCompletionTokens: v.number(),
+        totalTokens: v.number(),
+        totalCachedTokens: v.number(),
+        totalEstimatedCost: v.number(),
+        messageCount: v.number(),
+      })
+    ),
   })
     .index('by_owner', ['ownerId', 'updatedAt'])
     .index('by_active', ['isActive', 'lastMessageAt'])
@@ -1493,7 +1503,11 @@ export default defineSchema({
     metadata: v.optional(
       v.object({
         executionId: v.string(),
-        toolType: v.union(v.literal('regular'), v.literal('mcp'), v.literal('builtin')),
+        toolType: v.union(
+          v.literal('regular'),
+          v.literal('mcp'),
+          v.literal('builtin')
+        ),
         serverId: v.optional(v.string()),
         startTime: v.number(),
         endTime: v.optional(v.number()),

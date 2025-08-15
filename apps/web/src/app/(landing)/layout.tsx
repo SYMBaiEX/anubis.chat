@@ -1,7 +1,7 @@
 'use client';
 
-import LandingFooter from '@/components/landing/landing-footer';
-import LandingHeader from '@/components/landing/landing-header';
+import LandingFooter from '@/components/landing/landingFooter';
+import LandingHeader from '@/components/landing/landingHeader';
 import { Lightning } from '@/components/ui/heroOdyssey';
 
 export default function LandingLayout({

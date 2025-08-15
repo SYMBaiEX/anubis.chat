@@ -22,8 +22,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import SiteLinksSection from '@/app/(landing)/components/siteLinksSection';
 import AnimatedSection from '@/components/landing/animated-section';
-import LandingFooter from '@/components/landing/landing-footer';
-import LandingHeader from '@/components/landing/landing-header';
+import LandingFooter from '@/components/landing/landingFooter';
+import LandingHeader from '@/components/landing/landingHeader';
 import { Button } from '@/components/ui/button';
 
 // Countdown Timer removed
@@ -430,9 +430,13 @@ export default function AnubisTokenPage() {
         <AnimatedSection
           className="py-24 md:py-32"
           dustIntensity="low"
+          edgeMask={false}
           id="about"
+          includeTomb={false}
           parallaxY={20}
-          revealStrategy="scroll"
+          revealStrategy="none"
+          softEdges={false}
+          useSurface={false}
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
@@ -599,9 +603,13 @@ export default function AnubisTokenPage() {
         <AnimatedSection
           className="py-24 md:py-32"
           dustIntensity="low"
+          edgeMask={false}
           id="tokenomics"
+          includeTomb={false}
           parallaxY={20}
-          revealStrategy="scroll"
+          revealStrategy="none"
+          softEdges={false}
+          useSurface={false}
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <motion.div
@@ -779,8 +787,12 @@ export default function AnubisTokenPage() {
         <AnimatedSection
           className="py-24 md:py-32"
           dustIntensity="high"
+          edgeMask={false}
+          includeTomb={false}
           parallaxY={24}
-          revealStrategy="scroll"
+          revealStrategy="none"
+          softEdges={false}
+          useSurface={false}
         >
           <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
             <motion.div

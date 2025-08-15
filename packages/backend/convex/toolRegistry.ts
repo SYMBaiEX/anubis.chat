@@ -1,15 +1,15 @@
 /**
  * Tool Registry System for ANUBIS Chat
- * 
+ *
  * This system provides dynamic tool loading based on agent capabilities,
  * type-safe tool definitions, and support for both sync and async tools.
  */
 
 import { tool } from 'ai';
-import { z } from 'zod';
 import type { ConvexError } from 'convex/values';
-import type { ActionCtx } from './_generated/server';
+import { z } from 'zod';
 import { internal } from './_generated/api';
+import type { ActionCtx } from './_generated/server';
 
 // =============================================================================
 // Core Types and Interfaces
@@ -52,7 +52,7 @@ export interface ToolDefinition<T = any> {
   metadata: ToolMetadata;
   schema: z.ZodSchema<T>;
   handler: (
-    input: T, 
+    input: T,
     context: ToolExecutionContext
   ) => Promise<ToolExecutionResult> | ToolExecutionResult;
   aiTool: any; // AI SDK tool definition - using any for flexibility
@@ -80,7 +80,7 @@ export class ToolRegistry {
    */
   register<T>(capability: string, toolDef: ToolDefinition<T>): void {
     this.tools.set(capability, toolDef);
-    
+
     // Build reverse mapping for capability lookup
     if (!this.capabilityMapping.has(capability)) {
       this.capabilityMapping.set(capability, []);
@@ -93,8 +93,8 @@ export class ToolRegistry {
    */
   getToolsForCapabilities(capabilities: string[]): ToolDefinition[] {
     return capabilities
-      .filter(cap => this.tools.has(cap))
-      .map(cap => this.tools.get(cap)!)
+      .filter((cap) => this.tools.has(cap))
+      .map((cap) => this.tools.get(cap)!)
       .filter(Boolean);
   }
 
@@ -103,14 +103,14 @@ export class ToolRegistry {
    */
   getAIToolsForCapabilities(capabilities: string[]): Record<string, any> {
     const tools: Record<string, any> = {};
-    
+
     for (const capability of capabilities) {
       const toolDef = this.tools.get(capability);
       if (toolDef) {
         tools[toolDef.metadata.name] = toolDef.aiTool;
       }
     }
-    
+
     return tools;
   }
 
@@ -118,8 +118,8 @@ export class ToolRegistry {
    * Execute a tool by name
    */
   async executeTool(
-    toolName: string, 
-    input: any, 
+    toolName: string,
+    input: any,
     context: ToolExecutionContext
   ): Promise<ToolExecutionResult> {
     // Find tool by name
@@ -140,10 +140,10 @@ export class ToolRegistry {
     try {
       // Validate input against schema
       const validatedInput = toolDef.schema.parse(input);
-      
+
       // Execute tool
       const result = await toolDef.handler(validatedInput, context);
-      
+
       return {
         ...result,
         executionTime: Date.now() - startTime,
@@ -184,7 +184,7 @@ export class ToolRegistry {
    */
   getToolsByCategory(category: ToolMetadata['category']): ToolDefinition[] {
     return Array.from(this.tools.values()).filter(
-      tool => tool.metadata.category === category
+      (tool) => tool.metadata.category === category
     );
   }
 }
@@ -204,24 +204,36 @@ export const toolSchemas = {
   }),
 
   calculator: z.object({
-    expression: z.string().describe('Mathematical expression to evaluate (supports +, -, *, /, %, parentheses, and basic functions)'),
+    expression: z
+      .string()
+      .describe(
+        'Mathematical expression to evaluate (supports +, -, *, /, %, parentheses, and basic functions)'
+      ),
   }),
 
   createDocument: z.object({
     title: z.string().describe('Title of the document'),
     content: z.string().describe('Content of the document in markdown format'),
-    type: z.enum(['document', 'code', 'markdown']).describe('Type of document to create'),
+    type: z
+      .enum(['document', 'code', 'markdown'])
+      .describe('Type of document to create'),
   }),
 
   generateCode: z.object({
     language: z
       .string()
-      .describe('Programming language (typescript, javascript, python, rust, go, etc.)'),
-    description: z.string().describe('Detailed description of what the code should do'),
+      .describe(
+        'Programming language (typescript, javascript, python, rust, go, etc.)'
+      ),
+    description: z
+      .string()
+      .describe('Detailed description of what the code should do'),
     framework: z
       .string()
       .optional()
-      .describe('Optional framework to use (react, nextjs, express, fastapi, etc.)'),
+      .describe(
+        'Optional framework to use (react, nextjs, express, fastapi, etc.)'
+      ),
   }),
 
   summarizeText: z.object({
@@ -268,9 +280,9 @@ const webSearchTool: ToolDefinition<z.infer<typeof toolSchemas.webSearch>> = {
     description: 'Search the web for current information',
     inputSchema: toolSchemas.webSearch,
     execute: ({ query, num }: z.infer<typeof toolSchemas.webSearch>) => ({
-      query, 
-      num, 
-      pending: true 
+      query,
+      num,
+      pending: true,
     }),
   }),
 };
@@ -304,8 +316,8 @@ const calculatorTool: ToolDefinition<z.infer<typeof toolSchemas.calculator>> = {
     description: 'Perform mathematical calculations',
     inputSchema: toolSchemas.calculator,
     execute: ({ expression }: z.infer<typeof toolSchemas.calculator>) => ({
-      expression, 
-      pending: true 
+      expression,
+      pending: true,
     }),
   }),
 };
@@ -313,10 +325,13 @@ const calculatorTool: ToolDefinition<z.infer<typeof toolSchemas.calculator>> = {
 /**
  * Create Document Tool Implementation
  */
-const createDocumentTool: ToolDefinition<z.infer<typeof toolSchemas.createDocument>> = {
+const createDocumentTool: ToolDefinition<
+  z.infer<typeof toolSchemas.createDocument>
+> = {
   metadata: {
     name: 'createDocument',
-    description: 'Create documents, code artifacts, or markdown content that can be displayed separately',
+    description:
+      'Create documents, code artifacts, or markdown content that can be displayed separately',
     category: 'content',
     version: '1.0.0',
     tags: ['document', 'creation', 'markdown', 'code'],
@@ -324,11 +339,14 @@ const createDocumentTool: ToolDefinition<z.infer<typeof toolSchemas.createDocume
   schema: toolSchemas.createDocument,
   handler: async (input, { ctx }) => {
     try {
-      const result = await ctx.runAction(internal.tools.createDocumentInternal, {
-        title: input.title,
-        content: input.content,
-        type: input.type,
-      });
+      const result = await ctx.runAction(
+        internal.tools.createDocumentInternal,
+        {
+          title: input.title,
+          content: input.content,
+          type: input.type,
+        }
+      );
       return result as ToolExecutionResult;
     } catch (error) {
       return {
@@ -338,13 +356,18 @@ const createDocumentTool: ToolDefinition<z.infer<typeof toolSchemas.createDocume
     }
   },
   aiTool: tool({
-    description: 'Create a document or code artifact that can be displayed separately',
+    description:
+      'Create a document or code artifact that can be displayed separately',
     inputSchema: toolSchemas.createDocument,
-    execute: ({ title, content, type }: z.infer<typeof toolSchemas.createDocument>) => ({
-      title, 
-      content, 
-      type, 
-      pending: true 
+    execute: ({
+      title,
+      content,
+      type,
+    }: z.infer<typeof toolSchemas.createDocument>) => ({
+      title,
+      content,
+      type,
+      pending: true,
     }),
   }),
 };
@@ -352,10 +375,13 @@ const createDocumentTool: ToolDefinition<z.infer<typeof toolSchemas.createDocume
 /**
  * Generate Code Tool Implementation
  */
-const generateCodeTool: ToolDefinition<z.infer<typeof toolSchemas.generateCode>> = {
+const generateCodeTool: ToolDefinition<
+  z.infer<typeof toolSchemas.generateCode>
+> = {
   metadata: {
     name: 'generateCode',
-    description: 'Generate code in various programming languages with optional framework support',
+    description:
+      'Generate code in various programming languages with optional framework support',
     category: 'content',
     version: '1.0.0',
     tags: ['code', 'generation', 'programming', 'development'],
@@ -379,11 +405,15 @@ const generateCodeTool: ToolDefinition<z.infer<typeof toolSchemas.generateCode>>
   aiTool: tool({
     description: 'Generate code in a specific programming language',
     inputSchema: toolSchemas.generateCode,
-    execute: ({ language, description, framework }: z.infer<typeof toolSchemas.generateCode>) => ({
-      language, 
-      description, 
-      framework, 
-      pending: true 
+    execute: ({
+      language,
+      description,
+      framework,
+    }: z.infer<typeof toolSchemas.generateCode>) => ({
+      language,
+      description,
+      framework,
+      pending: true,
     }),
   }),
 };
@@ -391,10 +421,13 @@ const generateCodeTool: ToolDefinition<z.infer<typeof toolSchemas.generateCode>>
 /**
  * Summarize Text Tool Implementation
  */
-const summarizeTextTool: ToolDefinition<z.infer<typeof toolSchemas.summarizeText>> = {
+const summarizeTextTool: ToolDefinition<
+  z.infer<typeof toolSchemas.summarizeText>
+> = {
   metadata: {
     name: 'summarizeText',
-    description: 'Summarize long text content into concise, digestible summaries',
+    description:
+      'Summarize long text content into concise, digestible summaries',
     category: 'analysis',
     version: '1.0.0',
     tags: ['text', 'summarization', 'analysis', 'nlp'],
@@ -417,10 +450,13 @@ const summarizeTextTool: ToolDefinition<z.infer<typeof toolSchemas.summarizeText
   aiTool: tool({
     description: 'Summarize long text into a shorter version',
     inputSchema: toolSchemas.summarizeText,
-    execute: ({ text, maxLength }: z.infer<typeof toolSchemas.summarizeText>) => ({
-      text, 
-      maxLength, 
-      pending: true 
+    execute: ({
+      text,
+      maxLength,
+    }: z.infer<typeof toolSchemas.summarizeText>) => ({
+      text,
+      maxLength,
+      pending: true,
     }),
   }),
 };
@@ -433,7 +469,7 @@ export const globalToolRegistry = new ToolRegistry();
 
 // Register all available tools
 globalToolRegistry.register('webSearch', webSearchTool);
-globalToolRegistry.register('calculator', calculatorTool);  
+globalToolRegistry.register('calculator', calculatorTool);
 globalToolRegistry.register('createDocument', createDocumentTool);
 globalToolRegistry.register('generateCode', generateCodeTool);
 globalToolRegistry.register('summarizeText', summarizeTextTool);
@@ -452,10 +488,14 @@ export function getToolsForAgent(capabilities: string[]): {
 } {
   const tools = globalToolRegistry.getToolsForCapabilities(capabilities);
   const aiTools = globalToolRegistry.getAIToolsForCapabilities(capabilities);
-  
-  const foundCapabilities = new Set(tools.map((_, index) => capabilities[index]));
-  const missingCapabilities = capabilities.filter(cap => !foundCapabilities.has(cap));
-  
+
+  const foundCapabilities = new Set(
+    tools.map((_, index) => capabilities[index])
+  );
+  const missingCapabilities = capabilities.filter(
+    (cap) => !foundCapabilities.has(cap)
+  );
+
   return {
     tools,
     aiTools,
@@ -481,7 +521,7 @@ export function getAvailableCapabilities(): {
   capability: string;
   metadata: ToolMetadata;
 }[] {
-  return globalToolRegistry.getAvailableCapabilities().map(capability => ({
+  return globalToolRegistry.getAvailableCapabilities().map((capability) => ({
     capability,
     metadata: globalToolRegistry.getToolMetadata(capability)!,
   }));
@@ -496,7 +536,7 @@ export function validateAgentCapabilities(capabilities: string[]): {
 } {
   const valid: string[] = [];
   const invalid: string[] = [];
-  
+
   for (const capability of capabilities) {
     if (globalToolRegistry.hasCapability(capability)) {
       valid.push(capability);
@@ -504,7 +544,7 @@ export function validateAgentCapabilities(capabilities: string[]): {
       invalid.push(capability);
     }
   }
-  
+
   return { valid, invalid };
 }
 
@@ -518,7 +558,7 @@ export function validateAgentCapabilities(capabilities: string[]): {
  */
 export const aiTools = globalToolRegistry.getAIToolsForCapabilities([
   'webSearch',
-  'calculator', 
+  'calculator',
   'createDocument',
   'generateCode',
   'summarizeText',

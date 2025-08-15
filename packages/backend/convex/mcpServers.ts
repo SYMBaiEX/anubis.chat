@@ -1,6 +1,6 @@
 /**
  * MCP Server Database Operations
- * 
+ *
  * Convex database functions for managing MCP server configurations,
  * tool call logs, and server status tracking.
  */
@@ -67,36 +67,35 @@ export const upsertServer = mutation({
       logger.info('MCP server configuration updated', {
         serverId: args.serverId,
         name: args.name,
-        status: args.status
+        status: args.status,
       });
 
       return existingServer._id;
-    } else {
-      // Create new server
-      const serverId = await ctx.db.insert('mcpServers', {
-        userId: args.userId,
-        serverId: args.serverId,
-        name: args.name,
-        description: args.description,
-        url: args.url,
-        apiKey: args.apiKey,
-        enabled: args.enabled,
-        tools: args.tools,
-        status: args.status,
-        lastConnected: args.lastConnected,
-        errorMessage: args.errorMessage,
-        createdAt: now,
-        updatedAt: now,
-      });
-
-      logger.info('MCP server configuration created', {
-        serverId: args.serverId,
-        name: args.name,
-        status: args.status
-      });
-
-      return serverId;
     }
+    // Create new server
+    const serverId = await ctx.db.insert('mcpServers', {
+      userId: args.userId,
+      serverId: args.serverId,
+      name: args.name,
+      description: args.description,
+      url: args.url,
+      apiKey: args.apiKey,
+      enabled: args.enabled,
+      tools: args.tools,
+      status: args.status,
+      lastConnected: args.lastConnected,
+      errorMessage: args.errorMessage,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    logger.info('MCP server configuration created', {
+      serverId: args.serverId,
+      name: args.name,
+      status: args.status,
+    });
+
+    return serverId;
   },
 });
 
@@ -137,7 +136,7 @@ export const updateServerStatus = mutation({
       serverId: args.serverId,
       name: server.name,
       status: args.status,
-      errorMessage: args.errorMessage
+      errorMessage: args.errorMessage,
     });
 
     return server._id;
@@ -163,7 +162,7 @@ export const getServersByUser = query({
 
     const servers = await query.order('desc').collect();
 
-    return servers.map(server => ({
+    return servers.map((server) => ({
       _id: server._id,
       serverId: server.serverId,
       name: server.name,
@@ -241,7 +240,7 @@ export const toggleServer = mutation({
     logger.info('MCP server toggled', {
       serverId: args.serverId,
       name: server.name,
-      enabled: args.enabled
+      enabled: args.enabled,
     });
 
     return server._id;
@@ -280,7 +279,7 @@ export const deleteServer = mutation({
     logger.info('MCP server deleted', {
       serverId: args.serverId,
       name: server.name,
-      toolCallsDeleted: toolCalls.length
+      toolCallsDeleted: toolCalls.length,
     });
 
     return server._id;
@@ -330,7 +329,7 @@ export const logToolCall = mutation({
         toolCallId,
         serverId: args.serverId,
         toolName: args.toolName,
-        executionTime: args.executionTime
+        executionTime: args.executionTime,
       });
     } else {
       logger.warn('MCP tool call failed', {
@@ -338,7 +337,7 @@ export const logToolCall = mutation({
         serverId: args.serverId,
         toolName: args.toolName,
         error: args.error?.message,
-        executionTime: args.executionTime
+        executionTime: args.executionTime,
       });
     }
 
@@ -376,7 +375,7 @@ export const getToolCallHistory = query({
 
     const toolCalls = await query.order('desc').take(limit);
 
-    return toolCalls.map(call => ({
+    return toolCalls.map((call) => ({
       _id: call._id,
       serverId: call.serverId,
       toolName: call.toolName,
@@ -421,35 +420,54 @@ export const getToolCallStats = query({
 
     // Calculate statistics
     const totalCalls = toolCalls.length;
-    const successfulCalls = toolCalls.filter(call => call.success).length;
+    const successfulCalls = toolCalls.filter((call) => call.success).length;
     const failedCalls = totalCalls - successfulCalls;
-    const averageExecutionTime = totalCalls > 0 
-      ? toolCalls.reduce((sum, call) => sum + call.executionTime, 0) / totalCalls 
-      : 0;
+    const averageExecutionTime =
+      totalCalls > 0
+        ? toolCalls.reduce((sum, call) => sum + call.executionTime, 0) /
+          totalCalls
+        : 0;
 
     // Tool usage breakdown
-    const toolUsage: Record<string, { count: number; successRate: number; avgExecutionTime: number }> = {};
-    
+    const toolUsage: Record<
+      string,
+      { count: number; successRate: number; avgExecutionTime: number }
+    > = {};
+
     for (const call of toolCalls) {
       if (!toolUsage[call.toolName]) {
-        toolUsage[call.toolName] = { count: 0, successRate: 0, avgExecutionTime: 0 };
+        toolUsage[call.toolName] = {
+          count: 0,
+          successRate: 0,
+          avgExecutionTime: 0,
+        };
       }
       toolUsage[call.toolName].count++;
     }
 
     // Calculate success rates and average execution times
     for (const toolName of Object.keys(toolUsage)) {
-      const toolCallsForTool = toolCalls.filter(call => call.toolName === toolName);
-      const successful = toolCallsForTool.filter(call => call.success).length;
-      toolUsage[toolName].successRate = toolCallsForTool.length > 0 ? (successful / toolCallsForTool.length) * 100 : 0;
-      toolUsage[toolName].avgExecutionTime = toolCallsForTool.length > 0 
-        ? toolCallsForTool.reduce((sum, call) => sum + call.executionTime, 0) / toolCallsForTool.length
-        : 0;
+      const toolCallsForTool = toolCalls.filter(
+        (call) => call.toolName === toolName
+      );
+      const successful = toolCallsForTool.filter((call) => call.success).length;
+      toolUsage[toolName].successRate =
+        toolCallsForTool.length > 0
+          ? (successful / toolCallsForTool.length) * 100
+          : 0;
+      toolUsage[toolName].avgExecutionTime =
+        toolCallsForTool.length > 0
+          ? toolCallsForTool.reduce(
+              (sum, call) => sum + call.executionTime,
+              0
+            ) / toolCallsForTool.length
+          : 0;
     }
 
     // Server usage breakdown
-    const serverUsage: Record<string, { count: number; successRate: number }> = {};
-    
+    const serverUsage: Record<string, { count: number; successRate: number }> =
+      {};
+
     for (const call of toolCalls) {
       if (!serverUsage[call.serverId]) {
         serverUsage[call.serverId] = { count: 0, successRate: 0 };
@@ -459,9 +477,12 @@ export const getToolCallStats = query({
 
     // Calculate server success rates
     for (const serverId of Object.keys(serverUsage)) {
-      const serverCalls = toolCalls.filter(call => call.serverId === serverId);
-      const successful = serverCalls.filter(call => call.success).length;
-      serverUsage[serverId].successRate = serverCalls.length > 0 ? (successful / serverCalls.length) * 100 : 0;
+      const serverCalls = toolCalls.filter(
+        (call) => call.serverId === serverId
+      );
+      const successful = serverCalls.filter((call) => call.success).length;
+      serverUsage[serverId].successRate =
+        serverCalls.length > 0 ? (successful / serverCalls.length) * 100 : 0;
     }
 
     return {
@@ -499,17 +520,18 @@ export const getServerHealthOverview = query({
 
     const healthData = {
       totalServers: servers.length,
-      connectedServers: servers.filter(s => s.status === 'connected').length,
-      disconnectedServers: servers.filter(s => s.status === 'disconnected').length,
-      errorServers: servers.filter(s => s.status === 'error').length,
-      disabledServers: servers.filter(s => s.status === 'disabled').length,
-      servers: servers.map(server => ({
+      connectedServers: servers.filter((s) => s.status === 'connected').length,
+      disconnectedServers: servers.filter((s) => s.status === 'disconnected')
+        .length,
+      errorServers: servers.filter((s) => s.status === 'error').length,
+      disabledServers: servers.filter((s) => s.status === 'disabled').length,
+      servers: servers.map((server) => ({
         name: server.name,
         status: server.status,
         lastConnected: server.lastConnected,
         errorMessage: server.errorMessage,
         toolCount: server.tools.length,
-      }))
+      })),
     };
 
     return healthData;
@@ -530,30 +552,32 @@ export const getServersNeedingAttention = query({
       .collect();
 
     const now = Date.now();
-    const oneHourAgo = now - (60 * 60 * 1000);
+    const oneHourAgo = now - 60 * 60 * 1000;
 
-    const needingAttention = servers.filter(server => {
+    const needingAttention = servers.filter((server) => {
       // Server has error status
       if (server.status === 'error') return true;
-      
+
       // Server is enabled but disconnected for more than 1 hour
-      if (server.enabled && 
-          server.status === 'disconnected' && 
-          server.lastConnected && 
-          server.lastConnected < oneHourAgo) {
+      if (
+        server.enabled &&
+        server.status === 'disconnected' &&
+        server.lastConnected &&
+        server.lastConnected < oneHourAgo
+      ) {
         return true;
       }
-      
+
       return false;
     });
 
-    return needingAttention.map(server => ({
+    return needingAttention.map((server) => ({
       serverId: server.serverId,
       name: server.name,
       status: server.status,
       lastConnected: server.lastConnected,
       errorMessage: server.errorMessage,
-      issue: server.status === 'error' ? 'error' : 'long_disconnect'
+      issue: server.status === 'error' ? 'error' : 'long_disconnect',
     }));
   },
 });
