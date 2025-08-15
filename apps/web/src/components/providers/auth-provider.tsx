@@ -3,12 +3,13 @@
 import { api } from '@convex/_generated/api';
 import { useAuthActions, useAuthToken } from '@convex-dev/auth/react';
 import { useQuery } from 'convex/react';
-import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef } from 'react';
 import type {
   SubscriptionLimits,
   SubscriptionStatus,
   UpgradePrompt,
 } from '@/hooks/use-subscription';
+import { useReferralAttribution } from '@/hooks/use-referral-tracking';
 import { useWallet } from '@/hooks/useWallet';
 import type { AuthSession, User } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -53,6 +54,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { signIn, signOut } = useAuthActions();
   const token = useAuthToken();
   const wallet = useWallet();
+  const { autoAssignIfEligible } = useReferralAttribution();
+  const referralAttributionAttempted = useRef(false);
 
   // Subscription data from Convex
   const subscription = useQuery(
@@ -231,6 +234,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Force re-query of subscription data (Convex handles this automatically)
     // This is mainly for manual refresh scenarios
   };
+
+  // Handle referral attribution when user becomes authenticated
+  useEffect(() => {
+    const attemptReferralAttribution = async () => {
+      if (
+        user && 
+        wallet.publicKey && 
+        !referralAttributionAttempted.current
+      ) {
+        referralAttributionAttempted.current = true;
+        
+        try {
+          const walletAddress = wallet.publicKey.toString();
+          const result = await autoAssignIfEligible(walletAddress);
+          
+          if (result.success) {
+            _log.info('Referral attribution successful', { walletAddress });
+          }
+        } catch (error) {
+          _log.error('Referral attribution failed', { 
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+    };
+
+    attemptReferralAttribution();
+  }, [user, wallet.publicKey, autoAssignIfEligible]);
+
+  // Reset referral attribution flag when user logs out
+  useEffect(() => {
+    if (!user) {
+      referralAttributionAttempted.current = false;
+    }
+  }, [user]);
 
   const contextValue: AuthContextValue = useMemo(
     () => ({

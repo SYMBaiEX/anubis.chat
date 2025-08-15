@@ -27,6 +27,7 @@ import { EmptyState } from '@/components/data/empty-states';
 import LandingFooter from '@/components/landing/landingFooter';
 import LandingHeader from '@/components/landing/landingHeader';
 import { useAuthContext } from '@/components/providers/auth-provider';
+import { useReferralTrackingContext } from '@/components/providers/referral-tracking-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -95,6 +96,7 @@ export default function AuthPage() {
   useAuthActions();
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const { getStoredReferralCode } = useReferralTrackingContext();
 
   const {
     isConnected,
@@ -108,6 +110,9 @@ export default function AuthPage() {
   const { setVisible } = useWalletModal();
 
   const { isAuthenticated, user } = useAuthContext();
+  
+  // Check for stored referral code
+  const storedReferralCode = getStoredReferralCode();
 
   // Track theme mounting and ensure proper hydration
   useEffect(() => {
@@ -547,6 +552,40 @@ export default function AuthPage() {
                                 Switch Wallet
                               </Button>
                             </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Referral Code Active Indicator */}
+                <AnimatePresence mode="wait">
+                  {storedReferralCode && (
+                    <motion.div
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                      initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Card className="border-primary/50 bg-primary/10 p-4">
+                        <div className="flex items-start gap-3">
+                          <motion.div
+                            animate={{ scale: [1, 1.1, 1] }}
+                            transition={{
+                              duration: 2,
+                              repeat: Number.POSITIVE_INFINITY,
+                            }}
+                          >
+                            <TrendingUp className="mt-0.5 h-5 w-5 text-primary" />
+                          </motion.div>
+                          <div className="flex-1">
+                            <p className="font-medium text-primary text-sm">
+                              Referral Code Active
+                            </p>
+                            <p className="mt-1 text-primary/80 text-sm">
+                              You'll earn referral benefits from code: <span className="font-mono font-semibold">{storedReferralCode}</span>
+                            </p>
                           </div>
                         </div>
                       </Card>

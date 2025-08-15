@@ -329,7 +329,7 @@ export const subscriptionConfig = {
     priceSOL: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PRICE_SOL,
     priceUSD: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PRICE_USD,
   },
-  proPLus: {
+  proPlus: {
     priceSOL: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_PRICE_SOL,
     priceUSD: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_PRICE_USD,
   },

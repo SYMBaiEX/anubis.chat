@@ -56,6 +56,8 @@ export function useReferralTracking() {
           router.replace(newUrl);
           return true;
         }
+        
+        return false;
       } catch (_error) {
         // Still store in localStorage even if tracking fails (for retry later)
         if (referralCode) {

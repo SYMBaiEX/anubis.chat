@@ -9,17 +9,12 @@ import {
   Clock,
   Code,
   Database,
-  Globe,
   Layers,
   Lock,
-  MessageSquare,
   Network,
   Palette,
-  Rocket,
   Shield,
   Sparkles,
-  Star,
-  Users,
   Wallet,
   Zap,
 } from 'lucide-react';
@@ -486,72 +481,7 @@ export default function FeaturesPageClient() {
             </Tabs>
           </div>
         </AnimatedSection>
-        
-        {/* Animated Statistics */}
-        <AnimatedSection
-          className="py-20 px-4 sm:px-6 md:py-28 lg:py-32 lg:px-8"
-          dustIntensity="low"
-          edgeMask={false}
-          includeTomb={false}
-          parallaxY={20}
-          revealStrategy="none"
-          softEdges={false}
-          useSurface={false}
-        >
-          <div className="container mx-auto">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={containerVariants}
-              className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
-            >
-              {[
-                { label: 'AI Models', value: '8+', icon: Brain },
-                { label: 'Active Users', value: '10K+', icon: Users },
-                { label: 'Messages Processed', value: '1M+', icon: MessageSquare },
-                { label: 'Uptime', value: '99.9%', icon: Rocket },
-              ].map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  variants={scaleVariants}
-                  custom={index}
-                  whileHover={{ scale: 1.05 }}
-                  className="relative"
-                >
-                  <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-background to-background/50 p-6 text-center">
-                    <motion.div
-                      animate={{
-                        opacity: [0.3, 0.6, 0.3],
-                      }}
-                      className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        delay: index * 0.2,
-                      }}
-                    />
-                    <stat.icon className="mx-auto mb-3 h-8 w-8 text-primary" />
-                    <motion.div
-                      className="font-bold text-3xl"
-                      initial={{ scale: 0 }}
-                      whileInView={{ scale: 1 }}
-                      transition={{
-                        type: 'spring' as const,
-                        stiffness: 200,
-                        delay: 0.2 + index * 0.1,
-                      }}
-                    >
-                      {stat.value}
-                    </motion.div>
-                    <div className="mt-1 text-muted-foreground">{stat.label}</div>
-                  </Card>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </AnimatedSection>
-        
+       
         {/* CTA Section */}
         <AnimatedSection
           className="py-20 px-4 text-center sm:px-6 md:py-28 lg:py-32 lg:px-8"

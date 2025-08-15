@@ -53,7 +53,7 @@ export function middleware(request: NextRequest) {
     font-src 'self' data: https://api.fontshare.com https://fonts.gstatic.com;
     img-src 'self' data: blob: https: http:;
     media-src 'self' blob:;
-    connect-src 'self' wss://*.convex.cloud https://*.convex.cloud https://api.openai.com https://api.anthropic.com https://api.google.com https://openrouter.ai https://*.vercel-analytics.com https://api.devnet.solana.com https://api.mainnet-beta.solana.com https://api.testnet.solana.com https://*.helius-rpc.com https://*.quicknode.pro ws://localhost:* http://localhost:*;
+    connect-src 'self' wss://*.convex.cloud https://*.convex.cloud https://api.openai.com https://api.anthropic.com https://api.google.com https://openrouter.ai https://*.vercel-analytics.com https://api.devnet.solana.com https://api.mainnet-beta.solana.com https://api.testnet.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com wss://api.testnet.solana.com https://*.helius-rpc.com https://*.quicknode.pro ws://localhost:* http://localhost:*;
     frame-src 'self';
     object-src 'none';
     base-uri 'self';

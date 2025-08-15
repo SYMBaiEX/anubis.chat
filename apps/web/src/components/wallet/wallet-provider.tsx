@@ -11,7 +11,7 @@ import {
   TorusWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 // Solana Mobile Wallet Adapter will be imported dynamically
-import { clusterApiUrl } from '@solana/web3.js';
+import { getSolanaEndpoint } from '@/lib/solana';
 import type { FC, ReactNode } from 'react';
 import { useMemo } from 'react';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -40,10 +40,10 @@ export const WalletProvider: FC<WalletProviderProps> = ({
         ? WalletAdapterNetwork.Testnet
         : WalletAdapterNetwork.Devnet);
 
-  // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
+  // ✅ Use centralized endpoint configuration (respects NEXT_PUBLIC_SOLANA_RPC_URL)
   const endpoint = useMemo(
-    () => clusterApiUrl(selectedNetwork),
-    [selectedNetwork]
+    () => getSolanaEndpoint(),
+    []
   );
 
   // Configure wallets according to official documentation:

@@ -24,9 +24,21 @@ const getNetwork = (): WalletAdapterNetwork => {
 
 export const NETWORK = getNetwork();
 
-// RPC endpoint - use environment variable if provided, otherwise use cluster API
-export const ENDPOINT =
-  process.env.NEXT_PUBLIC_SOLANA_RPC_HOST || clusterApiUrl(NETWORK);
+// ✅ RECOMMENDED: Centralized endpoint configuration
+export const getSolanaEndpoint = (): string => {
+  // Use custom RPC URL if provided (e.g., Helius)
+  const customEndpoint = process.env.NEXT_PUBLIC_SOLANA_RPC_URL;
+  
+  if (customEndpoint) {
+    return customEndpoint;
+  }
+  
+  // Fallback to standard cluster URLs
+  return clusterApiUrl(NETWORK);
+};
+
+// RPC endpoint using centralized configuration
+export const ENDPOINT = getSolanaEndpoint();
 
 // Create connection instance
 export const connection = new Connection(ENDPOINT, 'confirmed');

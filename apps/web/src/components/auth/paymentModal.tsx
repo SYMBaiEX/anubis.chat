@@ -32,6 +32,7 @@ import {
   createSPLTokenTransferTransaction,
   validateSPLTokenTransfer,
 } from '@/lib/solana-spl';
+import { getSolanaEndpoint } from '@/lib/solana';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -87,8 +88,8 @@ const TIER_CONFIG = {
 const TREASURY_WALLET =
   process.env.NEXT_PUBLIC_TREASURY_WALLET ||
   '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs';
-const RPC_ENDPOINT =
-  process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
+
+const RPC_ENDPOINT = getSolanaEndpoint();
 
 export function PaymentModal({
   isOpen,

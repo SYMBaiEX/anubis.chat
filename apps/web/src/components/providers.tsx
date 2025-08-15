@@ -13,6 +13,7 @@ import { AuthProvider } from './providers/auth-provider';
 import { ClientOnlyWrapper } from './providers/client-only-wrapper';
 import { MilestoneNotificationsProvider } from './providers/milestone-notifications-provider';
 import { NotificationProvider } from './providers/notification-provider';
+import { ReferralTrackingProvider } from './providers/referral-tracking-provider';
 import { SolanaAgentProvider } from './providers/solanaAgentProvider';
 import { ThemeSync } from './providers/theme-sync';
 import { Toaster } from './ui/sonner';
@@ -46,20 +47,22 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <SidebarProvider>
         <ConvexAuthProvider client={convex}>
           <ClientOnlyWrapper>
-            <WalletProvider>
-              <AuthProvider>
-                <ThemeSync />
-                <NotificationProvider>
-                  <MilestoneNotificationsProvider>
-                    <UpgradeProvider>
-                      <SolanaAgentProvider>
-                        {children}
-                      </SolanaAgentProvider>
-                    </UpgradeProvider>
-                  </MilestoneNotificationsProvider>
-                </NotificationProvider>
-              </AuthProvider>
-            </WalletProvider>
+            <ReferralTrackingProvider>
+              <WalletProvider>
+                <AuthProvider>
+                  <ThemeSync />
+                  <NotificationProvider>
+                    <MilestoneNotificationsProvider>
+                      <UpgradeProvider>
+                        <SolanaAgentProvider>
+                          {children}
+                        </SolanaAgentProvider>
+                      </UpgradeProvider>
+                    </MilestoneNotificationsProvider>
+                  </NotificationProvider>
+                </AuthProvider>
+              </WalletProvider>
+            </ReferralTrackingProvider>
           </ClientOnlyWrapper>
         </ConvexAuthProvider>
         <Toaster richColors />

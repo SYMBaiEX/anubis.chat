@@ -1,0 +1,394 @@
+# ANUBIS Chat - Frontend Development Rules
+
+## Platform Context
+
+This is the **apps/web** frontend application for ANUBIS Chat - the next-generation AI & Web3 platform. This application implements the user-facing experience for multi-model AI chat with Solana blockchain integration.
+
+## Frontend Technology Stack
+
+### Core Framework
+- **Next.js 15**: App Router with React 19 and Server Components
+- **TypeScript**: Strict mode with comprehensive type coverage
+- **Tailwind CSS v4**: Utility-first styling with Shadcn UI components
+- **Progressive Web App**: Offline support with service workers
+
+### State & Data Management
+- **Convex Integration**: Real-time queries and mutations with reactive updates
+- **Provider Orchestration**: Complex provider hierarchy for auth, wallet, and theme
+- **Client-Side Caching**: Optimistic updates and intelligent state management
+- **Real-Time Features**: Live chat, typing indicators, presence updates
+
+### Web3 Integration
+- **Solana Mobile Wallet Adapter**: Native mobile wallet support with polyfills
+- **Multi-Wallet Support**: Phantom, Backpack, Solflare with fallbacks
+- **Transaction Handling**: Optimized flows for payments and token operations
+- **Authentication**: Signature-based auth with challenge/nonce verification
+
+### AI & Chat Experience
+- **Multi-Model Support**: Dynamic model selection with 14+ AI providers
+- **Streaming Responses**: Real-time AI responses with <50ms latency
+- **RAG Integration**: Document upload and semantic search
+- **Optimistic UI**: Instant feedback with rollback capabilities
+
+## Critical Development Standards
+
+### TypeScript Excellence (ENFORCED)
+```typescript
+// ✅ REQUIRED: Strict component typing
+interface ChatPageProps {
+  params: { chatId: string };
+  searchParams: { model?: string };
+}
+
+// ✅ Server Component pattern (default)
+export default async function ChatPage({ params }: ChatPageProps) {
+  // Server-side data fetching with proper typing
+  return <ChatInterface chatId={params.chatId} />;
+}
+
+// ✅ Client Component pattern (only when needed)
+'use client';
+interface ChatInterfaceProps {
+  chatId: string;
+  initialMessages?: Message[];
+}
+
+export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
+  // Client-side interactivity with hooks
+  return <div>...</div>;
+}
+
+// ❌ FORBIDDEN: any types
+const badComponent = (props: any) => {}; // NEVER DO THIS
+```
+
+### Component Architecture Patterns
+
+#### Server vs Client Components
+```tsx
+// ✅ Server Component (default) - Use for:
+// - Data fetching from Convex
+// - Static content rendering
+// - SEO-optimized pages
+export default async function DashboardPage() {
+  const user = await getAuthenticatedUser();
+  return <DashboardLayout user={user} />;
+}
+
+// ✅ Client Component - Use ONLY for:
+// - User interactions (clicks, forms, state)
+// - Browser APIs (localStorage, navigator)
+// - Real-time features (WebSocket, Convex subscriptions)
+'use client';
+export function ChatInput() {
+  const [message, setMessage] = useState('');
+  const sendMessage = useMutation(api.messages.create);
+  // Interactive logic here
+}
+```
+
+#### Convex Integration Patterns
+```tsx
+// ✅ Query pattern with proper typing
+const messages = useQuery(api.messages.getByChat, { chatId });
+const isLoading = messages === undefined;
+
+// ✅ Mutation pattern with optimistic updates
+const sendMessage = useMutation(api.messages.create);
+
+const handleSend = async (content: string) => {
+  // Optimistic UI update
+  setOptimisticMessage({ id: tempId, content, status: 'sending' });
+  
+  try {
+    await sendMessage({ chatId, content });
+  } catch (error) {
+    // Handle error and rollback
+    setOptimisticMessage(null);
+  }
+};
+
+// ✅ Subscription pattern for real-time updates
+const typingUsers = useQuery(api.chat.getTypingUsers, { chatId });
+```
+
+### Performance Requirements (ENTERPRISE-GRADE)
+
+#### Frontend Performance Targets
+- **Load Time**: <3s on 3G networks, <1s on WiFi, <500ms on desktop
+- **Bundle Size**: <500KB initial bundle, <2MB total application
+- **Core Web Vitals**: LCP <2.5s, FID <100ms, CLS <0.1, INP <200ms
+- **Interaction Response**: <100ms for all user interactions
+- **PWA Performance**: App-like performance with 60fps animations
+
+#### Optimization Strategies
+```tsx
+// ✅ Code splitting and lazy loading
+const HeavyComponent = lazy(() => import('./HeavyComponent'));
+
+// ✅ Image optimization
+import Image from 'next/image';
+<Image
+  src="/hero-image.jpg"
+  width={800}
+  height={600}
+  alt="Description"
+  priority={isAboveFold}
+/>
+
+// ✅ Component memoization
+const ExpensiveComponent = memo(({ data }: { data: ComplexData }) => {
+  const processedData = useMemo(() => processData(data), [data]);
+  return <div>{processedData}</div>;
+});
+```
+
+### Web3 Integration Standards
+
+#### Wallet Connection Patterns
+```tsx
+// ✅ Wallet provider usage
+const { wallet, connected, connecting } = useWallet();
+const { signMessage } = useWalletAuth();
+
+// ✅ Transaction handling with error states
+const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
+
+const handlePayment = async (amount: number) => {
+  setTxStatus('pending');
+  try {
+    const signature = await wallet.sendTransaction(transaction);
+    await confirmTransaction(signature);
+    setTxStatus('success');
+  } catch (error) {
+    setTxStatus('error');
+    handleTransactionError(error);
+  }
+};
+```
+
+#### Mobile Wallet Adapter Integration
+```tsx
+// ✅ Mobile detection and adapter selection
+const { isMobile } = useDeviceDetection();
+const walletAdapter = isMobile ? 
+  new SolanaMobileWalletAdapter() : 
+  new StandardWalletAdapter();
+
+// ✅ Deep linking for mobile wallets
+const handleMobileConnect = async () => {
+  if (isMobile) {
+    const deepLink = createWalletDeepLink(appUrl);
+    window.location.href = deepLink;
+  }
+};
+```
+
+### UI/UX Standards
+
+#### Accessibility (WCAG 2.1 AA Compliance)
+```tsx
+// ✅ Proper semantic HTML and ARIA
+<button
+  aria-label="Send message"
+  aria-describedby="send-help-text"
+  disabled={isLoading}
+  onClick={handleSend}
+>
+  {isLoading ? <Spinner /> : <SendIcon />}
+</button>
+
+// ✅ Focus management
+const dialogRef = useRef<HTMLDialogElement>(null);
+useFocusTrap(dialogRef, isOpen);
+
+// ✅ Screen reader announcements
+<LiveRegion>
+  {status === 'success' && 'Message sent successfully'}
+</LiveRegion>
+```
+
+#### Responsive Design
+```tsx
+// ✅ Mobile-first approach with Tailwind
+<div className="
+  w-full p-4
+  md:w-2/3 md:p-6
+  lg:w-1/2 lg:p-8
+  xl:max-w-4xl
+">
+  <ChatInterface />
+</div>
+
+// ✅ Progressive enhancement
+const { isMobile } = useMediaQuery('(max-width: 768px)');
+return isMobile ? <MobileChatUI /> : <DesktopChatUI />;
+```
+
+### Error Handling & Monitoring
+
+#### Error Boundaries
+```tsx
+// ✅ Granular error boundaries
+<ChatErrorBoundary
+  fallback={<ChatErrorFallback />}
+  onError={(error, errorInfo) => {
+    logger.error('Chat error', { error, errorInfo });
+    analytics.track('chat_error', { error: error.message });
+  }}
+>
+  <ChatInterface />
+</ChatErrorBoundary>
+```
+
+#### Performance Monitoring
+```tsx
+// ✅ Core Web Vitals tracking
+useEffect(() => {
+  import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+    getCLS(sendToAnalytics);
+    getFID(sendToAnalytics);
+    getFCP(sendToAnalytics);
+    getLCP(sendToAnalytics);
+    getTTFB(sendToAnalytics);
+  });
+}, []);
+```
+
+## File Organization Standards
+
+### Component Structure
+```
+src/components/
+├── ui/                 # Shadcn UI primitives (Button, Input, Dialog)
+├── chat/              # Chat-specific components
+├── auth/              # Authentication flows and guards
+├── wallet/            # Web3 wallet integration components
+├── providers/         # Context providers and wrappers
+├── error-boundary/    # Error handling components
+├── accessibility/     # A11y components (LiveRegion, SkipNav)
+└── animations/        # Animation and transition components
+```
+
+### Hook Organization
+```
+src/hooks/
+├── convex/            # Convex-specific hooks
+├── use-wallet.ts      # Web3 wallet integration
+├── use-auth.ts        # Authentication state
+├── use-chat.ts        # Chat functionality
+└── use-*.ts          # Feature-specific hooks
+```
+
+### Utility Organization
+```
+src/lib/
+├── types/             # TypeScript type definitions
+├── utils/             # Pure utility functions
+├── constants/         # Application constants
+├── monitoring/        # Performance and error monitoring
+└── security/          # Input sanitization and validation
+```
+
+## Environment & Configuration
+
+### Required Environment Variables
+```bash
+# Convex Integration
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+
+# AI Providers
+OPENROUTER_API_KEY=...              # Multi-model access
+OPENAI_API_KEY=...                  # OpenAI models
+GOOGLE_GENERATIVE_AI_API_KEY=...    # Google models
+
+# Solana Configuration
+NEXT_PUBLIC_SOLANA_NETWORK=devnet
+NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
+
+# Application Settings
+NEXT_PUBLIC_APP_URL=http://localhost:3001
+```
+
+### Development Commands
+```bash
+# Development
+bun dev                    # Start Next.js dev server (port 3001)
+bun build                 # Production build
+bun check-types           # TypeScript validation
+
+# Quality Assurance
+bun check                 # Biome format and lint
+npx ultracite format      # Format staged files
+
+# PWA Tools
+bun generate-pwa-assets   # Generate PWA icons and manifest
+```
+
+## Critical Integration Points
+
+### Provider Hierarchy (ORDER MATTERS)
+```tsx
+export default function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <ConvexErrorBoundary>          {/* Error handling */}
+      <SidebarProvider>            {/* Layout state */}
+        <ConvexAuthProvider>       {/* Database auth */}
+          <ClientOnlyWrapper>      {/* Hydration safety */}
+            <WalletProvider>       {/* Web3 wallets */}
+              <AuthProvider>       {/* App auth state */}
+                <ThemeSync />      {/* Theme management */}
+                <NotificationProvider>
+                  <SolanaAgentProvider>
+                    {children}
+                  </SolanaAgentProvider>
+                </NotificationProvider>
+              </AuthProvider>
+            </WalletProvider>
+          </ClientOnlyWrapper>
+        </ConvexAuthProvider>
+      </SidebarProvider>
+    </ConvexErrorBoundary>
+  );
+}
+```
+
+### Route Organization (App Router)
+```
+src/app/
+├── (app)/              # Authenticated app routes
+│   ├── chat/          # Chat interface
+│   ├── dashboard/     # User dashboard
+│   ├── agents/        # AI agent management
+│   └── settings/      # User settings
+├── (landing)/         # Public marketing pages
+├── (legal)/           # Legal pages (privacy, terms)
+├── api/               # API routes
+└── layout.tsx         # Root layout
+```
+
+## Development Restrictions & Guidelines
+
+### CRITICAL CONSTRAINTS (BUILD FAILURES IF VIOLATED)
+- **No any types**: TypeScript strict mode enforced
+- **camelCase strictly**: All identifiers must use camelCase
+- **Server Components first**: Use Client Components only when necessary
+- **Accessibility required**: WCAG 2.1 AA compliance mandatory
+- **Performance budgets**: Bundle size and Core Web Vitals enforced
+
+### Quality Gates (AUTOMATED)
+- **Pre-commit**: Format checking, type validation, lint rules
+- **Build time**: Bundle size analysis, performance budgets
+- **Runtime**: Error boundaries, performance monitoring
+- **Deployment**: Lighthouse scores, accessibility audits
+
+### Best Practices
+1. **Performance First**: Optimize for real-world device and network conditions
+2. **Accessibility by Default**: Design for all users from the start
+3. **Progressive Enhancement**: Build core functionality first, enhance with features
+4. **Error Resilience**: Graceful degradation and comprehensive error handling
+5. **Security Conscious**: Validate all inputs, sanitize all outputs
+
+---
+
+**Frontend Mission**: Create an exceptional user experience that makes advanced AI capabilities accessible while seamlessly integrating Web3 features in a performant, secure, and inclusive way.

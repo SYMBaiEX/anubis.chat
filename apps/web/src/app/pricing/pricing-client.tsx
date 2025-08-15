@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 import LandingFooter from '@/components/landing/landingFooter';
 import LandingHeader from '@/components/landing/landingHeader';
@@ -589,16 +589,16 @@ export default function PricingPageClient() {
                   </tr>
                 </thead>
                 <tbody>
-                  {featureComparison.map((category) => (
-                    <>
-                      <tr key={category.category} className="border-b border-border bg-muted/30">
+                  {featureComparison.map((category, categoryIndex) => (
+                    <React.Fragment key={category.category}>
+                      <tr className="border-b border-border bg-muted/30">
                         <td colSpan={4} className="p-4 font-semibold">
                           {category.category}
                         </td>
                       </tr>
                       {category.features.map((feature, idx) => (
                         <motion.tr
-                          key={feature.name}
+                          key={`${category.category}-${feature.name}`}
                           variants={itemVariants}
                           custom={idx}
                           className="border-b border-border/50"
@@ -633,7 +633,7 @@ export default function PricingPageClient() {
                           </td>
                         </motion.tr>
                       ))}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

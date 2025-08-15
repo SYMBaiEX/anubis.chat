@@ -46,6 +46,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // useCurrentUser replacement - using useSubscription hook instead
 import { useSubscription } from '@/hooks/use-subscription';
 import { paymentConfig, solanaConfig } from '@/lib/env';
+import { getSolanaEndpoint } from '@/lib/solana';
 import {
   createPaymentTransaction,
   processPaymentTransaction,
@@ -275,7 +276,7 @@ export function UpgradeModal({
 
   // Initialize Solana connection
   const connection = new Connection(
-    solanaConfig.rpcUrl,
+    getSolanaEndpoint(),
     solanaConfig.commitment
   );
 
