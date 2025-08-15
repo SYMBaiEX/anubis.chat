@@ -324,6 +324,26 @@ export default function AnubisTokenPage() {
               </span>
             </motion.h1>
 
+            <motion.p
+              animate={{ opacity: 1, y: 0 }}
+              className="mx-auto mt-4 mb-8 max-w-4xl text-base text-muted-foreground transition-all delay-200 duration-700 sm:mt-6 sm:mb-12 sm:text-lg md:mt-10 md:mb-16 md:mb-20 md:text-xl lg:text-2xl"
+              initial={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+            >
+              Join the revolution where{' '}
+              <span className="font-bold text-primary">ancient wisdom</span>{' '}
+              meets{' '}
+              <span className="font-bold text-emerald-400">modern memes</span>.
+              50% funds the AI, 50% powers the platform.
+              <motion.span
+                animate={{ scale: [1, 1.05, 1] }}
+                className="mt-4 block font-bold text-primary"
+                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+              >
+                100% Community Driven 🚀
+              </motion.span>
+            </motion.p>
+
             {/* Token Contract Address (moved below heading) */}
             <motion.div
               animate={{ opacity: 1, scale: 1 }}
@@ -407,18 +427,7 @@ export default function AnubisTokenPage() {
               initial={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.8, delay: 0.4 }}
             >
-              Join the revolution where{' '}
-              <span className="font-bold text-primary">ancient wisdom</span>{' '}
-              meets{' '}
-              <span className="font-bold text-emerald-400">modern memes</span>.
-              50% funds the AI, 50% powers the platform.
-              <motion.span
-                animate={{ scale: [1, 1.05, 1] }}
-                className="mt-4 block font-bold text-primary"
-                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
-              >
-                100% Community Driven 🚀
-              </motion.span>
+              {' '}                 
             </motion.p>
 
             {/* Stats Section */}
@@ -552,11 +561,11 @@ export default function AnubisTokenPage() {
                     <div className="absolute inset-0 animate-pulse rounded-3xl bg-gradient-to-br from-primary/8 to-emerald-500/8 blur-lg" />
                   </div>
 
-                  <div className="relative aspect-square overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-emerald-500/10 to-primary/5 backdrop-blur-sm">
+                  <div className="relative aspect-square overflow-hidden rounded-2xl border border-primary/20">
                     {/* ANUBIS Token Image - Static and Large */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       {/* Glow effect behind the token */}
-                      <div className="absolute h-[150%] w-[150%] rounded-full bg-gradient-to-r from-primary/20 to-emerald-500/20 blur-3xl" />
+                      <div className="absolute h-[150%] w-[150%] rounded-full bg-gradient-to-r from-primary/10 to-emerald-500/10 blur-3xl" />
 
                       {/* Token image - larger than container */}
                       <div className="relative h-[140%] w-[140%]">

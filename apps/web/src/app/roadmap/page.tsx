@@ -881,9 +881,12 @@ export default function RoadmapPage(): ReactElement {
         <AnimatedSection
           className="px-4 py-12 sm:px-6 lg:px-8"
           dustIntensity="low"
-          parallaxY={8}
-          revealStrategy="inview"
-          softEdges
+          edgeMask={false}
+          includeTomb={false}
+          parallaxY={20}
+          revealStrategy="none"
+          softEdges={false}
+          useSurface={false}
         >
           <div className="relative z-10 mx-auto max-w-6xl space-y-4">
             {/* Show results count when searching */}
@@ -1034,12 +1037,13 @@ export default function RoadmapPage(): ReactElement {
 
         {/* Footer CTA with enhanced animations */}
         <AnimatedSection
-          allowOverlap
-          className="isolate overflow-visible px-4 py-16 text-center sm:px-6 md:py-20 lg:px-8"
-          dustIntensity="medium"
-          parallaxY={16}
-          revealStrategy="inview"
-          softEdges
+          className="px-4 py-16 text-center sm:px-6 md:py-20 lg:px-8"
+          dustIntensity="low"
+          edgeMask={false}
+          includeTomb={false}
+          parallaxY={20}
+          revealStrategy="none"
+          softEdges={false}
           useSurface={false}
         >
           <motion.div

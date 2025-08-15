@@ -1,0 +1,15 @@
+---
+description: Routing, layouts, metadata, and navigation patterns for App Router.
+when: auto
+globs: ["apps/web/src/app/**"]
+tags: ["routing", "layouts", "metadata"]
+---
+
+Layouts
+- Keep `app/(app)/layout.tsx` lean; global chrome only. Avoid per-page logic here.
+
+Metadata
+- Use `generateMetadata` for dynamic titles/meta. Avoid client-only side effects for SEO.
+
+Navigation
+- Use `next/navigation` hooks for client transitions; prefer `Link` over `a` tags.

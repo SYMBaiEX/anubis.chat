@@ -1,0 +1,18 @@
+---
+description: React + TypeScript best practices for `apps/web`.
+when: auto
+globs: ["apps/web/src/**/*.{ts,tsx}"]
+tags: ["react", "typescript"]
+---
+
+Components
+- Use functional components with typed props. Export prop types from `.types.ts`.
+- Prefer early-returns to reduce nesting. Avoid deep prop drilling; add context or hooks.
+- Use camelCase for variables, props, and hook names; PascalCase for components; keep JSON wire formats mapped at boundaries.
+
+State & effects
+- Keep effects pure; add complete dependency arrays; extract async work.
+- Memoize heavy calculations; avoid re-renders by stabilizing callback identities.
+
+Error boundaries
+- Provide user-facing error states; avoid silent failures.

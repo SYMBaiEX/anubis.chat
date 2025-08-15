@@ -321,7 +321,6 @@ export default defineSchema({
         currentPeriodStart: v.optional(v.number()),
         currentPeriodEnd: v.optional(v.number()),
         subscriptionTxSignature: v.optional(v.string()), // Solana transaction
-        autoRenew: v.optional(v.boolean()),
         planPriceSol: v.optional(v.number()), // Price in SOL
         // Legacy token fields (will migrate)
         tokensUsed: v.optional(v.number()),

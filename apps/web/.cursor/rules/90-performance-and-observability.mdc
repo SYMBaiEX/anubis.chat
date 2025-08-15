@@ -1,0 +1,21 @@
+---
+description: Performance budgets, logging, and UI responsiveness expectations.
+when: auto
+globs: ["apps/web/src/**/*.{ts,tsx}"]
+tags: ["perf", "observability", "logging"]
+---
+
+Budgets
+- Respect `performanceBudget.json`; keep route TTI reasonable.
+
+Rendering
+- Avoid expensive work in render paths; memoize selectors and components where needed.
+- Debounce high-frequency events; prefer requestAnimationFrame for visual updates.
+
+Logging
+- Use structured logs via utilities in `src/lib/utils/logger`.
+- Do not log PII or secrets; gate debug logs behind dev checks.
+
+References
+@../../performanceBudget.json
+@../../src/lib/utils/logger.ts

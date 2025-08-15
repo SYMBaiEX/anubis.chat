@@ -1,0 +1,74 @@
+---
+description: UI component design system and accessibility standards
+globs: ["**/components/**/*", "**/ui/**/*"]
+alwaysApply: true
+---
+
+# UI Components & Design System
+
+## Component Reuse Strategy
+
+- **Reuse existing UI components** from `/src/components/ui/` - these are the primitives we can build with
+- Create new components by orchestrating ui components if you can't find any existing that solves the problem
+- Ask the human how they want to proceed when there are missing components and designs
+- Follow Shadcn UI patterns and conventions for consistency
+
+## Design System Standards
+
+### Component Architecture
+- Compose components using existing UI primitives
+- Use Radix UI for accessible, unstyled primitives
+- Implement proper component composition patterns
+- Export components with clear, typed interfaces
+
+### Styling Guidelines
+- Use Tailwind CSS v4 with utility-first approach
+- Implement CSS custom properties for design tokens
+- Use Tailwind's design system for spacing, colors, and typography
+- Maintain consistent spacing using Tailwind's scale
+
+## Accessibility Requirements
+
+### WCAG 2.1 AA Compliance
+- Implement proper ARIA labels and descriptions
+- Ensure keyboard navigation for all interactive elements
+- Maintain color contrast ratios of 4.5:1 minimum
+- Provide focus indicators for all focusable elements
+
+### Semantic HTML
+- Use semantic HTML elements where appropriate
+- Implement proper heading hierarchy (h1-h6)
+- Use landmark elements for screen reader navigation
+- Provide alternative text for all images and icons
+
+## Responsive Design Patterns
+
+### Mobile-First Approach
+- Design for mobile viewport first, then enhance for larger screens
+- Use Tailwind's responsive breakpoints consistently
+- Implement proper touch targets (44px minimum)
+- Test on actual devices and screen readers
+
+### Performance Considerations
+- Optimize images with Next.js Image component
+- Implement lazy loading for below-the-fold content
+- Use CSS containment where appropriate
+- Minimize layout shifts with proper sizing
+
+## Component Testing Standards
+
+- Test all interactive components with user events
+- Verify accessibility with automated testing tools
+- Test responsive behavior at different viewport sizes
+- Implement visual regression testing for design system components
+
+## Theme Integration
+
+- Support both light and dark themes seamlessly
+- Use CSS custom properties for dynamic theming
+- Implement proper theme persistence across sessions
+- Test all components in both theme modes
+
+@../apps/web/src/components/ui/
+@../apps/web/src/components/providers.tsx
+@../apps/web/src/components/mode-toggle.tsx

@@ -109,8 +109,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         hasToken: !!token,
         limits: limits
           ? {
-              messagesRemaining: limits.messagesRemaining,
-            }
+            messagesRemaining: limits.messagesRemaining,
+          }
           : 'loading',
       });
     }
@@ -248,19 +248,19 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   // Use the dedicated query for the current chat instead of filtering from the list
   const currentChat = currentChatQuery as
     | (Pick<
-        Chat,
-        | 'title'
-        | 'model'
-        | 'lastMessageAt'
-        | 'updatedAt'
-        | 'systemPrompt'
-        | 'temperature'
-        | 'tokenUsage'
-      > & {
-        _id: string;
-        agentPrompt?: string;
-        agentId?: string;
-      })
+      Chat,
+      | 'title'
+      | 'model'
+      | 'lastMessageAt'
+      | 'updatedAt'
+      | 'systemPrompt'
+      | 'temperature'
+      | 'tokenUsage'
+    > & {
+      _id: string;
+      agentPrompt?: string;
+      agentId?: string;
+    })
     | undefined;
 
   // Sync URL parameter with selected chat ID
@@ -698,12 +698,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       {/* Main Chat Area - Adjust width when artifact is shown on desktop */}
       <div
         className={cn(
-          'flex min-h-0 flex-col overflow-hidden transition-all duration-300',
+          'relative flex min-h-0 flex-col overflow-hidden transition-all duration-300',
           showArtifact ? 'lg:w-1/2' : 'flex-1'
         )}
       >
-        {/* Top Bar */}
-        <div className="sticky top-0 z-30 flex h-14 min-h-[3.5rem] items-center justify-between border-border/50 border-b bg-card/95 px-2 backdrop-blur-sm sm:px-3 md:px-4 lg:px-6">
+        {/* Top Bar - Fixed at top */}
+        <div className="absolute top-0 left-0 right-0 z-30 flex h-12 min-h-[3rem] items-center justify-between border-border/50 border-b bg-card/95 px-2 backdrop-blur-sm sm:px-3 md:px-4 lg:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2 md:gap-3">
             {/* Hamburger menu */}
             {!sidebarOpen && (
@@ -742,7 +742,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       setShowDesktopAgentSelector(true);
                     }
                   }}
-                  onClearHistory={() => {}}
+                  onClearHistory={() => { }}
                   onDelete={() => {
                     if (selectedChatId) {
                       handleDeleteChat(selectedChatId);
@@ -820,11 +820,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           </div>
         </div>
 
-        {/* Chat Content */}
+        {/* Chat Content - Adjust for fixed header and input */}
         {currentChat ? (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">
-            {/* Message List */}
-            <div className="relative flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="absolute inset-0 top-12 bottom-0 flex flex-col overflow-hidden bg-transparent">
+            {/* Message List - Scrollable area between header and input */}
+            <div className="relative flex-1 overflow-y-auto overflow-x-hidden pb-32">
               {messages === undefined ? (
                 <div className="flex h-full items-center justify-center">
                   <LoadingStates
@@ -900,22 +900,22 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
             {/* Quick Suggestions removed */}
 
-            {/* Upgrade Prompt */}
-            {upgradePrompt.shouldShow && upgradePrompt.urgency === 'high' && (
-              <div className="border-border/50 border-t bg-card/30 p-2 sm:p-3 md:p-4">
-                <div className="mx-auto w-full max-w-full px-0 sm:max-w-6xl md:max-w-7xl lg:px-4 xl:px-8">
-                  <UpgradePrompt
-                    onDismiss={() => setShowUpgradePrompt(false)}
-                    prompt={upgradePrompt}
-                    variant="inline"
-                  />
+            {/* Message Input - Fixed at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 bg-card/30 backdrop-blur">
+              {/* Upgrade Prompt */}
+              {upgradePrompt.shouldShow && upgradePrompt.urgency === 'high' && (
+                <div className="border-sidebar-border/80 border-t bg-card/30 p-2 sm:p-3 md:p-4">
+                  <div className="mx-auto w-full max-w-full px-0 sm:max-w-6xl md:max-w-7xl lg:px-4 xl:px-8">
+                    <UpgradePrompt
+                      onDismiss={() => setShowUpgradePrompt(false)}
+                      prompt={upgradePrompt}
+                      variant="inline"
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Message Input */}
-            <div className="border-border/50 border-t bg-card/30 backdrop-blur pb-12">
-              <div className="p-2 sm:p-3 md:p-4">
+              <div className="border-sidebar-border/80 border-t p-2 sm:p-3 md:p-4">
                 <div className="mx-auto w-full max-w-full px-0 sm:max-w-6xl md:max-w-7xl lg:px-4 xl:px-8">
                   <EnhancedMessageInput
                     disabled={
@@ -964,7 +964,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-1 items-center justify-center bg-transparent">
+          <div className="absolute inset-0 top-12 flex items-center justify-center bg-transparent">
             {chats?.length === 0 ? (
               <ChatWelcome
                 isCreating={isCreatingChat}

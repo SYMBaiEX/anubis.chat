@@ -1,0 +1,143 @@
+---
+description: Progressive Web App features, offline capabilities, and mobile optimization
+globs: ["public/manifest.json", "**/pwa/**/*", "**/offline/**/*", "**/service-worker/**/*", "**/sw.*"]
+alwaysApply: false
+---
+
+# Progressive Web App Excellence
+
+## PWA Core Features & Strategy
+
+### Installation & Engagement
+- **App-Like Experience**: Native app feel with smooth animations and gestures
+- **Install Prompts**: Strategic prompts to encourage PWA installation
+- **Standalone Mode**: Full-screen experience without browser UI
+- **App Icon & Branding**: Professional app icons and consistent branding across platforms
+
+### Offline-First Architecture
+- **Service Worker Strategy**: Comprehensive caching strategy for core functionality
+- **Background Sync**: Queue actions when offline, sync when connection returns
+- **Offline Chat**: Cache recent conversations for offline viewing
+- **Progressive Enhancement**: Core features work offline, enhanced features require connection
+
+## Performance Optimization
+
+### Loading & Runtime Performance
+- **Instant Loading**: App shell loads in <1s on 3G networks
+- **Code Splitting**: Load only necessary code for current route
+- **Resource Preloading**: Intelligent preloading of critical resources
+- **Memory Management**: Efficient memory usage for long-running sessions
+
+### Caching Strategies
+- **App Shell Caching**: Cache core application shell for instant loading
+- **API Response Caching**: Cache API responses with appropriate TTL
+- **Image Optimization**: Responsive images with WebP/AVIF support
+- **Static Asset Caching**: Long-term caching for immutable assets
+
+## Mobile-First User Experience
+
+### Touch & Gesture Support
+- **Touch Optimizations**: 44px minimum touch targets, responsive gestures
+- **Pull-to-Refresh**: Native pull-to-refresh for chat and content updates
+- **Swipe Gestures**: Intuitive swipe gestures for navigation and actions
+- **Haptic Feedback**: Subtle haptic feedback for touch interactions (where supported)
+
+### Responsive Design Excellence
+- **Mobile-First**: Design for mobile viewport first, enhance for larger screens
+- **Flexible Layouts**: Adaptive layouts that work across all screen sizes
+- **Typography Scale**: Responsive typography that remains readable on all devices
+- **Safe Areas**: Respect device safe areas and notches
+
+## Advanced PWA Features
+
+### Push Notifications
+- **Web Push API**: Real-time notifications for messages and updates
+- **Notification Strategies**: Smart notification batching and timing
+- **Action Buttons**: Rich notifications with quick actions
+- **Badge API**: Show unread count on app icon (where supported)
+
+### Device Integration
+- **Web Share API**: Native sharing for content and conversations
+- **File System Access**: Local file access for document uploads (where supported)
+- **Camera Integration**: Camera access for photo/video sharing
+- **Clipboard API**: Enhanced copy/paste functionality
+
+### Background Processing
+- **Background Sync**: Sync data when app regains connectivity
+- **Background Fetch**: Download large files in background
+- **Periodic Sync**: Periodic updates for fresh content
+- **Web Workers**: Offload heavy processing to background threads
+
+## AI & Web3 PWA Integration
+
+### Offline AI Capabilities
+- **Local Model Inference**: Small models for offline text processing
+- **Conversation Caching**: Cache recent AI conversations for offline access
+- **Search Index**: Local search index for offline content discovery
+- **Predictive Prefetching**: Predict and cache likely user actions
+
+### Web3 Offline Features
+- **Wallet State Caching**: Cache wallet connection state and balances
+- **Transaction Queue**: Queue blockchain transactions for when online
+- **Portfolio Tracking**: Offline portfolio viewing with cached data
+- **Price Alerts**: Local notifications for price movements
+
+## Security & Privacy
+
+### Secure PWA Practices
+- **HTTPS Enforcement**: Require HTTPS for all PWA features
+- **Content Security Policy**: Strict CSP for security
+- **Service Worker Security**: Secure service worker implementation
+- **Data Protection**: Encrypt sensitive cached data
+
+### Privacy-Preserving Features
+- **Local Data Control**: User control over locally cached data
+- **Incognito Mode**: Private browsing with minimal local storage
+- **Data Expiration**: Automatic expiration of cached personal data
+- **Selective Sync**: User choice in what data syncs across devices
+
+## Installation & Discovery
+
+### App Store Optimization
+- **Web App Manifest**: Comprehensive manifest with all required fields
+- **Screenshots**: High-quality screenshots for app store listings
+- **Keywords**: SEO optimization for PWA discovery
+- **Rating Prompts**: Strategic in-app review prompts
+
+### Cross-Platform Distribution
+- **Google Play Store**: Distribution via Play Store for Android
+- **Microsoft Store**: Distribution via Microsoft Store for Windows
+- **Direct Installation**: Web-based installation flow
+- **Enterprise Distribution**: Enterprise app distribution capabilities
+
+## Analytics & Monitoring
+
+### PWA-Specific Metrics
+- **Installation Rates**: Track PWA installation and abandonment
+- **Engagement Metrics**: Session length, return visits for PWA users
+- **Offline Usage**: Track offline feature usage and effectiveness
+- **Performance Metrics**: PWA-specific Core Web Vitals
+
+### User Behavior Analysis
+- **Feature Adoption**: Track adoption of PWA-specific features
+- **Notification Engagement**: Push notification open and click rates
+- **Offline Patterns**: Understand how users interact with offline features
+- **Cross-Platform Usage**: Track usage patterns across different platforms
+
+## Development & Testing
+
+### PWA Development Workflow
+- **Lighthouse Integration**: Automated PWA audit in CI/CD pipeline
+- **Service Worker Testing**: Comprehensive testing of offline functionality
+- **Cross-Browser Testing**: Test PWA features across all major browsers
+- **Device Testing**: Test on real devices for authentic experience
+
+### Quality Assurance
+- **PWA Checklist**: Comprehensive PWA feature checklist
+- **Performance Budgets**: Strict performance budgets for PWA features
+- **Accessibility Testing**: Ensure PWA is accessible to all users
+- **Security Audits**: Regular security audits of PWA-specific features
+
+@../public/manifest.json
+@../src/app/offline/page.tsx
+@../src/lib/pwa/

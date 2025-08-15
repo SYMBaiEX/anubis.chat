@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export function ChatSkeleton() {
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-full flex-col">
       {/* Header skeleton */}
       <div className="border-b px-4 py-3">
         <div className="flex items-center gap-3">

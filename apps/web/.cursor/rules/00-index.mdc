@@ -1,0 +1,18 @@
+---
+description: Entry point for web app rules (Next.js App Router, React, Tailwind, Supabase).
+when: auto
+globs: ["apps/web/**"]
+tags: ["web", "nextjs", "react", "tailwind", "supabase"]
+---
+
+Compose web rules
+@./10-architecture.mdc
+@./20-react-and-ts.mdc
+@./30-styling-and-ui.mdc
+@./40-routing-and-layouts.mdc
+@./50-data-and-supabase.mdc
+@./60-a11y-and-ux.mdc
+
+Links
+@../../../.cursor/rules/20-code-style-and-quality.mdc
+@../../../.cursor/rules/30-security-and-secrets.mdc

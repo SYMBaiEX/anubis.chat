@@ -1,0 +1,104 @@
+---
+description: Testing standards and quality assurance patterns
+globs: ["**/*.test.*", "**/*.spec.*", "src/**/__tests__/**/*", "e2e/**/*"]
+alwaysApply: false
+---
+
+# Testing Standards & Quality Assurance
+
+## Testing Strategy Overview
+
+### Testing Pyramid
+- **Unit Tests (70%)**: Test individual functions and components in isolation
+- **Integration Tests (20%)**: Test component interactions and API integrations
+- **E2E Tests (10%)**: Test complete user workflows and critical paths
+
+### Coverage Requirements
+- **Unit Test Coverage**: ≥90% for utility functions and business logic
+- **Component Coverage**: ≥85% for UI components and hooks
+- **Integration Coverage**: ≥70% for API endpoints and data flows
+
+## Unit Testing Patterns
+
+### Component Testing
+- Use Testing Library for component testing with user-centric approach
+- Test component behavior, not implementation details
+- Use proper mocking for external dependencies
+- Test accessibility features and keyboard navigation
+
+### Hook Testing
+- Test custom hooks in isolation with react-hooks-testing-library
+- Test all hook states and transitions
+- Mock external dependencies and API calls
+- Test error conditions and edge cases
+
+### Utility Testing
+- Test all public functions with comprehensive input/output validation
+- Test edge cases, error conditions, and boundary values
+- Use property-based testing for complex algorithms
+- Test TypeScript type safety and runtime validation
+
+## Integration Testing
+
+### API Integration
+- Test Convex query and mutation integrations
+- Mock external API calls appropriately
+- Test real-time data synchronization patterns
+- Validate error handling and retry logic
+
+### Component Integration
+- Test component composition and data flow
+- Test context providers and consumer interactions
+- Validate form submission and validation workflows
+- Test routing and navigation patterns
+
+## E2E Testing with Playwright
+
+### Critical User Journeys
+- Test complete user registration and authentication flows
+- Test chat functionality with real AI interactions
+- Test wallet connection and transaction flows
+- Test responsive design across different devices
+
+### Cross-Browser Testing
+- Test on Chrome, Firefox, Safari, and Edge
+- Validate mobile browser compatibility
+- Test different screen sizes and orientations
+- Verify accessibility across different browsers
+
+## Testing Best Practices
+
+### Test Organization
+- Group tests by feature/component in logical folder structures
+- Use descriptive test names that explain the behavior being tested
+- Implement proper test setup and teardown procedures
+- Use shared test utilities and helper functions
+
+### Mock Strategy
+- Mock external dependencies at the boundary
+- Use MSW (Mock Service Worker) for API mocking
+- Implement proper test data factories for consistent test data
+- Mock time-dependent functions for deterministic tests
+
+### Performance Testing
+- Test component rendering performance with large datasets
+- Validate bundle size impacts of new features
+- Test memory usage and cleanup in long-running tests
+- Monitor and test Core Web Vitals in E2E tests
+
+## Continuous Integration
+
+### Automated Testing
+- Run all tests on every pull request
+- Implement proper test parallelization for faster CI
+- Use proper test result reporting and failure notifications
+- Integrate with code coverage reporting tools
+
+### Quality Gates
+- Require passing tests before merge
+- Maintain minimum code coverage thresholds
+- Validate accessibility standards in automated tests
+- Check for security vulnerabilities in dependencies
+
+@../vitest.config.ts
+@../playwright.config.ts

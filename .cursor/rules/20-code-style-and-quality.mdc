@@ -1,0 +1,26 @@
+---
+description: Code-style, TypeScript rigor, error handling, and testing expectations.
+when: auto
+globs: ["**/*.{ts,tsx,js,jsx}"]
+tags: ["typescript", "lint", "tests"]
+---
+
+TypeScript
+- Prefer explicit function signatures for exported members; avoid `any`.
+- Use guard clauses and early returns. Avoid deep nesting.
+- Never catch errors without meaningful handling.
+
+Formatting
+- Match existing formatting; avoid unrelated reformatting in edits.
+- Prefer multi-line clarity over clever one-liners.
+
+Testing
+- Co-locate tests as `*.test.ts` or `*.spec.ts`.
+- Mock only boundaries; verify behavior, not implementation details.
+
+Performance & UX
+- Avoid unnecessary renders; memoize expensive selectors.
+- Prefer async/await over promise chains.
+
+Cross-links
+@./30-security-and-secrets.mdc

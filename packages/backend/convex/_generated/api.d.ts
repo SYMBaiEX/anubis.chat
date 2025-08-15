@@ -49,6 +49,7 @@ import type * as migrations_fixBlacklistedTokens from "../migrations/fixBlacklis
 import type * as migrations_fixChatOwnership from "../migrations/fixChatOwnership.js";
 import type * as migrations_initializeTokenUsage from "../migrations/initializeTokenUsage.js";
 import type * as migrations_optimizeAnubisTokenUsage from "../migrations/optimizeAnubisTokenUsage.js";
+import type * as migrations_removeAutoRenewFields from "../migrations/removeAutoRenewFields.js";
 import type * as migrations_removeUpdatedAt from "../migrations/removeUpdatedAt.js";
 import type * as migrations_updateDefaultAgents from "../migrations/updateDefaultAgents.js";
 import type * as migrations_updateGeneralAssistantToAnubis from "../migrations/updateGeneralAssistantToAnubis.js";
@@ -62,6 +63,7 @@ import type * as referrals from "../referrals.js";
 import type * as solanaPayouts from "../solanaPayouts.js";
 import type * as splTokens from "../splTokens.js";
 import type * as streaming from "../streaming.js";
+import type * as subscriptionMonitor from "../subscriptionMonitor.js";
 import type * as subscriptionPayment from "../subscriptionPayment.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as tokenPrices from "../tokenPrices.js";
@@ -135,6 +137,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/fixChatOwnership": typeof migrations_fixChatOwnership;
   "migrations/initializeTokenUsage": typeof migrations_initializeTokenUsage;
   "migrations/optimizeAnubisTokenUsage": typeof migrations_optimizeAnubisTokenUsage;
+  "migrations/removeAutoRenewFields": typeof migrations_removeAutoRenewFields;
   "migrations/removeUpdatedAt": typeof migrations_removeUpdatedAt;
   "migrations/updateDefaultAgents": typeof migrations_updateDefaultAgents;
   "migrations/updateGeneralAssistantToAnubis": typeof migrations_updateGeneralAssistantToAnubis;
@@ -148,6 +151,7 @@ declare const fullApi: ApiFromModules<{
   solanaPayouts: typeof solanaPayouts;
   splTokens: typeof splTokens;
   streaming: typeof streaming;
+  subscriptionMonitor: typeof subscriptionMonitor;
   subscriptionPayment: typeof subscriptionPayment;
   subscriptions: typeof subscriptions;
   tokenPrices: typeof tokenPrices;

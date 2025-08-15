@@ -1,0 +1,81 @@
+---
+description: Convex backend integration patterns and real-time data management
+globs: ["src/hooks/**/*", "src/lib/**/*", "src/stores/**/*"]
+alwaysApply: true
+---
+
+# Convex Integration & Real-time Patterns
+
+## Query & Mutation Patterns
+
+### Reactive Queries
+- Use Convex reactive queries for all server state management
+- Implement proper loading and error states for all queries
+- Use optimistic updates for better user experience
+- Leverage automatic re-fetching and real-time updates
+
+### Mutation Handling
+- Implement proper error handling for all mutations
+- Use optimistic updates where appropriate for immediate feedback
+- Handle race conditions and conflict resolution
+- Provide clear user feedback for mutation states
+
+## Authentication Integration
+
+### Convex Auth Patterns
+- Use Convex Auth for secure authentication flows
+- Implement proper session management and token handling
+- Handle authentication state changes reactively
+- Implement proper logout and session cleanup
+
+### Authorization Patterns
+- Implement role-based access control in Convex functions
+- Use server-side authorization checks for all protected operations
+- Handle unauthorized access gracefully with proper error messages
+- Implement proper data filtering based on user permissions
+
+## Error Handling & Resilience
+
+### Error Boundaries
+- Implement Convex-specific error boundaries
+- Handle network failures and connection issues gracefully
+- Provide fallback UI for offline states
+- Log errors appropriately for debugging and monitoring
+
+### Retry & Recovery
+- Implement proper retry logic for failed operations
+- Handle temporary network disconnections
+- Provide manual retry options for failed operations
+- Implement proper connection status indicators
+
+## Performance Optimization
+
+### Query Optimization
+- Use proper pagination for large datasets
+- Implement query result caching where appropriate
+- Optimize subscription patterns to minimize re-renders
+- Use proper dependencies in React hooks
+
+### Real-time Performance
+- Optimize subscription patterns for performance
+- Implement proper cleanup for subscriptions
+- Use batching for multiple related updates
+- Monitor and optimize query performance
+
+## Type Safety & Schema
+
+### Schema Integration
+- Use Convex-generated types throughout the frontend
+- Implement proper type guards for runtime validation
+- Keep schema and frontend types in sync
+- Use TypeScript strict mode for better type safety
+
+### Data Validation
+- Implement client-side validation before mutations
+- Use Zod schemas for consistent validation patterns
+- Handle schema evolution and migration gracefully
+- Validate data shape consistency between client and server
+
+@../../packages/backend/convex/schema.ts
+@../src/hooks/convex/useConvexHooks.ts
+@../src/components/providers.tsx

@@ -1064,7 +1064,7 @@ async function cleanupExecutionHistoryHelper(
   );
 
   // Batch delete operations for efficiency
-  const deletePromises = oldExecutions.map((exec) =>
+  const deletePromises = oldExecutions.map((exec: any) =>
     ctx.runMutation(internal.executionTracking.deleteExecution, {
       id: exec._id,
     })

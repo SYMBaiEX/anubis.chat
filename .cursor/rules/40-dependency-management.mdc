@@ -1,0 +1,18 @@
+---
+description: Dependency policies for Node/Next.js workspaces using Bun.
+when: auto
+globs: ["**/package.json", "**/package-lock.json", "**/bun.lock", "**/bunfig.toml"]
+tags: ["dependencies", "npm", "versions"]
+---
+
+Policy
+- Pin versions: `bun add <pkg>@<version>`; avoid `^` and `~`.
+- Dev tools: `bun add -D <pkg>@<version>`.
+- Remove unused packages with `bun remove <pkg>`.
+- Commit `package.json` and `bun.lock` together (do not hand-edit lockfiles).
+
+Updates & verification
+- Use `bun update <pkg>` for targeted bumps; verify builds locally.
+- Inspect dependency tree with `bun pm ls` and provenance with `bun pm why <pkg>`.
+- Rely on GitHub security advisories/Dependabot for vulnerability alerts.
+- Prefer ESM-first libraries; avoid deprecated/unmaintained packages.

@@ -101,7 +101,6 @@ export const userProfileSchema = z.object({
     tokensLimit: z.number().int().min(0),
     features: z.array(z.string()),
     billingCycle: z.enum(['monthly', 'yearly']).optional(),
-    autoRenew: z.boolean().optional(),
   }),
   createdAt: timestampSchema,
   lastActiveAt: timestampSchema,

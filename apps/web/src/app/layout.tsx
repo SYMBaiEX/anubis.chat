@@ -25,7 +25,6 @@ import {
   ScrollToTopButton,
 } from '@/components/ui/smooth-scroll';
 import { Toaster } from '@/components/ui/toaster';
-import { WebVitals } from '@/components/web-vitals';
 import { themeInitScript } from '@/lib/theme-script';
 
 // Typography: Geist Sans for body and headers, Geist Mono for code
@@ -148,7 +147,6 @@ export default function RootLayout({
           <ErrorBoundary>
             <Providers>
               <GlobalErrorHandler />
-              <WebVitals />
               <SchemaMarkup />
               <ServiceWorkerManager />
               <OrganizationJsonLd />

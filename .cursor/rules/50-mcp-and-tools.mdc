@@ -1,0 +1,17 @@
+---
+description: MCP server usage, tool etiquette, and doc lookups with Context7.
+when: mention
+globs: ["**/*"]
+tags: ["mcp", "context7", "docs"]
+---
+
+MCP policy
+- Prefer official documentation MCPs (Context7) for up-to-date APIs.
+- Cite tool outputs concisely; avoid leaking secrets from env.
+
+Context7 usage
+- Resolve library ID before fetching docs.
+- Scope topics (e.g., "Next.js app router routing").
+
+Operational safety
+- Non-interactive flags for CLI; avoid long-running foreground jobs.

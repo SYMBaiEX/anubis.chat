@@ -1,0 +1,130 @@
+---
+description: AI/LLM integration, RAG system, and intelligent model routing patterns
+globs: ["**/ai/**/*", "**/rag/**/*", "**/streaming/**/*", "**/chat/**/*", "**/models/**/*", "**/agents/**/*"]
+alwaysApply: false
+---
+
+# AI Integration & Intelligent Model Orchestration
+
+## Multi-Model AI Excellence Strategy
+
+### Intelligent Model Routing
+- **Claude 3.5 Sonnet**: Complex reasoning, creative tasks, and nuanced conversations
+- **GPT-4o**: Structured outputs, code generation, and analytical tasks
+- **DeepSeek v3**: Cost-effective option for routine queries and high-volume use cases
+- **Gemini 2.0**: Multimodal capabilities, image analysis, and Google ecosystem integration
+- **Dynamic Selection**: AI-powered model selection based on query complexity and user context
+
+### Model Performance Optimization
+- **Cost Optimization**: Intelligent routing to minimize costs while maintaining quality
+- **Latency Optimization**: Route to fastest available model based on real-time performance
+- **Quality Assurance**: Continuous evaluation of model outputs with feedback loops
+- **Failover Strategy**: Automatic fallback to alternative models during outages
+
+## Advanced RAG System Architecture
+
+### Hybrid Search Implementation
+- **Qdrant Vector Database**: High-performance semantic search with 99.9% uptime SLA
+- **Semantic + Keyword**: Combine vector similarity with traditional text search
+- **Contextual Reranking**: Re-rank results based on conversation context and user history
+- **Dynamic Knowledge**: Real-time knowledge base updates and incremental indexing
+
+### Intelligent Context Management
+- **Contextual Chunk Expansion**: Dynamically expand context based on query complexity
+- **Memory Integration**: Long-term conversation memory with relevance scoring
+- **Personalization Engine**: User preference learning and content customization
+- **Domain Adaptation**: Specialized knowledge bases for different use cases
+
+### Content Processing Pipeline
+- **Multi-Format Support**: PDF, Word, Markdown, HTML, and structured data ingestion
+- **Intelligent Chunking**: Content-aware chunking with overlap optimization
+- **Metadata Enrichment**: Automatic tagging, categorization, and relationship extraction
+- **Quality Control**: Content validation, deduplication, and freshness tracking
+
+## AI Agent & Workflow Systems
+
+### Autonomous AI Agents
+- **Task-Specific Agents**: Specialized agents for research, writing, coding, and analysis
+- **Multi-Agent Coordination**: Agents working together on complex, multi-step tasks
+- **User Delegation**: Users can delegate complex workflows to AI agent teams
+- **Learning Capabilities**: Agents improve through interaction and feedback
+
+### Workflow Automation
+- **Visual Workflow Builder**: Drag-and-drop interface for creating AI-powered workflows
+- **Template Library**: Pre-built workflows for common use cases and industries
+- **Integration Ecosystem**: Connect with external tools and services via APIs
+- **Scheduled Execution**: Time-based and event-driven workflow triggers
+
+## Real-Time Streaming & Response Generation
+
+### Advanced Streaming Architecture
+- **Progressive Enhancement**: Stream initial response, then enhance with additional context
+- **Multi-Source Aggregation**: Combine responses from multiple models or sources in real-time
+- **Interactive Streaming**: Allow user interruption and redirection during generation
+- **Response Optimization**: Real-time quality assessment and improvement suggestions
+
+### Context-Aware Generation
+- **Conversation History**: Maintain rich context across extended conversations
+- **User Profile Integration**: Incorporate user preferences, expertise level, and goals
+- **Dynamic Adaptation**: Adjust response style and complexity based on real-time feedback
+- **Collaborative Generation**: Support for multi-user collaborative AI sessions
+
+## Content Safety & Moderation
+
+### Multi-Layer Safety Systems
+- **Input Validation**: Advanced prompt injection detection and prevention
+- **Content Filtering**: Real-time harmful content detection and blocking
+- **Bias Detection**: Monitor and mitigate bias in AI responses
+- **Ethical Guidelines**: Implement ethical AI guidelines with human oversight
+
+### User Safety & Privacy
+- **Data Minimization**: Minimize personal data in AI training and inference
+- **User Consent**: Granular control over data usage for AI improvement
+- **Privacy-Preserving AI**: Implement federated learning and differential privacy
+- **Transparency**: Clear explanations of AI decision-making processes
+
+## Performance Excellence
+
+### Response Time Optimization
+- **<2s Time-to-First-Token**: Industry-leading response initiation times
+- **<100ms Vector Search**: Lightning-fast semantic search and retrieval
+- **Parallel Processing**: Concurrent model inference for complex queries
+- **Edge Computing**: Deploy AI inference closer to users for reduced latency
+
+### Scalability & Reliability
+- **Auto-Scaling**: Dynamic scaling based on demand and model availability
+- **Load Balancing**: Intelligent distribution across multiple model endpoints
+- **Circuit Breaker**: Prevent cascade failures with circuit breaker patterns
+- **Graceful Degradation**: Maintain core functionality during partial system outages
+
+## Business Intelligence & Analytics
+
+### AI Usage Analytics
+- **Model Performance**: Track accuracy, latency, and user satisfaction by model
+- **Cost Optimization**: Monitor and optimize costs across different AI providers
+- **Feature Adoption**: Measure adoption of advanced AI features and capabilities
+- **User Behavior**: Understand how users interact with different AI models and features
+
+### Quality Metrics
+- **Response Quality**: Automated and human evaluation of AI response quality
+- **User Satisfaction**: Net Promoter Score and satisfaction surveys for AI interactions
+- **Task Completion**: Measure success rates for different types of AI-assisted tasks
+- **Innovation Metrics**: Track usage of cutting-edge features and experimental capabilities
+
+## Integration & Ecosystem
+
+### API & SDK Development
+- **Developer APIs**: Comprehensive APIs for integrating ANUBIS AI capabilities
+- **SDK Libraries**: Language-specific SDKs for rapid integration
+- **Webhook Support**: Real-time notifications for AI processing events
+- **Rate Limiting**: Fair usage policies with premium tiers for heavy users
+
+### Third-Party Integrations
+- **Productivity Tools**: Integration with Notion, Slack, Discord, and other platforms
+- **Development Environments**: VS Code, GitHub, and other developer tools
+- **Business Applications**: CRM, project management, and business intelligence tools
+- **Web3 Ecosystem**: Integration with DeFi protocols, NFT platforms, and DAOs
+
+@../packages/backend/convex/streaming.ts
+@../apps/web/src/components/chat/chat-interface.tsx
+@../apps/web/src/lib/types/streaming-types.ts

@@ -1,0 +1,14 @@
+---
+description: Tailwind, Radix/UI, and component composition guidelines.
+when: auto
+globs: ["apps/web/src/**/*.{tsx,css}"]
+tags: ["tailwind", "ui", "design"]
+---
+
+Tailwind
+- Prefer utility-first with small composition helpers (e.g., `cn`).
+- Keep class strings readable; group by layout → spacing → color → effects.
+
+Design system
+- Reuse shared UI components from `src/components/ui/*` where possible.
+- Avoid inline styles unless dynamic and minimal; otherwise extract to component API.

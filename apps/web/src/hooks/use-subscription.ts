@@ -14,7 +14,6 @@ export interface SubscriptionStatus {
   premiumMessageCredits?: number;
   currentPeriodStart: number;
   currentPeriodEnd: number;
-  autoRenew: boolean;
   planPriceSol: number;
   features: string[];
   daysRemaining?: number;
@@ -90,7 +89,6 @@ export function useSubscription() {
         maybeSubscriptionWithCredits.premiumMessageCredits ?? 0,
       currentPeriodStart: subscription.currentPeriodStart ?? Date.now(),
       currentPeriodEnd: subscription.currentPeriodEnd ?? Date.now(),
-      autoRenew: Boolean(subscription.autoRenew),
       planPriceSol: subscription.planPriceSol ?? 0,
       features: Array.isArray(subscription.features)
         ? subscription.features

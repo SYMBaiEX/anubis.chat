@@ -1,0 +1,22 @@
+---
+description: Chat interface design and behavior standards (headers, input, streaming, sidebar alignment).
+when: auto
+globs: ["apps/web/src/components/chat/**/*.{ts,tsx}", "apps/web/src/app/chat/**"]
+tags: ["chat", "ui", "streaming"]
+---
+
+Header
+- Height 3rem; align bottom border with sidebar header border.
+- Avoid breadcrumbs in `(app)` shell; keep chat-specific title in header.
+
+Message list
+- Virtualize or window long lists; preserve scroll on new messages.
+- Provide skeletons/empty states and typing indicators.
+
+Input
+- Fixed bottom, border color matches sidebar (`border-sidebar-border/80`).
+- Provide attachment support and reasoning toggle when available.
+
+References
+@../../src/components/chat/chat-interface.tsx
+@../../src/components/chat/chatHeader.tsx

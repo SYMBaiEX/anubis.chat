@@ -64,10 +64,6 @@ export const ensureCompleteSubscriptions = mutation({
             updates.subscriptionTxSignature = '';
             needsUpdate = true;
           }
-          if (sub.autoRenew === undefined) {
-            updates.autoRenew = false;
-            needsUpdate = true;
-          }
           if (
             sub.planPriceSol === undefined ||
             !Number.isFinite(sub.planPriceSol)
@@ -110,7 +106,6 @@ export const ensureCompleteSubscriptions = mutation({
               currentPeriodStart: now,
               currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
               subscriptionTxSignature: '',
-              autoRenew: false,
               planPriceSol: 0,
               tokensUsed: 0,
               tokensLimit: 10_000,

@@ -1,0 +1,22 @@
+---
+description: Data layer patterns, Convex/queries, and Supabase integration in apps/web.
+when: auto
+globs: ["apps/web/src/{hooks,services,components,app}/**/*.{ts,tsx}"]
+tags: ["data", "convex", "supabase"]
+---
+
+State and data access
+- Use hooks in `src/hooks/**` for data access orchestration (e.g., `useChats`, `useConvexChat`).
+- UI components should consume hooks and remain presentational where possible.
+
+Supabase
+- Store keys in env; access via server components or API routes.
+- Prefer Row Level Security; never expose admin keys to the client.
+
+Convex / queries
+- Keep query and mutation hooks in `src/hooks/convex/**`.
+- Co-locate types in `src/types/**` and reuse across features.
+
+References
+@../../src/hooks/convex/useChats.ts
+@../../src/components/providers/auth-provider.tsx

@@ -1,0 +1,87 @@
+---
+description: Security standards and vulnerability prevention guidelines
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Security Standards & Best Practices
+
+## Input Validation & Sanitization
+
+### Zod Schema Validation
+- Use Zod for all input validation at API boundaries
+- Validate both client-side and server-side inputs
+- Implement proper error handling for validation failures
+- Create reusable validation schemas for common patterns
+
+### Data Sanitization
+- Sanitize all user inputs before processing or storage
+- Use DOMPurify for HTML content sanitization
+- Implement proper SQL injection prevention (parameterized queries)
+- Validate file uploads with proper type and size restrictions
+
+## Authentication & Authorization
+
+### Session Management
+- Use secure, HTTP-only cookies for session tokens
+- Implement proper session timeout and renewal
+- Use CSRF protection for state-changing operations
+- Implement proper logout functionality with token invalidation
+
+### Access Controls
+- Implement role-based access control (RBAC)
+- Use principle of least privilege for all permissions
+- Validate authorization on every protected endpoint
+- Implement proper API rate limiting per user/IP
+
+## Web3 & Blockchain Security
+
+### Wallet Security
+- Never request private keys or seed phrases
+- Validate all transaction parameters before signing
+- Implement proper nonce handling and replay protection
+- Use secure random number generation for cryptographic operations
+
+### Smart Contract Interactions
+- Validate all on-chain data before using in application
+- Implement proper slippage protection for trades
+- Use simulation before executing transactions
+- Follow Solana security best practices
+
+## Data Protection & Privacy
+
+### Sensitive Data Handling
+- Never log passwords, private keys, or sensitive user data
+- Use environment variables for all secrets and API keys
+- Implement proper data encryption for sensitive information
+- Follow GDPR/CCPA guidelines for user data handling
+
+### API Security
+- Implement proper CORS policies
+- Use HTTPS for all communication
+- Validate and sanitize all API inputs
+- Implement proper error handling without information disclosure
+
+## Infrastructure Security
+
+### Environment Configuration
+- Use different configurations for development/staging/production
+- Implement proper secrets management
+- Use security headers (CSP, HSTS, X-Frame-Options)
+- Implement proper logging and monitoring
+
+### Deployment Security
+- Use secure deployment pipelines
+- Implement proper access controls for production systems
+- Regular security updates and dependency scanning
+- Monitor for security vulnerabilities in dependencies
+
+## Security Testing & Monitoring
+
+- Regular security audits and penetration testing
+- Automated dependency vulnerability scanning
+- Implement proper error logging and alerting
+- Monitor for unusual patterns and potential attacks
+
+@../CLAUDE.md
+@../apps/web/src/middleware.ts

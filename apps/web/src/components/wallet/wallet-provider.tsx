@@ -10,6 +10,7 @@ import {
   LedgerWalletAdapter,
   TorusWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
+// Solana Mobile Wallet Adapter will be imported dynamically
 import { clusterApiUrl } from '@solana/web3.js';
 import type { FC, ReactNode } from 'react';
 import { useMemo } from 'react';
@@ -45,28 +46,33 @@ export const WalletProvider: FC<WalletProviderProps> = ({
     [selectedNetwork]
   );
 
-  // Only include wallets that don't implement the Wallet Standard
-  // Phantom, Solflare, and Backpack are now auto-detected via Wallet Standard
+  // Configure wallets according to official documentation:
+  // - Wallets implementing Wallet Standard (Phantom, Solflare, Backpack) are auto-detected
+  // - Mobile Wallet Adapter is automatically available via Solana Mobile Stack
+  // - Only legacy wallets that don't implement standards need manual configuration
   const wallets = useMemo(() => {
-    const configured = [
-      // Only include wallets that aren't auto-detected via Wallet Standard
+    /**
+     * Wallets that implement either of these standards will be available automatically:
+     *
+     *   - Solana Mobile Stack Mobile Wallet Adapter Protocol
+     *     (https://github.com/solana-mobile/mobile-wallet-adapter)
+     *   - Solana Wallet Standard
+     *     (https://github.com/anza-xyz/wallet-standard)
+     *
+     * If you wish to support a wallet that supports neither of those standards,
+     * instantiate its legacy wallet adapter here. Common legacy adapters can be found
+     * in the npm package `@solana/wallet-adapter-wallets`.
+     */
+    
+    // Only instantiate wallet adapters in browser environment to prevent SSR issues
+    if (typeof window === 'undefined') {
+      return [];
+    }
+    
+    return [
       new TorusWalletAdapter(),
       new LedgerWalletAdapter(),
     ];
-
-    // Filter out any duplicates and MetaMask
-    const seen = new Set<string>();
-    return configured.filter((w) => {
-      const name = String(w.name || '');
-      if (name === 'MetaMask') {
-        return false;
-      }
-      if (seen.has(name)) {
-        return false;
-      }
-      seen.add(name);
-      return true;
-    });
   }, [selectedNetwork]);
 
   // Log available wallets for debugging

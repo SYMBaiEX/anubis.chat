@@ -1,0 +1,88 @@
+---
+description: AI chat interface, multi-model conversations, and collaborative messaging
+globs: ["src/components/chat/**/*", "src/hooks/use-*chat*", "src/stores/useChatStore.ts", "src/lib/chat/**/*"]
+alwaysApply: false
+---
+
+# AI Chat Interface & Collaborative Messaging
+
+## Multi-Model AI Chat Architecture
+
+### Intelligent Model Routing Interface
+- **Model Selection UI**: User-friendly model selection with performance indicators
+- **Automatic Routing**: Transparent automatic model selection based on query complexity
+- **Model Comparison**: Side-by-side comparison of responses from different models
+- **Cost Transparency**: Clear cost indicators for different model choices
+
+### Advanced Conversation Features
+- **Conversation Branching**: Create branches in conversations to explore different paths
+- **Context Windows**: Visual indicators for context window usage and limits
+- **Memory Integration**: Long-term conversation memory with relevance highlighting
+- **Conversation Templates**: Pre-built conversation starters for common use cases
+
+### Real-Time Collaborative Chat
+- **Multi-User Conversations**: Support for multiple users in the same chat
+- **AI Agent Participation**: AI agents as persistent participants in group chats
+- **Real-Time Collaboration**: Live typing indicators, presence awareness, and synchronized views
+- **Permission Management**: Granular permissions for conversation access and modification
+
+## UI/UX Patterns
+
+### Message Display
+- Implement virtual scrolling for large message histories
+- Use proper message grouping and timestamp display
+- Implement proper message status indicators (sending, sent, delivered)
+- Support rich content rendering (markdown, code blocks, media)
+
+### Input Handling
+- Implement auto-resize for message input areas
+- Support keyboard shortcuts for common actions
+- Handle file uploads with proper validation and progress
+- Implement proper typing indicators and presence
+
+## Performance Optimization
+
+### Virtual Rendering
+- Use react-window for efficient rendering of large message lists
+- Implement proper item size estimation for dynamic content
+- Use intersection observer for infinite scrolling
+- Optimize re-rendering with proper React.memo usage
+
+### Memory Management
+- Implement proper cleanup for message subscriptions
+- Use pagination for message history loading
+- Implement message cleanup for long-running sessions
+- Monitor and prevent memory leaks in chat components
+
+## Accessibility & UX
+
+### Screen Reader Support
+- Implement proper ARIA labels for chat messages
+- Use live regions for new message announcements
+- Provide keyboard navigation for message interactions
+- Implement proper focus management in chat interface
+
+### Mobile Optimization
+- Optimize touch interactions for mobile devices
+- Implement proper responsive design for different screen sizes
+- Handle virtual keyboard interactions properly
+- Optimize performance for mobile browsers
+
+## Error Handling & Resilience
+
+### Network Resilience
+- Handle network disconnections gracefully
+- Implement proper retry logic for failed message sends
+- Provide offline indicators and queued message handling
+- Handle rate limiting and API errors appropriately
+
+### User Feedback
+- Provide clear error messages for failed operations
+- Implement proper loading states for all async operations
+- Show progress indicators for file uploads and AI processing
+- Handle edge cases like message size limits
+
+@../src/components/chat/chat-interface.tsx
+@../src/components/chat/enhanced-message-bubble.tsx
+@../src/hooks/use-convex-chat.ts
+@../src/stores/useChatStore.ts

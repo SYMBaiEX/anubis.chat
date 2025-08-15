@@ -1105,13 +1105,40 @@ export const cleanupMemories = mutation({
     const maxMemories = args.maxMemories ?? 1000;
     const minImportance = args.minImportance ?? 0.2;
 
-    const memories = await ctx.db
-      .query('memories')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
-      .collect();
+    // Process memories in batches to avoid OCC failures
+    const BATCH_SIZE = 50;
+    const allMemories = [];
+    let hasMore = true;
+    let lastId: Id<'memories'> | null = null;
+
+    // Collect all memories for this user in batches
+    while (hasMore) {
+      let query = ctx.db
+        .query('memories')
+        .withIndex('by_user', (q) => q.eq('userId', args.userId))
+        .order('asc');
+      
+      if (lastId) {
+        // Continue from where we left off
+        query = query.filter((q) => q.gt(q.field('_id'), lastId!));
+      }
+      
+      const batch = await query.take(BATCH_SIZE);
+      
+      if (batch.length === 0) {
+        hasMore = false;
+      } else {
+        allMemories.push(...batch);
+        lastId = batch[batch.length - 1]._id;
+        
+        if (batch.length < BATCH_SIZE) {
+          hasMore = false;
+        }
+      }
+    }
 
     // Sort by importance (ascending) and age (oldest first)
-    const sortedMemories = memories.sort((a, b) => {
+    const sortedMemories = allMemories.sort((a, b) => {
       if (a.importance !== b.importance) {
         return a.importance - b.importance; // Lower importance first
       }
@@ -1136,14 +1163,16 @@ export const cleanupMemories = mutation({
       toDelete.push(...excess.map((m) => m._id));
     }
 
-    // Perform deletions
-    for (const memoryId of toDelete) {
-      await ctx.db.delete(memoryId);
+    // Perform deletions in batches
+    const DELETE_BATCH_SIZE = 10;
+    for (let i = 0; i < toDelete.length; i += DELETE_BATCH_SIZE) {
+      const batch = toDelete.slice(i, i + DELETE_BATCH_SIZE);
+      await Promise.all(batch.map((memoryId) => ctx.db.delete(memoryId)));
     }
 
     return {
       cleaned: toDelete.length,
-      remaining: memories.length - toDelete.length,
+      remaining: allMemories.length - toDelete.length,
     };
   },
 });

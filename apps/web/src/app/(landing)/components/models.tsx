@@ -30,11 +30,14 @@ function getTierStyles(tier: string) {
 function Models() {
   return (
     <AnimatedSection
-      allowOverlap
       className="py-20 md:py-28 lg:py-32"
-      data-bg-variant="primary"
       dustIntensity="low"
-      softEdges
+      edgeMask={false}
+      includeTomb={false}
+      parallaxY={20}
+      revealStrategy="none"
+      softEdges={false}
+      useSurface={false}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div

@@ -1,0 +1,17 @@
+---
+description: CI quality gates and local pre-merge checklist.
+when: mention
+globs: ["**/*"]
+tags: ["ci", "quality", "checks"]
+---
+
+Local checklist
+- Lint clean: `bun run lint`.
+- Typecheck: `bun run typecheck`.
+- Tests green: `bun test` (or `bun run test`).
+- Build passes: `bun run build`.
+
+PR requirements
+- Link issue/ticket.
+- Include screenshots for UI changes.
+- No new warnings in console during e2e smoke.

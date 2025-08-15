@@ -176,7 +176,6 @@ export interface UserSubscription {
   tokensLimit: number;
   features: SubscriptionFeature[];
   billingCycle?: 'monthly' | 'yearly';
-  autoRenew?: boolean;
 }
 
 // =============================================================================

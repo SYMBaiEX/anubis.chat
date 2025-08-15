@@ -1,0 +1,31 @@
+---
+description: Project-wide guidance index. Explains how rules attach and links to scoped rules. Keep under 500 lines.
+when: always
+globs: ["**/*"]
+tags: ["index", "governance", "anubis-chat"]
+---
+
+Purpose
+- Establish consistent, high-signal rules for this repo.
+- Use auto-attach to keep relevant guidance near the code being edited.
+
+Attachment modes
+- always: included in every context.
+- auto: included when edited files match `globs`.
+- mention: included when explicitly cited or semantically related.
+
+Core rule set
+@./10-repository-standards.mdc
+@./20-code-style-and-quality.mdc
+@./30-security-and-secrets.mdc
+@./40-dependency-management.mdc
+@./50-mcp-and-tools.mdc
+
+App-specific rule sets
+- apps/web rules auto-attach when working inside `apps/web/**`.
+@../../apps/web/.cursor/rules/00-index.mdc
+
+Notes
+- Prefer small, composable rules (<500 lines) over monoliths.
+- Examples should be realistic and copy-pasteable.
+- Use `@relative/path.mdc` to compose rules semantically.

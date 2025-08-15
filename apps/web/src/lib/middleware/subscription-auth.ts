@@ -30,7 +30,6 @@ export interface SubscriptionSession {
     premiumMessagesLimit: number;
     currentPeriodStart: number;
     currentPeriodEnd: number;
-    autoRenew: boolean;
     planPriceSol: number;
     isAdmin?: boolean;
   };
@@ -72,7 +71,6 @@ type SubscriptionLike = {
   premiumMessagesLimit: number;
   currentPeriodStart: number;
   currentPeriodEnd: number;
-  autoRenew: boolean;
   planPriceSol: number;
   isAdmin?: boolean;
 };
@@ -95,7 +93,6 @@ function toSubscription(raw: unknown): SubscriptionSession['subscription'] {
     premiumMessagesLimit: toNumber(obj.premiumMessagesLimit),
     currentPeriodStart: toNumber(obj.currentPeriodStart),
     currentPeriodEnd: toNumber(obj.currentPeriodEnd),
-    autoRenew: Boolean(obj.autoRenew),
     planPriceSol: toNumber(obj.planPriceSol),
     isAdmin: typeof obj.isAdmin === 'boolean' ? obj.isAdmin : undefined,
   } satisfies SubscriptionLike as SubscriptionSession['subscription'];

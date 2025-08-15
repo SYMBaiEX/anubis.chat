@@ -1,0 +1,39 @@
+---
+description: Architectural conventions for `apps/web` (App Router, feature structure, shared libs).
+when: auto
+globs: ["apps/web/src/**"]
+tags: ["architecture", "app-router"]
+---
+
+App Router
+- Use App Router only (no Pages Router). Co-locate route files under `app/**`.
+- Keep layouts minimal; lift cross-cutting providers to `app/layout.tsx`.
+
+Feature structure
+- Route-scoped components under `app/{page}/components/` with types and styles.
+- Shared utilities under `src/lib/`, hooks under `src/hooks/`, constants under `src/constants/`.
+ - Context providers in `src/contexts/`. Stores in `src/stores/`. Services (API/SDK) in `src/services/`.
+ - Actions and server functions in `src/actions/` (use Next.js server actions where appropriate).
+
+File size
+- Split files over 500 lines into focused modules.
+
+App directory topology
+- `app/(app)/*`: authenticated application shell, guarded with `AuthGuard` and sidebar chrome.
+- `app/chat/*`: chat feature routes and streaming UI.
+- `app/dashboard/*`: dashboard and analytics surfaces.
+- `app/auth/*`: auth flows and callbacks.
+- `app/api/*`: Next.js route handlers.
+- `app/(landing)/*`: marketing/landing pages.
+- `app/(legal)/*`: legal pages and static content.
+
+Cross-cutting packages
+- `packages/backend`: shared backend logic and Convex-generated types where relevant.
+
+Styling and assets
+- Global styles in `src/index.css` and `src/styles/**`.
+- Reuse UI primitives from `src/components/ui/**` and feature components under `src/components/**`.
+
+Conventions
+- camelCase for functions/variables; PascalCase for React components; route segments remain kebab-case if required.
+- Prefer feature boundaries and explicit public APIs from each folder.

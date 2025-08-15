@@ -1,0 +1,137 @@
+---
+description: User analytics, behavior tracking, and business intelligence patterns
+globs: ["**/analytics/**/*", "**/tracking/**/*", "**/metrics/**/*", "**/monitoring/**/*"]
+alwaysApply: false
+---
+
+# Analytics & User Behavior Tracking
+
+## Analytics Strategy & Philosophy
+
+### Privacy-First Analytics
+- **User Consent**: Explicit opt-in for all non-essential tracking
+- **Data Minimization**: Collect only necessary data for improving user experience
+- **Anonymization**: Implement user ID hashing and data anonymization techniques
+- **Transparency**: Clear disclosure of what data is collected and how it's used
+
+### Business Intelligence Goals
+- **Product Optimization**: Understanding user workflows and pain points
+- **Feature Adoption**: Track feature usage and adoption patterns
+- **Performance Monitoring**: Real-time application performance and user experience metrics
+- **Revenue Analytics**: Conversion funnels, subscription metrics, and revenue attribution
+
+## Core Analytics Implementation
+
+### Event Tracking Architecture
+- **Unified Event Schema**: Consistent event structure across all tracking implementations
+- **Real-Time Processing**: Stream events to analytics pipeline with minimal latency
+- **Batch Processing**: Aggregate events for historical analysis and reporting
+- **Event Validation**: Validate event payloads and handle malformed data gracefully
+
+### User Journey Analytics
+- **Session Tracking**: Comprehensive session management with meaningful session boundaries
+- **Funnel Analysis**: Track user progression through key conversion funnels
+- **Retention Metrics**: Measure user engagement and long-term retention patterns
+- **Cohort Analysis**: Analyze user behavior changes over time and across segments
+
+## Technical Implementation Patterns
+
+### Client-Side Tracking
+- **Performance Monitoring**: Core Web Vitals, page load times, and interaction metrics
+- **Error Tracking**: JavaScript errors, failed API calls, and user-reported issues
+- **User Interactions**: Click tracking, scroll depth, and engagement metrics
+- **A/B Testing**: Feature flag integration with experiment tracking
+
+### Server-Side Analytics
+- **API Performance**: Request/response times, error rates, and throughput metrics
+- **Business Events**: User actions that impact business metrics (signups, purchases, etc.)
+- **System Health**: Infrastructure metrics and service availability
+- **Security Events**: Authentication failures, suspicious activity, and security incidents
+
+## AI & Chat Analytics
+
+### Conversation Analytics
+- **Message Metrics**: Message volume, length, and response times
+- **AI Model Performance**: Token usage, response quality, and user satisfaction
+- **Feature Usage**: AI model preferences, RAG system usage, and advanced features
+- **Conversation Quality**: Track conversation depth, engagement, and user goals
+
+### Content & Knowledge Analytics
+- **Search Behavior**: Query patterns, search success rates, and content gaps
+- **Content Performance**: Most accessed content, user-generated content metrics
+- **Knowledge Base Effectiveness**: RAG system performance and content relevance
+- **User Feedback**: Ratings, reviews, and qualitative feedback on AI responses
+
+## Web3 & Blockchain Analytics
+
+### Wallet & Transaction Analytics
+- **Wallet Connection**: Connection success rates, wallet preferences, and user flows
+- **Transaction Metrics**: Transaction volume, success rates, and gas optimization
+- **Token Economics**: Token usage patterns, staking behavior, and reward distribution
+- **DeFi Integration**: Cross-protocol usage and yield farming analytics
+
+### On-Chain Behavior Analysis
+- **Smart Contract Interactions**: Contract usage patterns and optimization opportunities
+- **Cross-Chain Activity**: Bridge usage and multi-chain behavior patterns
+- **NFT & Asset Tracking**: Digital asset creation, trading, and ownership patterns
+- **Governance Participation**: Voting behavior and community engagement metrics
+
+## Performance & User Experience Analytics
+
+### Real User Monitoring (RUM)
+- **Core Web Vitals**: LCP, FID, CLS monitoring with user context
+- **Custom Performance Metrics**: Application-specific performance indicators
+- **Geographic Performance**: Performance variations across different regions
+- **Device & Browser Analytics**: Performance across different platforms and browsers
+
+### User Experience Tracking
+- **Usability Metrics**: Task completion rates, error rates, and user satisfaction
+- **Accessibility Analytics**: Screen reader usage, keyboard navigation patterns
+- **Mobile Experience**: Touch interactions, orientation changes, and mobile-specific metrics
+- **Progressive Web App**: PWA installation rates, offline usage, and feature adoption
+
+## Data Pipeline & Infrastructure
+
+### Data Collection & Processing
+- **Event Streaming**: Real-time event ingestion with Apache Kafka or similar
+- **Data Warehousing**: Historical data storage with efficient querying capabilities
+- **ETL Pipelines**: Extract, transform, load processes for analytics data
+- **Data Quality**: Validation, deduplication, and error handling in data pipeline
+
+### Privacy & Compliance
+- **GDPR Compliance**: Right to be forgotten, data portability, and consent management
+- **Data Retention**: Automatic data expiration and archive policies
+- **Access Controls**: Role-based access to analytics data and dashboards
+- **Audit Trails**: Complete audit logs for all data access and modifications
+
+## Reporting & Business Intelligence
+
+### Dashboard & Visualization
+- **Real-Time Dashboards**: Live metrics for operational monitoring
+- **Executive Reporting**: High-level business metrics and KPI tracking
+- **Product Analytics**: Feature usage, user flows, and product performance
+- **Custom Reports**: Configurable reports for different stakeholder needs
+
+### Automated Insights
+- **Anomaly Detection**: Automatic detection of unusual patterns or issues
+- **Predictive Analytics**: Forecasting user behavior and business metrics
+- **Recommendation Engine**: Data-driven recommendations for product improvements
+- **Alert Systems**: Proactive notifications for critical metric changes
+
+## Security & Data Protection
+
+### Analytics Security
+- **Data Encryption**: Encryption in transit and at rest for all analytics data
+- **Access Logging**: Comprehensive logs of who accessed what analytics data
+- **Data Masking**: Sensitive data protection in analytics environments
+- **Secure APIs**: Authentication and authorization for analytics API access
+
+### User Privacy Protection
+- **Data Anonymization**: Remove or hash personally identifiable information
+- **Consent Management**: Granular consent controls for different types of tracking
+- **Data Minimization**: Collect only necessary data for legitimate business purposes
+- **Right to Deletion**: Implement user data deletion and opt-out capabilities
+
+@../apps/web/src/lib/monitoring/performanceMonitor.ts
+@../apps/web/src/lib/monitoring/errorMonitor.ts
+@../packages/backend/convex/analytics.ts

@@ -9,14 +9,13 @@ import { Button } from '@/components/ui/button';
 function CTA() {
   return (
     <AnimatedSection
-      allowOverlap
-      auroraPosition="bottom"
-      auroraVariant="primary"
       className="py-20 md:py-28 lg:py-32"
-      data-bg-variant="primary"
-      dustIntensity="medium"
-      edgeMask
-      softEdges
+      dustIntensity="low"
+      edgeMask={false}
+      includeTomb={false}
+      parallaxY={20}
+      revealStrategy="none"
+      softEdges={false}
       useSurface={false}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -112,7 +111,7 @@ function CTA() {
                 </motion.div>
               </Link>
 
-              <Link href="#features">
+              <Link href="/features">
                 <motion.div
                   transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   whileHover={{ scale: 1.05 }}
@@ -132,7 +131,7 @@ function CTA() {
                       }}
                       whileHover={{ x: 2 }}
                     >
-                      Explore Features
+                      Explore All Features
                       <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                     </motion.div>
                   </Button>

@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 export type CompatibleSubscription = SubscriptionData & {
   isAdmin?: boolean;
   availableModels?: string[];
+  billingCycle?: 'monthly' | 'yearly';
 };
 
 interface ExtendedSubscriptionStatusProps {
@@ -153,10 +154,17 @@ export function SubscriptionStatus({
               <p className="text-gray-600 text-sm dark:text-gray-400">
                 {subscription.tier === 'admin'
                   ? 'Unlimited access to all features'
-                  : 'Current subscription tier'}
+                  : subscription.billingCycle === 'yearly'
+                  ? 'Annual subscription'
+                  : 'Monthly subscription'}
               </p>
             </div>
           </div>
+          {subscription.billingCycle === 'yearly' && subscription.tier !== 'free' && subscription.tier !== 'admin' && (
+            <Badge variant="success" size="sm">
+              Save 5%
+            </Badge>
+          )}
         </div>
 
         {/* Message Usage */}

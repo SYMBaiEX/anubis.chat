@@ -1,0 +1,148 @@
+---
+description: Frontend wallet integration, transaction flows, and Web3 UX patterns
+globs: ["src/components/wallet/**/*", "src/hooks/*wallet*", "src/lib/solana*", "src/stores/*wallet*"]
+alwaysApply: false
+---
+
+# Frontend Wallet Integration & Web3 UX
+
+## Wallet Connection Excellence
+
+### Universal Wallet Support Strategy
+- **Auto-Detection**: Automatic detection of installed wallets using Wallet Standard
+- **Wallet Ranking**: Prioritize wallets based on user preference and popularity
+- **Connection Persistence**: Remember user's preferred wallet across sessions
+- **Multi-Wallet Management**: Support multiple connected wallets simultaneously
+
+### Mobile-First Wallet Experience
+- **Mobile Wallet Adapter**: Seamless integration with Solana Mobile Stack
+- **Deep Linking**: Handle wallet deep links for mobile app interactions
+- **QR Code Fallback**: QR codes for wallets that don't support deep linking
+- **Progressive Enhancement**: Graceful degradation for non-mobile environments
+
+### Connection State Management
+- **Reactive State**: Real-time wallet connection state using Convex reactivity
+- **Auto-Reconnection**: Automatic reconnection on page reload with user consent
+- **Session Persistence**: Maintain wallet connection across browser sessions
+- **Connection Recovery**: Graceful recovery from network interruptions
+
+## Transaction Flow Optimization
+
+### User-Centric Transaction UX
+- **Transaction Preview**: Clear preview of all transaction details before signing
+- **Gas Estimation**: Real-time gas estimation with user-friendly explanations
+- **Transaction Status**: Live updates on transaction progress and confirmations
+- **Error Recovery**: Clear error messages with suggested solutions
+
+### Advanced Transaction Features
+- **Batch Transactions**: Group related transactions for efficiency
+- **Priority Fee Management**: Dynamic priority fee adjustment for optimal confirmation
+- **Transaction Simulation**: Pre-execution simulation to prevent failures
+- **MEV Protection**: Integration with MEV protection services
+
+### Payment Flow Integration
+- **Token Payments**: Support for platform token and SOL payments
+- **Subscription Management**: Blockchain-based subscription and recurring payments
+- **Tipping Integration**: Easy tipping for content creators and AI agents
+- **Revenue Sharing**: Automatic revenue distribution through smart contracts
+
+## Wallet Security & Trust
+
+### Security Best Practices
+- **Signature Verification**: Verify all transaction signatures client-side
+- **Domain Verification**: Protect against phishing with domain verification
+- **Transaction Limits**: Configurable transaction limits for user protection
+- **Security Warnings**: Clear warnings for potentially dangerous transactions
+
+### Trust & Transparency
+- **Open Source Commitment**: Open source wallet integration code
+- **Audit Trails**: Complete transaction history and audit capabilities
+- **Privacy Controls**: Granular privacy settings for wallet data
+- **Educational Resources**: Built-in educational content for Web3 newcomers
+
+## DeFi Integration Patterns
+
+### Platform Token Features
+- **Token Balance Display**: Real-time token balance with auto-refresh
+- **Staking Interface**: User-friendly staking and unstaking flows
+- **Reward Tracking**: Track staking rewards and claim history
+- **Governance Participation**: Vote on proposals directly from the interface
+
+### Yield Generation Features
+- **Liquidity Provision**: Easy LP token creation and management
+- **Yield Farming**: Integration with popular Solana yield farming protocols
+- **Auto-Compounding**: Automated yield optimization with user consent
+- **Portfolio Analytics**: Comprehensive DeFi portfolio tracking
+
+### Cross-Protocol Integration
+- **Bridge Integration**: Support for cross-chain asset bridging
+- **Multi-Chain Wallets**: Support for Ethereum and other chain wallets
+- **Asset Aggregation**: Unified view of assets across multiple chains
+- **Protocol Routing**: Intelligent routing across DeFi protocols
+
+## User Experience Excellence
+
+### Onboarding & Education
+- **Wallet Setup Guidance**: Step-by-step wallet setup for newcomers
+- **Interactive Tutorials**: Hands-on tutorials for Web3 features
+- **Risk Education**: Clear education about DeFi risks and best practices
+- **Progressive Disclosure**: Gradually introduce advanced features
+
+### Accessibility & Inclusion
+- **Screen Reader Support**: Full accessibility for wallet interactions
+- **Keyboard Navigation**: Complete keyboard accessibility for all wallet features
+- **High Contrast Mode**: Support for users with visual impairments
+- **Multi-Language**: Localization for global Web3 adoption
+
+### Performance Optimization
+- **Lazy Loading**: Load wallet components only when needed
+- **Connection Caching**: Cache wallet connection state efficiently
+- **Background Sync**: Sync wallet data in background without blocking UI
+- **Memory Management**: Efficient cleanup of wallet-related resources
+
+## Error Handling & Recovery
+
+### Comprehensive Error Management
+- **Error Classification**: Categorize errors by type and severity
+- **User-Friendly Messages**: Translate technical errors to understandable language
+- **Recovery Suggestions**: Provide actionable steps for error resolution
+- **Fallback Strategies**: Alternative flows when primary methods fail
+
+### Network Resilience
+- **RPC Failover**: Automatic failover to backup RPC endpoints
+- **Offline Detection**: Detect and handle offline scenarios gracefully
+- **Connection Retry**: Intelligent retry logic with exponential backoff
+- **State Recovery**: Recover application state after network issues
+
+## Analytics & Monitoring
+
+### Wallet Usage Analytics
+- **Connection Metrics**: Track wallet connection success rates and preferences
+- **Transaction Analytics**: Monitor transaction success rates and gas usage
+- **Feature Adoption**: Track adoption of advanced wallet features
+- **Error Monitoring**: Monitor and alert on wallet-related errors
+
+### User Behavior Insights
+- **Wallet Preferences**: Understand user wallet preferences and usage patterns
+- **Transaction Patterns**: Analyze transaction frequency and amounts
+- **DeFi Engagement**: Track engagement with DeFi features and protocols
+- **Educational Effectiveness**: Measure effectiveness of educational content
+
+## Testing & Quality Assurance
+
+### Comprehensive Testing Strategy
+- **Wallet Simulation**: Test with simulated wallets for consistent testing
+- **Multi-Wallet Testing**: Test across all supported wallet implementations
+- **Network Testing**: Test on mainnet, devnet, and local test networks
+- **Error Scenario Testing**: Test all error conditions and edge cases
+
+### Integration Testing
+- **End-to-End Flows**: Test complete user journeys from connection to transaction
+- **Cross-Browser Testing**: Ensure wallet features work across all browsers
+- **Mobile Testing**: Test mobile wallet features on real devices
+- **Performance Testing**: Load testing for wallet-heavy usage scenarios
+
+@../src/components/wallet/wallet-provider.tsx
+@../src/components/providers.tsx
+@../src/hooks/useSolanaMobile.ts
+@../src/lib/solana-mobile-config.ts

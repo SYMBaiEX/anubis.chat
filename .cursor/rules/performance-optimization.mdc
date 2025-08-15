@@ -1,0 +1,106 @@
+---
+description: Enterprise-grade performance optimization and scalability standards
+globs: ["**/*"]
+alwaysApply: false
+---
+
+# Enterprise Performance Excellence
+
+## Platform Performance Targets
+
+### Frontend Performance Excellence
+- **Load Time**: <3s on 3G networks, <1s on WiFi, <500ms on desktop
+- **Bundle Size**: <500KB initial bundle, <2MB total application
+- **Core Web Vitals**: LCP <2.5s, FID <100ms, CLS <0.1, INP <200ms
+- **Interaction Response**: <100ms for all user interactions
+- **PWA Performance**: App-like performance with 60fps animations
+
+### AI & ML Performance
+- **Time-to-First-Token**: <2s for all AI models, <1s for cached responses
+- **Streaming Latency**: <50ms between tokens during streaming
+- **Vector Search**: <100ms query time for semantic search across 1M+ documents
+- **Model Switching**: <500ms to switch between different AI models
+- **RAG Pipeline**: <300ms for context retrieval and relevance scoring
+
+### Web3 & Blockchain Performance
+- **Wallet Connection**: <500ms for wallet connection and authentication
+- **Transaction Confirmation**: <2s for transaction status updates
+- **On-Chain Queries**: <200ms for balance and transaction history
+- **Cross-Chain Operations**: <5s for bridge and multi-chain transactions
+
+### Real-Time Collaboration
+- **Message Delivery**: <50ms latency for real-time messaging
+- **Presence Updates**: <100ms for user presence and typing indicators
+- **Collaborative Editing**: <50ms for operational transform sync
+- **Video/Audio**: <150ms latency for real-time communication
+
+## Frontend Optimization Strategies
+
+### Code Splitting & Lazy Loading
+- Use Next.js dynamic imports for route-level code splitting
+- Implement component-level lazy loading for heavy components
+- Split vendor bundles to optimize caching strategies
+- Use React.lazy() for non-critical component loading
+
+### Image & Asset Optimization
+- Use Next.js Image component with proper sizing and formats
+- Implement WebP/AVIF with fallbacks for older browsers
+- Optimize SVG icons and implement icon sprite systems
+- Use responsive images with appropriate breakpoints
+
+### Caching Strategies
+- Implement proper browser caching headers
+- Use Next.js static generation where appropriate
+- Implement client-side caching for API responses
+- Use CDN for static assets and images
+
+## Backend Optimization Patterns
+
+### Database Performance
+- Implement proper indexing strategies for Convex queries
+- Use database query optimization and avoid N+1 problems
+- Implement connection pooling and query batching
+- Monitor and optimize expensive database operations
+
+### API Optimization
+- Implement proper response caching strategies
+- Use pagination for large data sets
+- Implement request deduplication and batching
+- Optimize serialization and response payload sizes
+
+### Real-time Performance
+- Optimize Convex subscription patterns
+- Implement proper batching for live updates
+- Use efficient data structures for real-time operations
+- Monitor and optimize subscription performance
+
+## Memory Management
+
+### Client-Side Memory
+- Implement proper cleanup for event listeners and subscriptions
+- Use React.memo and useMemo for expensive computations
+- Monitor and prevent memory leaks in long-running sessions
+- Optimize component re-rendering with proper dependencies
+
+### Server-Side Efficiency
+- Implement proper resource cleanup in serverless functions
+- Use streaming for large responses and file processing
+- Optimize memory usage in AI processing pipelines
+- Monitor and alert on high memory usage patterns
+
+## Performance Monitoring
+
+### Metrics Collection
+- Implement Core Web Vitals monitoring
+- Track custom performance metrics for critical user journeys
+- Monitor API response times and error rates
+- Use Real User Monitoring (RUM) for production insights
+
+### Alerting & Optimization
+- Set up alerts for performance regression
+- Regular performance audits and optimization reviews
+- A/B testing for performance improvements
+- Continuous monitoring of bundle size and load times
+
+@../apps/web/src/lib/monitoring/performanceMonitor.ts
+@../packages/backend/convex/streaming.ts

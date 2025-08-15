@@ -1,0 +1,67 @@
+---
+description: System architecture and design patterns for the ANUBIS Chat platform
+globs: ["src/**/*", "convex/**/*", "packages/**/*"]
+alwaysApply: true
+---
+
+# Architecture & Design Patterns
+
+## Monorepo Structure Guidelines
+
+- **apps/web**: Next.js frontend with App Router and React Server Components
+- **packages/backend**: Convex serverless backend with real-time reactivity
+- Maintain clear separation between frontend and backend concerns
+- Use workspace dependencies for shared code and types
+- Follow Turborepo patterns for build optimization
+
+## Frontend Architecture (Next.js 15)
+
+### Component Patterns
+- Server Components by default for data fetching and SSR benefits
+- Client Components only when interactivity is required (use "use client" directive)
+- Component composition in `src/components/` with logical grouping
+- UI primitives in `src/components/ui/` following Shadcn conventions
+
+### State Management
+- Convex reactive queries for server state (preferred)
+- Local component state for UI-only state
+- Zustand for complex client state when needed
+- Avoid prop drilling by using appropriate provider patterns
+
+### Routing & Pages
+- App Router with server components for SEO and performance
+- Proper loading and error boundaries for each route
+- Implement proper metadata and OpenGraph for sharing
+
+## Backend Architecture (Convex)
+
+### Schema-Driven Development
+- Define all data structures in `convex/schema.ts`
+- Use strict typing throughout the backend
+- Implement proper validation at the API boundary
+- Follow Convex patterns for queries, mutations, and actions
+
+### Real-time Patterns
+- Leverage Convex reactivity for live updates
+- Use optimistic updates for better UX
+- Implement proper error handling for mutations
+- Cache strategies for expensive operations
+
+## Security Standards
+
+- Validate all inputs using Zod schemas
+- Implement proper authentication and authorization
+- Use environment variables for all secrets and configuration
+- Follow OWASP guidelines for web application security
+- Implement rate limiting and request validation
+
+## Performance Requirements
+
+- Frontend: <3s load on 3G, <100ms interaction responses
+- API: <200ms average response time, <500ms P95
+- Bundle size: <500KB initial, <2MB total application
+- Implement proper caching strategies at all levels
+
+@../CLAUDE.md
+@../apps/web/src/app/layout.tsx
+@../packages/backend/convex/schema.ts

@@ -6,14 +6,18 @@ import {
   mutation,
   query,
 } from './_generated/server';
+import type { Id } from './_generated/dataModel';
 import { getCurrentUser, requireAuth } from './authHelpers';
 
-// Subscription tier configurations
+// Subscription tier configurations with monthly and annual pricing
 const SUBSCRIPTION_TIERS = {
   free: {
     messagesLimit: 50,
     premiumMessagesLimit: 0,
-    priceSol: 0,
+    priceSol: {
+      monthly: 0,
+      yearly: 0,
+    },
     features: ['basic_chat', 'limited_models'],
     availableModels: [
       'openrouter/openai/gpt-oss-20b:free',
@@ -25,7 +29,10 @@ const SUBSCRIPTION_TIERS = {
   pro: {
     messagesLimit: 500,
     premiumMessagesLimit: 100,
-    priceSol: 0.05,
+    priceSol: {
+      monthly: 0.05,
+      yearly: 0.57, // 5% discount (12 months × 0.95)
+    },
     features: [
       'unlimited_standard_models',
       'premium_model_access',
@@ -51,7 +58,10 @@ const SUBSCRIPTION_TIERS = {
   pro_plus: {
     messagesLimit: 1000,
     premiumMessagesLimit: 300,
-    priceSol: 0.1,
+    priceSol: {
+      monthly: 0.1,
+      yearly: 1.14, // 5% discount (12 months × 0.95)
+    },
     features: [
       'unlimited_standard_models',
       'enhanced_premium_access',
@@ -111,8 +121,10 @@ const MODEL_COSTS = {
 
 // Safely normalize a user's subscription so fields are always defined
 type Tier = keyof typeof SUBSCRIPTION_TIERS;
+type BillingCycle = 'monthly' | 'yearly';
 type SubscriptionShape = {
   tier: Tier;
+  billingCycle: BillingCycle;
   messagesUsed: number;
   messagesLimit: number;
   premiumMessagesUsed: number;
@@ -121,7 +133,6 @@ type SubscriptionShape = {
   premiumMessageCredits: number;
   currentPeriodStart: number;
   currentPeriodEnd: number;
-  autoRenew: boolean;
   planPriceSol: number;
   features: string[];
   subscriptionTxSignature: string;
@@ -133,10 +144,16 @@ function getSafeSubscription(user: {
   // If user already has a subscription with a valid tier, normalize numeric fields
   const candidate = user.subscription as Partial<SubscriptionShape> | undefined;
   const validTier = (candidate?.tier ?? 'free') as Tier;
+  const billingCycle = (candidate?.billingCycle ?? 'monthly') as BillingCycle;
   const tierDefaults = SUBSCRIPTION_TIERS[validTier];
   const now = Date.now();
+  const periodDuration = billingCycle === 'yearly' 
+    ? 365 * 24 * 60 * 60 * 1000  // 365 days
+    : 30 * 24 * 60 * 60 * 1000;   // 30 days
+  
   return {
     tier: validTier,
+    billingCycle,
     messagesUsed: candidate?.messagesUsed ?? 0,
     messagesLimit: candidate?.messagesLimit ?? tierDefaults.messagesLimit,
     premiumMessagesUsed: candidate?.premiumMessagesUsed ?? 0,
@@ -146,9 +163,11 @@ function getSafeSubscription(user: {
     premiumMessageCredits: candidate?.premiumMessageCredits ?? 0,
     currentPeriodStart: candidate?.currentPeriodStart ?? now,
     currentPeriodEnd:
-      candidate?.currentPeriodEnd ?? now + 30 * 24 * 60 * 60 * 1000,
-    autoRenew: Boolean(candidate?.autoRenew),
-    planPriceSol: candidate?.planPriceSol ?? tierDefaults.priceSol,
+      candidate?.currentPeriodEnd ?? now + periodDuration,
+    planPriceSol: candidate?.planPriceSol ?? 
+      (typeof tierDefaults.priceSol === 'object' 
+        ? tierDefaults.priceSol[billingCycle] 
+        : tierDefaults.priceSol) ?? 0,
     features: candidate?.features ?? tierDefaults.features,
     subscriptionTxSignature:
       typeof candidate?.subscriptionTxSignature === 'string'
@@ -288,17 +307,59 @@ export const trackMessageUsageByWallet = mutation({
       throw new Error('User not found');
     }
 
-    // Update user's message counts
+    // Update user's message counts using proper consumption hierarchy
     const sub = getSafeSubscription(user);
-    const updates = {
-      subscription: {
-        ...sub,
-        messagesUsed: sub.messagesUsed + 1,
-        premiumMessagesUsed: args.isPremiumModel
-          ? sub.premiumMessagesUsed + 1
-          : sub.premiumMessagesUsed,
-      },
-    } as const;
+    
+    // Calculate available messages
+    const planMessagesAvailable = Math.max(0, sub.messagesLimit - sub.messagesUsed);
+    const planPremiumAvailable = Math.max(0, sub.premiumMessagesLimit - sub.premiumMessagesUsed);
+    
+    let updates: { subscription: SubscriptionShape };
+    
+    if (args.isPremiumModel) {
+      // For premium models, consume from plan premium messages first, then premium credits
+      if (planPremiumAvailable > 0) {
+        // Use plan premium messages first
+        updates = {
+          subscription: {
+            ...sub,
+            messagesUsed: sub.messagesUsed + 1,
+            premiumMessagesUsed: sub.premiumMessagesUsed + 1,
+          },
+        };
+      } else if (sub.premiumMessageCredits > 0) {
+        // Fall back to premium credits
+        updates = {
+          subscription: {
+            ...sub,
+            messagesUsed: sub.messagesUsed + 1,
+            premiumMessageCredits: sub.premiumMessageCredits - 1,
+          },
+        };
+      } else {
+        throw new Error('No premium messages or credits available');
+      }
+    } else {
+      // For standard models, consume from plan messages first, then standard credits
+      if (planMessagesAvailable > 0) {
+        updates = {
+          subscription: {
+            ...sub,
+            messagesUsed: sub.messagesUsed + 1,
+          },
+        };
+      } else if (sub.messageCredits > 0) {
+        // Fall back to message credits
+        updates = {
+          subscription: {
+            ...sub,
+            messageCredits: sub.messageCredits - 1,
+          },
+        };
+      } else {
+        throw new Error('No standard messages or credits available');
+      }
+    }
 
     await ctx.db.patch(user._id, {
       ...updates,
@@ -328,17 +389,59 @@ export const trackMessageUsage = mutation({
       };
     }
 
-    // Update user's message counts
+    // Update user's message counts using proper consumption hierarchy
     const sub = getSafeSubscription(user);
-    const updates = {
-      subscription: {
-        ...sub,
-        messagesUsed: sub.messagesUsed + 1,
-        premiumMessagesUsed: args.isPremiumModel
-          ? sub.premiumMessagesUsed + 1
-          : sub.premiumMessagesUsed,
-      },
-    } as const;
+    
+    // Calculate available messages
+    const planMessagesAvailable = Math.max(0, sub.messagesLimit - sub.messagesUsed);
+    const planPremiumAvailable = Math.max(0, sub.premiumMessagesLimit - sub.premiumMessagesUsed);
+    
+    let updates: { subscription: SubscriptionShape };
+    
+    if (args.isPremiumModel) {
+      // For premium models, consume from plan premium messages first, then premium credits
+      if (planPremiumAvailable > 0) {
+        // Use plan premium messages first
+        updates = {
+          subscription: {
+            ...sub,
+            messagesUsed: sub.messagesUsed + 1,
+            premiumMessagesUsed: sub.premiumMessagesUsed + 1,
+          },
+        };
+      } else if (sub.premiumMessageCredits > 0) {
+        // Fall back to premium credits
+        updates = {
+          subscription: {
+            ...sub,
+            messagesUsed: sub.messagesUsed + 1,
+            premiumMessageCredits: sub.premiumMessageCredits - 1,
+          },
+        };
+      } else {
+        throw new Error('No premium messages or credits available');
+      }
+    } else {
+      // For standard models, consume from plan messages first, then standard credits
+      if (planMessagesAvailable > 0) {
+        updates = {
+          subscription: {
+            ...sub,
+            messagesUsed: sub.messagesUsed + 1,
+          },
+        };
+      } else if (sub.messageCredits > 0) {
+        // Fall back to message credits
+        updates = {
+          subscription: {
+            ...sub,
+            messageCredits: sub.messageCredits - 1,
+          },
+        };
+      } else {
+        throw new Error('No standard messages or credits available');
+      }
+    }
 
     await ctx.db.patch(user._id, {
       ...updates,
@@ -364,13 +467,15 @@ export const trackMessageUsage = mutation({
       createdAt: Date.now(),
     });
 
+    // Calculate remaining messages with credits
+    const totalStandardRemaining = Math.max(0, updates.subscription.messagesLimit - updates.subscription.messagesUsed) + updates.subscription.messageCredits;
+    const totalPremiumRemaining = Math.max(0, updates.subscription.premiumMessagesLimit - updates.subscription.premiumMessagesUsed) + updates.subscription.premiumMessageCredits;
+
     return {
       messagesUsed: updates.subscription.messagesUsed,
-      messagesRemaining: sub.messagesLimit - updates.subscription.messagesUsed,
+      messagesRemaining: totalStandardRemaining,
       premiumMessagesUsed: updates.subscription.premiumMessagesUsed,
-      premiumMessagesRemaining: args.isPremiumModel
-        ? sub.premiumMessagesLimit - updates.subscription.premiumMessagesUsed
-        : undefined,
+      premiumMessagesRemaining: args.isPremiumModel ? totalPremiumRemaining : undefined,
     };
   },
 });
@@ -551,12 +656,25 @@ export const calculateProratedUpgrade = query({
     const currentTier = sub.tier;
     const targetTier = args.targetTier;
 
+    // Get the billing cycle to use for price calculations
+    const billingCycle = sub.billingCycle || 'monthly';
+    
+    // Get prices based on billing cycle
+    const getPrice = (tier: 'pro' | 'pro_plus') => {
+      const tierPrices = SUBSCRIPTION_TIERS[tier].priceSol;
+      return typeof tierPrices === 'object' 
+        ? tierPrices[billingCycle]
+        : tierPrices;
+    };
+    
+    const targetPrice = getPrice(targetTier);
+    
     // Only support Pro to Pro+ proration for now
     if (currentTier !== 'pro' || targetTier !== 'pro_plus') {
       return {
         isProrated: false,
-        fullPrice: SUBSCRIPTION_TIERS[targetTier].priceSol,
-        proratedPrice: SUBSCRIPTION_TIERS[targetTier].priceSol,
+        fullPrice: targetPrice,
+        proratedPrice: targetPrice,
         creditApplied: 0,
         daysRemaining: 0,
       };
@@ -570,17 +688,19 @@ export const calculateProratedUpgrade = query({
     );
 
     // Calculate credit for unused Pro subscription
-    const proPricePerDay = SUBSCRIPTION_TIERS.pro.priceSol / 30;
+    const proPrice = getPrice('pro');
+    const proPlusPrice = getPrice('pro_plus');
+    const periodDays = billingCycle === 'yearly' ? 365 : 30;
+    const proPricePerDay = proPrice / periodDays;
     const creditApplied = proPricePerDay * daysRemaining;
 
-    // Calculate prorated price
-    const fullPriceDifference =
-      SUBSCRIPTION_TIERS.pro_plus.priceSol - SUBSCRIPTION_TIERS.pro.priceSol;
-    const proratedPrice = Math.max(0, fullPriceDifference);
+    // Calculate prorated price - user pays only for the remaining period difference
+    const dailyPriceDifference = (proPlusPrice - proPrice) / periodDays;
+    const proratedPrice = Math.max(0, dailyPriceDifference * daysRemaining);
 
     return {
       isProrated: true,
-      fullPrice: SUBSCRIPTION_TIERS[targetTier].priceSol,
+      fullPrice: targetPrice,
       proratedPrice,
       creditApplied,
       daysRemaining,
@@ -594,6 +714,7 @@ export const calculateProratedUpgrade = query({
 export const processPayment = mutation({
   args: {
     tier: v.union(v.literal('pro'), v.literal('pro_plus')),
+    billingCycle: v.optional(v.union(v.literal('monthly'), v.literal('yearly'))),
     txSignature: v.string(),
     amountSol: v.number(),
     isProrated: v.optional(v.boolean()),
@@ -606,13 +727,21 @@ export const processPayment = mutation({
     }
 
     const tierConfig = SUBSCRIPTION_TIERS[args.tier];
-    let expectedAmount = tierConfig.priceSol;
+    const billingCycle = args.billingCycle || 'monthly';
+    let expectedAmount = typeof tierConfig.priceSol === 'object' 
+      ? tierConfig.priceSol[billingCycle]
+      : tierConfig.priceSol;
 
     // Handle prorated upgrade from Pro to Pro+
     const sub = getSafeSubscription(user);
     if (args.isProrated && sub.tier === 'pro' && args.tier === 'pro_plus') {
-      expectedAmount =
-        SUBSCRIPTION_TIERS.pro_plus.priceSol - SUBSCRIPTION_TIERS.pro.priceSol;
+      const proPriceValue = typeof SUBSCRIPTION_TIERS.pro.priceSol === 'object'
+        ? SUBSCRIPTION_TIERS.pro.priceSol[billingCycle]
+        : SUBSCRIPTION_TIERS.pro.priceSol;
+      const proPlusPriceValue = typeof SUBSCRIPTION_TIERS.pro_plus.priceSol === 'object'
+        ? SUBSCRIPTION_TIERS.pro_plus.priceSol[billingCycle]
+        : SUBSCRIPTION_TIERS.pro_plus.priceSol;
+      expectedAmount = proPlusPriceValue - proPriceValue;
     }
 
     // Verify payment amount
@@ -638,7 +767,10 @@ export const processPayment = mutation({
     }
 
     const now = Date.now();
-    const periodEnd = now + 30 * 24 * 60 * 60 * 1000; // 30 days
+    const periodDuration = billingCycle === 'yearly' 
+      ? 365 * 24 * 60 * 60 * 1000  // 365 days
+      : 30 * 24 * 60 * 60 * 1000;   // 30 days
+    const periodEnd = now + periodDuration;
 
     // Create pending payment record
     const paymentId = await ctx.db.insert('subscriptionPayments', {
@@ -682,6 +814,7 @@ export const getPaymentBySignature = internalQuery({
 export const processVerifiedPayment = internalMutation({
   args: {
     tier: v.union(v.literal('pro'), v.literal('pro_plus')),
+    billingCycle: v.optional(v.union(v.literal('monthly'), v.literal('yearly'))),
     txSignature: v.string(),
     amountSol: v.number(),
     walletAddress: v.string(),
@@ -718,6 +851,11 @@ export const processVerifiedPayment = internalMutation({
     // If payment doesn't exist, create it (direct wallet payment)
     if (!payment) {
       const now = Date.now();
+      const billingCycle = args.billingCycle || 'monthly';
+      const periodDuration = billingCycle === 'yearly' 
+        ? 365 * 24 * 60 * 60 * 1000  // 365 days
+        : 30 * 24 * 60 * 60 * 1000;   // 30 days
+      
       const paymentId = await ctx.db.insert('subscriptionPayments', {
         userId: user._id,
         tier: args.tier,
@@ -727,7 +865,7 @@ export const processVerifiedPayment = internalMutation({
         status: 'pending',
         paymentDate: now,
         periodStart: now,
-        periodEnd: now + 30 * 24 * 60 * 60 * 1000, // 30 days
+        periodEnd: now + periodDuration,
         createdAt: now,
         updatedAt: now,
       });
@@ -745,14 +883,18 @@ export const processVerifiedPayment = internalMutation({
       if (sub.tier !== args.tier) {
         // Subscription might be out of sync - update it
         const tierConfig = SUBSCRIPTION_TIERS[args.tier];
+        const billingCycle = args.billingCycle || sub.billingCycle || 'monthly';
         await ctx.db.patch(user._id, {
           subscription: {
             ...sub,
             tier: args.tier,
+            billingCycle,
             subscriptionTxSignature: args.txSignature,
             messagesLimit: tierConfig.messagesLimit,
             premiumMessagesLimit: tierConfig.premiumMessagesLimit,
-            planPriceSol: tierConfig.priceSol,
+            planPriceSol: typeof tierConfig.priceSol === 'object' 
+              ? tierConfig.priceSol[billingCycle]
+              : tierConfig.priceSol,
             features: tierConfig.features,
           },
           updatedAt: Date.now(),
@@ -774,20 +916,36 @@ export const processVerifiedPayment = internalMutation({
     }
 
     const tierConfig = SUBSCRIPTION_TIERS[args.tier];
+    const billingCycle = args.billingCycle || 'monthly';
     const now = Date.now();
 
-    // For prorated upgrades, maintain the current billing period
-    let periodEnd = now + 30 * 24 * 60 * 60 * 1000; // Default: 30 days from now
+    // Calculate period duration based on billing cycle
+    const periodDuration = billingCycle === 'yearly' 
+      ? 365 * 24 * 60 * 60 * 1000  // 365 days
+      : 30 * 24 * 60 * 60 * 1000;   // 30 days
+    
+    const sub = getSafeSubscription(user);
+    let periodEnd = now + periodDuration;
     let periodStart = now;
     let resetUsage = true;
 
-    // Handle prorated upgrade from Pro to Pro+
-    const sub = getSafeSubscription(user);
+    // Handle different renewal scenarios
     if (args.isProrated && sub.tier === 'pro' && args.tier === 'pro_plus') {
-      // Keep the existing billing period for prorated upgrades
+      // Keep the existing billing period and billing cycle for prorated upgrades
       periodStart = sub.currentPeriodStart;
       periodEnd = sub.currentPeriodEnd;
       resetUsage = false; // Don't reset usage counters for mid-cycle upgrades
+    } else if (sub.tier === args.tier && sub.currentPeriodEnd > now) {
+      // Early renewal: same tier, subscription still active
+      // Stack the new period onto the existing end date
+      periodStart = sub.currentPeriodStart; // Keep original start
+      periodEnd = sub.currentPeriodEnd + periodDuration; // Add new period to existing end
+      resetUsage = false; // Don't reset usage for early renewals
+    } else if (sub.currentPeriodEnd > now) {
+      // Tier change with active subscription: start from current end date
+      periodStart = sub.currentPeriodEnd;
+      periodEnd = sub.currentPeriodEnd + periodDuration;
+      resetUsage = true; // Reset usage for tier changes
     }
 
     // Update payment status to confirmed
@@ -802,6 +960,7 @@ export const processVerifiedPayment = internalMutation({
       subscription: {
         ...sub,
         tier: args.tier,
+        billingCycle: args.isProrated ? sub.billingCycle : billingCycle, // Keep existing cycle for prorated, use new for fresh
         messagesUsed: resetUsage ? 0 : sub.messagesUsed,
         messagesLimit: tierConfig.messagesLimit,
         premiumMessagesUsed: resetUsage ? 0 : sub.premiumMessagesUsed,
@@ -809,8 +968,9 @@ export const processVerifiedPayment = internalMutation({
         currentPeriodStart: periodStart,
         currentPeriodEnd: periodEnd,
         subscriptionTxSignature: args.txSignature,
-        autoRenew: true,
-        planPriceSol: tierConfig.priceSol,
+        planPriceSol: typeof tierConfig.priceSol === 'object' 
+          ? tierConfig.priceSol[billingCycle]
+          : tierConfig.priceSol,
         features: tierConfig.features,
       },
       updatedAt: now,
@@ -1028,6 +1188,7 @@ export const initializeUserSubscription = mutation({
 
     const subscription = {
       tier: 'free' as const,
+      billingCycle: 'monthly' as BillingCycle,
       messagesUsed: 0,
       messagesLimit: tierConfig.messagesLimit,
       premiumMessagesUsed: 0,
@@ -1035,8 +1196,9 @@ export const initializeUserSubscription = mutation({
       currentPeriodStart: now,
       currentPeriodEnd: periodEnd,
       subscriptionTxSignature: '',
-      autoRenew: false,
-      planPriceSol: tierConfig.priceSol,
+      planPriceSol: typeof tierConfig.priceSol === 'object'
+        ? tierConfig.priceSol.monthly
+        : tierConfig.priceSol,
       features: tierConfig.features,
     };
 
@@ -1096,7 +1258,6 @@ export const getSubscriptionStatusByWallet = query({
       currentPeriodStart: sub.currentPeriodStart,
       currentPeriodEnd: sub.currentPeriodEnd,
       isExpired,
-      autoRenew: sub.autoRenew,
       planPriceSol: sub.planPriceSol,
       features: sub.features,
       availableModels: tierConfig.availableModels,
@@ -1134,7 +1295,6 @@ export const getSubscriptionStatus = query({
         currentPeriodStart: Date.now(),
         currentPeriodEnd: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
         isExpired: false,
-        autoRenew: false,
         planPriceSol: 0,
         features: ['unlimited_everything'],
         availableModels: [
@@ -1179,7 +1339,6 @@ export const getSubscriptionStatus = query({
       currentPeriodStart: sub.currentPeriodStart,
       currentPeriodEnd: sub.currentPeriodEnd,
       isExpired,
-      autoRenew: sub.autoRenew,
       planPriceSol: sub.planPriceSol,
       features: sub.features,
       availableModels: tierConfig.availableModels,
@@ -1197,16 +1356,40 @@ export const resetMonthlyUsage = mutation({
   handler: async (ctx) => {
     const now = Date.now();
 
-    // Get all users whose billing period has ended
-    const users = await ctx.db.query('users').collect();
+    // Process users in batches to avoid OCC failures
+    const BATCH_SIZE = 10;
+    let hasMore = true;
+    let lastId: Id<'users'> | null = null;
+    let totalProcessed = 0;
+    let totalReset = 0;
 
-    await Promise.all(
-      users.map(async (user) => {
+    while (hasMore) {
+      // Get a batch of users
+      let query = ctx.db.query('users').order('asc');
+      if (lastId) {
+        // Continue from where we left off
+        query = query.filter((q) => q.gt(q.field('_id'), lastId!));
+      }
+      
+      const batch = await query.take(BATCH_SIZE);
+      
+      if (batch.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      // Process this batch
+      for (const user of batch) {
+        totalProcessed++;
         if (
           user.subscription?.currentPeriodEnd &&
           user.subscription.currentPeriodEnd <= now
         ) {
-          const periodEnd = now + 30 * 24 * 60 * 60 * 1000; // 30 days
+          const periodDuration = user.subscription.billingCycle === 'yearly' 
+            ? 365 * 24 * 60 * 60 * 1000  // 365 days for annual
+            : 30 * 24 * 60 * 60 * 1000;   // 30 days for monthly
+          const periodEnd = now + periodDuration;
+          
           try {
             await ctx.db.patch(user._id, {
               subscription: {
@@ -1218,14 +1401,21 @@ export const resetMonthlyUsage = mutation({
               },
               updatedAt: now,
             });
+            totalReset++;
           } catch (_error) {
             // ignore individual failures and continue
           }
         }
-      })
-    );
+        lastId = user._id;
+      }
+      
+      // If we got fewer than BATCH_SIZE, we're done
+      if (batch.length < BATCH_SIZE) {
+        hasMore = false;
+      }
+    }
 
-    return { success: true, usersReset: users.length };
+    return { success: true, usersReset: totalReset };
   },
 });
 
@@ -1753,6 +1943,109 @@ export const checkMessageCreditPurchaseStatus = query({
       priceSOL: purchase.priceSOL,
       createdAt: purchase.createdAt,
       verificationDetails: purchase.verificationDetails || null,
+    };
+  },
+});
+
+// Get usage forecasting data based on historical usage patterns
+export const getUsageForecasting = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return null;
+    }
+
+    // Admins have unlimited usage
+    if (user.role && user.role !== 'user') {
+      return {
+        isAdmin: true,
+        daysUntilStandardExhausted: Number.POSITIVE_INFINITY,
+        daysUntilPremiumExhausted: Number.POSITIVE_INFINITY,
+        recommendedAction: 'none',
+      };
+    }
+
+    const sub = getSafeSubscription(user);
+    const now = Date.now();
+    
+    // Get usage data from the last 30 days
+    const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+    
+    const recentUsage = await ctx.db
+      .query('messageUsage')
+      .withIndex('by_user_date', (q) => 
+        q.eq('userId', user._id).gte('date', thirtyDaysAgo)
+      )
+      .collect();
+
+    if (recentUsage.length === 0) {
+      // No usage history, return basic info
+      const daysInPeriod = Math.ceil(
+        (sub.currentPeriodEnd - now) / (24 * 60 * 60 * 1000)
+      );
+      
+      return {
+        isAdmin: false,
+        daysUntilStandardExhausted: daysInPeriod,
+        daysUntilPremiumExhausted: daysInPeriod,
+        averageDailyStandard: 0,
+        averageDailyPremium: 0,
+        recommendedAction: 'none',
+        periodEndsAt: sub.currentPeriodEnd,
+      };
+    }
+
+    // Calculate daily usage averages
+    const daysWithUsage = new Set(recentUsage.map(u => u.date)).size;
+    const standardUsage = recentUsage
+      .filter(u => u.modelCategory === 'standard')
+      .reduce((sum, u) => sum + u.messageCount, 0);
+    const premiumUsage = recentUsage
+      .filter(u => u.modelCategory === 'premium')
+      .reduce((sum, u) => sum + u.messageCount, 0);
+    
+    const avgDailyStandard = daysWithUsage > 0 ? standardUsage / daysWithUsage : 0;
+    const avgDailyPremium = daysWithUsage > 0 ? premiumUsage / daysWithUsage : 0;
+
+    // Calculate total available messages (plan + credits)
+    const totalStandardAvailable = Math.max(0, sub.messagesLimit - sub.messagesUsed) + sub.messageCredits;
+    const totalPremiumAvailable = Math.max(0, sub.premiumMessagesLimit - sub.premiumMessagesUsed) + sub.premiumMessageCredits;
+
+    // Forecast when credits will be exhausted
+    let daysUntilStandardExhausted = Number.POSITIVE_INFINITY;
+    let daysUntilPremiumExhausted = Number.POSITIVE_INFINITY;
+
+    if (avgDailyStandard > 0) {
+      daysUntilStandardExhausted = Math.floor(totalStandardAvailable / avgDailyStandard);
+    }
+
+    if (avgDailyPremium > 0) {
+      daysUntilPremiumExhausted = Math.floor(totalPremiumAvailable / avgDailyPremium);
+    }
+
+    // Determine recommended action
+    let recommendedAction = 'none';
+    const daysUntilPeriodEnd = Math.ceil((sub.currentPeriodEnd - now) / (24 * 60 * 60 * 1000));
+    
+    if (daysUntilStandardExhausted < 7) {
+      recommendedAction = 'buy_credits';
+    } else if (daysUntilStandardExhausted < daysUntilPeriodEnd * 0.5) {
+      recommendedAction = 'consider_upgrade';
+    } else if (sub.tier === 'free' && avgDailyStandard > sub.messagesLimit / 30) {
+      recommendedAction = 'upgrade';
+    }
+
+    return {
+      isAdmin: false,
+      daysUntilStandardExhausted,
+      daysUntilPremiumExhausted,
+      averageDailyStandard: Math.round(avgDailyStandard * 10) / 10,
+      averageDailyPremium: Math.round(avgDailyPremium * 10) / 10,
+      recommendedAction,
+      periodEndsAt: sub.currentPeriodEnd,
+      totalStandardAvailable,
+      totalPremiumAvailable,
     };
   },
 });

@@ -1,0 +1,27 @@
+---
+description: Repository-wide standards for structure, naming, commits, and PRs.
+when: auto
+globs: ["**/*", "!node_modules/**"]
+tags: ["repository", "naming", "pr"]
+---
+
+Structure
+- Keep files ≤ 500 lines; extract shared logic into `packages/*` or `src/lib/*`.
+- Co-locate components with types and styles (see web rules for specifics).
+
+Naming
+- Prefer camelCase for variables, functions, and object keys.
+- Files: camelCase where supported in imports (e.g., `userProfile.ts`); keep route segments kebab-case if required by framework constraints.
+- Components/dirs: PascalCase (e.g., `UserCard/`).
+- Constants: SCREAMING_SNAKE_CASE.
+
+Git hygiene
+- Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
+- Small, reviewable PRs; include BEFORE/AFTER screenshots when UI changes.
+
+CI expectations
+- No new linter or type errors. Use Bun scripts for all tasks (see CI rules).
+
+Cross-links
+@./20-code-style-and-quality.mdc
+@./40-dependency-management.mdc

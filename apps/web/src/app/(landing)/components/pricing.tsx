@@ -69,15 +69,15 @@ const tiers = [
 function Pricing() {
   return (
     <AnimatedSection
-      allowOverlap
       className="py-20 md:py-28 lg:py-32"
-      data-bg-variant="gold"
       dustIntensity="low"
+      edgeMask={false}
       id="pricing"
-      parallaxY={12}
-      revealCurve={[0, 0.25, 0.6, 1]}
+      includeTomb={false}
+      parallaxY={20}
       revealStrategy="none"
-      softEdges
+      softEdges={false}
+      useSurface={false}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div

@@ -37,6 +37,7 @@ interface PaymentVerificationRequest {
   isProrated?: boolean;
   isUpgrade?: boolean;
   previousTier?: 'free' | 'pro' | 'pro_plus';
+  billingCycle?: 'monthly' | 'yearly';
   referralCode?: string; // Optional referral code for attribution
   referralPayoutTx?: string; // Optional referral payout transaction signature
   referrerWalletAddress?: string; // Optional referrer wallet if client executed split
@@ -569,6 +570,7 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
       isProrated,
       isUpgrade,
       previousTier,
+      billingCycle,
       referralCode,
       referralPayoutTx,
       referrerWalletAddress,
@@ -1079,6 +1081,7 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
         internal.subscriptions.processVerifiedPayment,
         {
           tier: tier as 'pro' | 'pro_plus',
+          billingCycle: billingCycle || 'monthly',
           txSignature,
           amountSol: amountForProcessing,
           walletAddress,

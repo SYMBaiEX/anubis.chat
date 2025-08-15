@@ -38,16 +38,14 @@ const steps = [
 function HowItWorks() {
   return (
     <AnimatedSection
-      allowOverlap
-      className="-mt-px py-20 md:py-28 lg:py-32"
-      data-bg-variant="primary"
+      className="py-20 md:py-28 lg:py-32"
       dustIntensity="low"
-      parallaxY={14}
-      revealCurve={[0, 0.25, 0.6, 1]}
+      edgeMask={false}
+      includeTomb={false}
+      parallaxY={20}
       revealStrategy="none"
-      softBottomEdge={false}
-      softEdges
-      softTopEdge={false}
+      softEdges={false}
+      useSurface={false}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div

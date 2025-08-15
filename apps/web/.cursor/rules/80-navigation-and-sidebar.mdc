@@ -1,0 +1,22 @@
+---
+description: Sidebar, navigation, and global command palette behaviors.
+when: auto
+globs: ["apps/web/src/components/{sidebar,navigation,command-palette}/**/*.{ts,tsx}"]
+tags: ["sidebar", "nav", "palette"]
+---
+
+Sidebar
+- Collapsible widths: 14 (collapsed) / 56 (expanded); sticky and backdrop-blurred.
+- Mobile overlay closes on route change and `Esc`.
+
+Navigation
+- Source nav items from `src/constants/navigation.tsx`; avoid hardcoding.
+- Use `usePathname()` to determine active state.
+
+Command palette
+- Keep actions idempotent; avoid side effects that conflict with router prefetch.
+
+References
+@../../src/components/sidebar.tsx
+@../../src/constants/navigation.tsx
+@../../src/components/global-command-palette.tsx

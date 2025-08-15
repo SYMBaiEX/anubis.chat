@@ -1,0 +1,19 @@
+---
+description: Accessibility and UX standards for components and pages.
+when: auto
+globs: ["apps/web/src/components/**/*.{tsx,ts}", "apps/web/src/app/**"]
+tags: ["a11y", "ux", "aria"]
+---
+
+Accessibility
+- Use semantic elements; ensure form controls have labels.
+- Provide keyboard support and visible focus states.
+- Prefer `aria-*` only when semantics are insufficient.
+
+UX
+- Include loading and empty states for all async views.
+- Avoid layout shift; reserve space for async content.
+
+References
+@../../src/components/error-boundary.tsx
+@../../src/components/loading/**

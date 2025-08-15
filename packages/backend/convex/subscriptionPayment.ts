@@ -20,6 +20,7 @@ interface VerificationResult {
 interface PaymentRequest {
   txSignature: string;
   tier: 'pro' | 'pro_plus';
+  billingCycle: 'monthly' | 'yearly';
   amountSol: number;
   tokenAddress?: string;
   tokenAmount?: number;
@@ -283,6 +284,7 @@ export const processSubscriptionPayment = httpAction(async (ctx, request) => {
     const {
       txSignature,
       tier,
+      billingCycle,
       amountSol,
       tokenAddress,
       tokenAmount,
@@ -339,6 +341,7 @@ export const processSubscriptionPayment = httpAction(async (ctx, request) => {
       api.subscriptions.processPayment,
       {
         tier,
+        billingCycle,
         txSignature,
         amountSol,
       }

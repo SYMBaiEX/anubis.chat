@@ -12,7 +12,7 @@ export default function ChatPage() {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-b from-primary/5 dark:from-primary/10">
+      <div className="flex h-full items-center justify-center bg-gradient-to-b from-primary/5 dark:from-primary/10">
         <div className="text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="text-muted-foreground">Loading chat...</p>
@@ -22,9 +22,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-primary/5 dark:from-primary/10">
+    <div className="flex h-full flex-col bg-gradient-to-b from-primary/5 dark:from-primary/10">
       {/* Chat Interface with Error Boundary and Suspense for better reliability */}
-      <div className="relative h-full w-full overflow-hidden">
+      <div className="relative flex-1 overflow-hidden">
         <ChatErrorBoundary>
           <Suspense fallback={<ChatSkeleton />}>
             <ChatInterface />

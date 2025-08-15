@@ -1,0 +1,81 @@
+---
+description: Next.js 15 App Router patterns and React 19 best practices
+globs: ["src/app/**/*", "src/components/**/*", "src/lib/**/*"]
+alwaysApply: true
+---
+
+# Next.js 15 & React 19 Patterns
+
+## App Router Architecture
+
+### Server vs Client Components
+- **Server Components by default** for all new components
+- Use Server Components for data fetching, SEO, and performance
+- Only use Client Components when interactivity is required
+- Add "use client" directive only when necessary for browser APIs
+
+### Route Organization
+- Use proper route grouping with `(group)` folders for organization
+- Implement parallel routes for complex layouts when needed
+- Use intercepting routes for modal overlays and dynamic content
+- Follow Next.js file conventions for special files (layout, page, loading, error)
+
+## Data Fetching Patterns
+
+### Server-Side Data Fetching
+- Use async/await in Server Components for data fetching
+- Implement proper error boundaries for each route segment
+- Use Suspense boundaries with loading.tsx for better UX
+- Cache data appropriately with Next.js caching strategies
+
+### Client-Side State
+- Use Convex reactive queries for real-time server state
+- Implement optimistic updates for better perceived performance
+- Use React 19 concurrent features for smooth UX
+- Minimize client-side state in favor of server state
+
+## Component Patterns
+
+### React 19 Features
+- Use React 19 concurrent features and Server Components
+- Implement proper Suspense boundaries for async operations
+- Use startTransition for non-urgent state updates
+- Leverage automatic batching for performance optimization
+
+### Component Composition
+- Compose components using composition pattern over inheritance
+- Use forwardRef appropriately for ref passing
+- Implement proper TypeScript typing for all props
+- Use React.memo judiciously for performance optimization
+
+## Performance Optimization
+
+### Bundle Optimization
+- Use Next.js dynamic imports for code splitting
+- Implement proper lazy loading for below-the-fold content
+- Optimize images with Next.js Image component
+- Use font optimization with next/font
+
+### Caching Strategies
+- Implement proper Next.js caching at all levels
+- Use ISR (Incremental Static Regeneration) where appropriate
+- Implement client-side caching for expensive operations
+- Use proper cache invalidation strategies
+
+## Development Patterns
+
+### File Organization
+- Group related components in feature-based folders
+- Use index.ts files for clean imports
+- Implement proper barrel exports for components
+- Follow consistent naming conventions across the project
+
+### Error Handling
+- Implement error boundaries at appropriate levels
+- Use error.tsx files for route-level error handling
+- Provide meaningful error messages to users
+- Log errors appropriately for debugging
+
+@../../CLAUDE.md
+@../src/app/layout.tsx
+@../src/components/providers.tsx

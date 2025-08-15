@@ -257,7 +257,6 @@ export const verifyAndSignIn = internalMutation({
         currentPeriodStart: Date.now(),
         currentPeriodEnd: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
         subscriptionTxSignature: '',
-        autoRenew: false,
         planPriceSol: 0,
         tokensUsed: 0,
         tokensLimit: 10_000,
@@ -291,16 +290,31 @@ export const createWalletChallenge = mutation({
 
     const challenge = `Sign this message to authenticate with anubis.chat:\nNonce: ${nonce}\nTimestamp: ${now}`;
 
-    // Clean up any existing challenges for this public key
-    const existingChallenges = await ctx.db
-      .query('solanaWalletChallenges')
-      .withIndex('by_key', (q) => q.eq('publicKey', args.publicKey))
-      .collect();
-
-    // Delete existing challenges in parallel
-    await Promise.all(
-      existingChallenges.map((existing) => ctx.db.delete(existing._id))
-    );
+    // Clean up any existing challenges for this public key using batch processing
+    // Use take() instead of collect() to avoid OCC failures
+    const BATCH_SIZE = 10;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const existingChallenges = await ctx.db
+        .query('solanaWalletChallenges')
+        .withIndex('by_key', (q) => q.eq('publicKey', args.publicKey))
+        .take(BATCH_SIZE);
+      
+      if (existingChallenges.length === 0) {
+        hasMore = false;
+      } else {
+        // Delete existing challenges in this batch
+        await Promise.all(
+          existingChallenges.map((existing) => ctx.db.delete(existing._id))
+        );
+        
+        // If we got less than BATCH_SIZE, we're done
+        if (existingChallenges.length < BATCH_SIZE) {
+          hasMore = false;
+        }
+      }
+    }
 
     await ctx.db.insert('solanaWalletChallenges', {
       publicKey: args.publicKey,
@@ -325,16 +339,34 @@ export const createWalletChallenge = mutation({
 export const cleanupExpiredChallenges = internalMutation({
   handler: async (ctx) => {
     const now = Date.now();
-    const expiredChallenges = await ctx.db
-      .query('solanaWalletChallenges')
-      .withIndex('by_expires', (q) => q.lt('expiresAt', now))
-      .collect();
+    const BATCH_SIZE = 10;
+    let totalDeleted = 0;
+    let hasMore = true;
+    
+    // Process expired challenges in batches to avoid OCC failures
+    while (hasMore) {
+      const expiredChallenges = await ctx.db
+        .query('solanaWalletChallenges')
+        .withIndex('by_expires', (q) => q.lt('expiresAt', now))
+        .take(BATCH_SIZE);
+      
+      if (expiredChallenges.length === 0) {
+        hasMore = false;
+      } else {
+        // Delete expired challenges in parallel
+        await Promise.all(
+          expiredChallenges.map((challenge) => ctx.db.delete(challenge._id))
+        );
+        
+        totalDeleted += expiredChallenges.length;
+        
+        // If we got less than BATCH_SIZE, we're done
+        if (expiredChallenges.length < BATCH_SIZE) {
+          hasMore = false;
+        }
+      }
+    }
 
-    // Delete expired challenges in parallel
-    await Promise.all(
-      expiredChallenges.map((challenge) => ctx.db.delete(challenge._id))
-    );
-
-    return { cleaned: expiredChallenges.length };
+    return { cleaned: totalDeleted };
   },
 });

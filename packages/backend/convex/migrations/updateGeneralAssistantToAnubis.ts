@@ -4,6 +4,7 @@
  */
 
 import { internalMutation } from '../_generated/server';
+import type { Id } from '../_generated/dataModel';
 
 export const updateGeneralAssistantToAnubis = internalMutation({
   args: {},
@@ -129,16 +130,45 @@ Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide throug
 export const updateAllGeneralAssistants = internalMutation({
   args: {},
   handler: async (ctx) => {
-    // Find all agents named "General Assistant"
-    const generalAssistants = await ctx.db
-      .query('agents')
-      .filter((q) => q.eq(q.field('name'), 'General Assistant'))
-      .collect();
+    // Find all agents named "General Assistant" using batch processing
+    const BATCH_SIZE = 10;
+    const allGeneralAssistants = [];
+    let hasMore = true;
+    let lastId: Id<'agents'> | null = null;
+    
+    while (hasMore) {
+      let query = ctx.db
+        .query('agents')
+        .filter((q) => q.eq(q.field('name'), 'General Assistant'))
+        .order('asc');
+      
+      if (lastId) {
+        query = query.filter((q) => q.gt(q.field('_id'), lastId!));
+      }
+      
+      const batch = await query.take(BATCH_SIZE);
+      
+      if (batch.length === 0) {
+        hasMore = false;
+      } else {
+        allGeneralAssistants.push(...batch);
+        lastId = batch[batch.length - 1]._id;
+        
+        if (batch.length < BATCH_SIZE) {
+          hasMore = false;
+        }
+      }
+    }
 
     let updatedCount = 0;
 
-    await Promise.all(
-      generalAssistants.map(async (agent) => {
+    // Process updates in batches to avoid OCC failures
+    const UPDATE_BATCH_SIZE = 5;
+    for (let i = 0; i < allGeneralAssistants.length; i += UPDATE_BATCH_SIZE) {
+      const batchToUpdate = allGeneralAssistants.slice(i, i + UPDATE_BATCH_SIZE);
+      
+      await Promise.all(
+        batchToUpdate.map(async (agent) => {
         // Only update if it's the default general assistant (check by description or system prompt)
         if (
           agent.description?.includes(
@@ -195,6 +225,7 @@ Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide throug
         }
       })
     );
+    }
     return { success: true, updatedCount };
   },
 });

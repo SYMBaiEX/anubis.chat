@@ -1,0 +1,109 @@
+---
+description: Real-time collaboration, streaming, and live interaction patterns
+globs: ["**/streaming/**/*", "**/real-time/**/*", "**/websocket/**/*", "**/sse/**/*", "**/collaboration/**/*"]
+alwaysApply: false
+---
+
+# Real-Time Systems & Live Collaboration
+
+## Real-Time Architecture Principles
+
+### Convex Real-Time Foundation
+- **Reactive Queries**: Leverage Convex's real-time reactivity for automatic UI updates
+- **Optimistic Updates**: Implement optimistic mutations with conflict resolution
+- **Connection Management**: Handle network disconnections and reconnections gracefully
+- **Subscription Optimization**: Minimize subscription overhead and prevent memory leaks
+
+### Streaming Implementation Patterns
+- **Server-Sent Events (SSE)**: Use SSE for unidirectional streaming (AI responses, notifications)
+- **WebSocket Connections**: Implement WebSockets for bidirectional real-time features
+- **Backpressure Management**: Handle high-volume streams without overwhelming clients
+- **Progressive Loading**: Stream large datasets with pagination and infinite scroll
+
+## Live Chat & Messaging
+
+### Message Synchronization
+- **Real-Time Delivery**: Sub-100ms message delivery with Convex reactivity
+- **Message Ordering**: Maintain consistent message ordering across all clients
+- **Presence Indicators**: Show user online status and typing indicators
+- **Read Receipts**: Track and display message read status accurately
+
+### Multi-User Collaboration
+- **Concurrent Editing**: Support multiple users editing shared documents
+- **Conflict Resolution**: Implement operational transformation for concurrent edits
+- **Version Control**: Track document versions and enable rollback capabilities
+- **Permission Management**: Real-time permission updates and access control
+
+## AI Streaming Architecture
+
+### Response Streaming
+- **Incremental Rendering**: Stream AI responses token-by-token for immediate feedback
+- **Error Recovery**: Handle streaming errors with graceful fallbacks
+- **Context Preservation**: Maintain conversation context during streaming
+- **Model Switching**: Support dynamic model switching mid-conversation
+
+### RAG System Real-Time
+- **Live Knowledge Updates**: Update knowledge base with real-time content indexing
+- **Semantic Search Streaming**: Stream search results as relevance scores improve
+- **Context Expansion**: Dynamically expand context based on conversation flow
+- **Memory Integration**: Real-time integration of conversation history and user preferences
+
+## Performance Optimization
+
+### Connection Management
+- **Connection Pooling**: Efficient management of WebSocket and SSE connections
+- **Heartbeat Monitoring**: Implement heartbeat mechanisms for connection health
+- **Automatic Reconnection**: Exponential backoff for failed connection attempts
+- **Bandwidth Optimization**: Compress payloads and batch non-critical updates
+
+### Scalability Patterns
+- **Horizontal Scaling**: Support for multiple server instances with load balancing
+- **Message Queuing**: Use message queues for handling high-volume real-time events
+- **Caching Strategies**: Implement distributed caching for frequently accessed data
+- **Rate Limiting**: Prevent abuse with intelligent rate limiting per user/session
+
+## User Experience Guidelines
+
+### Visual Feedback
+- **Loading States**: Clear indicators for pending real-time operations
+- **Progress Tracking**: Show progress for long-running streaming operations
+- **Error Handling**: User-friendly error messages with retry options
+- **Offline Support**: Graceful degradation when real-time features are unavailable
+
+### Accessibility Considerations
+- **Screen Reader Support**: Announce real-time updates appropriately
+- **Keyboard Navigation**: Ensure all real-time features are keyboard accessible
+- **Motion Sensitivity**: Respect user preferences for reduced motion
+- **Focus Management**: Maintain proper focus during dynamic content updates
+
+## Security & Privacy
+
+### Real-Time Security
+- **Authentication**: Validate user identity for all real-time connections
+- **Authorization**: Enforce permission checks for real-time data access
+- **Data Encryption**: Encrypt all real-time communications in transit
+- **Rate Limiting**: Prevent denial-of-service attacks on real-time endpoints
+
+### Privacy Protection
+- **Data Minimization**: Only transmit necessary data in real-time streams
+- **Content Filtering**: Real-time content moderation and safety checks
+- **User Consent**: Obtain explicit consent for sharing real-time presence data
+- **Audit Logging**: Log real-time activities for security monitoring
+
+## Error Handling & Resilience
+
+### Connection Resilience
+- **Graceful Degradation**: Fallback to polling when real-time connections fail
+- **State Synchronization**: Resync application state after connection recovery
+- **Partial Failures**: Handle partial feature failures without affecting core functionality
+- **Circuit Breaker**: Implement circuit breaker patterns for external real-time services
+
+### Monitoring & Alerting
+- **Real-Time Metrics**: Monitor connection counts, message throughput, and latency
+- **Performance Alerts**: Alert on performance degradation or connection issues
+- **User Experience Tracking**: Monitor real-time feature adoption and satisfaction
+- **System Health**: Comprehensive health checks for real-time infrastructure
+
+@../packages/backend/convex/streaming.ts
+@../apps/web/src/components/chat/streamingSuspenseWrapper.tsx
+@../apps/web/src/hooks/use-convex-chat.ts

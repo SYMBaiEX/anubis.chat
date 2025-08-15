@@ -39,13 +39,20 @@ interface PaymentModalProps {
   tier: 'pro' | 'pro_plus';
   currentTier?: 'free' | 'pro' | 'pro_plus';
   onSuccess?: () => void;
+  defaultBillingCycle?: 'monthly' | 'yearly';
 }
 
 const TIER_CONFIG = {
   pro: {
     name: 'Pro',
-    price: 0.05,
-    originalPrice: 0.1,
+    price: {
+      monthly: 0.05,
+      yearly: 0.57, // 5% discount (12 months × 0.95)
+    },
+    originalPrice: {
+      monthly: 0.1,
+      yearly: 0.6,
+    },
     features: [
       '500 messages / month',
       '100 premium messages (GPT-4o, Claude)',
@@ -57,8 +64,14 @@ const TIER_CONFIG = {
   },
   pro_plus: {
     name: 'Pro+',
-    price: 0.1,
-    originalPrice: 0.2,
+    price: {
+      monthly: 0.1,
+      yearly: 1.14, // 5% discount (12 months × 0.95)
+    },
+    originalPrice: {
+      monthly: 0.2,
+      yearly: 1.2,
+    },
     features: [
       '1,000 messages / month',
       '300 premium messages',
@@ -83,6 +96,7 @@ export function PaymentModal({
   tier,
   currentTier = 'free',
   onSuccess,
+  defaultBillingCycle = 'monthly',
 }: PaymentModalProps) {
   const { publicKey, sendTransaction } = useWallet();
   const { isAuthenticated } = useConvexAuth();
@@ -92,6 +106,7 @@ export function PaymentModal({
   const [step, setStep] = useState<
     'details' | 'processing' | 'success' | 'error'
   >('details');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(defaultBillingCycle);
 
   // SPL Token state
   const [selectedToken, setSelectedToken] = useState<string>('SOL');
@@ -118,8 +133,8 @@ export function PaymentModal({
 
   // Calculate upgrade pricing
   const isUpgrade = currentTier === 'pro' && tier === 'pro_plus';
-  const upgradeDiscount = isUpgrade ? TIER_CONFIG.pro.price : 0;
-  const finalPrice = config.price - upgradeDiscount;
+  const upgradeDiscount = isUpgrade ? TIER_CONFIG.pro.price[billingCycle] : 0;
+  const finalPrice = config.price[billingCycle] - upgradeDiscount;
   const displayPrice = finalPrice;
 
   const handlePayment = async () => {
@@ -204,6 +219,7 @@ export function PaymentModal({
       const paymentData: any = {
         txSignature: signature,
         tier,
+        billingCycle, // Add billing cycle to payment data
         amountSol:
           selectedToken === 'SOL'
             ? tokenCalculation.amount
@@ -277,6 +293,34 @@ export function PaymentModal({
 
         {step === 'details' && (
           <div className="space-y-6">
+            {/* Billing Cycle Toggle */}
+            <Card className="p-4">
+              <div className="mb-3">
+                <label className="font-medium text-sm">Billing Period</label>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={billingCycle === 'monthly' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setBillingCycle('monthly')}
+                  className="flex-1"
+                >
+                  Monthly
+                </Button>
+                <Button
+                  variant={billingCycle === 'yearly' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setBillingCycle('yearly')}
+                  className="flex-1"
+                >
+                  Annual
+                  <Badge className="ml-2 text-xs" variant="secondary">
+                    Save 5%
+                  </Badge>
+                </Button>
+              </div>
+            </Card>
+
             <Card className="p-4">
               <div className="mb-4 flex items-center justify-between">
                 <div>
@@ -293,7 +337,7 @@ export function PaymentModal({
                     {isUpgrade ? (
                       <>
                         <span className="text-muted-foreground text-sm line-through">
-                          {config.price} SOL
+                          {config.price[billingCycle]} SOL
                         </span>
                         <Badge className="text-xs" variant="secondary">
                           Upgrade Pricing
@@ -302,16 +346,16 @@ export function PaymentModal({
                     ) : (
                       <>
                         <span className="text-muted-foreground text-sm line-through">
-                          {config.originalPrice} SOL
+                          {config.originalPrice[billingCycle]} SOL
                         </span>
                         <Badge className="text-xs" variant="secondary">
-                          50% Off
+                          {billingCycle === 'yearly' ? 'Save 5%' : '50% Off'}
                         </Badge>
                       </>
                     )}
                   </div>
                   <p className="text-muted-foreground text-sm">
-                    {isUpgrade ? 'Upgrade difference' : 'per month'}
+                    {isUpgrade ? 'Upgrade difference' : billingCycle === 'yearly' ? 'per year' : 'per month'}
                     {tokenCalculation?.priceInfo && selectedToken !== 'SOL' && (
                       <span className="ml-2">
                         (~${tokenCalculation.priceInfo.usdPrice.toFixed(4)} USD

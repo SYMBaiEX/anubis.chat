@@ -1,5 +1,7 @@
 'use client';
 
+// Polyfills will be imported dynamically when providers initialize
+
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
 import { ConvexReactClient } from 'convex/react';
 import { SidebarProvider } from '@/contexts/SidebarContext';
@@ -9,6 +11,8 @@ import { UpgradeProvider } from './auth/upgradeWrapper';
 import { ConvexErrorBoundary } from './error/ConvexErrorBoundary';
 import { AuthProvider } from './providers/auth-provider';
 import { ClientOnlyWrapper } from './providers/client-only-wrapper';
+import { MilestoneNotificationsProvider } from './providers/milestone-notifications-provider';
+import { NotificationProvider } from './providers/notification-provider';
 import { SolanaAgentProvider } from './providers/solanaAgentProvider';
 import { ThemeSync } from './providers/theme-sync';
 import { Toaster } from './ui/sonner';
@@ -25,6 +29,13 @@ const convex = new ConvexReactClient(convexConfig.publicUrl, {
 });
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  // Import polyfills for browser environment
+  // if (typeof window !== 'undefined') {
+  //   import('@/lib/polyfills').catch(() => {
+  //     // Silently fail if polyfills can't be loaded
+  //   });
+  // }
+
   return (
     <ConvexErrorBoundary
       onError={(error, errorInfo) => {
@@ -44,9 +55,15 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             <WalletProvider>
               <AuthProvider>
                 <ThemeSync />
-                <UpgradeProvider>
-                  <SolanaAgentProvider>{children}</SolanaAgentProvider>
-                </UpgradeProvider>
+                <NotificationProvider>
+                  <MilestoneNotificationsProvider>
+                    <UpgradeProvider>
+                      <SolanaAgentProvider>
+                        {children}
+                      </SolanaAgentProvider>
+                    </UpgradeProvider>
+                  </MilestoneNotificationsProvider>
+                </NotificationProvider>
               </AuthProvider>
             </WalletProvider>
           </ClientOnlyWrapper>

@@ -1,0 +1,129 @@
+---
+description: Solana Web3 integration, token economics, and decentralized platform features
+globs: ["**/solana/**/*", "**/wallet/**/*", "**/web3/**/*", "**/crypto/**/*", "**/defi/**/*", "**/token/**/*", "**/nft/**/*"]
+alwaysApply: false
+---
+
+# Solana Web3 Integration & Token Economics
+
+## Platform Token Economics & Utility
+
+### Native Token ($ANUBIS) Integration
+- **Utility Token**: Platform access, premium features, and AI model credits
+- **Governance Rights**: Community voting on platform features and roadmap
+- **Staking Rewards**: Earn rewards for token holders and active users
+- **Creator Economy**: Revenue sharing for content creators and AI agent developers
+
+### DeFi Integration & Yield Generation
+- **Liquidity Provision**: Token-SOL LP tokens for yield farming
+- **Lending Protocols**: Integration with Solend, Port Finance for token utility
+- **Cross-Protocol Yield**: Aggregate yield opportunities across Solana DeFi
+- **Auto-Compounding**: Automated yield optimization strategies
+
+## Advanced Wallet Integration
+
+### Universal Wallet Support
+- **Phantom, Solflare, Backpack**: Full feature support for major wallets
+- **Mobile Wallet Adapter**: Native mobile experience with MWA protocol
+- **Hardware Wallets**: Ledger and Trezor integration for enterprise users
+- **Multi-Signature**: Support for team accounts and enterprise security
+
+### Wallet-as-a-Service Features
+- **Social Recovery**: Account recovery through social verification
+- **Gasless Transactions**: Sponsored transactions for onboarding
+- **Cross-Chain Bridge**: Support for Ethereum and other chain assets
+- **Wallet Analytics**: Portfolio tracking and transaction history
+
+## Smart Contract Ecosystem
+
+### Core Platform Contracts
+- **Token Contract**: SPL token with advanced features (burning, minting controls)
+- **Staking Contract**: Flexible staking with multiple reward tiers
+- **Governance Contract**: DAO voting and proposal management
+- **Revenue Sharing**: Automated distribution to stakeholders
+
+### AI Agent Marketplace
+- **Agent Registry**: On-chain registry of verified AI agents
+- **Revenue Splits**: Automated payment distribution for agent usage
+- **Reputation System**: On-chain reputation tracking for agents and creators
+- **Licensing Framework**: NFT-based licensing for proprietary AI models
+
+### Enterprise Solutions
+- **Multi-Tenant Contracts**: White-label deployments with custom tokens
+- **Access Control**: Role-based permissions for enterprise features
+- **Compliance Integration**: KYC/AML integration for regulated markets
+- **Audit Trails**: Complete on-chain audit logs for enterprise customers
+
+## Transaction Optimization & UX
+
+### Next-Generation Transaction Experience
+- **Priority Fee Optimization**: Dynamic fee adjustment for optimal confirmation times
+- **Batch Transactions**: Bundle multiple operations for gas efficiency
+- **Parallel Processing**: Execute multiple transactions simultaneously
+- **MEV Protection**: Front-running protection for sensitive transactions
+
+### Cross-Chain Interoperability
+- **Wormhole Integration**: Bridge assets from Ethereum and other chains
+- **Universal Wallets**: Support for multi-chain wallet implementations
+- **Asset Aggregation**: Unified view of assets across multiple blockchains
+- **Cross-Chain DeFi**: Access to DeFi protocols on multiple chains
+
+## Mobile-First Web3 Experience
+
+### Solana Mobile Stack Integration
+- **Native Mobile UX**: Deep integration with Solana Mobile Stack
+- **Mobile Wallet Adapter**: Seamless mobile wallet interactions
+- **Push Notifications**: On-chain event notifications via mobile
+- **Offline Capabilities**: Queue transactions for later submission
+
+### Progressive Web App Features
+- **Install Prompts**: Encourage PWA installation for crypto users
+- **Background Sync**: Sync blockchain state in background
+- **Offline Mode**: View portfolio and history without internet
+- **Mobile Optimizations**: Touch-friendly interfaces for crypto operations
+
+## Security & Compliance Framework
+
+### Advanced Security Measures
+- **Multi-Factor Authentication**: 2FA integration with wallet operations
+- **Transaction Signing**: Clear transaction preview and confirmation flows
+- **Phishing Protection**: Domain verification and suspicious transaction detection
+- **Cold Storage Integration**: Support for hardware wallets and air-gapped signing
+
+### Regulatory Compliance
+- **Geographic Restrictions**: Compliance with local regulations
+- **KYC Integration**: Identity verification for regulated features
+- **Tax Reporting**: Transaction export for tax compliance
+- **AML Monitoring**: Automated monitoring for suspicious activity
+
+## Performance & Scalability
+
+### Blockchain Performance Optimization
+- **RPC Optimization**: Intelligent RPC endpoint routing and failover
+- **Connection Pooling**: Efficient management of blockchain connections
+- **State Caching**: Cache frequently accessed on-chain data
+- **Indexing**: Custom indexing for application-specific queries
+
+### User Experience Excellence
+- **<500ms Wallet Connection**: Lightning-fast wallet connection times
+- **<2s Transaction Confirmation**: Real-time transaction status updates
+- **Optimistic Updates**: Immediate UI updates with later confirmation
+- **Error Recovery**: Graceful handling of blockchain network issues
+
+## Developer Experience & APIs
+
+### Web3 Developer Tools
+- **TypeScript SDK**: Fully typed SDK for ANUBIS platform interactions
+- **GraphQL API**: Flexible queries for on-chain and off-chain data
+- **Webhook Support**: Real-time notifications for blockchain events
+- **Testing Framework**: Local blockchain testing with Anchor test validator
+
+### Integration Ecosystem
+- **DeFi Protocols**: Easy integration with major Solana DeFi protocols
+- **NFT Marketplaces**: Support for Magic Eden, OpenSea, and custom marketplaces
+- **Oracle Integration**: Chainlink and Pyth price feeds for DeFi features
+- **Cross-Protocol**: Integration with Ethereum, Polygon, and other chains
+
+@../apps/web/src/components/wallet/wallet-provider.tsx
+@../apps/web/src/lib/solana-mobile-config.ts
+@../apps/web/src/hooks/useSolanaMobile.ts

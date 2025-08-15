@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 
 const menuItems = [
   { name: 'Home', href: '/' },
+  { name: 'Features', href: '/features' },
+  { name: 'Pricing', href: '/pricing' },
   { name: 'Referral Info', href: '/referral-info' },
   { name: 'Roadmap', href: '/roadmap' },
   { name: '$ANUBIS Token', href: '/anubis-token' },

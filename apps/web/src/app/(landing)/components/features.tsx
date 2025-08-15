@@ -1,9 +1,11 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Brain, Database, Globe, Network, Shield, Zap } from 'lucide-react';
+import { ArrowRight, Brain, Database, Globe, Network, Shield, Zap } from 'lucide-react';
+import Link from 'next/link';
 import { Card3D } from '@/components/animations/3dCard';
 import AnimatedSection from '@/components/landing/animated-section';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const featureList = [
@@ -52,16 +54,15 @@ const featureList = [
 function Features() {
   return (
     <AnimatedSection
-      allowOverlap
       className="py-20 md:py-28 lg:py-32"
-      data-bg-variant="primary"
       dustIntensity="low"
+      edgeMask={false}
       id="features"
-      parallaxY={16}
-      revealCurve={[0, 0.25, 0.6, 1]}
+      includeTomb={false}
+      parallaxY={20}
       revealStrategy="none"
-      softBottomEdge={false}
-      softEdges
+      softEdges={false}
+      useSurface={false}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-16 text-center">
@@ -159,6 +160,28 @@ function Features() {
             );
           })}
         </div>
+        
+        {/* CTA to explore more features */}
+        <motion.div
+          className="mt-12 text-center"
+          initial={{ opacity: 0, y: 30 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+          viewport={{ once: true, margin: '-50px' }}
+          whileInView={{ opacity: 1, y: 0 }}
+        >
+          <Link href="/features">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            >
+              <Button size="lg" className="group">
+                Explore All Features in Detail
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </motion.div>
+          </Link>
+        </motion.div>
       </div>
     </AnimatedSection>
   );

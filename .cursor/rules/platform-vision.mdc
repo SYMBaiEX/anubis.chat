@@ -1,0 +1,123 @@
+---
+description: ANUBIS Chat platform vision, strategic alignment, and product principles
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# ANUBIS Chat Platform Vision & Strategic Principles
+
+## Mission Statement
+
+**"Democratize advanced AI capabilities while empowering users through decentralized Web3 technologies and economic models."**
+
+ANUBIS Chat represents the convergence of cutting-edge AI and blockchain technology, creating a platform where intelligent conversation meets decentralized empowerment.
+
+## Core Platform Principles
+
+### 1. AI Excellence & Accessibility
+- **Multi-Model Intelligence**: Leverage best-in-class AI models (Claude 3.5, GPT-4o, DeepSeek v3, Gemini 2.0) with intelligent routing
+- **Contextual Understanding**: Advanced RAG system with semantic search and memory persistence
+- **Real-Time Streaming**: Sub-2-second response times with seamless streaming experiences
+- **Personalization**: AI adapts to user preferences and interaction patterns
+
+### 2. Web3-Native Experience
+- **Solana Integration**: Fast, low-cost blockchain transactions with mobile-first design
+- **Economic Empowerment**: Token rewards, staking mechanisms, and decentralized marketplace
+- **Wallet-First UX**: Seamless wallet integration without compromising user experience
+- **Decentralized Identity**: User-controlled data and privacy-preserving interactions
+
+### 3. Real-Time Collaboration
+- **Live Chat Experiences**: Instant messaging with AI and human participants
+- **Collaborative Workspaces**: Shared documents, projects, and AI-assisted workflows
+- **Social Features**: Community building, knowledge sharing, and peer-to-peer learning
+- **Cross-Platform Sync**: Seamless experience across web, mobile, and desktop
+
+### 4. Enterprise-Grade Security
+- **Zero-Trust Architecture**: Security-first design with comprehensive threat modeling
+- **Data Privacy**: User data ownership with granular privacy controls
+- **Compliance Ready**: SOC 2, GDPR, and industry-specific compliance frameworks
+- **Audit Transparency**: Open-source components with regular security audits
+
+## Product Strategy & Roadmap Alignment
+
+### Phase 1: Foundation (Current)
+- Core chat interface with multi-model AI integration
+- Basic Solana wallet connectivity and mobile support
+- Real-time messaging infrastructure with Convex
+- Progressive Web App with offline capabilities
+
+### Phase 2: Web3 Integration
+- Native token launch with utility and governance features
+- Advanced wallet features (staking, rewards, NFT integration)
+- Decentralized storage and content distribution
+- Smart contract integration for automated workflows
+
+### Phase 3: Ecosystem Expansion
+- Developer APIs and third-party integrations
+- Marketplace for AI agents and custom workflows
+- Cross-chain bridge support and multi-wallet compatibility
+- Enterprise solutions and white-label offerings
+
+### Phase 4: AI Innovation
+- Custom model training and fine-tuning capabilities
+- Advanced personalization and predictive features
+- AI agent marketplace and autonomous workflows
+- Research partnerships and open-source contributions
+
+## Technical Excellence Standards
+
+### Performance Requirements
+- **Frontend**: <3s load on 3G, <100ms interaction responses
+- **Backend**: <200ms API responses, <500ms P95 latency
+- **AI Pipeline**: <2s time-to-first-token, <100ms vector search
+- **Blockchain**: <5s transaction confirmation, 99.9% uptime
+
+### Quality Metrics
+- **Code Coverage**: 90%+ unit tests, 85%+ integration tests
+- **Security**: Zero critical vulnerabilities, regular penetration testing
+- **Accessibility**: WCAG 2.1 AA compliance across all interfaces
+- **User Experience**: <2% error rate, >90% task completion success
+
+### Scalability Targets
+- **Concurrent Users**: 100K+ simultaneous chat sessions
+- **Message Throughput**: 1M+ messages per hour peak capacity
+- **AI Requests**: 10K+ concurrent AI model requests
+- **Blockchain Transactions**: 1K+ TPS with sub-second finality
+
+## Development Philosophy
+
+### User-Centric Design
+- Every feature decision evaluated through user value lens
+- Continuous user feedback integration and iterative improvement
+- Accessibility and inclusivity built into core design process
+- Mobile-first, progressive enhancement approach
+
+### Technology Leadership
+- Early adoption of proven emerging technologies
+- Open-source contributions to community ecosystem
+- Research partnerships with academic and industry leaders
+- Innovation in AI-blockchain intersection use cases
+
+### Community Building
+- Developer-friendly APIs and comprehensive documentation
+- Community governance through token-based voting mechanisms
+- Educational content and resources for Web3 adoption
+- Support for creator economy and content monetization
+
+## Business Model Alignment
+
+### Revenue Streams
+- **Freemium SaaS**: Core features free, premium AI models and advanced features paid
+- **Token Economics**: Platform token with utility, staking, and governance rights
+- **Enterprise Licensing**: Custom deployments and white-label solutions
+- **Marketplace Commission**: Revenue sharing from AI agent and content marketplace
+
+### User Acquisition Strategy
+- **Viral Sharing**: Social features that encourage organic growth
+- **Developer Ecosystem**: APIs and tools that create network effects
+- **Content Creation**: AI-powered tools that generate shareable content
+- **Community Rewards**: Token incentives for early adopters and contributors
+
+@../CLAUDE.md
+@../packages/backend/convex/schema.ts
+@../apps/web/src/app/layout.tsx
