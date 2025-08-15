@@ -29,12 +29,6 @@ const convex = new ConvexReactClient(convexConfig.publicUrl, {
 });
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  // Import polyfills for browser environment
-  // if (typeof window !== 'undefined') {
-  //   import('@/lib/polyfills').catch(() => {
-  //     // Silently fail if polyfills can't be loaded
-  //   });
-  // }
 
   return (
     <ConvexErrorBoundary

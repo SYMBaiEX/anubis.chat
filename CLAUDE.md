@@ -47,85 +47,159 @@ bun build                 # Build production bundle
 bun generate-pwa-assets   # Generate PWA icons and manifest
 ```
 
-## Architecture Overview
+## Platform Architecture Overview
 
-### Monorepo Structure
+### ANUBIS Chat Platform Vision
 
-ANUBIS Chat uses **Turborepo** with a modular architecture:
+**Mission**: "Democratize advanced AI capabilities while empowering users through decentralized Web3 technologies and economic models."
 
+ANUBIS Chat is the next-generation AI-powered chat platform that bridges traditional AI interaction with decentralized Web3 capabilities. The platform combines cutting-edge multi-model AI excellence with Web3-native experiences for real-time collaboration.
+
+### Core Technology Stack
+
+**Frontend Architecture**:
+- **Framework**: Next.js 15 with App Router and React 19
+- **Styling**: Tailwind CSS v4 with Shadcn UI components  
+- **State Management**: Convex reactive queries and mutations
+- **Progressive Web App**: Offline support with service workers
+- **Performance**: <3s load on 3G, <100ms interactions, <500KB bundles
+
+**Backend & Real-Time**:
+- **Platform**: Convex serverless backend with built-in reactivity
+- **Schema**: 80+ tables covering users, chats, messages, agents, workflows
+- **Real-Time**: Automatic subscriptions and live data synchronization
+- **Streaming**: HTTP actions for AI model streaming responses
+
+**AI & ML Pipeline**:
+- **Multi-Model Support**: Claude 3.5, GPT-4o, DeepSeek v3, Gemini 2.0
+- **Intelligent Routing**: Context-aware model selection with performance optimization
+- **RAG System**: Vector embeddings with semantic search and document ingestion
+- **Streaming**: <2s time-to-first-token, <50ms inter-token latency
+
+**Web3 & Blockchain**:
+- **Primary Chain**: Solana with Mobile Wallet Adapter Protocol integration
+- **Wallets**: Multi-wallet support (Phantom, Backpack, Solflare)
+- **Token Economics**: $ANUBIS utility token with DeFi ecosystem
+- **Authentication**: Signature-based auth with challenge/nonce verification
+
+### Monorepo Architecture
+
+**Turborepo Structure**:
 - **apps/web**: Next.js 15 frontend with App Router, React 19, TypeScript
 - **packages/backend**: Convex backend-as-a-service for real-time data
+- **apps/fumadocs**: Documentation site (Next.js + Fumadocs)
 
-### Frontend Architecture (apps/web)
+**Key Architectural Patterns**:
+- Server Components by default for data fetching
+- Client Components only for interactivity with 'use client' directive
+- Component composition in `src/components/` with UI primitives
+- Provider orchestration in `src/components/providers.tsx`
+- Schema-driven development with strict TypeScript typing
 
-- **Framework**: Next.js 15 with App Router and React Server Components
-- **Styling**: Tailwind CSS v4 with Shadcn UI components
-- **State**: Convex reactive queries and mutations
-- **PWA**: Progressive Web App with offline support
-- **Key Patterns**:
-  - Server Components by default for data fetching
-  - Client Components only for interactivity
-  - Component composition in `src/components/`
-  - Providers wrapped in `src/components/providers.tsx`
+### Database Schema Highlights
 
-### Backend Architecture (packages/backend)
+The Convex schema includes comprehensive tables for:
+- **Core Chat**: users, chats, messages, documents with per-wallet isolation
+- **AI System**: models, agents, workflows, rag operations, embeddings
+- **Web3**: wallets, transactions, subscriptions, payments, referrals
+- **Analytics**: events, metrics, performance tracking, user behavior
+- **Enterprise**: organizations, teams, permissions, audit logs
 
-- **Platform**: Convex serverless backend
-- **Schema**: Type-safe schema in `convex/schema.ts`
-- **Functions**: Query/mutation functions in `convex/` directory
-- **Real-time**: Automatic reactivity and subscriptions
-- **Key Patterns**:
-  - Schema-driven development with strict typing
-  - Reactive queries update UI automatically
-  - Mutations for data modifications
-  - Built-in authentication (when configured)
+## Critical Development Standards
 
-### AI/RAG System Design (Planned)
+### TypeScript Excellence
 
-Based on `.cursor/rules/`, the system is designed for:
+```typescript
+// ✅ REQUIRED: Strict TypeScript with no any types
+interface ChatMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant' | 'system';
+  timestamp: number;
+}
 
-- **Multi-model AI**: Claude 3.5, GPT-4o, DeepSeek v3, Gemini 2.0
-- **Vector Search**: Qdrant for semantic search
-- **Streaming**: Vercel AI SDK for real-time responses
-- **RAG Pipeline**: Embeddings → Vector Store → Contextual Retrieval
+// ✅ REQUIRED: camelCase for all identifiers
+const chatMessages: ChatMessage[] = [];
 
-### Web3 Integration (Planned)
+// ❌ FORBIDDEN: any types
+const badData: any = {}; // Never do this
 
-- **Blockchain**: Solana with Web3.js and Anchor
-- **Wallet**: Multi-wallet support (Phantom, Solflare)
-- **Smart Contracts**: Anchor framework integration
+// ✅ PREFERRED: Result<T, E> pattern for error handling
+type Result<T, E = Error> = { success: true; data: T } | { success: false; error: E };
+```
 
-## Critical Context from Cursor Rules
+### Component Development Pattern
 
-### Code Quality Standards
+```tsx
+// ✅ Server Component (default) - for data fetching
+export default async function ChatPage() {
+  // Server-side data fetching
+  return <ChatInterface />;
+}
 
-- **TypeScript strict mode** - No `any` types allowed
-- **Result<T, E> pattern** for error handling
-- **Functional programming** where appropriate
-- **Component-driven development** with reusability focus
-- **Test coverage targets**: 90%+ unit, 85%+ branch
+// ✅ Client Component - for interactivity only
+'use client';
+export function ChatInterface() {
+  // Interactive UI with hooks
+  return <div>...</div>;
+}
+```
 
-### Performance Requirements
+### Convex Integration Pattern
 
-- Frontend: <3s load on 3G, <100ms interactions
-- API: <200ms average, <500ms P95
-- AI responses: <2s time-to-first-token
-- Vector search: <100ms query time
+```tsx
+// ✅ Query pattern
+const messages = useQuery(api.messages.getByChat, { chatId });
 
-### Security Mandates
+// ✅ Mutation pattern  
+const sendMessage = useMutation(api.messages.create);
 
-- Zod validation for all inputs
-- Prompt injection prevention for AI
-- Parameterized database queries
-- Web3 security best practices
-- CSRF protection and session management
+// ✅ Schema-driven types
+const message: Doc<"messages"> = {
+  // Fully typed based on schema
+};
+```
 
-### AI Implementation Approach
+## Performance Requirements
 
-- Uses Cursor's Auto Model Selection for optimal routing
-- Streaming with backpressure management
-- Hybrid semantic + keyword search
-- Contextual chunk expansion for RAG
+### Enterprise Performance Targets
+
+**Frontend Performance**:
+- Load Time: <3s on 3G networks, <1s on WiFi
+- Bundle Size: <500KB initial, <2MB total application
+- Core Web Vitals: LCP <2.5s, FID <100ms, CLS <0.1
+- Interaction Response: <100ms for all user interactions
+
+**AI & ML Performance**:
+- Time-to-First-Token: <2s for all AI models
+- Streaming Latency: <50ms between tokens
+- Vector Search: <100ms query time for 1M+ documents
+- Model Switching: <500ms between different AI models
+
+**Web3 Performance**:
+- Wallet Connection: <500ms for connection/auth
+- Transaction Status: <2s for confirmation updates
+- On-Chain Queries: <200ms for balance/history
+
+## Security & Web3 Integration
+
+### Authentication Architecture
+
+```typescript
+// Solana wallet-based authentication with Convex Auth
+const { isAuthenticated, userId } = useAuthToken();
+
+// Signature-based security with nonce challenge
+const signature = await wallet.signMessage(challengeMessage);
+```
+
+### Security Standards
+
+- **Input Validation**: Zod schemas across all server boundaries
+- **Access Control**: Per-wallet data isolation enforced in Convex functions
+- **Web3 Security**: Signature verification, transaction validation
+- **CORS**: Environment-configurable allowlist for origins
+- **Rate Limiting**: Request throttling and abuse prevention
 
 ## Development Workflow
 
@@ -145,84 +219,213 @@ chore: Maintenance
 # - TypeScript type checking
 ```
 
-### File Organization
+## Solana Mobile Integration
 
-- Components: `src/components/` with UI subfolder for primitives
-- App routes: `src/app/` following Next.js conventions
-- Backend functions: `packages/backend/convex/`
-- Shared types: Define in backend, import in frontend
+### Mobile Wallet Adapter Protocol
 
-### Convex Development Pattern
+The platform includes comprehensive Solana Mobile support:
 
-1. Define schema in `packages/backend/convex/schema.ts`
-2. Create query/mutation functions in `convex/` directory
-3. Use generated hooks in frontend via `convex/react`
-4. Mutations modify data, queries read reactively
+```typescript
+// Mobile Wallet Adapter integration
+import { SolanaMobileWalletAdapter } from '@solana-mobile/wallet-adapter-mobile';
 
-### Component Development Pattern
+// Polyfills for web compatibility
+import '@solana-mobile/wallet-adapter-mobile/lib/adapter';
+```
 
-1. Server Components for data fetching (default)
-2. Client Components for interactivity (use client directive)
-3. Compose with Shadcn UI primitives
-4. Style with Tailwind utility classes
-5. Validate props with TypeScript interfaces
+**Key Components**:
+- **WalletProvider**: Multi-wallet support with mobile detection
+- **Mobile Polyfills**: Web compatibility for mobile wallet features
+- **Deep Linking**: Native app integration with URL schemes
+- **Transaction Handling**: Optimized mobile transaction flows
 
-## Technology Stack Reference
+## File Organization Patterns
 
-### Core Dependencies
+### Component Structure
+
+```
+src/components/
+├── ui/                 # Shadcn UI primitives
+├── chat/              # Chat interface components  
+├── auth/              # Authentication flows
+├── wallet/            # Web3 wallet integration
+├── providers/         # Context providers
+└── error-boundary/    # Error handling components
+```
+
+### Backend Organization
+
+```
+packages/backend/convex/
+├── schema.ts          # Database schema definition
+├── auth.ts           # Authentication functions
+├── messages.ts       # Chat message operations
+├── streaming.ts      # AI streaming responses
+├── http.ts          # HTTP router endpoints
+└── lib/             # Shared utilities
+```
+
+### Environment Configuration
+
+**Frontend** (`apps/web/.env.local`):
+```bash
+NEXT_PUBLIC_CONVEX_URL=https://<deployment>.convex.cloud
+OPENROUTER_API_KEY=...  # Multi-model AI access
+NEXT_PUBLIC_SOLANA_NETWORK=devnet
+NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
+```
+
+**Backend** (Convex dashboard/CLI):
+```bash
+OPENROUTER_API_KEY=...
+ALLOWED_ORIGINS=http://localhost:3001
+RATE_LIMIT_MAX_REQUESTS=100
+SOLANA_NETWORK=devnet
+```
+
+## Critical Integration Points
+
+### Provider Orchestration
+
+The app uses a sophisticated provider hierarchy:
+
+```tsx
+<ConvexErrorBoundary>
+  <SidebarProvider>
+    <ConvexAuthProvider>
+      <ClientOnlyWrapper>
+        <WalletProvider>           // Web3 wallet integration
+          <AuthProvider>           // Authentication state
+            <ThemeSync />          // Theme synchronization
+            <NotificationProvider>
+              <SolanaAgentProvider> // AI agent integration
+                {children}
+              </SolanaAgentProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </WalletProvider>
+      </ClientOnlyWrapper>
+    </ConvexAuthProvider>
+  </SidebarProvider>
+</ConvexErrorBoundary>
+```
+
+### API Architecture
+
+**Next.js API Routes** (frontend bridge):
+```
+POST /api/chat                   # Stream chat via AI SDK
+POST /api/ai/chat                # Tool-enabled endpoints
+GET  /api/models                 # Available model list
+POST /api/subscriptions/payment  # Payment webhooks
+```
+
+**Convex HTTP Routes** (backend):
+```
+POST /stream-chat                # HTTP streaming fallback
+POST /generateUploadUrl          # File upload URLs
+POST /verify-payment             # Solana payment verification
+```
+
+## Business Logic & Token Economics
+
+### Platform Roadmap
+
+- **Phase 1**: Core AI chat with basic Web3 integration (Current)
+- **Phase 2**: $ANUBIS token launch and DeFi features
+- **Phase 3**: AI agent marketplace and ecosystem expansion
+- **Phase 4**: Research partnerships and innovation lab
+
+### Revenue Streams
+
+- **Subscription Tiers**: Free, Pro, Enterprise with usage limits
+- **Token Utility**: $ANUBIS for premium features and governance
+- **Creator Economy**: Revenue sharing for AI agents and content
+- **Enterprise Solutions**: Custom deployments and integrations
+
+## Development Restrictions & Guidelines
+
+### Critical Constraints
+
+- **No any types**: Always use proper TypeScript types or create them
+- **camelCase strictly**: All identifiers must use camelCase convention
+- **No unnecessary files**: Don't create .md files unless explicitly requested
+- **Edit over create**: Always prefer editing existing files
+- **Auth boundaries**: Don't modify auth, convex config, or core APIs
+
+### Quality Standards
+
+- **Test Coverage**: 90%+ unit tests, 85%+ branch coverage
+- **Accessibility**: WCAG 2.1 AA compliance minimum
+- **Performance**: Core Web Vitals targets must be met
+- **Security**: Zero-trust architecture with audit trails
+
+## Technology References
+
+### Key Dependencies
 
 - **Runtime**: Bun 1.2.18 (package manager and runtime)
 - **Framework**: Next.js 15 with React 19
-- **Backend**: Convex 1.25.4
-- **Styling**: Tailwind CSS 4.1, Shadcn UI
-- **Forms**: Tanstack Form, Zod validation
-- **Build**: Turborepo for monorepo orchestration
-- **Code Quality**: Biome, Ultracite, Husky
+- **Backend**: Convex 1.25.4 with built-in auth
+- **Styling**: Tailwind CSS 4.1, Shadcn UI components
+- **Forms**: Tanstack Form with Zod validation
+- **Web3**: Solana Web3.js, Mobile Wallet Adapter
+- **AI**: Vercel AI SDK with multi-provider support
 
 ### Development Tools
 
-- **Cursor IDE**: Auto model selection enabled
-- **TypeScript**: Strict mode configuration
-- **Git Hooks**: Husky + lint-staged for pre-commit
-- **PWA**: Next.js PWA configuration
+- **IDE**: Cursor with .cursor/rules integration
+- **Quality**: Biome, Ultracite, Husky pre-commit hooks
+- **Build**: Turborepo for monorepo orchestration
+- **PWA**: Next.js PWA with offline capabilities
 
-## Known Patterns and Constraints
+## Context from Cursor Rules
 
-### Current Implementation Status
+The platform follows comprehensive development rules located in:
+- **Root rules** (`.cursor/rules/`): Platform architecture, AI integration, Web3 patterns
+- **Web-specific rules** (`apps/web/.cursor/rules/`): Frontend optimization, PWA features
 
-- Basic Convex todo example implemented
-- PWA manifest and icons configured
-- Theme switching (dark/light mode) enabled
-- Component library initialized with Shadcn
+**Key Rule Highlights**:
+- **Platform Vision**: Next-generation AI & Web3 platform with democratic access
+- **Technical Excellence**: Enterprise-grade performance and security standards
+- **Innovation Focus**: Cutting-edge AI-blockchain intersection technology
+- **Developer Experience**: Comprehensive APIs, testing, and documentation
 
-### Pending Features (from rules)
+## Known Implementation Status
 
-- AI/RAG system integration
-- Vector database setup
-- Solana wallet integration
-- Authentication system
-- Testing infrastructure
+### Completed Features
 
-### Important Files
+- ✅ Basic Convex backend with 80+ table schema
+- ✅ Next.js 15 frontend with React 19
+- ✅ Solana Mobile Wallet Adapter integration
+- ✅ Multi-model AI support with streaming
+- ✅ PWA configuration with offline support
+- ✅ Authentication system with wallet-based auth
+- ✅ Theme switching and responsive design
 
-- `packages/backend/convex/schema.ts`: Database schema
-- `apps/web/src/components/providers.tsx`: App providers
-- `apps/web/src/app/layout.tsx`: Root layout
-- `.cursor/rules/main.mdc`: Primary development guidelines
+### In Development
 
-## Code Research Guidance
+- 🚧 Advanced RAG system with vector search
+- 🚧 $ANUBIS token economics and DeFi integration
+- 🚧 AI agent marketplace and workflows
+- 🚧 Enterprise analytics and monitoring
+- 🚧 Comprehensive testing infrastructure
 
-- **Research Best Practices**:
-  - NEVER USE ANY TYPES, USE CONTEXT7 AND THE GREP MCP TO RESEARCH GITHUB FOR BEST PRACTICES AND DOCS
+## Emergency Information
 
-## Development Restrictions
+**Critical Files**:
+- `packages/backend/convex/schema.ts`: Core database schema
+- `apps/web/src/components/providers.tsx`: Provider orchestration
+- `apps/web/src/app/layout.tsx`: Root application layout
+- `.cursor/rules/`: Comprehensive development guidelines
 
-- **Key Constraint**:
-  - Dont touch auth, convex, or api
+**Performance Monitoring**:
+- Core Web Vitals tracking enabled
+- Real-time error boundary with structured logging
+- Convex performance monitoring built-in
 
-- Stop creating .md files unless I request you
-- Explicitly no any types, ALWAYS review for the proper type strcture and if one does not exsist then create it.
-- STRICTLY USE camelCase
-- STRICTLY USE camelCase
-- EXPLICITLY NO ANY TYPES, WE REVIEW FOR THE CORRECT TYPES OR CREATE THEM IF THEY DONT EXSIST
-- FREQUENTLY RREFERENCE @checklist.md AND UPDATE IT WITH PROGRESS AS WE HIT MILESTONES.
+**Support Resources**:
+- [Convex Documentation](https://docs.convex.dev)
+- [Next.js 15 Guide](https://nextjs.org/docs)
+- [Solana Web3.js](https://solana-labs.github.io/solana-web3.js/)
+- [Cursor Rules Documentation](https://cursor.com/docs)
