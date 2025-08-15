@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, Component, type ReactNode } from 'react';
-import { MessageSquare, RefreshCw } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { errorMonitor } from '@/lib/monitoring/errorMonitor';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
@@ -76,16 +76,7 @@ class MessageListErrorBoundary extends Component<
             title="Failed to Load Messages"
             description={this.state.error?.message || "An error occurred while loading the conversation"}
             icon={<MessageSquare className="h-12 w-12 text-destructive" />}
-            action={
-              <Button
-                onClick={this.handleReset}
-                variant="outline"
-                className="mt-4"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Try Again
-              </Button>
-            }
+            action={{ label: 'Try Again', onClick: this.handleReset }}
           />
         </div>
       );

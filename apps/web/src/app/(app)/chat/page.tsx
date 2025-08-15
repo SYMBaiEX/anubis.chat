@@ -1,6 +1,8 @@
 'use client';
 
+import { Suspense } from 'react';
 import { ChatInterface } from '@/components/chat/chat-interface';
+import { ChatSkeleton } from '@/components/chat/chat-skeleton';
 import { useAuthContext } from '@/components/providers/auth-provider';
 
 export default function ChatPage() {
@@ -20,9 +22,11 @@ export default function ChatPage() {
 
   return (
     <div className="h-full w-full overflow-hidden bg-gradient-to-b from-primary/5 dark:from-primary/10">
-      {/* Chat Interface takes full height */}
+      {/* Chat Interface with Suspense boundary for better streaming */}
       <div className="relative h-full w-full overflow-hidden">
-        <ChatInterface />
+        <Suspense fallback={<ChatSkeleton />}>
+          <ChatInterface />
+        </Suspense>
       </div>
     </div>
   );

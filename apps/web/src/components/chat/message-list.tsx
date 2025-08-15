@@ -267,7 +267,9 @@ export function MessageList({
         onScrollCapture={handleScroll}
         ref={scrollRef}
       >
-        <div className="mx-auto w-full max-w-full space-y-2 overflow-x-hidden p-2 sm:max-w-6xl sm:space-y-4 sm:p-3 md:max-w-7xl md:p-4 lg:p-6 xl:px-8">
+        <div 
+          data-chat-messages
+          className="mx-auto w-full max-w-full space-y-2 overflow-x-hidden p-2 sm:max-w-6xl sm:space-y-4 sm:p-3 md:max-w-7xl md:p-4 lg:p-6 xl:px-8">
           {messageGroups.map((group, _groupIndex) => (
             <div key={group.date}>
               {/* Date Separator */}

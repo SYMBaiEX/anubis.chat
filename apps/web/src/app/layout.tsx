@@ -11,6 +11,7 @@ import SchemaMarkup from '@/components/schema-markup';
 import ServiceWorkerManager from '@/components/service-worker-manager';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { WebVitals } from '@/components/web-vitals';
 import { themeInitScript } from '@/lib/theme-script';
 
 // PRD Typography: Inter for body, IBM Plex Mono for code
@@ -144,6 +145,7 @@ export default function RootLayout({
         >
           <ErrorBoundary>
             <Providers>
+              <WebVitals />
               <SchemaMarkup />
               <BreadcrumbSchema />
               <ServiceWorkerManager />
