@@ -25,19 +25,23 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
 interface LeaderboardEntry {
-  position: number;
-  userId: string;
+  rank: number;
   displayName: string;
-  avatar?: string;
+  avatar: string;
   referralCode: string;
   totalReferrals: number;
+  currentCommissionRate: number;
   totalEarnings: number;
-  commissionRate: number;
+  lifetimePayouts: number;
   tier: number;
-  isCurrentUser?: boolean;
-  weeklyReferrals?: number;
-  monthlyReferrals?: number;
-  streak?: number;
+  nextTierAt: number;
+  tierInfo: {
+    name: string;
+    color: string;
+    minReferrals: number;
+    maxReferrals?: number;
+    benefits: string[];
+  };
 }
 
 export default function LeaderboardPage() {
@@ -67,7 +71,7 @@ export default function LeaderboardPage() {
       y: 0,
       opacity: 1,
       transition: {
-        type: 'spring',
+        type: 'spring' as const,
         stiffness: 200,
         damping: 20,
       },
@@ -80,7 +84,7 @@ export default function LeaderboardPage() {
       scale: 1,
       opacity: 1,
       transition: {
-        type: 'spring',
+        type: 'spring' as const,
         stiffness: 150,
         damping: 12,
       },
@@ -479,8 +483,6 @@ export default function LeaderboardPage() {
                         <motion.div
                           className={cn(
                             'grid grid-cols-12 gap-4 px-4 py-3 transition-colors hover:bg-muted/20',
-                            entry.isCurrentUser &&
-                              'border-primary border-l-2 bg-primary/5',
                             actualPosition === 1 &&
                               'border-yellow-500 border-l-2 bg-yellow-500/5',
                             actualPosition === 2 &&
@@ -488,7 +490,7 @@ export default function LeaderboardPage() {
                             actualPosition === 3 &&
                               'border-amber-500 border-l-2 bg-amber-500/5'
                           )}
-                          key={entry.userId || `user-${actualPosition}`}
+                          key={entry.referralCode || `user-${actualPosition}`}
                           variants={itemVariants}
                         >
                           {/* Rank */}
@@ -523,14 +525,6 @@ export default function LeaderboardPage() {
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 truncate font-medium text-foreground text-sm">
                                 {entry.displayName}
-                                {entry.isCurrentUser && (
-                                  <Badge
-                                    className="px-1 py-0 text-xs"
-                                    variant="secondary"
-                                  >
-                                    You
-                                  </Badge>
-                                )}
                               </div>
                               <p className="truncate font-mono text-muted-foreground text-xs">
                                 {entry.referralCode}
@@ -548,7 +542,7 @@ export default function LeaderboardPage() {
                           {/* Commission Rate */}
                           <div className="col-span-2 flex items-center justify-center">
                             <Badge className="text-xs" variant="outline">
-                              {((entry.commissionRate || 0.03) * 100).toFixed(
+                              {((entry.currentCommissionRate || 0.03) * 100).toFixed(
                                 1
                               )}
                               %
@@ -561,11 +555,6 @@ export default function LeaderboardPage() {
                               <div className="font-bold text-foreground text-sm">
                                 {formatEarnings(entry.totalEarnings)}
                               </div>
-                              {entry.weeklyReferrals && (
-                                <p className="text-green-600 text-xs dark:text-green-400">
-                                  +{entry.weeklyReferrals} this week
-                                </p>
-                              )}
                             </div>
                           </div>
                         </motion.div>
