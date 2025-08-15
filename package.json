@@ -7,17 +7,19 @@
   },
   "workspaces": [
     "apps/web",
+    "apps/forum",
     "packages/backend"
   ],
   "scripts": {
     "check": "biome check --write .",
-    "dev": "turbo dev",
+    "dev": "turbo run dev --parallel",
     "dev:all": "turbo dev",
     "build": "turbo build",
     "build:all": "turbo build",
     "check-types": "turbo check-types",
     "dev:native": "turbo -F native dev",
     "dev:web": "turbo -F web dev",
+    "dev:forum": "turbo -F forum dev",
     "dev:server": "turbo -F @anubis-chat/backend dev",
     "dev:setup": "turbo -F @anubis-chat/backend dev:setup", 
     "claude:verify": "claude verify --all",
