@@ -16,7 +16,7 @@ import {
   useSubscriptionLimits,
   useUpgradePrompt,
 } from '@/components/providers/auth-provider';
-import { useSolanaAgent } from '@/components/providers/solanaAgentProvider';
+import { useSolanaAgent } from '@/components/providers/solana-agent-provider';
 import { AgentGrid } from '@/components/ui/agent-grid';
 import { Button } from '@/components/ui/button';
 import {
