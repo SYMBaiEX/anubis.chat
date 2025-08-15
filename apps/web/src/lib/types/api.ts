@@ -331,20 +331,35 @@ export const AIModelCapability = {
 export type AIModelCapability =
   (typeof AIModelCapability)[keyof typeof AIModelCapability];
 
+// =============================================================================
+// AI Model Types
+// =============================================================================
+
 export interface AIModel {
   id: string;
   name: string;
-  provider: AIProvider;
-  contextWindow: number;
-  maxTokens: number;
-  strengths: string[];
+  provider: string;
   capabilities: AIModelCapability[];
-  costTier: AICostTier;
-  isAvailable: boolean;
-  version?: string;
-  releaseDate?: number;
-  deprecatedDate?: number;
+  maxTokens: number;
+  contextLength: number;
+  pricing: {
+    input: number; // per 1K tokens
+    output: number; // per 1K tokens
+  };
+  features: {
+    vision: boolean;
+    functionCalling: boolean;
+    streaming: boolean;
+    fineTuning: boolean;
+  };
+  status: 'active' | 'deprecated' | 'beta';
+  releaseDate: string;
+  description: string;
 }
+
+// =============================================================================
+// API Response Types
+// =============================================================================
 
 export interface ChatCompletionRequest {
   model: string;

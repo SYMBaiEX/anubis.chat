@@ -1,7 +1,7 @@
 import DOMPurify from 'isomorphic-dompurify';
 
 // Configure DOMPurify for different contexts
-const createSanitizer = (config: DOMPurify.Config = {}) => {
+const createSanitizer = (config: any = {}) => {
   return (dirty: string): string => {
     if (typeof window === 'undefined') {
       // Server-side: basic sanitization
@@ -10,11 +10,11 @@ const createSanitizer = (config: DOMPurify.Config = {}) => {
         ALLOWED_ATTR: [],
         KEEP_CONTENT: true,
         ...config,
-      });
+      }) as unknown as string;
     }
 
     // Client-side: full sanitization
-    return DOMPurify.sanitize(dirty, config);
+    return DOMPurify.sanitize(dirty, config) as unknown as string;
   };
 };
 
@@ -102,7 +102,7 @@ export const sanitizeInput = (input: string): string => {
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
     KEEP_CONTENT: true,
-  });
+  }) as unknown as string;
 
   // Additional cleaning for common injection patterns
   return cleaned

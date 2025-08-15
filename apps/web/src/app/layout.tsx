@@ -1,5 +1,6 @@
+import { GeistMono } from 'geist/font/mono';
+import { GeistSans } from 'geist/font/sans';
 import type { Metadata, Viewport } from 'next';
-import { IBM_Plex_Mono, Inter } from 'next/font/google';
 import Script from 'next/script';
 import '../index.css';
 import { Analytics } from '@vercel/analytics/next';
@@ -18,24 +19,17 @@ import {
 } from '@/components/seo/jsonLd';
 import ServiceWorkerManager from '@/components/service-worker-manager';
 import { ThemeProvider } from '@/components/theme-provider';
+import {
+  ScrollProgressIndicator,
+  ScrollToTopButton,
+} from '@/components/ui/smooth-scroll';
 import { Toaster } from '@/components/ui/toaster';
 import { WebVitals } from '@/components/web-vitals';
+import { initSmoothScrolling } from '@/lib/smooth-scroll';
 import { themeInitScript } from '@/lib/theme-script';
 
-// PRD Typography: Inter for body, IBM Plex Mono for code
+// PRD Typography: Geist Sans for body, Geist Mono for code
 // Note: Satoshi Variable for headers will be loaded via CSS for better Bun runtime performance
-const inter = Inter({
-  variable: '--font-inter',
-  subsets: ['latin'],
-  display: 'swap',
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  variable: '--font-ibm-plex-mono',
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://anubis.chat'),
@@ -137,6 +131,16 @@ export default function RootLayout({
         <Script id="theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>
+        {/* Smooth scrolling initialization */}
+        <Script id="smooth-scroll-init" strategy="afterInteractive">
+          {`
+            // Initialize smooth scrolling for anchor links
+            if (typeof window !== 'undefined') {
+              const { initSmoothScrolling } = require('@/lib/smooth-scroll');
+              initSmoothScrolling();
+            }
+          `}
+        </Script>
         {/* Load Satoshi font stylesheet without client event handlers */}
         <link
           crossOrigin="anonymous"
@@ -149,7 +153,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${ibmPlexMono.variable} bg-gradient-to-b from-primary/5 font-sans antialiased dark:from-primary/10`}
+        className={`${GeistSans.variable} ${GeistMono.variable} bg-gradient-to-b from-primary/5 font-sans antialiased dark:from-primary/10`}
       >
         <ThemeProvider
           attribute="class"
@@ -172,6 +176,8 @@ export default function RootLayout({
               </main>
               <GlobalCommandPalette />
               <Toaster />
+              <ScrollProgressIndicator />
+              <ScrollToTopButton />
             </Providers>
           </ErrorBoundary>
         </ThemeProvider>

@@ -240,7 +240,7 @@ function useNetworkInformation() {
 // Preload critical CSS - only in production where these files exist
 export function PreloadStyles() {
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   return (
     <>
       {isProduction && (
@@ -258,11 +258,11 @@ export function PreloadStyles() {
 // Preload critical scripts - only in production where these files exist
 export function PreloadScripts() {
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   if (!isProduction) {
     return null; // Turbopack handles script loading in dev mode
   }
-  
+
   return (
     <>
       <link href="/_next/static/chunks/main.js" rel="modulepreload" />

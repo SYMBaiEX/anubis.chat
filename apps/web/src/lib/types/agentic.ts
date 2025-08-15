@@ -26,7 +26,7 @@ export interface Agent {
   mcpServers?: Array<{
     name: string;
     enabled: boolean;
-    config?: Record<string, any>;
+    config?: Record<string, string | number | boolean>;
   }>;
 }
 
@@ -92,7 +92,7 @@ export interface AgentExecutionResult {
     total: number;
   };
   executionTime: number;
-  [key: string]: unknown;
+  metadata?: Record<string, string | number | boolean>;
 }
 
 // =============================================================================

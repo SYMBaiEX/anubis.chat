@@ -5,13 +5,14 @@
 
 import type { ReactNode } from 'react';
 import type {
-  AIModel,
+  APIAIModel,
   Chat,
   ChatMessage,
   Document,
   SearchResult,
   StreamingMessage,
   User,
+  SearchFilters as APISearchFilters,
 } from './api';
 
 // =============================================================================
@@ -220,12 +221,25 @@ export interface SearchFilters {
   categories?: string[];
 }
 
+export interface ComponentSearchFilters {
+  query: string;
+  category?: string;
+  tags?: string[];
+  status?: 'active' | 'inactive' | 'draft';
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+  sortBy?: 'name' | 'created' | 'updated' | 'popularity';
+  sortOrder?: 'asc' | 'desc';
+}
+
 // =============================================================================
 // AI Component Types
 // =============================================================================
 
 export interface ModelSelectorProps extends BaseComponentProps {
-  models: AIModel[];
+  models: APIAIModel[];
   selectedModel?: string;
   onModelSelect: (modelId: string) => void;
   disabled?: boolean;
@@ -241,7 +255,7 @@ export interface AISettingsPanelProps extends BaseComponentProps {
   onSettingsChange: (
     settings: Partial<AISettingsPanelProps['settings']>
   ) => void;
-  models: AIModel[];
+  models: APIAIModel[];
 }
 
 export interface StreamingResponseProps extends BaseComponentProps {
@@ -505,7 +519,7 @@ export type ComponentState = 'idle' | 'loading' | 'success' | 'error';
 
 // Export all interfaces for easy importing
 export type {
-  AIModel,
+  APIAIModel,
   // Re-export from API types for convenience
   Chat,
   ChatMessage,

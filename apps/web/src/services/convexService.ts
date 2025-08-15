@@ -1,5 +1,5 @@
 import { api } from '@convex/_generated/api';
-import type { Id, Doc } from '@convex/_generated/dataModel';
+import type { Doc, Id } from '@convex/_generated/dataModel';
 import { ConvexClient } from 'convex/browser';
 import { createModuleLogger } from '@/lib/utils/logger';
 
@@ -184,7 +184,16 @@ export class ChatService {
   /**
    * Create a new chat
    */
-  async createChat(params: { title: string; ownerId: string; model: string; systemPrompt?: string; agentPrompt?: string; agentId?: Id<'agents'>; temperature?: number; maxTokens?: number; }) {
+  async createChat(params: {
+    title: string;
+    ownerId: string;
+    model: string;
+    systemPrompt?: string;
+    agentPrompt?: string;
+    agentId?: Id<'agents'>;
+    temperature?: number;
+    maxTokens?: number;
+  }) {
     return this.convex.mutation(api.chats.create, params);
   }
 
@@ -194,7 +203,16 @@ export class ChatService {
   async updateChat(
     chatId: Id<'chats'>,
     ownerId: string,
-    updates: { title?: string; model?: string; systemPrompt?: string; agentPrompt?: string; agentId?: Id<'agents'>; temperature?: number; maxTokens?: number; isActive?: boolean }
+    updates: {
+      title?: string;
+      model?: string;
+      systemPrompt?: string;
+      agentPrompt?: string;
+      agentId?: Id<'agents'>;
+      temperature?: number;
+      maxTokens?: number;
+      isActive?: boolean;
+    }
   ) {
     return this.convex.mutation(api.chats.update, {
       id: chatId,
@@ -216,7 +234,10 @@ export class ChatService {
   /**
    * Subscribe to chat updates
    */
-  subscribeToChats(ownerId: string, callback: (chats: ChatWithMessageCount[]) => void) {
+  subscribeToChats(
+    ownerId: string,
+    callback: (chats: ChatWithMessageCount[]) => void
+  ) {
     return this.convex.subscribe(api.chats.getByOwner, { ownerId }, callback);
   }
 }

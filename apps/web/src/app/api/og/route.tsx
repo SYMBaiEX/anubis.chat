@@ -4,11 +4,11 @@ import type { NextRequest } from 'next/server';
 export const runtime = 'edge';
 
 const fontBold = fetch(
-  new URL('../../../../public/fonts/Inter-Bold.ttf', import.meta.url)
+  new URL('../../../../public/fonts/GeistSans-Bold.ttf', import.meta.url)
 ).then((res) => res.arrayBuffer());
 
 const fontRegular = fetch(
-  new URL('../../../../public/fonts/Inter-Regular.ttf', import.meta.url)
+  new URL('../../../../public/fonts/GeistSans-Regular.ttf', import.meta.url)
 ).then((res) => res.arrayBuffer());
 
 export async function GET(request: NextRequest) {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
               theme === 'dark'
                 ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
                 : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            fontFamily: 'Inter',
+            fontFamily: 'Geist Sans',
           }}
         >
           <div
@@ -106,8 +106,8 @@ export async function GET(request: NextRequest) {
           width: 1200,
           height: 630,
           fonts: [
-            { name: 'Inter', data: fontBoldData, weight: 700 },
-            { name: 'Inter', data: fontRegularData, weight: 400 },
+            { name: 'Geist Sans', data: fontBoldData, weight: 700 },
+            { name: 'Geist Sans', data: fontRegularData, weight: 400 },
           ],
         }
       );
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
               theme === 'dark'
                 ? 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)'
                 : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            fontFamily: 'Inter',
+            fontFamily: 'Geist Sans',
           }}
         >
           <div
@@ -197,8 +197,8 @@ export async function GET(request: NextRequest) {
           width: 1200,
           height: 630,
           fonts: [
-            { name: 'Inter', data: fontBoldData, weight: 700 },
-            { name: 'Inter', data: fontRegularData, weight: 400 },
+            { name: 'Geist Sans', data: fontBoldData, weight: 700 },
+            { name: 'Geist Sans', data: fontRegularData, weight: 400 },
           ],
         }
       );
@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
             theme === 'dark'
               ? 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)'
               : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          fontFamily: 'Inter',
+          fontFamily: 'Geist Sans',
         }}
       >
         <div
@@ -335,8 +335,8 @@ export async function GET(request: NextRequest) {
         width: 1200,
         height: 630,
         fonts: [
-          { name: 'Inter', data: fontBoldData, weight: 700 },
-          { name: 'Inter', data: fontRegularData, weight: 400 },
+          { name: 'Geist Sans', data: fontBoldData, weight: 700 },
+          { name: 'Geist Sans', data: fontRegularData, weight: 400 },
         ],
       }
     );

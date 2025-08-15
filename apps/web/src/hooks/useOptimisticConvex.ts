@@ -116,7 +116,7 @@ export function useOptimisticConvex<T, Args extends Record<string, any>>(
       const updateId = addOptimisticUpdate(optimisticData);
 
       try {
-        const result = await mutation(args);
+        const result = await mutation(args as any);
         markUpdateSuccess(updateId);
         options?.onSuccess?.(result);
         return result;
@@ -212,13 +212,15 @@ export function useOptimisticChats() {
   const deleteChat = useMutation(api.chats.remove);
   const chats = useQuery(api.chats.getByOwner, { ownerId: 'current-user' }); // TODO: Get actual user ID
 
-  const [optimisticChats, setOptimisticChats] = useState<Array<{
-    _id: string;
-    title: string;
-    description?: string;
-    createdAt: number;
-    status: string;
-  }>>([]);
+  const [optimisticChats, setOptimisticChats] = useState<
+    Array<{
+      _id: string;
+      title: string;
+      description?: string;
+      createdAt: number;
+      status: string;
+    }>
+  >([]);
 
   const createOptimisticChat = useCallback(
     async (name: string, description?: string) => {
@@ -233,7 +235,12 @@ export function useOptimisticChats() {
       setOptimisticChats((prev) => [...prev, optimisticChat]);
 
       try {
-        const result = await createChat({ title: name, ownerId: 'current-user', model: 'gpt-4o', description });
+        const result = await createChat({
+          title: name,
+          ownerId: 'current-user',
+          model: 'gpt-4o',
+          description,
+        });
 
         setOptimisticChats((prev) =>
           prev.filter((c) => c._id !== optimisticChat._id)
@@ -264,17 +271,22 @@ export function useOptimisticChats() {
       // Apply optimistic update
       setOptimisticChats((prev) => [
         ...prev,
-        { 
+        {
           _id: `optimistic-update-${chatId}`,
           title: updates.name || originalChat?.title || '',
           description: updates.description || originalChat?.description,
           createdAt: originalChat?.createdAt || Date.now(),
-          status: 'updating' 
+          status: 'updating',
         },
       ]);
 
       try {
-        const result = await updateChat({ id: chatId, ownerId: 'current-user', title: updates.name, ...updates });
+        const result = await updateChat({
+          id: chatId,
+          ownerId: 'current-user',
+          title: updates.name,
+          ...updates,
+        });
 
         setOptimisticChats((prev) => prev.filter((c) => c._id !== chatId));
 
@@ -291,14 +303,23 @@ export function useOptimisticChats() {
 
   const deleteOptimisticChat = useCallback(
     async (chatId: Id<'chats'>) => {
+      // Find the original chat to get its properties
+      const originalChat = chats?.find((c) => c._id === chatId);
+
       // Mark as deleting
       setOptimisticChats((prev) => [
         ...prev,
-        { _id: chatId, status: 'deleting' },
+        {
+          _id: chatId,
+          title: originalChat?.title || '',
+          description: originalChat?.description,
+          createdAt: originalChat?.createdAt || Date.now(),
+          status: 'deleting',
+        },
       ]);
 
       try {
-        await deleteChat({ chatId });
+        await deleteChat({ id: chatId, ownerId: 'current-user' });
 
         setOptimisticChats((prev) => prev.filter((c) => c._id !== chatId));
       } catch (error) {
@@ -308,7 +329,7 @@ export function useOptimisticChats() {
         throw error;
       }
     },
-    [deleteChat]
+    [chats, deleteChat]
   );
 
   // Merge and filter chats

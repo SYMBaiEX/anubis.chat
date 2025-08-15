@@ -3,10 +3,10 @@
  * Clean, performant hooks following Convex best practices
  */
 
-import { useQuery, useMutation, useAction } from 'convex/react';
-import { useCallback } from 'react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { useAction, useMutation, useQuery } from 'convex/react';
+import { useCallback } from 'react';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 const log = createModuleLogger('hooks/convex/useChats');
@@ -192,7 +192,7 @@ export function useChatManagement(ownerId: string) {
   const chats = useChats(ownerId, { isActive: true });
   const archivedChats = useChats(ownerId, { isActive: false });
   const stats = useChatStats(ownerId);
-  
+
   const updateChat = useUpdateChat();
   const deleteChat = useDeleteChat();
   const archiveChat = useArchiveChat();
@@ -238,21 +238,21 @@ export function useChatManagement(ownerId: string) {
     activeChats: chats || [],
     archivedChats: archivedChats || [],
     stats: stats || {},
-    
+
     // Loading states
     isLoading: chats === undefined || archivedChats === undefined,
-    
+
     // Single operations
     updateChat,
     deleteChat,
     archiveChat,
     restoreChat,
     togglePin,
-    
+
     // Bulk operations
     bulkArchive,
     bulkDelete,
-    
+
     // Computed
     hasActiveChats: (chats?.length || 0) > 0,
     hasArchivedChats: (archivedChats?.length || 0) > 0,
@@ -267,15 +267,16 @@ export function useChatManagement(ownerId: string) {
 export function useChatState(ownerId: string, selectedChatId?: string) {
   const chats = useChats(ownerId, { isActive: true });
   const currentChat = useChat(selectedChatId as Id<'chats'>);
-  
+
   const selectedChat = currentChat;
   const hasChatSelected = !!selectedChatId && !!selectedChat;
-  
+
   return {
     chats: chats || [],
     selectedChat,
     hasChatSelected,
-    isLoading: chats === undefined || (selectedChatId && currentChat === undefined),
+    isLoading:
+      chats === undefined || (selectedChatId && currentChat === undefined),
     isEmpty: (chats?.length || 0) === 0,
   };
 }

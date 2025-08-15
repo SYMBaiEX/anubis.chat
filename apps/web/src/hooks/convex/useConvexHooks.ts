@@ -3,9 +3,9 @@
  * Direct useQuery and useMutation patterns for clean, performant code
  */
 
-import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { useAction, useMutation, useQuery } from 'convex/react';
 
 // =============================================================================
 // Agents Hooks - 2025 Best Practice Pattern
@@ -98,7 +98,7 @@ export function useGenerateTitle() {
 export function useTheme() {
   const preferences = useUserPreferences();
   const updatePreferences = useUpdateUserPreferences();
-  
+
   const updateTheme = async (theme: 'light' | 'dark' | 'system') => {
     await updatePreferences({ theme });
   };
@@ -117,7 +117,7 @@ export function useTheme() {
 export function useModelPreferences() {
   const preferences = useUserPreferences();
   const updatePreferences = useUpdateUserPreferences();
-  
+
   const updateDefaultModel = async (model: string) => {
     await updatePreferences({ defaultModel: model });
   };
@@ -142,7 +142,14 @@ export function useAgentManagement() {
 
   const createAndSetDefault = async (agentData: {
     name: string;
-    type: 'general' | 'trading' | 'defi' | 'nft' | 'dao' | 'portfolio' | 'custom';
+    type:
+      | 'general'
+      | 'trading'
+      | 'defi'
+      | 'nft'
+      | 'dao'
+      | 'portfolio'
+      | 'custom';
     description: string;
     systemPrompt: string;
     capabilities: string[];
@@ -206,7 +213,9 @@ export function useSettings() {
     await updatePreferences({ [key]: value });
   };
 
-  const bulkUpdate = async (updates: Partial<NonNullable<typeof preferences>>) => {
+  const bulkUpdate = async (
+    updates: Partial<NonNullable<typeof preferences>>
+  ) => {
     await updatePreferences(updates);
   };
 

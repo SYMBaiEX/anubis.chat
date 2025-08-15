@@ -9,9 +9,9 @@
      ======================================== */
 
   /* Font Families */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", "SF Mono", "Monaco", monospace;
-  --font-heading: "Satoshi", "Inter", ui-sans-serif, sans-serif;
+  --font-sans: "Geist Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "SF Mono", "Monaco", monospace;
+  --font-heading: "Satoshi", "Geist Sans", ui-sans-serif, sans-serif;
 
   /* Font Sizes */
   --font-size-2xs: 0.625rem; /* 10px */

@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@convex/_generated/api';
 import type { Doc, Id } from '@convex/_generated/dataModel';
 import { MessageSquare, Plus, Sidebar } from 'lucide-react';
 import Link from 'next/link';
@@ -27,25 +28,23 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ModelGrid } from '@/components/ui/model-grid';
-
-import { useConvexChat } from '@/hooks/use-convex-chat';
 import {
-  useUpdateChat,
-  useDeleteChat,
-  useCreateChat,
-  useChats,
   useChat,
+  useChats,
+  useCreateChat,
+  useDeleteChat,
+  useUpdateChat,
 } from '@/hooks/convex/useChats';
 import {
-  useAgents,
-  useUserPreferences,
-  useUpdateUserPreferences,
-  useGenerateTitle,
-  useTheme,
-  useSettings,
   useAgentManagement,
+  useAgents,
+  useGenerateTitle,
+  useSettings,
+  useTheme,
+  useUpdateUserPreferences,
+  useUserPreferences,
 } from '@/hooks/convex/useConvexHooks';
-import { api } from '@convex/_generated/api';
+import { useConvexChat } from '@/hooks/use-convex-chat';
 import { useTypingIndicator } from '@/hooks/use-typing-indicator';
 import { AI_MODELS, DEFAULT_MODEL } from '@/lib/constants/ai-models';
 import type { Chat, StreamingMessage, ToolCall } from '@/lib/types/api';
@@ -295,10 +294,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   useEffect(() => {}, []);
 
   // Convex queries and mutations - modern 2025 pattern
-  const chats = useChats(
-    user?._id || '', 
-    { isActive: true }
-  );
+  const chats = useChats(user?._id || '', { isActive: true });
   const currentChatQuery = useChat(
     selectedChatId && isAuthenticated
       ? (selectedChatId as Id<'chats'>)
@@ -579,7 +575,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   const handleDeleteChat = async (chatId: string) => {
     if (!user?._id) return;
-    
+
     try {
       await deleteChat({
         id: chatId as Id<'chats'>,
@@ -802,7 +798,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   onGenerateTitle={handleGenerateTitle}
                   onModelSelectorClick={() => setShowMobileModelSelector(true)}
                   onRename={(newTitle) => {
-                    if (selectedChatId && isAuthenticated && currentChatQuery && user?._id) {
+                    if (
+                      selectedChatId &&
+                      isAuthenticated &&
+                      currentChatQuery &&
+                      user?._id
+                    ) {
                       updateChat({
                         id: selectedChatId as Id<'chats'>,
                         ownerId: user._id,
@@ -1079,7 +1080,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   setShowMobileAgentSelector(false);
 
                   // Update the current chat's agent prompt and reference
-                  if (selectedChatId && isAuthenticated && currentChatQuery && user?._id) {
+                  if (
+                    selectedChatId &&
+                    isAuthenticated &&
+                    currentChatQuery &&
+                    user?._id
+                  ) {
                     try {
                       await updateChat({
                         id: selectedChatId as Id<'chats'>,
@@ -1153,7 +1159,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   setShowDesktopAgentSelector(false);
 
                   // Update the current chat's agent prompt and reference
-                  if (selectedChatId && isAuthenticated && currentChatQuery && user?._id) {
+                  if (
+                    selectedChatId &&
+                    isAuthenticated &&
+                    currentChatQuery &&
+                    user?._id
+                  ) {
                     try {
                       await updateChat({
                         id: selectedChatId as Id<'chats'>,

@@ -125,7 +125,12 @@ export function useOptimisticMutation<TData = any, TVariables = any>(
   const queryClient = useQueryClient();
   const queryKey = Array.isArray(key) ? key : [key];
 
-  return useMutation<ApiResponse<TData>, Error, TVariables, MutationContext<TData>>({
+  return useMutation<
+    ApiResponse<TData>,
+    Error,
+    TVariables,
+    MutationContext<TData>
+  >({
     mutationFn: (variables) => apiClient.post<TData>(path, variables),
     onMutate: async (variables) => {
       if (!options?.optimisticUpdate) return;
