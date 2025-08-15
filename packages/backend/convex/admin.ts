@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { requireAdmin } from './authHelpers';
 
 // System health check
 export const healthCheck = query({
@@ -235,6 +236,23 @@ export const getSystemStats = query({
         byModel: modelUsage,
       },
     };
+  },
+});
+
+// Admin-only: list all users (basic)
+export const listAllUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx, 'admin');
+    const users = await ctx.db.query('users').collect();
+    return users.map((u) => ({
+      _id: u._id,
+      walletAddress: u.walletAddress,
+      displayName: u.displayName,
+      role: u.role,
+      createdAt: u.createdAt,
+      lastActiveAt: u.lastActiveAt,
+    }));
   },
 });
 

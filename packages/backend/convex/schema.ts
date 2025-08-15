@@ -2557,4 +2557,77 @@ export default defineSchema({
     .index('by_chat', ['chatId'])
     .index('by_status', ['status'])
     .index('by_created', ['createdAt']),
+
+  // =============================================================================
+  // Forum System (Posts, Replies, Flags, Metrics)
+  // =============================================================================
+
+  // Forum users are unified with the shared `users` table above.
+
+  // Forum posts
+  posts: defineTable({
+    authorId: v.id('users'),
+    title: v.string(),
+    content: v.string(),
+    tags: v.optional(v.array(v.string())),
+    category: v.string(),
+    section: v.string(),
+    views: v.optional(v.number()),
+    likes: v.optional(v.number()),
+    pinned: v.optional(v.boolean()),
+    locked: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index('by_section', ['category', 'section', 'createdAt'])
+    .index('by_section_likes', ['category', 'section', 'likes'])
+    .index('by_author', ['authorId', 'createdAt']),
+
+  // Forum replies
+  replies: defineTable({
+    postId: v.id('posts'),
+    authorId: v.id('users'),
+    content: v.string(),
+    createdAt: v.number(),
+  }).index('by_post', ['postId', 'createdAt']),
+
+  // Forum content flags (reports)
+  forumFlags: defineTable({
+    postId: v.optional(v.id('posts')),
+    replyId: v.optional(v.id('replies')),
+    reportedBy: v.id('users'),
+    reason: v.string(),
+    note: v.optional(v.string()),
+    status: v.string(), // open, resolved, dismissed
+    createdAt: v.number(),
+    resolvedAt: v.optional(v.number()),
+  })
+    .index('by_target', ['postId', 'replyId', 'createdAt'])
+    .index('by_reporter', ['reportedBy', 'createdAt']),
+
+  // Post likes
+  likes: defineTable({
+    postId: v.id('posts'),
+    userId: v.id('users'),
+    createdAt: v.number(),
+  }).index('by_post_user', ['postId', 'userId']),
+
+  // Generic rate limit ledger for forum operations
+  rate_limits: defineTable({
+    key: v.string(),
+    timestamp: v.number(),
+  }).index('by_key', ['key', 'timestamp']),
+
+  // Daily metrics for posts/sections
+  metrics_daily: defineTable({
+    date: v.string(),
+    section: v.optional(v.string()),
+    postId: v.optional(v.id('posts')),
+    views: v.number(),
+    likes: v.number(),
+    replies: v.number(),
+  })
+    .index('by_date', ['date'])
+    .index('by_post_date', ['postId', 'date'])
+    .index('by_section_date', ['section', 'date']),
 });
