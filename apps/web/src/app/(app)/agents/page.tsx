@@ -197,7 +197,6 @@ export default function AgentsPage() {
     description?: string;
     systemPrompt?: string;
     temperature?: number;
-    maxTokens?: number;
   };
 
   const handleDuplicateAgent = (agent: AgentSummary) => {
@@ -207,7 +206,6 @@ export default function AgentsPage() {
       description: agent.description || '',
       systemPrompt: agent.systemPrompt || '',
       temperature: agent.temperature?.toString() || '0.7',
-      maxTokens: agent.maxTokens?.toString() || '4096',
     });
     router.push(`/agents/new?${params.toString()}`);
   };
@@ -474,17 +472,6 @@ export default function AgentsPage() {
                                 {agent.temperature || 0.7}
                               </span>
                             </motion.div>
-                            {agent.maxTokens && (
-                              <motion.div
-                                className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-1"
-                                whileHover={{ scale: 1.05 }}
-                              >
-                                <span className="opacity-70">Tokens:</span>
-                                <span className="font-medium">
-                                  {agent.maxTokens}
-                                </span>
-                              </motion.div>
-                            )}
                             {agent.capabilities &&
                               agent.capabilities.length > 0 && (
                                 <motion.div

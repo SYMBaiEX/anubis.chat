@@ -69,6 +69,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip non-GET requests - Cache API only supports GET
+  if (request.method !== 'GET') {
+    return;
+  }
+
   // Skip browser extension requests
   if (
     url.origin.includes('extension://') ||

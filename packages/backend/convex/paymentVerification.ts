@@ -695,19 +695,22 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
           ? subscriptionConfig.pricing.pro
           : subscriptionConfig.pricing.proPlus;
 
-      // Calculate expected amount based on whether it's a prorated upgrade
-      let expectedTierAmount = tierPricing.priceSOL;
+      // Get the correct billing period (default to monthly for backward compatibility)
+      const billingPeriod = billingCycle === 'yearly' ? 'yearly' : 'monthly';
+
+      // Calculate expected amount based on billing period and whether it's a prorated upgrade
+      let expectedTierAmount = tierPricing[billingPeriod].priceSOL;
       if (isProrated && tier === 'pro_plus') {
         expectedTierAmount =
-          subscriptionConfig.pricing.proPlus.priceSOL -
-          subscriptionConfig.pricing.pro.priceSOL;
+          subscriptionConfig.pricing.proPlus[billingPeriod].priceSOL -
+          subscriptionConfig.pricing.pro[billingPeriod].priceSOL;
       }
 
       if (Math.abs(expectedAmount - expectedTierAmount) > 0.001) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: `Payment amount doesn't match ${isUpgrade ? 'upgrade' : 'tier'} pricing: expected ${expectedTierAmount} SOL`,
+            error: `Payment amount doesn't match ${isUpgrade ? 'upgrade' : 'tier'} pricing: expected ${expectedTierAmount} SOL for ${billingPeriod} billing`,
           }),
           { status: 400, headers }
         );
@@ -775,11 +778,12 @@ export const verifyPaymentTransaction = httpAction(async (ctx, request) => {
           (tier as string) === 'pro'
             ? subscriptionConfig.pricing.pro
             : subscriptionConfig.pricing.proPlus;
+        const billingPeriod = billingCycle === 'yearly' ? 'yearly' : 'monthly';
         grossPaymentAmount =
           isProrated && tier === 'pro_plus'
-            ? subscriptionConfig.pricing.proPlus.priceSOL -
-              subscriptionConfig.pricing.pro.priceSOL
-            : tierPricing.priceSOL;
+            ? subscriptionConfig.pricing.proPlus[billingPeriod].priceSOL -
+              subscriptionConfig.pricing.pro[billingPeriod].priceSOL
+            : tierPricing[billingPeriod].priceSOL;
       }
 
       const expectedReferralAmount = calculateReferralPayout(

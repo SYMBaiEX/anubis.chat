@@ -998,11 +998,12 @@ export const processVerifiedPayment = internalMutation({
           const commissionAmount = args.amountSol * commissionRate;
 
           // Determine if this is the user's first confirmed subscription payment
-          // If there are no prior confirmed subscriptionPayments, treat as first conversion
+          // Exclude the current payment being processed and only check for other confirmed payments
           const priorPayments = await ctx.db
             .query('subscriptionPayments')
             .withIndex('by_user', (q) => q.eq('userId', user._id))
             .filter((q) => q.eq(q.field('status'), 'confirmed'))
+            .filter((q) => q.neq(q.field('_id'), payment._id))
             .collect();
           isFirstConversionForUser = priorPayments.length === 0;
 
@@ -1070,10 +1071,12 @@ export const processVerifiedPayment = internalMutation({
             const commissionAmount = args.amountSol * commissionRate;
 
             // Determine if this is the user's first confirmed subscription payment
+            // Exclude the current payment being processed and only check for other confirmed payments
             const priorPayments = await ctx.db
               .query('subscriptionPayments')
               .withIndex('by_user', (q) => q.eq('userId', user._id))
               .filter((q) => q.eq(q.field('status'), 'confirmed'))
+              .filter((q) => q.neq(q.field('_id'), payment._id))
               .collect();
             isFirstConversionForUser = priorPayments.length === 0;
 

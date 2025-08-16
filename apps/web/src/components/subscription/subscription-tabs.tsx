@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Crown, Plus, Zap, Sparkles } from 'lucide-react';
+import { CreditCard, Crown, Plus, Zap, Sparkles, Calendar } from 'lucide-react';
 import { useState } from 'react';
 import MessageCreditsModal from '@/components/auth/messageCreditsModal';
 import { UpgradeModal } from '@/components/auth/upgrade-modal';
@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUpgradeModal } from '@/hooks/use-upgrade-modal';
 import { cn } from '@/lib/utils';
+import { subscriptionConfig } from '@/lib/env';
 
 interface SubscriptionTabsProps {
   // Props from existing subscription page
@@ -45,6 +46,7 @@ export function SubscriptionTabs({
     'subscription' | 'credits'
   >('subscription');
   const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const { isOpen, openModal, closeModal, suggestedTier } = useUpgradeModal();
 
   const formatTierLabel = (tier: string): string => {
@@ -240,6 +242,50 @@ export function SubscriptionTabs({
             )}
           </div>
 
+          {/* Billing period toggle */}
+          <motion.div 
+            className="mb-4 flex items-center justify-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.35 }}
+          >
+            <div className="flex items-center space-x-1 rounded-lg bg-muted p-1">
+              <button
+                type="button"
+                onClick={() => setBillingPeriod('monthly')}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200',
+                  billingPeriod === 'monthly'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Monthly
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingPeriod('yearly')}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200 relative',
+                  billingPeriod === 'yearly'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Yearly
+                  <Badge className="ml-1 bg-green-100 text-green-800 text-xs px-1.5 py-0 dark:bg-green-900/50 dark:text-green-300">
+                    5% OFF
+                  </Badge>
+                </span>
+              </button>
+            </div>
+          </motion.div>
+
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:grid-cols-3">
               {/* Free Plan */}
@@ -373,10 +419,15 @@ export function SubscriptionTabs({
                         )}
                       </div>
                       <div className="font-semibold text-foreground text-sm">
-                        0.05 SOL
+                        {subscriptionConfig.pro[billingPeriod].priceSOL} SOL
                       </div>
                       <div className="text-[11px] text-muted-foreground">
-                        per month
+                        per {billingPeriod === 'yearly' ? 'year' : 'month'}
+                        {billingPeriod === 'yearly' && (
+                          <span className="ml-1 text-green-600 dark:text-green-400">
+                            (5% off)
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -467,10 +518,15 @@ export function SubscriptionTabs({
                         )}
                       </div>
                       <div className="font-semibold text-foreground text-sm">
-                        0.1 SOL
+                        {subscriptionConfig.proPlus[billingPeriod].priceSOL} SOL
                       </div>
                       <div className="text-[11px] text-muted-foreground">
-                        per month
+                        per {billingPeriod === 'yearly' ? 'year' : 'month'}
+                        {billingPeriod === 'yearly' && (
+                          <span className="ml-1 text-green-600 dark:text-green-400">
+                            (5% off)
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

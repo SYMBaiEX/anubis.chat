@@ -94,7 +94,8 @@ const createAgentFormSchema = z.object({
     .int('Max tokens must be a whole number')
     .min(1, 'Max tokens must be at least 1')
     .max(128_000, 'Max tokens cannot exceed 128,000')
-    .default(AGENT_CONFIG.defaults.maxTokens),
+    .default(AGENT_CONFIG.defaults.maxTokens)
+    .optional(),
   maxSteps: z
     .number()
     .int('Max steps must be a whole number')
@@ -146,7 +147,6 @@ export default function NewAgentPage() {
       systemPrompt: '',
       template: AGENT_CONFIG.defaults.template,
       temperature: AGENT_CONFIG.defaults.temperature,
-      maxTokens: AGENT_CONFIG.defaults.maxTokens,
       maxSteps: AGENT_CONFIG.defaults.maxSteps,
       enableMCPTools: AGENT_CONFIG.defaults.enableMCPTools,
       mcpServers: AGENT_CONFIG.defaults.mcpServers.map((s) => ({
@@ -439,39 +439,6 @@ export default function NewAgentPage() {
                 )}
               </form.Field>
 
-              {/* Max Tokens */}
-              <form.Field name="maxTokens">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor={field.name}>Max Tokens</Label>
-                    <Input
-                      id={field.name}
-                      max={128_000}
-                      min={1}
-                      name={field.name}
-                      onChange={(e) =>
-                        field.handleChange(
-                          Number.parseInt(
-                            e.target.value,
-                            10
-                          ) as CreateAgentFormData['maxTokens']
-                        )
-                      }
-                      placeholder="4096"
-                      type="number"
-                      value={field.state.value}
-                    />
-                    <p className="text-muted-foreground text-xs">
-                      Maximum response length (1 token ≈ 4 characters)
-                    </p>
-                    {field.state.meta.errors.length > 0 && (
-                      <p className="mt-1 text-red-600 text-sm">
-                        {field.state.meta.errors[0]}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </form.Field>
 
               {/* MCP Server Configuration - Temporarily disabled */}
               {/* <div className="space-y-4">
@@ -643,7 +610,7 @@ function buildAgentData(data: CreateAgentFormData, createdBy: string) {
     systemPrompt: data.systemPrompt || 'You are a helpful AI assistant.',
     capabilities: AGENT_CONFIG.defaults.tools,
     temperature: data.temperature,
-    maxTokens: data.maxTokens,
+    maxTokens: AGENT_CONFIG.defaults.maxTokens,
     maxSteps: data.maxSteps,
     createdBy,
     tools: AGENT_CONFIG.defaults.tools,

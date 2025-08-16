@@ -82,7 +82,7 @@ const convexEnvSchema = z.object({
     .default('60')
     .transform((val) => Number.parseInt(val, 10)),
 
-  // Subscription Configuration
+  // Subscription Configuration - Monthly
   SUBSCRIPTION_PRO_PRICE_SOL: z
     .string()
     .default('0.05')
@@ -98,6 +98,24 @@ const convexEnvSchema = z.object({
   SUBSCRIPTION_PRO_PLUS_PRICE_USD: z
     .string()
     .default('25')
+    .transform((val) => Number.parseInt(val, 10)),
+
+  // Subscription Configuration - Yearly (5% discount)
+  SUBSCRIPTION_PRO_YEARLY_PRICE_SOL: z
+    .string()
+    .default('0.57')
+    .transform((val) => Number.parseFloat(val)),
+  SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_SOL: z
+    .string()
+    .default('1.14')
+    .transform((val) => Number.parseFloat(val)),
+  SUBSCRIPTION_PRO_YEARLY_PRICE_USD: z
+    .string()
+    .default('137')
+    .transform((val) => Number.parseInt(val, 10)),
+  SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_USD: z
+    .string()
+    .default('285')
     .transform((val) => Number.parseInt(val, 10)),
 
   // Message limits
@@ -208,6 +226,14 @@ function parseConvexEnv() {
     SUBSCRIPTION_PRO_PRICE_USD: process.env.SUBSCRIPTION_PRO_PRICE_USD || '12',
     SUBSCRIPTION_PRO_PLUS_PRICE_USD:
       process.env.SUBSCRIPTION_PRO_PLUS_PRICE_USD || '25',
+    SUBSCRIPTION_PRO_YEARLY_PRICE_SOL:
+      process.env.SUBSCRIPTION_PRO_YEARLY_PRICE_SOL || '0.57',
+    SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_SOL:
+      process.env.SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_SOL || '1.14',
+    SUBSCRIPTION_PRO_YEARLY_PRICE_USD:
+      process.env.SUBSCRIPTION_PRO_YEARLY_PRICE_USD || '137',
+    SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_USD:
+      process.env.SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_USD || '285',
     SUBSCRIPTION_FREE_MESSAGE_LIMIT:
       process.env.SUBSCRIPTION_FREE_MESSAGE_LIMIT || '50',
     SUBSCRIPTION_PRO_MESSAGE_LIMIT:
@@ -325,12 +351,24 @@ export const solanaConfig = {
 export const subscriptionConfig = {
   pricing: {
     pro: {
-      priceSOL: convexEnv.SUBSCRIPTION_PRO_PRICE_SOL,
-      priceUSD: convexEnv.SUBSCRIPTION_PRO_PRICE_USD,
+      monthly: {
+        priceSOL: convexEnv.SUBSCRIPTION_PRO_PRICE_SOL,
+        priceUSD: convexEnv.SUBSCRIPTION_PRO_PRICE_USD,
+      },
+      yearly: {
+        priceSOL: convexEnv.SUBSCRIPTION_PRO_YEARLY_PRICE_SOL,
+        priceUSD: convexEnv.SUBSCRIPTION_PRO_YEARLY_PRICE_USD,
+      },
     },
     proPlus: {
-      priceSOL: convexEnv.SUBSCRIPTION_PRO_PLUS_PRICE_SOL,
-      priceUSD: convexEnv.SUBSCRIPTION_PRO_PLUS_PRICE_USD,
+      monthly: {
+        priceSOL: convexEnv.SUBSCRIPTION_PRO_PLUS_PRICE_SOL,
+        priceUSD: convexEnv.SUBSCRIPTION_PRO_PLUS_PRICE_USD,
+      },
+      yearly: {
+        priceSOL: convexEnv.SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_SOL,
+        priceUSD: convexEnv.SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_USD,
+      },
     },
   },
   limits: {

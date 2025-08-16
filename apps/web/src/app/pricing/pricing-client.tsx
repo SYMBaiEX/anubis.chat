@@ -124,7 +124,7 @@ const pricingPlans = {
         { text: '300 premium model messages', included: true },
         { text: 'Unlimited conversation history', included: true },
         { text: '5 custom agents', included: true },
-        { text: 'Full API access', included: true },
+        { text: 'Full API access (coming soon)', included: true },
         { text: 'Referral program access', included: true },
         { text: '24/7 priority support', included: true },
       ],
@@ -193,7 +193,7 @@ const pricingPlans = {
         { text: '300 premium model messages', included: true },
         { text: 'Unlimited conversation history', included: true },
         { text: '5 custom agents', included: true },
-        { text: 'Full API access', included: true },
+        { text: 'Full API access (coming soon)', included: true },
         { text: 'Referral program access', included: true },
         { text: '24/7 priority support', included: true },
       ],
@@ -220,9 +220,9 @@ const featureComparison = [
     features: [
       { name: 'Messages per Month', free: '50', pro: '500', proPlus: '1,000' },
       { name: 'Conversation History', free: '7 days', pro: 'Unlimited', proPlus: 'Unlimited' },
-      { name: 'Custom Agents', free: '✗', pro: '1', proPlus: '5' },
-      { name: 'API Access', free: '✗', pro: 'Coming Soon', proPlus: 'Full Access' },
-      { name: 'Workflow Automation', free: '✗', pro: '✗', proPlus: '✓' },
+      {
+        name: 'API Access', free: '✗', pro: '✗', proPlus: 'Coming Soon' },
+      { name: 'Workflow Automation', free: '✗', pro: '✗', proPlus: 'Coming Soon' },
     ],
   },
   {
@@ -245,7 +245,7 @@ const faqData = [
   },
   {
     question: 'Can I switch plans anytime?',
-    answer: 'Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we\'ll prorate any unused time.',
+    answer: 'Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and you retain your current plan\'s features.',
   },
   {
     question: 'What happens if I exceed my message limit?',
