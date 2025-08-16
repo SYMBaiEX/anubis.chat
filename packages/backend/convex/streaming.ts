@@ -1199,19 +1199,24 @@ export const streamChat = httpAction(async (ctx, request) => {
     }
   );
 
-  // Check message limits (skip for admins)
-  if (
-    !adminStatus.isAdmin &&
-    (subscription.messagesUsed ?? 0) >= (subscription.messagesLimit ?? 0)
-  ) {
+  // Check message limits (skip for admins) - INCLUDE purchased credits
+  if (!adminStatus.isAdmin) {
+    const planRemaining = Math.max(
+      0,
+      (subscription.messagesLimit ?? 0) - (subscription.messagesUsed ?? 0)
+    );
+    const creditsRemaining = Math.max(0, (subscription.messageCredits as number) || 0);
+    const totalStandardRemaining = planRemaining + creditsRemaining;
+    if (totalStandardRemaining <= 0) {
     return new Response(
       JSON.stringify({
         error:
-          'Monthly message limit reached. Please upgrade your subscription.',
+          'Message quota exhausted. Please upgrade your subscription or buy credits.',
         code: 'QUOTA_EXCEEDED',
         details: {
           messagesUsed: subscription.messagesUsed,
           messagesLimit: subscription.messagesLimit,
+            messageCredits: (subscription as any).messageCredits ?? 0,
           tier: subscription.tier,
           nextReset: subscription.currentPeriodEnd,
         },
@@ -1228,6 +1233,7 @@ export const streamChat = httpAction(async (ctx, request) => {
         },
       }
     );
+    }
   }
 
   // Select AI model based on chat configuration
@@ -1446,18 +1452,27 @@ export const streamChat = httpAction(async (ctx, request) => {
       );
     }
 
-    if (
-      (subscription.premiumMessagesUsed ?? 0) >=
-      (subscription.premiumMessagesLimit ?? 0)
-    ) {
+    const planPremiumRemaining = Math.max(
+      0,
+      (subscription.premiumMessagesLimit ?? 0) -
+        (subscription.premiumMessagesUsed ?? 0)
+    );
+    const premiumCreditsRemaining = Math.max(
+      0,
+      (subscription as any).premiumMessageCredits ?? 0
+    );
+    const totalPremiumRemaining =
+      planPremiumRemaining + premiumCreditsRemaining;
+    if (totalPremiumRemaining <= 0) {
       return new Response(
         JSON.stringify({
           error:
-            'Premium message quota exhausted. Please upgrade or wait for next billing cycle.',
+            'Premium message quota exhausted. Upgrade or buy premium credits.',
           code: 'QUOTA_EXCEEDED',
           details: {
             premiumMessagesUsed: subscription.premiumMessagesUsed,
             premiumMessagesLimit: subscription.premiumMessagesLimit,
+            premiumMessageCredits: (subscription as any).premiumMessageCredits ?? 0,
             tier: subscription.tier,
             nextReset: subscription.currentPeriodEnd,
           },

@@ -76,7 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       0,
       Math.ceil(
         ((subscription.currentPeriodEnd ?? Date.now()) - Date.now()) /
-          (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24)
       )
     );
 
@@ -119,15 +119,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return null;
     }
 
-    const messagesRemaining = Math.max(
+    // Remaining = plan allowance left + purchased credits
+    const planMessagesRemaining = Math.max(
       0,
       normalizedSubscription.messagesLimit - normalizedSubscription.messagesUsed
     );
-    const premiumMessagesRemaining = Math.max(
+    const planPremiumRemaining = Math.max(
       0,
       normalizedSubscription.premiumMessagesLimit -
-        normalizedSubscription.premiumMessagesUsed
+      normalizedSubscription.premiumMessagesUsed
     );
+    const messagesRemaining =
+      planMessagesRemaining + (normalizedSubscription.messageCredits || 0);
+    const premiumMessagesRemaining =
+      planPremiumRemaining +
+      (normalizedSubscription.premiumMessageCredits || 0);
     const msUntilReset = normalizedSubscription.currentPeriodEnd - Date.now();
     const daysUntilReset = Math.max(
       0,
@@ -167,8 +173,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const premiumUsagePercentage =
       normalizedSubscription.premiumMessagesLimit > 0
         ? (normalizedSubscription.premiumMessagesUsed /
-            normalizedSubscription.premiumMessagesLimit) *
-          100
+          normalizedSubscription.premiumMessagesLimit) *
+        100
         : 0;
 
     // Critical usage (>95%)
@@ -239,21 +245,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const attemptReferralAttribution = async () => {
       if (
-        user && 
-        wallet.publicKey && 
+        user &&
+        wallet.publicKey &&
         !referralAttributionAttempted.current
       ) {
         referralAttributionAttempted.current = true;
-        
+
         try {
           const walletAddress = wallet.publicKey.toString();
           const result = await autoAssignIfEligible(walletAddress);
-          
+
           if (result.success) {
             _log.info('Referral attribution successful', { walletAddress });
           }
         } catch (error) {
-          _log.error('Referral attribution failed', { 
+          _log.error('Referral attribution failed', {
             error: error instanceof Error ? error.message : String(error)
           });
         }
@@ -293,7 +299,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       },
       logout: signOut,
       refreshToken: async () => token,
-      clearError: () => {},
+      clearError: () => { },
 
       // Wallet integration
       isWalletConnected: wallet.isConnected,

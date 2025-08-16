@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 
 export interface SubscriptionStatus {
   tier: 'free' | 'pro' | 'pro_plus' | 'admin';
+  billingCycle?: 'monthly' | 'yearly';
   messagesUsed: number;
   messagesLimit: number;
   premiumMessagesUsed: number;
@@ -80,6 +81,10 @@ export function useSubscription() {
 
     return {
       tier,
+      billingCycle: (subscription as any).billingCycle as
+        | 'monthly'
+        | 'yearly'
+        | undefined,
       messagesUsed: subscription.messagesUsed ?? 0,
       messagesLimit: subscription.messagesLimit ?? 0,
       premiumMessagesUsed: subscription.premiumMessagesUsed ?? 0,

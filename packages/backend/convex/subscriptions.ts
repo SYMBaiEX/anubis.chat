@@ -347,11 +347,10 @@ export const trackMessageUsageByWallet = mutation({
           },
         };
       } else if (sub.premiumMessageCredits > 0) {
-        // Fall back to premium credits
+        // Fall back to premium credits (do NOT increment monthly counters)
         updates = {
           subscription: {
             ...sub,
-            messagesUsed: sub.messagesUsed + 1,
             premiumMessageCredits: sub.premiumMessageCredits - 1,
           },
         };
@@ -432,11 +431,10 @@ export const trackMessageUsage = mutation({
           },
         };
       } else if (sub.premiumMessageCredits > 0) {
-        // Fall back to premium credits
+        // Fall back to premium credits (do NOT increment monthly counters)
         updates = {
           subscription: {
             ...sub,
-            messagesUsed: sub.messagesUsed + 1,
             premiumMessageCredits: sub.premiumMessageCredits - 1,
           },
         };
@@ -566,11 +564,10 @@ export const trackDetailedMessageUsage = mutation({
           },
         };
       } else if (sub.premiumMessageCredits > 0) {
-        // Fall back to premium credits
+        // Fall back to premium credits (do NOT increment monthly counters)
         updates = {
           subscription: {
             ...sub,
-            messagesUsed: sub.messagesUsed + 1,
             premiumMessageCredits: sub.premiumMessageCredits - 1,
           },
         };
@@ -1276,6 +1273,7 @@ export const getSubscriptionStatusByWallet = query({
 
     return {
       tier: sub.tier,
+      billingCycle: sub.billingCycle,
       messagesUsed: sub.messagesUsed,
       messagesLimit: sub.messagesLimit,
       messageCredits: sub.messageCredits,
@@ -1357,6 +1355,7 @@ export const getSubscriptionStatus = query({
 
     return {
       tier: sub.tier,
+      billingCycle: sub.billingCycle,
       messagesUsed: sub.messagesUsed,
       messagesLimit: sub.messagesLimit,
       messageCredits: sub.messageCredits,

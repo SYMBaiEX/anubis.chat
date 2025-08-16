@@ -412,10 +412,12 @@ export function UpgradeModal({
       setPaymentStep('payment');
 
       // Create payment instructions with prorated pricing
+      // Only allow proration when keeping the same billing period as current subscription
       const isProrated =
         proratedUpgrade?.isProrated &&
         selectedTier === 'pro_plus' &&
-        subscription?.tier === 'pro';
+        subscription?.tier === 'pro' &&
+        billingPeriod === (subscription as any)?.billingCycle;
       const paymentAmount = isProrated
         ? proratedUpgrade.proratedPrice
         : selectedConfig.priceSOL;
@@ -464,7 +466,8 @@ export function UpgradeModal({
       const isProrated =
         proratedUpgrade?.isProrated &&
         selectedTier === 'pro_plus' &&
-        subscription?.tier === 'pro';
+        subscription?.tier === 'pro' &&
+        billingPeriod === (subscription as any)?.billingCycle;
       const paymentAmount = isProrated
         ? proratedUpgrade.proratedPrice
         : selectedConfig.priceSOL;
@@ -581,7 +584,7 @@ export function UpgradeModal({
               txSignature: txSignatureToVerify,
               expectedAmount: paymentAmount,
               tier: selectedTier,
-              billingPeriod: billingPeriod,
+              billingCycle: billingPeriod,
               walletAddress: publicKey.toString(),
               isProrated,
               referralCode: referrerInfo?.hasReferrer
@@ -787,7 +790,8 @@ export function UpgradeModal({
     const isProrated =
       proratedUpgrade?.isProrated &&
       tier === 'pro_plus' &&
-      currentTier === 'pro';
+      currentTier === 'pro' &&
+      billingPeriod === (subscription as any)?.billingCycle;
     
     // Calculate display price based on selected token and billing period
     const basePrice = isProrated ? proratedUpgrade.proratedPrice : config[billingPeriod].priceSOL;
