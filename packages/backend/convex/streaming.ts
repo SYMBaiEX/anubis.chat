@@ -677,11 +677,34 @@ export const streamWithWebSocket = action({
         ...(supportsTools && aiTools ? { tools: aiTools } : {}),
       });
 
-      // Stream chunks with real-time updates
+      // Stream chunks with real-time updates (throttled to reduce write load)
+      let lastFlushAt = Date.now();
+      let bufferedSinceLastFlush = 0;
+      const minFlushIntervalMs = 75; // ~13 writes/sec max
+      const maxBufferedChars = 400; // flush sooner if large chunks accumulate
+
       for await (const chunk of result.textStream) {
         accumulatedContent += chunk;
+        bufferedSinceLastFlush += chunk.length;
 
-        // Update streaming content in real-time
+        const now = Date.now();
+        const shouldFlush =
+          now - lastFlushAt >= minFlushIntervalMs ||
+          bufferedSinceLastFlush >= maxBufferedChars;
+
+        if (shouldFlush) {
+          await ctx.runMutation(api.streaming.updateStreamingContent, {
+            sessionId: args.sessionId,
+            content: accumulatedContent,
+            status: 'streaming',
+          });
+          lastFlushAt = now;
+          bufferedSinceLastFlush = 0;
+        }
+      }
+
+      // Ensure final buffer is flushed before computing usage
+      if (bufferedSinceLastFlush > 0) {
         await ctx.runMutation(api.streaming.updateStreamingContent, {
           sessionId: args.sessionId,
           content: accumulatedContent,
