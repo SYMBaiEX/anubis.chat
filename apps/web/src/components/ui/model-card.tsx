@@ -13,7 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { type AIModel, isPremiumModel } from '@/lib/constants/ai-models';
+import { type AIModel, isPremiumModel, isFreeModel, isStandardModel, getModelsForTier } from '@/lib/constants/ai-models';
 import { cn } from '@/lib/utils';
 
 interface ModelCardProps {
@@ -22,6 +22,7 @@ interface ModelCardProps {
   onClick: (model: AIModel) => void;
   className?: string;
   compact?: boolean;
+  isAccessible?: boolean; // Optional override for accessibility check
 }
 
 const getProviderIcon = (provider: AIModel['provider']) => {
@@ -85,36 +86,35 @@ export function ModelCard({
   onClick,
   className,
   compact = false,
+  isAccessible,
 }: ModelCardProps) {
   const subscription = useSubscriptionStatus();
   const canUsePremium = useCanUsePremiumModel();
 
-  // Check if a model is accessible to current user
+  // Check if a model is accessible to current user using new tier logic
   const isModelAccessible = (model: AIModel) => {
-    if (subscription?.tier === 'free') {
-      return !isPremiumModel(model);
+    if (subscription?.tier === 'admin') {
+      return true;
     }
-    if (subscription?.tier === 'pro' && isPremiumModel(model)) {
-      return canUsePremium;
-    }
-    return true;
+    
+    const userTier = (subscription?.tier as 'free' | 'pro' | 'pro_plus') || 'free';
+    const availableModels = getModelsForTier(userTier);
+    
+    return availableModels.some(availableModel => availableModel.id === model.id);
   };
 
   // Get tier badge for model (Premium, Standard, Free)
   const getTierBadge = (model: AIModel) => {
-    // Determine tier based on model pricing and capabilities
-    const isPremium = isPremiumModel(model);
-    const isFree = model.pricing.input === 0 && model.pricing.output === 0;
-
+    // Determine tier based on new model categorization
     let tier: 'Free' | 'Standard' | 'Premium';
     let badgeClass: string;
     let icon: React.ReactNode = null;
 
-    if (isFree) {
+    if (isFreeModel(model)) {
       tier = 'Free';
       badgeClass =
         'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-    } else if (isPremium) {
+    } else if (isPremiumModel(model)) {
       tier = 'Premium';
       badgeClass =
         'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
@@ -126,9 +126,29 @@ export function ModelCard({
     }
 
     // Show lock icon if not accessible
-    if (!isModelAccessible(model)) {
+    if (!accessible) {
       icon = <Lock className="h-2.5 w-2.5" />;
     }
+
+    const getTooltipMessage = () => {
+      if (accessible) {
+        return `${tier} tier model`;
+      }
+      
+      const userTier = subscription?.tier || 'free';
+      if (userTier === 'free') {
+        if (isStandardModel(model)) {
+          return 'Requires Pro or Pro+ subscription';
+        }
+        if (isPremiumModel(model)) {
+          return 'Requires Pro+ subscription';
+        }
+      } else if (userTier === 'pro' && isPremiumModel(model)) {
+        return 'Requires Pro+ subscription';
+      }
+      
+      return 'Not available for your tier';
+    };
 
     return (
       <TooltipProvider>
@@ -145,20 +165,15 @@ export function ModelCard({
             </Badge>
           </TooltipTrigger>
           <TooltipContent>
-            <p>
-              {isModelAccessible(model)
-                ? `${tier} tier model`
-                : subscription?.tier === 'free'
-                  ? 'Requires Pro or Pro+ subscription'
-                  : 'Premium message quota exhausted'}
-            </p>
+            <p>{getTooltipMessage()}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
     );
   };
 
-  const accessible = isModelAccessible(model);
+  // Use provided accessibility check or fall back to internal check
+  const accessible = isAccessible !== undefined ? isAccessible : isModelAccessible(model);
 
   return (
     <Card

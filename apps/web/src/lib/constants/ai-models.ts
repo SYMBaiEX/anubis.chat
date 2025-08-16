@@ -48,7 +48,7 @@ function createOpenRouterModel(params: {
 }
 
 export const AI_MODELS: AIModel[] = [
-  // GPT-5 Nano - Default flagship nano model
+  // GPT-5 Nano - Standard model (no longer default)
   {
     id: 'gpt-5-nano',
     name: 'GPT-5 Nano',
@@ -61,9 +61,9 @@ export const AI_MODELS: AIModel[] = [
     speed: 'fast',
     intelligence: 'advanced',
     released: 'January 2025',
-    default: true,
+    default: false,
   },
-  // GPT-OSS-20B - Free model
+  // GPT-OSS-20B - Free model (NEW DEFAULT)
   createOpenRouterModel({
     id: 'openrouter/openai/gpt-oss-20b:free',
     name: 'GPT-OSS-20B (Free) – OpenRouter',
@@ -73,7 +73,7 @@ export const AI_MODELS: AIModel[] = [
     capabilities: ['coding', 'reasoning', 'general'],
     speed: 'fast',
     intelligence: 'advanced',
-    default: false,
+    default: true,
   }),
   createOpenRouterModel({
     id: 'openrouter/z-ai/glm-4.5-air:free',
@@ -326,6 +326,15 @@ export const formatTokenPrice = (
   return `$${cost.toFixed(4)}`;
 };
 
+// Determine if a model is free (available to free tier)
+export const isFreeModel = (model: AIModel): boolean => {
+  // Free models are those with :free suffix or explicitly free pricing
+  return (
+    model.id.includes(':free') ||
+    (model.pricing.input === 0 && model.pricing.output === 0)
+  );
+};
+
 // Determine if a model is premium based on pricing and intelligence
 export const isPremiumModel = (model: AIModel): boolean => {
   // Premium models are expensive models (>$5 input or intelligence >= expert)
@@ -338,22 +347,23 @@ export const isPremiumModel = (model: AIModel): boolean => {
   );
 };
 
+// Determine if a model is standard (not free, not premium)
+export const isStandardModel = (model: AIModel): boolean => {
+  return !isFreeModel(model) && !isPremiumModel(model);
+};
+
 // Get models available for a specific subscription tier
 export const getModelsForTier = (
   tier: 'free' | 'pro' | 'pro_plus'
 ): AIModel[] => {
   if (tier === 'free') {
-    // Free tier only gets basic, cheap models
-    return AI_MODELS.filter(
-      (model) =>
-        !isPremiumModel(model) &&
-        (model.pricing.input <= 1 || model.intelligence === 'basic')
-    );
+    // Free tier ONLY gets free models (those with :free suffix or $0 pricing)
+    return AI_MODELS.filter(isFreeModel);
   }
   if (tier === 'pro') {
-    // Pro tier gets all models but with premium usage limits
-    return AI_MODELS;
+    // Pro tier gets free models + standard models (excludes premium models)
+    return AI_MODELS.filter((model) => isFreeModel(model) || isStandardModel(model));
   }
-  // Pro+ gets unlimited access to all models
+  // Pro+ gets unlimited access to all models (free + standard + premium)
   return AI_MODELS;
 };

@@ -25,6 +25,9 @@ import {
   AI_MODELS,
   type AIModel,
   isPremiumModel,
+  isFreeModel,
+  isStandardModel,
+  getModelsForTier,
 } from '@/lib/constants/ai-models';
 import { cn } from '@/lib/utils';
 
@@ -95,13 +98,17 @@ export function ModelSelector({
 
   const selectedModel = AI_MODELS.find((model) => model.id === value);
 
-  // Filter models based on provider only (show all models but some disabled)
+  // Get available models based on user's subscription tier
+  const userTier = subscription?.tier === 'admin' ? 'pro_plus' : (subscription?.tier as 'free' | 'pro' | 'pro_plus') || 'free';
+  const availableModelsByTier = getModelsForTier(userTier);
+
+  // Filter models based on provider and tier access
   const filteredModels = AI_MODELS.filter((model) => {
     // Provider filter
     if (providerFilter !== 'all' && model.provider !== providerFilter) {
       return false;
     }
-    // Show all models regardless of subscription
+    // Show all models to allow seeing what's available with upgrades
     return true;
   });
 
@@ -109,13 +116,10 @@ export function ModelSelector({
   const availableModels = filteredModels.sort((a, b) => {
     // Determine tier for each model
     const getTierPriority = (model: AIModel) => {
-      const isFree = model.pricing.input === 0 && model.pricing.output === 0;
-      const isPremium = isPremiumModel(model);
-
-      if (isFree) {
+      if (isFreeModel(model)) {
         return 0; // Free first
       }
-      if (!isPremium) {
+      if (isStandardModel(model)) {
         return 1; // Standard second
       }
       return 2; // Premium last
@@ -131,17 +135,14 @@ export function ModelSelector({
     return a.name.localeCompare(b.name);
   });
 
-  // Check if user can use a model
+  // Check if user can use a model based on new tier logic
   const canUseModel = (model: AIModel) => {
     const isAdmin = subscription?.tier === 'admin';
     if (isAdmin) {
       return true;
     }
-    if (subscription?.tier === 'free') {
-      return !isPremiumModel(model);
-    }
-    // Pro and Pro+ users can use all models (subject to quota)
-    return true;
+    // Check if model is available for user's tier
+    return availableModelsByTier.some(availableModel => availableModel.id === model.id);
   };
 
   const handleModelSelect = (model: AIModel) => {
@@ -173,7 +174,6 @@ export function ModelSelector({
                 {selectedModel.name}
               </span>
               <div className="flex flex-shrink-0 items-center gap-1">
-                {getIntelligenceBadge(selectedModel.intelligence)}
                 {getSpeedIcon(selectedModel.speed)}
               </div>
             </div>
@@ -200,6 +200,7 @@ export function ModelSelector({
           <div className="grid grid-cols-2 gap-1.5 p-1 sm:gap-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {availableModels.map((model) => (
               <ModelCard
+                isAccessible={canUseModel(model)}
                 isSelected={value === model.id}
                 key={model.id}
                 model={model}

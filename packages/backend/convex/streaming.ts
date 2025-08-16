@@ -1848,6 +1848,9 @@ Use your judgment - only use the thinking section if the query truly benefits fr
             await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
               walletAddress,
               isPremiumModel,
+              model: modelName, // Pass actual model name
+              inputTokens: usage?.inputTokens || 0,
+              outputTokens: usage?.outputTokens || 0,
             });
           }
         }
