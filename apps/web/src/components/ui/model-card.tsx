@@ -37,8 +37,6 @@ const getProviderIcon = (provider: UIModel['provider']) => {
       return <Sparkles className="h-3 w-3" />;
     case 'gateway':
       return <Zap className="h-3 w-3 text-blue-500" />;
-    case 'anthropic':
-      return <Brain className="h-3 w-3" />;
     case 'google':
       return <Cpu className="h-3 w-3" />;
     case 'openrouter':
@@ -223,9 +221,8 @@ export function ModelCard({
                 {model.provider === 'gateway' ? 'Gateway (Cost-Optimized)' :
                   model.provider === 'openrouter' ? 'OpenRouter' :
                     model.provider === 'openai' ? 'OpenAI' :
-                      model.provider === 'anthropic' ? 'Anthropic' :
-                        model.provider === 'google' ? 'Google' :
-                          model.provider}
+                      model.provider === 'google' ? 'Google' :
+                        model.provider}
               </p>
             </div>
           </div>

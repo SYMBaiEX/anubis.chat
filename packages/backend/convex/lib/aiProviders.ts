@@ -3,7 +3,6 @@
  * Simplified version of the provider registry for server-side use
  */
 
-import { createAnthropic } from '@ai-sdk/anthropic';
 import { gateway } from '@ai-sdk/gateway';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
@@ -31,10 +30,6 @@ const openaiProvider = createOpenAI({
   apiKey: getEnvVar('OPENAI_API_KEY', 'dummy-key'), // Allow dummy key for dev
 });
 
-const anthropicProvider = createAnthropic({
-  apiKey: getEnvVar('ANTHROPIC_API_KEY', 'dummy-key'),
-});
-
 const googleProvider = createGoogleGenerativeAI({
   apiKey: getEnvVar('GOOGLE_GENERATIVE_AI_API_KEY', 'dummy-key'),
 });
@@ -51,7 +46,7 @@ const gatewayProvider = gateway;
 // =============================================================================
 
 export interface ModelConfig {
-  provider: 'openai' | 'anthropic' | 'google' | 'openrouter' | 'gateway';
+  provider: 'openai' | 'google' | 'openrouter' | 'gateway';
   modelId: string;
   fallbacks?: string[];
   providerOptions?: Record<string, unknown>;
@@ -98,12 +93,12 @@ const modelConfigs: Record<string, ModelConfig> = {
   'gateway/anthropic/claude-3-5-sonnet': {
     provider: 'gateway',
     modelId: 'anthropic/claude-3-5-sonnet-20241022',
-    fallbacks: ['claude-3-5-sonnet', 'gpt-4o'],
+    fallbacks: ['gpt-4o', 'gpt-4o-mini'],
   },
   'gateway/anthropic/claude-3-5-haiku': {
     provider: 'gateway',
     modelId: 'anthropic/claude-3-5-haiku-20241022',
-    fallbacks: ['claude-3-5-haiku', 'gpt-4o-mini'],
+    fallbacks: ['gpt-4o-mini', 'gpt-4o'],
   },
   'gateway/google/gemini-2.5-pro': {
     provider: 'gateway',
@@ -163,15 +158,6 @@ const modelConfigs: Record<string, ModelConfig> = {
     modelId: 'gpt-4.1-mini',
   },
   
-  // Anthropic Direct Models
-  'claude-3-5-sonnet': {
-    provider: 'anthropic',
-    modelId: 'claude-3-5-sonnet-20241022',
-  },
-  'claude-3-5-haiku': {
-    provider: 'anthropic',
-    modelId: 'claude-3-5-haiku-20241022',
-  },
   
   // Google Direct Models
   'gemini-2.5-pro': {
@@ -274,11 +260,11 @@ function inferModelConfig(modelId: string): ModelConfig | null {
     };
   }
   
-  // Anthropic models
+  // Anthropic models - route through gateway
   if (modelId.startsWith('claude-')) {
     return {
-      provider: 'anthropic',
-      modelId,
+      provider: 'gateway',
+      modelId: `anthropic/${modelId}`,
     };
   }
   
@@ -310,9 +296,6 @@ function createModelInstance(config: ModelConfig, providerOptions?: Record<strin
       
     case 'openai':
       return openaiProvider(config.modelId);
-      
-    case 'anthropic':
-      return anthropicProvider(config.modelId);
       
     case 'google':
       return googleProvider(config.modelId);

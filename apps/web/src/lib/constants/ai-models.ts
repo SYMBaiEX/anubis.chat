@@ -9,7 +9,7 @@ import { aiProviderRegistry, type ModelConfig } from '@/lib/ai/providers';
 export interface AIModel {
   id: string;
   name: string;
-  provider: 'openrouter' | 'openai' | 'anthropic' | 'google' | 'gateway';
+  provider: 'openrouter' | 'openai' | 'google' | 'gateway';
   description: string;
   contextWindow: number;
   maxOutput?: number;
@@ -352,7 +352,7 @@ export const getModelById = (id: string): AIModel | undefined => {
 };
 
 export const getModelsByProvider = (
-  provider: 'openai' | 'anthropic' | 'google' | 'openrouter' | 'gateway'
+  provider: 'openai' | 'google' | 'openrouter' | 'gateway'
 ): AIModel[] => {
   return aiProviderRegistry.getModels({ provider }).map(convertModelConfigToAIModel);
 };

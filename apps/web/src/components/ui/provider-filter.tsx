@@ -9,7 +9,6 @@ export type ProviderFilter =
   | 'all'
   | 'gateway'
   | 'openai'
-  | 'anthropic'
   | 'google'
   | 'openrouter';
 
@@ -26,8 +25,6 @@ const getProviderIcon = (provider: UIModel['provider']) => {
       return <Sparkles className="h-3 w-3 text-blue-500" />;
     case 'openai':
       return <Sparkles className="h-3 w-3" />;
-    case 'anthropic':
-      return <Brain className="h-3 w-3" />;
     case 'google':
       return <Cpu className="h-3 w-3" />;
     case 'openrouter':
@@ -58,11 +55,6 @@ export function ProviderFilter({
       value: 'openai' as const,
       label: 'OpenAI',
       count: allModels.filter((m) => m.provider === 'openai').length,
-    },
-    {
-      value: 'anthropic' as const,
-      label: 'Anthropic',
-      count: allModels.filter((m) => m.provider === 'anthropic').length,
     },
     {
       value: 'google' as const,

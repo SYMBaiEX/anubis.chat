@@ -9,15 +9,15 @@ import {
   type ProviderFilter as ProviderFilterType,
 } from '@/components/ui/provider-filter';
 import {
-  AI_MODELS,
-  type AIModel,
+  getAllUIModels,
+  type UIModel,
   isPremiumModel,
-} from '@/lib/constants/ai-models';
+} from '@/lib/ai/providers';
 
 interface ModelGridProps {
-  models?: AIModel[];
+  models?: UIModel[];
   selectedModelId?: string;
-  onModelSelect: (model: AIModel) => void;
+  onModelSelect: (model: UIModel) => void;
   columns?: 2 | 3 | 4 | 5;
   showFilter?: boolean;
   compact?: boolean;
@@ -42,7 +42,7 @@ export function ModelGrid({
   const _subscription = useSubscriptionStatus();
 
   // Filter models based on provider only (show all models but some disabled)
-  const sourceModels = models ?? AI_MODELS;
+  const sourceModels = models ?? getAllUIModels();
   const filteredModels = sourceModels.filter((model) => {
     // Provider filter
     if (providerFilter !== 'all' && model.provider !== providerFilter) {
@@ -55,7 +55,7 @@ export function ModelGrid({
   // Sort models by tier: Free -> Standard -> Premium
   const availableModels = filteredModels.sort((a, b) => {
     // Determine tier for each model
-    const getTierPriority = (model: AIModel) => {
+    const getTierPriority = (model: UIModel) => {
       const isFree = model.pricing.input === 0 && model.pricing.output === 0;
       const isPremium = isPremiumModel(model);
 

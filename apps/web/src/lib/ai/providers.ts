@@ -3,7 +3,6 @@
  * Centralized system for managing AI providers and models with Vercel AI Gateway support
  */
 
-import { anthropic } from '@ai-sdk/anthropic';
 import { gateway } from '@ai-sdk/gateway';
 import { google } from '@ai-sdk/google';
 import { openai } from '@ai-sdk/openai';
@@ -13,7 +12,7 @@ import type { LanguageModel } from 'ai';
 // Provider Types & Configuration
 // =============================================================================
 
-export type ProviderType = 'openai' | 'anthropic' | 'google' | 'openrouter' | 'gateway';
+export type ProviderType = 'openai' | 'google' | 'openrouter' | 'gateway';
 
 export interface ProviderConfig {
   id: ProviderType;
@@ -79,17 +78,6 @@ export class AIProviderRegistry {
         rateLimits: {
           requestsPerMinute: 500,
           tokensPerMinute: 200_000,
-        },
-      },
-      {
-        id: 'anthropic',
-        name: 'Anthropic',
-        description: 'Claude models for reasoning and coding',
-        enabled: true,
-        priority: 90,
-        rateLimits: {
-          requestsPerMinute: 300,
-          tokensPerMinute: 150_000,
         },
       },
       {
@@ -427,31 +415,7 @@ export class AIProviderRegistry {
         released: '2025',
       },
 
-      // Anthropic Direct Models
-      {
-        id: 'claude-3-5-sonnet',
-        name: 'Claude 3.5 Sonnet',
-        provider: 'anthropic',
-        description: 'Fast, intelligent, and cost-effective',
-        contextWindow: 200_000,
-        maxOutput: 8192,
-        pricing: { input: 3, output: 15 },
-        capabilities: ['general', 'coding', 'analysis', 'creative'],
-        speed: 'fast',
-        intelligence: 'advanced',
-      },
-      {
-        id: 'claude-3-5-haiku',
-        name: 'Claude 3.5 Haiku',
-        provider: 'anthropic',
-        description: 'Fastest Claude model for simple tasks',
-        contextWindow: 200_000,
-        maxOutput: 4096,
-        pricing: { input: 0.25, output: 1.25 },
-        capabilities: ['general', 'quick-tasks'],
-        speed: 'fast',
-        intelligence: 'basic',
-      },
+
 
       // Google Direct Models
       {
@@ -632,9 +596,6 @@ export class AIProviderRegistry {
       case 'openai':
         return openai(model.id.replace(/^openai\//, ''));
 
-      case 'anthropic':
-        return anthropic(model.id.replace(/^anthropic\//, ''));
-
       case 'google':
         return google(model.id.replace(/^google\//, ''));
 
@@ -798,7 +759,7 @@ export type { ModelConfig as AIModelConfig, ProviderConfig as AIProviderConfig }
 export interface UIModel {
   id: string;
   name: string;
-  provider: 'openai' | 'anthropic' | 'google' | 'openrouter' | 'gateway';
+  provider: 'openai' | 'google' | 'openrouter' | 'gateway';
   description: string;
   contextWindow: number;
   maxOutput?: number;

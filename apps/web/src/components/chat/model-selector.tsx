@@ -43,8 +43,6 @@ const getProviderIcon = (provider: UIModel['provider']) => {
   switch (provider) {
     case 'openai':
       return <Sparkles className="h-3 w-3" />;
-    case 'anthropic':
-      return <Brain className="h-3 w-3" />;
     case 'google':
       return <Cpu className="h-3 w-3" />;
     case 'openrouter':
