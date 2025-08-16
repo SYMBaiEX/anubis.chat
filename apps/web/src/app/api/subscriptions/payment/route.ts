@@ -10,6 +10,7 @@ import { ConvexHttpClient } from 'convex/browser';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { convexConfig, solanaConfig } from '@/lib/env';
+import { getSolanaEndpoint } from '@/lib/solana';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
 import {
   addSecurityHeaders,
@@ -39,7 +40,7 @@ const paymentSchema = z.object({
 // Solana Connection
 // =============================================================================
 
-const SOLANA_RPC_URL = solanaConfig.rpcUrl;
+const SOLANA_RPC_URL = getSolanaEndpoint();
 const TREASURY_WALLET: string = (() => {
   const address = solanaConfig.paymentAddress;
   if (!address) {

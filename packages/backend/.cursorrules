@@ -1,0 +1,629 @@
+# ANUBIS Chat - Backend Development Rules
+
+## Platform Context
+
+This is the **packages/backend** Convex serverless backend for ANUBIS Chat. This backend provides real-time data synchronization, AI model integration, Web3 transaction handling, and enterprise-grade security for the platform.
+
+## Backend Technology Stack
+
+### Core Platform
+- **Convex**: Serverless backend-as-a-service with built-in reactivity
+- **TypeScript**: Strict mode with comprehensive schema validation
+- **Real-Time Database**: Automatic subscriptions and live data sync
+- **HTTP Actions**: Streaming endpoints for AI responses and file handling
+
+### Integration Systems
+- **AI Providers**: Multi-model integration (Claude, GPT-4, DeepSeek, Gemini)
+- **Solana Integration**: Transaction verification and wallet authentication
+- **File Storage**: Convex storage with upload/download endpoints
+- **Analytics**: Comprehensive event tracking and business intelligence
+
+### Security & Performance
+- **Authentication**: Convex Auth with Solana signature verification
+- **Rate Limiting**: Request throttling and abuse prevention
+- **Input Validation**: Zod schemas across all boundaries
+- **Audit Logging**: Comprehensive security and compliance tracking
+
+## Database Schema Architecture
+
+### Core Schema Design (80+ Tables)
+```typescript
+// ✅ Proper table definition with indexes
+export const messages = defineTable({
+  chatId: v.id("chats"),
+  content: v.string(),
+  role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
+  userId: v.id("users"),
+  modelId: v.optional(v.string()),
+  tokens: v.optional(v.object({
+    input: v.number(),
+    output: v.number(),
+    total: v.number()
+  })),
+  timestamp: v.number(),
+  metadata: v.optional(v.any())
+})
+.index("by_chat", ["chatId", "timestamp"])
+.index("by_user", ["userId", "timestamp"])
+.index("by_model", ["modelId", "timestamp"]);
+
+// ✅ Proper relationship definitions
+export const chats = defineTable({
+  title: v.string(),
+  userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  modelId: v.string(),
+  systemPrompt: v.optional(v.string()),
+  settings: v.optional(v.object({
+    temperature: v.number(),
+    maxTokens: v.number(),
+    topP: v.number()
+  })),
+  isArchived: v.boolean(),
+  createdAt: v.number(),
+  updatedAt: v.number()
+})
+.index("by_user", ["userId", "isArchived", "updatedAt"])
+.index("by_workspace", ["workspaceId", "updatedAt"]);
+```
+
+### Schema Categories
+- **Core Chat**: users, chats, messages, documents with per-wallet isolation
+- **AI System**: models, agents, workflows, rag operations, embeddings
+- **Web3**: wallets, transactions, subscriptions, payments, referrals
+- **Analytics**: events, metrics, performance tracking, user behavior
+- **Enterprise**: organizations, teams, permissions, audit logs
+
+## Function Development Patterns
+
+### Query Functions (Data Retrieval)
+```typescript
+// ✅ Proper query with authentication and validation
+export const getMessagesByChat = query({
+  args: { 
+    chatId: v.id("chats"),
+    limit: v.optional(v.number()),
+    cursor: v.optional(v.string())
+  },
+  handler: async (ctx, args) => {
+    // Authentication check
+    const userId = await requireAuth(ctx);
+    
+    // Validate chat ownership
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.userId !== userId) {
+      throw new ConvexError("Chat not found or access denied");
+    }
+    
+    // Query with proper indexing
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .order("desc")
+      .paginate({
+        numItems: args.limit ?? 50,
+        cursor: args.cursor
+      });
+      
+    return {
+      ...messages,
+      page: messages.page.map(sanitizeMessage)
+    };
+  }
+});
+```
+
+### Mutation Functions (Data Modification)
+```typescript
+// ✅ Proper mutation with validation and side effects
+export const createMessage = mutation({
+  args: {
+    chatId: v.id("chats"),
+    content: v.string(),
+    role: v.union(v.literal("user"), v.literal("assistant")),
+    metadata: v.optional(v.any())
+  },
+  handler: async (ctx, args) => {
+    // Authentication and validation
+    const userId = await requireAuth(ctx);
+    
+    // Validate input
+    if (args.content.length > 10000) {
+      throw new ConvexError("Message too long");
+    }
+    
+    // Check rate limits
+    await checkRateLimit(ctx, userId, "message_create");
+    
+    // Validate chat access
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.userId !== userId) {
+      throw new ConvexError("Chat not found or access denied");
+    }
+    
+    // Create message with proper timestamp
+    const messageId = await ctx.db.insert("messages", {
+      ...args,
+      userId,
+      timestamp: Date.now()
+    });
+    
+    // Update chat timestamp
+    await ctx.db.patch(args.chatId, {
+      updatedAt: Date.now()
+    });
+    
+    // Track analytics
+    await trackEvent(ctx, "message_created", {
+      userId,
+      chatId: args.chatId,
+      role: args.role
+    });
+    
+    return messageId;
+  }
+});
+```
+
+### Action Functions (External APIs & Complex Logic)
+```typescript
+// ✅ Proper action with streaming and error handling
+export const streamChatResponse = action({
+  args: {
+    chatId: v.id("chats"),
+    message: v.string(),
+    modelId: v.string()
+  },
+  handler: async (ctx, args) => {
+    // Authentication
+    const userId = await requireAuthFromCtx(ctx);
+    
+    // Rate limiting
+    await checkRateLimit(ctx, userId, "ai_request");
+    
+    // Validate model access
+    const model = await getModelByIdWithAccess(ctx, args.modelId, userId);
+    
+    try {
+      // Create user message
+      const userMessageId = await ctx.runMutation(internal.messages.create, {
+        chatId: args.chatId,
+        content: args.message,
+        role: "user" as const,
+        userId
+      });
+      
+      // Get conversation context
+      const context = await buildConversationContext(ctx, args.chatId);
+      
+      // Stream AI response
+      const stream = await getAIResponse({
+        model: model.id,
+        messages: context,
+        stream: true
+      });
+      
+      let fullResponse = "";
+      const assistantMessageId = await ctx.runMutation(internal.messages.create, {
+        chatId: args.chatId,
+        content: "",
+        role: "assistant" as const,
+        userId,
+        modelId: args.modelId
+      });
+      
+      // Stream processing
+      for await (const chunk of stream) {
+        fullResponse += chunk.content;
+        
+        // Update message in real-time
+        await ctx.runMutation(internal.messages.update, {
+          messageId: assistantMessageId,
+          content: fullResponse
+        });
+      }
+      
+      // Final analytics
+      await trackTokenUsage(ctx, userId, {
+        modelId: args.modelId,
+        inputTokens: calculateTokens(context),
+        outputTokens: calculateTokens(fullResponse)
+      });
+      
+      return { messageId: assistantMessageId };
+      
+    } catch (error) {
+      // Error handling and logging
+      await logError(ctx, "stream_chat_error", {
+        userId,
+        chatId: args.chatId,
+        modelId: args.modelId,
+        error: error.message
+      });
+      
+      throw new ConvexError(`AI request failed: ${error.message}`);
+    }
+  }
+});
+```
+
+## Web3 Integration Patterns
+
+### Solana Authentication
+```typescript
+// ✅ Signature verification for auth
+export const authenticateWallet = mutation({
+  args: {
+    publicKey: v.string(),
+    signature: v.string(),
+    message: v.string(),
+    nonce: v.string()
+  },
+  handler: async (ctx, args) => {
+    // Verify nonce freshness
+    const nonceRecord = await ctx.db
+      .query("auth_nonces")
+      .withIndex("by_nonce", (q) => q.eq("nonce", args.nonce))
+      .first();
+      
+    if (!nonceRecord || nonceRecord.expiresAt < Date.now()) {
+      throw new ConvexError("Invalid or expired nonce");
+    }
+    
+    // Verify signature
+    const isValid = await verifySignature(
+      args.message,
+      args.signature,
+      args.publicKey
+    );
+    
+    if (!isValid) {
+      throw new ConvexError("Invalid signature");
+    }
+    
+    // Create or update user
+    let user = await ctx.db
+      .query("users")
+      .withIndex("by_wallet", (q) => q.eq("walletAddress", args.publicKey))
+      .first();
+      
+    if (!user) {
+      const userId = await ctx.db.insert("users", {
+        walletAddress: args.publicKey,
+        createdAt: Date.now(),
+        lastActiveAt: Date.now()
+      });
+      user = await ctx.db.get(userId);
+    }
+    
+    // Clean up nonce
+    await ctx.db.delete(nonceRecord._id);
+    
+    // Generate session token
+    const sessionToken = await createSessionToken(ctx, user._id);
+    
+    return { user, sessionToken };
+  }
+});
+```
+
+### Transaction Verification
+```typescript
+// ✅ Payment verification with Solana
+export const verifyPayment = action({
+  args: {
+    signature: v.string(),
+    expectedAmount: v.number(),
+    expectedRecipient: v.string()
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Verify transaction on Solana
+      const transaction = await verifyTransactionOnChain(args.signature);
+      
+      if (!transaction) {
+        throw new ConvexError("Transaction not found");
+      }
+      
+      // Validate transaction details
+      const isValid = validatePaymentTransaction(transaction, {
+        amount: args.expectedAmount,
+        recipient: args.expectedRecipient
+      });
+      
+      if (!isValid) {
+        throw new ConvexError("Transaction validation failed");
+      }
+      
+      // Record payment
+      const paymentId = await ctx.runMutation(internal.payments.create, {
+        signature: args.signature,
+        amount: args.expectedAmount,
+        status: "confirmed" as const,
+        confirmedAt: Date.now()
+      });
+      
+      return { paymentId, status: "confirmed" };
+      
+    } catch (error) {
+      await logError(ctx, "payment_verification_error", {
+        signature: args.signature,
+        error: error.message
+      });
+      
+      throw new ConvexError(`Payment verification failed: ${error.message}`);
+    }
+  }
+});
+```
+
+## Performance & Security Standards
+
+### Query Optimization
+```typescript
+// ✅ Proper indexing and pagination
+export const getAnalytics = query({
+  args: {
+    timeRange: v.object({
+      start: v.number(),
+      end: v.number()
+    }),
+    userId: v.optional(v.id("users")),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    // Use compound indexes for efficient queries
+    let query = ctx.db.query("analytics_events")
+      .withIndex("by_timestamp", (q) => 
+        q.gte("timestamp", args.timeRange.start)
+         .lte("timestamp", args.timeRange.end)
+      );
+    
+    if (args.userId) {
+      query = query.filter((q) => q.eq(q.field("userId"), args.userId));
+    }
+    
+    // Paginate for large datasets
+    const results = await query
+      .order("desc")
+      .take(args.limit ?? 100);
+    
+    return aggregateAnalytics(results);
+  }
+});
+```
+
+### Input Validation & Sanitization
+```typescript
+// ✅ Comprehensive validation
+const messageSchema = v.object({
+  content: v.string(),
+  chatId: v.id("chats"),
+  metadata: v.optional(v.object({
+    attachments: v.optional(v.array(v.object({
+      type: v.union(v.literal("image"), v.literal("file")),
+      url: v.string(),
+      size: v.number()
+    }))),
+    formatting: v.optional(v.object({
+      bold: v.array(v.object({ start: v.number(), end: v.number() })),
+      italic: v.array(v.object({ start: v.number(), end: v.number() }))
+    }))
+  }))
+});
+
+export const createValidatedMessage = mutation({
+  args: messageSchema,
+  handler: async (ctx, args) => {
+    // Additional validation beyond schema
+    const sanitizedContent = sanitizeHtml(args.content);
+    
+    if (sanitizedContent.length > 10000) {
+      throw new ConvexError("Message content too long");
+    }
+    
+    // Validate file attachments
+    if (args.metadata?.attachments) {
+      for (const attachment of args.metadata.attachments) {
+        await validateFileAccess(ctx, attachment.url);
+      }
+    }
+    
+    // Proceed with validated data
+    return await createMessage(ctx, {
+      ...args,
+      content: sanitizedContent
+    });
+  }
+});
+```
+
+### Rate Limiting Implementation
+```typescript
+// ✅ Sliding window rate limiting
+export const checkRateLimit = async (
+  ctx: ActionCtx | MutationCtx,
+  userId: Id<"users">,
+  operation: string,
+  limit: number = 100,
+  windowMs: number = 900000 // 15 minutes
+) => {
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  
+  // Count recent operations
+  const recentOps = await ctx.db
+    .query("rate_limit_events")
+    .withIndex("by_user_operation", (q) => 
+      q.eq("userId", userId)
+       .eq("operation", operation)
+       .gte("timestamp", windowStart)
+    )
+    .collect();
+  
+  if (recentOps.length >= limit) {
+    throw new ConvexError("Rate limit exceeded");
+  }
+  
+  // Record this operation
+  await ctx.db.insert("rate_limit_events", {
+    userId,
+    operation,
+    timestamp: now
+  });
+  
+  // Clean up old records
+  await cleanupOldRateLimitRecords(ctx, windowStart);
+};
+```
+
+## File Organization Standards
+
+### Function Organization
+```
+convex/
+├── schema.ts              # Complete database schema
+├── auth.ts               # Authentication functions
+├── messages.ts           # Chat message operations
+├── streaming.ts          # AI streaming responses
+├── payments.ts           # Web3 payment handling
+├── analytics.ts          # Event tracking and metrics
+├── http.ts              # HTTP router and endpoints
+└── lib/                 # Shared utilities
+    ├── auth.ts          # Auth helpers
+    ├── validation.ts    # Input validation
+    ├── solana.ts        # Solana integration
+    ├── ai-providers.ts  # AI model integration
+    └── rate-limiting.ts # Rate limiting utilities
+```
+
+### Type Definitions
+```typescript
+// ✅ Comprehensive type exports
+export type Message = Doc<"messages">;
+export type Chat = Doc<"chats">;
+export type User = Doc<"users">;
+
+export type MessageWithUser = Message & {
+  user: User;
+};
+
+export type ChatSummary = {
+  id: Id<"chats">;
+  title: string;
+  lastMessage?: Message;
+  messageCount: number;
+  updatedAt: number;
+};
+
+// API response types
+export type ApiResponse<T> = 
+  | { success: true; data: T }
+  | { success: false; error: string };
+```
+
+## Development Commands
+
+```bash
+# Development
+cd packages/backend
+bun dev                   # Start Convex dev server
+bun dev:setup            # Configure Convex project
+
+# Deployment
+npx convex deploy        # Deploy to production
+npx convex import        # Import data
+npx convex export        # Export data
+
+# Schema management
+npx convex schema push   # Push schema changes
+npx convex schema diff   # Compare schemas
+```
+
+## Critical Integration Points
+
+### Environment Configuration
+```bash
+# AI Providers (set in Convex dashboard)
+OPENROUTER_API_KEY=...
+OPENAI_API_KEY=...
+GOOGLE_GENERATIVE_AI_API_KEY=...
+
+# Security & CORS
+ALLOWED_ORIGINS=http://localhost:3001,https://your-domain.com
+RATE_LIMIT_MAX_REQUESTS=100
+RATE_LIMIT_WINDOW_MS=900000
+
+# Solana Configuration
+SOLANA_NETWORK=devnet
+SOLANA_RPC_URL=https://api.devnet.solana.com
+
+# Admin Configuration
+ADMIN_WALLETS=wallet1,wallet2,wallet3
+```
+
+### HTTP Router Setup
+```typescript
+// ✅ Comprehensive HTTP router
+import { httpRouter } from "convex/server";
+import { auth } from "./auth.js";
+
+const http = httpRouter();
+
+// Auth routes
+auth.addHttpRoutes(http);
+
+// File handling
+http.route({
+  path: "/generateUploadUrl",
+  method: "POST",
+  handler: generateUploadUrl,
+});
+
+http.route({
+  path: "/serveStorage",
+  method: "GET", 
+  handler: serveStoredFile,
+});
+
+// Streaming
+http.route({
+  path: "/stream-chat",
+  method: "POST",
+  handler: streamChatResponse,
+});
+
+// Payments
+http.route({
+  path: "/verify-payment",
+  method: "POST",
+  handler: verifyPayment,
+});
+
+export default http;
+```
+
+## Development Restrictions & Guidelines
+
+### CRITICAL CONSTRAINTS (SECURITY & COMPLIANCE)
+- **Input Validation**: All inputs must be validated with Zod schemas
+- **Authentication Required**: All functions must check user authentication
+- **Rate Limiting**: All user-facing operations must be rate limited
+- **Audit Logging**: All sensitive operations must be logged
+- **Per-User Isolation**: Data access must be restricted by user/wallet
+
+### Performance Requirements
+- **Query Response**: <200ms for database queries
+- **Streaming Latency**: <50ms for AI response streaming
+- **File Operations**: <2s for upload/download operations
+- **Real-Time Updates**: <100ms for subscription updates
+
+### Quality Standards
+- **Error Handling**: Comprehensive error catching and logging
+- **Type Safety**: Strict TypeScript with no any types
+- **Documentation**: All public functions must have JSDoc comments
+- **Testing**: Critical paths must have integration tests
+
+---
+
+**Backend Mission**: Provide a secure, performant, and scalable foundation that enables real-time AI collaboration while maintaining enterprise-grade security and Web3 integration.

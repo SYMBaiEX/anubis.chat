@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/dialog';
 import { useSubscription } from '@/hooks/use-subscription';
 import { solanaConfig } from '@/lib/env';
+import { getSolanaEndpoint } from '@/lib/solana';
 import {
   createPaymentTransaction,
   processPaymentTransaction,
@@ -108,7 +109,7 @@ export function MessageCreditsModal({
 
   // Initialize Solana connection
   const connection = new Connection(
-    solanaConfig.rpcUrl || 'https://api.devnet.solana.com',
+    getSolanaEndpoint(),
     'confirmed'
   );
 

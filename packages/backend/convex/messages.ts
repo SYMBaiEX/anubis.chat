@@ -400,11 +400,16 @@ async function ensureUserCanSendMessage(
     return;
   }
 
-  const overMonthly =
-    (subscription.messagesUsed ?? 0) >= (subscription.messagesLimit ?? 0);
-  if (overMonthly) {
+  // Include purchased credits in gating check
+  const planRemaining = Math.max(
+    0,
+    (subscription.messagesLimit ?? 0) - (subscription.messagesUsed ?? 0)
+  );
+  const creditsRemaining = Math.max(0, (subscription as any).messageCredits ?? 0);
+  const totalStandardRemaining = planRemaining + creditsRemaining;
+  if (totalStandardRemaining <= 0) {
     throw new Error(
-      'Monthly message limit reached. Please upgrade your subscription.'
+      'Message quota exhausted. Please upgrade or buy credits.'
     );
   }
 
@@ -415,14 +420,23 @@ async function ensureUserCanSendMessage(
     throw new Error('Premium models require Pro or Pro+ subscription.');
   }
 
-  if (
-    isPremium &&
-    (subscription.premiumMessagesUsed ?? 0) >=
-      (subscription.premiumMessagesLimit ?? 0)
-  ) {
-    throw new Error(
-      'Premium message quota exhausted. Please upgrade or wait for next billing cycle.'
+  if (isPremium) {
+    const planPremiumRemaining = Math.max(
+      0,
+      (subscription.premiumMessagesLimit ?? 0) -
+        (subscription.premiumMessagesUsed ?? 0)
     );
+    const premiumCreditsRemaining = Math.max(
+      0,
+      (subscription as any).premiumMessageCredits ?? 0
+    );
+    const totalPremiumRemaining =
+      planPremiumRemaining + premiumCreditsRemaining;
+    if (totalPremiumRemaining <= 0) {
+    throw new Error(
+      'Premium quota exhausted. Upgrade or buy credits.'
+    );
+    }
   }
 }
 

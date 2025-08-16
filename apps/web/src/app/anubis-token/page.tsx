@@ -273,7 +273,7 @@ export default function AnubisTokenPage() {
                   '0 0 20px rgba(16, 185, 129, 0.3)',
                 ],
               }}
-              className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-gradient-to-r from-primary/20 to-emerald-500/20 px-3 py-1.5 backdrop-blur-sm sm:mb-10 sm:px-4 sm:py-2 md:mb-12"
+              className="mb-10 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-gradient-to-r from-primary/20 to-emerald-500/20 px-3 py-1.5 backdrop-blur-sm sm:px-4 sm:py-2 md:mb-12"
               initial={{ opacity: 0, y: -20, scale: 0.8 }}
               transition={{
                 duration: 0.6,
@@ -311,7 +311,7 @@ export default function AnubisTokenPage() {
 
             <motion.h1
               animate={{ opacity: 1, y: 0 }}
-              className="mt-2 mb-6 font-bold text-2xl transition-all delay-100 duration-700 sm:mb-8 sm:text-4xl md:mt-4 md:mb-10 md:mb-12 md:text-5xl lg:text-6xl xl:text-7xl min-[425px]:text-3xl"
+              className="mt-2 mb-10 font-bold text-2xl transition-all delay-100 duration-700 sm:text-4xl md:mt-4 md:mb-12 md:text-5xl lg:text-6xl xl:text-7xl min-[425px]:text-3xl"
               initial={{ opacity: 0, y: 30 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
@@ -326,7 +326,7 @@ export default function AnubisTokenPage() {
 
             <motion.p
               animate={{ opacity: 1, y: 0 }}
-              className="mx-auto mt-4 mb-8 max-w-4xl text-base text-muted-foreground transition-all delay-200 duration-700 sm:mt-6 sm:mb-12 sm:text-lg md:mt-10 md:mb-16 md:mb-20 md:text-xl lg:text-2xl"
+              className="mx-auto mt-6 mb-16 max-w-4xl text-base text-muted-foreground transition-all delay-200 duration-700 sm:text-lg md:mt-10 md:mb-20 md:text-xl lg:text-2xl"
               initial={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.8, delay: 0.4 }}
             >

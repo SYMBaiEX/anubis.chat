@@ -760,7 +760,7 @@ export default function RoadmapPage(): ReactElement {
             variants={containerVariants}
           >
             <motion.div
-              className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-orange-500/10 px-3 py-1 backdrop-blur-sm md:mb-8"
+              className="mb-10 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-orange-500/10 px-3 py-1 backdrop-blur-sm md:mb-12"
               transition={{ type: 'spring', stiffness: 400 }}
               variants={itemVariants}
               whileHover={{
@@ -794,7 +794,7 @@ export default function RoadmapPage(): ReactElement {
             </motion.div>
 
             <motion.h1
-              className="mt-2 mb-4 font-bold text-4xl sm:text-5xl md:mt-4 md:mb-6 md:text-6xl lg:text-7xl"
+              className="mt-2 mb-10 font-bold text-4xl sm:text-5xl md:mt-4 md:mb-12 md:text-6xl lg:text-7xl"
               variants={itemVariants}
             >
               <motion.span
@@ -814,7 +814,7 @@ export default function RoadmapPage(): ReactElement {
             </motion.h1>
 
             <motion.p
-              className="mx-auto mt-3 mb-10 max-w-3xl text-lg text-muted-foreground sm:text-xl md:mt-4 md:mb-12 md:text-2xl"
+              className="mx-auto mt-6 mb-16 max-w-3xl text-lg text-muted-foreground sm:text-xl md:mt-10 md:mb-20 md:text-2xl"
               variants={itemVariants}
             >
               Track our progress, explore upcoming features, and see what we're

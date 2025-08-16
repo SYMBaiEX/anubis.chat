@@ -3,12 +3,13 @@
 import { api } from '@convex/_generated/api';
 import { useAuthActions, useAuthToken } from '@convex-dev/auth/react';
 import { useQuery } from 'convex/react';
-import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef } from 'react';
 import type {
   SubscriptionLimits,
   SubscriptionStatus,
   UpgradePrompt,
 } from '@/hooks/use-subscription';
+import { useReferralAttribution } from '@/hooks/use-referral-tracking';
 import { useWallet } from '@/hooks/useWallet';
 import type { AuthSession, User } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -53,6 +54,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { signIn, signOut } = useAuthActions();
   const token = useAuthToken();
   const wallet = useWallet();
+  const { autoAssignIfEligible } = useReferralAttribution();
+  const referralAttributionAttempted = useRef(false);
 
   // Subscription data from Convex
   const subscription = useQuery(
@@ -73,7 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       0,
       Math.ceil(
         ((subscription.currentPeriodEnd ?? Date.now()) - Date.now()) /
-          (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24)
       )
     );
 
@@ -116,15 +119,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return null;
     }
 
-    const messagesRemaining = Math.max(
+    // Remaining = plan allowance left + purchased credits
+    const planMessagesRemaining = Math.max(
       0,
       normalizedSubscription.messagesLimit - normalizedSubscription.messagesUsed
     );
-    const premiumMessagesRemaining = Math.max(
+    const planPremiumRemaining = Math.max(
       0,
       normalizedSubscription.premiumMessagesLimit -
-        normalizedSubscription.premiumMessagesUsed
+      normalizedSubscription.premiumMessagesUsed
     );
+    const messagesRemaining =
+      planMessagesRemaining + (normalizedSubscription.messageCredits || 0);
+    const premiumMessagesRemaining =
+      planPremiumRemaining +
+      (normalizedSubscription.premiumMessageCredits || 0);
     const msUntilReset = normalizedSubscription.currentPeriodEnd - Date.now();
     const daysUntilReset = Math.max(
       0,
@@ -164,8 +173,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const premiumUsagePercentage =
       normalizedSubscription.premiumMessagesLimit > 0
         ? (normalizedSubscription.premiumMessagesUsed /
-            normalizedSubscription.premiumMessagesLimit) *
-          100
+          normalizedSubscription.premiumMessagesLimit) *
+        100
         : 0;
 
     // Critical usage (>95%)
@@ -232,6 +241,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // This is mainly for manual refresh scenarios
   };
 
+  // Handle referral attribution when user becomes authenticated
+  useEffect(() => {
+    const attemptReferralAttribution = async () => {
+      if (
+        user &&
+        wallet.publicKey &&
+        !referralAttributionAttempted.current
+      ) {
+        referralAttributionAttempted.current = true;
+
+        try {
+          const walletAddress = wallet.publicKey.toString();
+          const result = await autoAssignIfEligible(walletAddress);
+
+          if (result.success) {
+            _log.info('Referral attribution successful', { walletAddress });
+          }
+        } catch (error) {
+          _log.error('Referral attribution failed', {
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+    };
+
+    attemptReferralAttribution();
+  }, [user, wallet.publicKey, autoAssignIfEligible]);
+
+  // Reset referral attribution flag when user logs out
+  useEffect(() => {
+    if (!user) {
+      referralAttributionAttempted.current = false;
+    }
+  }, [user]);
+
   const contextValue: AuthContextValue = useMemo(
     () => ({
       // Auth state - using Convex Auth hooks directly
@@ -255,7 +299,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       },
       logout: signOut,
       refreshToken: async () => token,
-      clearError: () => {},
+      clearError: () => { },
 
       // Wallet integration
       isWalletConnected: wallet.isConnected,

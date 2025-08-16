@@ -12,6 +12,7 @@ import {
   useState,
 } from 'react';
 import type { SolanaAgentKit } from 'solana-agent-kit';
+import { getSolanaEndpoint } from '@/lib/solana';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuthContext } from './auth-provider';
 
@@ -195,22 +196,9 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
         // In production, the private key should NOT be stored on the frontend
         // Instead, the agent operations should be executed on the backend
         // For now, we'll create the kit without the private key and use it for read-only operations
-        const getRpcUrl = () => {
-          if (process.env.NEXT_PUBLIC_SOLANA_RPC_URL) {
-            return process.env.NEXT_PUBLIC_SOLANA_RPC_URL;
-          }
-
-          const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK;
-          if (network === 'mainnet-beta') {
-            return 'https://api.mainnet-beta.solana.com';
-          }
-          if (network === 'testnet') {
-            return 'https://api.testnet.solana.com';
-          }
-          return 'https://api.devnet.solana.com';
-        };
-
-        const _rpcUrl = getRpcUrl();
+        
+        // ✅ Use centralized endpoint configuration
+        const _rpcUrl = getSolanaEndpoint();
 
         // Skip agent kit instantiation on the client for read-only operations
         // Server-side should handle transaction-capable agent actions

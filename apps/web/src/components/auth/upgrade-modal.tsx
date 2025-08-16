@@ -46,6 +46,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // useCurrentUser replacement - using useSubscription hook instead
 import { useSubscription } from '@/hooks/use-subscription';
 import { paymentConfig, solanaConfig } from '@/lib/env';
+import { getSolanaEndpoint } from '@/lib/solana';
 import {
   createPaymentTransaction,
   processPaymentTransaction,
@@ -76,12 +77,18 @@ const MESSAGE_CREDIT_PACK = {
   priceUSD: 3.5,
 };
 
-// Subscription tier configurations
+// Subscription tier configurations with billing period support
 const TIER_CONFIG = {
   pro: {
     name: 'Pro',
-    priceSOL: paymentConfig.subscription.pro.priceSOL,
-    priceUSD: paymentConfig.subscription.pro.priceUSD,
+    monthly: {
+      priceSOL: paymentConfig.subscription.pro.monthly.priceSOL,
+      priceUSD: paymentConfig.subscription.pro.monthly.priceUSD,
+    },
+    yearly: {
+      priceSOL: paymentConfig.subscription.pro.yearly.priceSOL,
+      priceUSD: paymentConfig.subscription.pro.yearly.priceUSD,
+    },
     messages: 500,
     premiumMessages: 100,
     color: 'from-blue-500 to-blue-600',
@@ -100,8 +107,14 @@ const TIER_CONFIG = {
   },
   pro_plus: {
     name: 'Pro+',
-    priceSOL: paymentConfig.subscription.proPLus.priceSOL,
-    priceUSD: paymentConfig.subscription.proPLus.priceUSD,
+    monthly: {
+      priceSOL: paymentConfig.subscription.proPlus.monthly.priceSOL,
+      priceUSD: paymentConfig.subscription.proPlus.monthly.priceUSD,
+    },
+    yearly: {
+      priceSOL: paymentConfig.subscription.proPlus.yearly.priceSOL,
+      priceUSD: paymentConfig.subscription.proPlus.yearly.priceUSD,
+    },
     messages: 1000,
     premiumMessages: 300,
     color: 'from-purple-500 to-purple-600',
@@ -143,6 +156,9 @@ export function UpgradeModal({
   // Subscription upgrade state
   const [selectedTier, setSelectedTier] = useState<'pro' | 'pro_plus'>(
     suggestedTier
+  );
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>(
+    'monthly'
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStep, setPaymentStep] = useState<
@@ -229,7 +245,11 @@ export function UpgradeModal({
   const { publicKey, signTransaction, connected } = useWallet();
   const { setVisible } = useWalletModal();
 
-  const selectedConfig = TIER_CONFIG[selectedTier];
+  const selectedConfig = {
+    ...TIER_CONFIG[selectedTier],
+    priceSOL: TIER_CONFIG[selectedTier][billingPeriod].priceSOL,
+    priceUSD: TIER_CONFIG[selectedTier][billingPeriod].priceUSD,
+  };
   const isSendingRef = useRef(false);
   const isSendingCreditsRef = useRef(false);
   const currentTier = subscription?.tier;
@@ -275,7 +295,7 @@ export function UpgradeModal({
 
   // Initialize Solana connection
   const connection = new Connection(
-    solanaConfig.rpcUrl,
+    getSolanaEndpoint(),
     solanaConfig.commitment
   );
 
@@ -392,10 +412,12 @@ export function UpgradeModal({
       setPaymentStep('payment');
 
       // Create payment instructions with prorated pricing
+      // Only allow proration when keeping the same billing period as current subscription
       const isProrated =
         proratedUpgrade?.isProrated &&
         selectedTier === 'pro_plus' &&
-        subscription?.tier === 'pro';
+        subscription?.tier === 'pro' &&
+        billingPeriod === (subscription as any)?.billingCycle;
       const paymentAmount = isProrated
         ? proratedUpgrade.proratedPrice
         : selectedConfig.priceSOL;
@@ -444,7 +466,8 @@ export function UpgradeModal({
       const isProrated =
         proratedUpgrade?.isProrated &&
         selectedTier === 'pro_plus' &&
-        subscription?.tier === 'pro';
+        subscription?.tier === 'pro' &&
+        billingPeriod === (subscription as any)?.billingCycle;
       const paymentAmount = isProrated
         ? proratedUpgrade.proratedPrice
         : selectedConfig.priceSOL;
@@ -561,6 +584,7 @@ export function UpgradeModal({
               txSignature: txSignatureToVerify,
               expectedAmount: paymentAmount,
               tier: selectedTier,
+              billingCycle: billingPeriod,
               walletAddress: publicKey.toString(),
               isProrated,
               referralCode: referrerInfo?.hasReferrer
@@ -766,10 +790,12 @@ export function UpgradeModal({
     const isProrated =
       proratedUpgrade?.isProrated &&
       tier === 'pro_plus' &&
-      currentTier === 'pro';
+      currentTier === 'pro' &&
+      billingPeriod === (subscription as any)?.billingCycle;
     
-    // Calculate display price based on selected token
-    let displayPrice = isProrated ? proratedUpgrade.proratedPrice : config.priceSOL;
+    // Calculate display price based on selected token and billing period
+    const basePrice = isProrated ? proratedUpgrade.proratedPrice : config[billingPeriod].priceSOL;
+    let displayPrice = basePrice;
     let displaySymbol = 'SOL';
     
     if (tokenCalculation && selectedToken !== 'SOL' && tier === selectedTier) {
@@ -827,7 +853,7 @@ export function UpgradeModal({
                   {displayPrice.toFixed(displaySymbol === 'SOL' ? 3 : 6)} {displaySymbol}
                 </div>
                 <div className="text-muted-foreground text-xs line-through">
-                  {config.priceSOL} SOL
+                  {config[billingPeriod].priceSOL} SOL
                 </div>
                 <div className="font-medium text-green-600 text-xs">
                   Upgrade price only
@@ -839,7 +865,12 @@ export function UpgradeModal({
                   {displayPrice.toFixed(displaySymbol === 'SOL' ? 3 : 6)} {displaySymbol}
                 </div>
                 <div className="text-muted-foreground text-sm">
-                  ≈ ${config.priceUSD}/month
+                  ≈ ${config[billingPeriod].priceUSD}/{billingPeriod === 'yearly' ? 'year' : 'month'}
+                  {billingPeriod === 'yearly' && (
+                    <span className="block text-xs text-green-600 font-medium">
+                      ${(config[billingPeriod].priceUSD / 12).toFixed(0)}/month (5% savings)
+                    </span>
+                  )}
                   {tokenCalculation?.priceInfo && selectedToken !== 'SOL' && (
                     <span className="block text-xs">
                       ({tokenCalculation.priceInfo.solPrice.toFixed(6)} SOL)
@@ -2171,6 +2202,42 @@ export function UpgradeModal({
                       >
                         {paymentStep === 'select' && (
                           <div className="space-y-6">
+                            {/* Billing Period Toggle */}
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3, delay: 0.1 }}
+                              className="flex items-center justify-center"
+                            >
+                              <div className="flex items-center space-x-1 rounded-lg bg-muted p-1">
+                                <button
+                                  onClick={() => setBillingPeriod('monthly')}
+                                  className={cn(
+                                    'rounded-md px-3 py-1.5 text-sm font-medium transition-all',
+                                    billingPeriod === 'monthly'
+                                      ? 'bg-background text-foreground shadow-sm'
+                                      : 'text-muted-foreground hover:text-foreground'
+                                  )}
+                                >
+                                  Monthly
+                                </button>
+                                <button
+                                  onClick={() => setBillingPeriod('yearly')}
+                                  className={cn(
+                                    'rounded-md px-3 py-1.5 text-sm font-medium transition-all relative',
+                                    billingPeriod === 'yearly'
+                                      ? 'bg-background text-foreground shadow-sm'
+                                      : 'text-muted-foreground hover:text-foreground'
+                                  )}
+                                >
+                                  Yearly
+                                  <span className="ml-1 rounded-full bg-green-500 px-1.5 py-0.5 text-xs text-white">
+                                    5% OFF
+                                  </span>
+                                </button>
+                              </div>
+                            </motion.div>
+
                             <motion.div 
                               className="grid grid-cols-1 gap-6 md:grid-cols-2"
                               initial="hidden"

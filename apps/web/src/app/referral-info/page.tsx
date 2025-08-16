@@ -90,42 +90,32 @@ export default function ReferralInfoPage() {
         {/* Hero Section */}
         <AnimatedSection
           allowOverlap
-          className="isolate overflow-visible px-4 py-24 text-center sm:px-6 md:py-32 lg:px-8"
+          aria-label="Referral Program Hero"
+          className="isolate overflow-visible pt-28 pb-24 text-center md:pt-36 md:pb-32"
           dustIntensity="low"
           parallaxY={24}
           revealStrategy="none"
           softEdges
         >
-          <div className="relative z-10 mx-auto w-full max-w-4xl">
+          <motion.div
+            animate="visible"
+            className="relative z-10 mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8"
+            initial="hidden"
+            variants={containerVariants}
+          >
             <motion.div
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                boxShadow: [
-                  '0 0 20px rgba(16, 185, 129, 0.3)',
-                  '0 0 40px rgba(16, 185, 129, 0.5)',
-                  '0 0 20px rgba(16, 185, 129, 0.3)',
-                ],
-              }}
-              className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-orange-500/10 px-3 py-1 backdrop-blur-sm md:mb-8"
-              initial={{ opacity: 0, y: -20, scale: 0.8 }}
-              transition={{
-                duration: 0.6,
-                boxShadow: {
-                  duration: 2,
-                  repeat: Number.POSITIVE_INFINITY,
-                },
-              }}
+              className="mb-10 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-orange-500/10 px-3 py-1 backdrop-blur-sm md:mb-12"
+              transition={{ type: 'spring', stiffness: 400 }}
+              variants={itemVariants}
               whileHover={{
                 scale: 1.05,
-                transition: { type: 'spring', stiffness: 400 },
+                boxShadow: '0 0 30px rgba(16, 185, 129, 0.4)',
               }}
             >
               <motion.div
                 animate={{ rotate: [0, 360] }}
                 transition={{
-                  duration: 3,
+                  duration: 4,
                   repeat: Number.POSITIVE_INFINITY,
                   ease: 'linear',
                 }}
@@ -138,7 +128,7 @@ export default function ReferralInfoPage() {
               <motion.div
                 animate={{ rotate: [0, -360] }}
                 transition={{
-                  duration: 3,
+                  duration: 4,
                   repeat: Number.POSITIVE_INFINITY,
                   ease: 'linear',
                 }}
@@ -148,49 +138,48 @@ export default function ReferralInfoPage() {
             </motion.div>
 
             <motion.h1
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-2 mb-4 font-bold text-4xl transition-all delay-100 duration-700 sm:text-5xl md:mt-4 md:mb-6 md:text-6xl lg:text-7xl"
-              initial={{ opacity: 0, y: 30 }}
+              className="mt-2 mb-10 font-bold text-4xl sm:text-5xl md:mt-4 md:mb-12 md:text-6xl lg:text-7xl"
               style={{ opacity, scale }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+              variants={itemVariants}
             >
               <motion.span
                 animate={{
                   backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
                 }}
                 className="bg-gradient-to-r from-foreground via-primary to-primary bg-clip-text text-transparent"
-                style={{ backgroundSize: '200% 200%' }}
-                transition={{ duration: 5, repeat: Number.POSITIVE_INFINITY }}
+                style={{ backgroundSize: '200% 100%' }}
+                transition={{
+                  duration: 8,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                }}
               >
                 ANUBIS Referral Program
               </motion.span>
             </motion.h1>
 
             <motion.p
-              animate={{ opacity: 1, y: 0 }}
-              className="mx-auto mt-3 mb-10 max-w-3xl text-lg text-muted-foreground transition-all delay-200 duration-700 sm:text-xl md:mt-4 md:mb-12 md:text-2xl"
-              initial={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
+              className="mx-auto mt-6 mb-16 max-w-3xl text-lg text-muted-foreground sm:text-xl md:mt-10 md:mb-20 md:text-2xl"
+              variants={itemVariants}
             >
               Earn up to{' '}
               <motion.span
-                animate={{ scale: [1, 1.1, 1] }}
-                className="font-bold text-primary"
-                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                animate={{ scale: [1, 1.05, 1] }}
+                className="font-semibold text-primary"
+                transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY }}
               >
                 5% commission
               </motion.span>{' '}
-              on every payment your referrals make —
+              on every payment your referrals make —{' '}
               <motion.span
                 animate={{ scale: [1, 1.05, 1] }}
-                className="bg-gradient-to-r from-foreground via-primary to-primary bg-clip-text font-semibold text-transparent"
+                className="font-semibold text-primary"
                 transition={{
                   duration: 3,
                   repeat: Number.POSITIVE_INFINITY,
                   delay: 0.5,
                 }}
               >
-                {' '}
                 forever
               </motion.span>
               .
@@ -358,7 +347,7 @@ export default function ReferralInfoPage() {
                 </>
               )}
             </div>
-          </div>
+          </motion.div>
         </AnimatedSection>
 
         {/* Key Features */}

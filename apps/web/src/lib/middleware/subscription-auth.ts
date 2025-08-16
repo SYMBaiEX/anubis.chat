@@ -24,10 +24,13 @@ export interface SubscriptionSession {
   publicKey: string;
   subscription: {
     tier: 'free' | 'pro' | 'pro_plus' | 'admin';
+    billingCycle?: 'monthly' | 'yearly';
     messagesUsed: number;
     messagesLimit: number;
     premiumMessagesUsed: number;
     premiumMessagesLimit: number;
+    messageCredits?: number;
+    premiumMessageCredits?: number;
     currentPeriodStart: number;
     currentPeriodEnd: number;
     planPriceSol: number;
@@ -65,10 +68,13 @@ function isAllowedTier(value: unknown): value is AllowedTier {
 
 type SubscriptionLike = {
   tier: string;
+  billingCycle?: 'monthly' | 'yearly';
   messagesUsed: number;
   messagesLimit: number;
   premiumMessagesUsed: number;
   premiumMessagesLimit: number;
+  messageCredits?: number;
+  premiumMessageCredits?: number;
   currentPeriodStart: number;
   currentPeriodEnd: number;
   planPriceSol: number;
@@ -87,10 +93,16 @@ function toSubscription(raw: unknown): SubscriptionSession['subscription'] {
 
   return {
     tier,
+    billingCycle:
+      obj.billingCycle === 'monthly' || obj.billingCycle === 'yearly'
+        ? (obj.billingCycle as 'monthly' | 'yearly')
+        : undefined,
     messagesUsed: toNumber(obj.messagesUsed),
     messagesLimit: toNumber(obj.messagesLimit),
     premiumMessagesUsed: toNumber(obj.premiumMessagesUsed),
     premiumMessagesLimit: toNumber(obj.premiumMessagesLimit),
+    messageCredits: toNumber(obj.messageCredits),
+    premiumMessageCredits: toNumber(obj.premiumMessageCredits),
     currentPeriodStart: toNumber(obj.currentPeriodStart),
     currentPeriodEnd: toNumber(obj.currentPeriodEnd),
     planPriceSol: toNumber(obj.planPriceSol),
@@ -156,14 +168,20 @@ function calculateLimits(subscription: SubscriptionSession['subscription']) {
     };
   }
 
-  const messagesRemaining = Math.max(
+  const planMessagesRemaining = Math.max(
     0,
     subscription.messagesLimit - subscription.messagesUsed
   );
-  const premiumMessagesRemaining = Math.max(
+  const planPremiumRemaining = Math.max(
     0,
     subscription.premiumMessagesLimit - subscription.premiumMessagesUsed
   );
+  // Include purchased credits in remaining counts
+  const messagesRemaining =
+    planMessagesRemaining + Math.max(0, subscription.messageCredits ?? 0);
+  const premiumMessagesRemaining =
+    planPremiumRemaining +
+    Math.max(0, subscription.premiumMessageCredits ?? 0);
 
   return {
     canSendMessage: messagesRemaining > 0,

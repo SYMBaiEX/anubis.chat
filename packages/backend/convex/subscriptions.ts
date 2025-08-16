@@ -8,6 +8,10 @@ import {
 } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { getCurrentUser, requireAuth } from './authHelpers';
+import { createModuleLogger } from './utils/logger';
+
+// Create logger instance for this module
+const logger = createModuleLogger('subscriptions');
 
 // Subscription tier configurations with monthly and annual pricing
 const SUBSCRIPTION_TIERS = {
@@ -18,7 +22,7 @@ const SUBSCRIPTION_TIERS = {
       monthly: 0,
       yearly: 0,
     },
-    features: ['basic_chat', 'limited_models'],
+    features: ['basic_chat', 'free_models_only'],
     availableModels: [
       'openrouter/openai/gpt-oss-20b:free',
       'openrouter/z-ai/glm-4.5-air:free',
@@ -34,8 +38,8 @@ const SUBSCRIPTION_TIERS = {
       yearly: 0.57, // 5% discount (12 months × 0.95)
     },
     features: [
-      'unlimited_standard_models',
-      'premium_model_access',
+      'free_and_standard_models',
+      'limited_premium_access',
       'document_upload',
       'basic_agents',
       'chat_history',
@@ -45,12 +49,8 @@ const SUBSCRIPTION_TIERS = {
       'openrouter/z-ai/glm-4.5-air:free',
       'openrouter/qwen/qwen3-coder:free',
       'openrouter/moonshotai/kimi-k2:free',
-      'gpt-5',
-      'gpt-5-mini',
-      'o4-mini',
+      'gpt-5-nano',
       'gpt-4.1-mini',
-      'gemini-2.5-pro',
-      'gemini-2.5-flash',
       'gemini-2.5-flash-lite',
       'gemini-2.0-flash',
     ],
@@ -63,8 +63,8 @@ const SUBSCRIPTION_TIERS = {
       yearly: 1.14, // 5% discount (12 months × 0.95)
     },
     features: [
-      'unlimited_standard_models',
-      'enhanced_premium_access',
+      'all_models_access',
+      'full_premium_access',
       'large_document_upload',
       'advanced_agents',
       'api_access',
@@ -76,10 +76,12 @@ const SUBSCRIPTION_TIERS = {
       'openrouter/z-ai/glm-4.5-air:free',
       'openrouter/qwen/qwen3-coder:free',
       'openrouter/moonshotai/kimi-k2:free',
+      'gpt-5-nano',
       'gpt-5',
       'gpt-5-mini',
       'o4-mini',
       'gpt-4.1-mini',
+      'openrouter/openai/gpt-oss-120b',
       'gemini-2.5-pro',
       'gemini-2.5-flash',
       'gemini-2.5-flash-lite',
@@ -90,33 +92,35 @@ const SUBSCRIPTION_TIERS = {
 
 // Model cost configurations (for internal tracking)
 const MODEL_COSTS = {
-  // OpenRouter free models (standard)
+  // OpenRouter free models (free tier)
   'openrouter/openai/gpt-oss-20b:free': {
-    category: 'standard',
-    costPerMessage: 0.0005,
+    category: 'free',
+    costPerMessage: 0,
   },
   'openrouter/z-ai/glm-4.5-air:free': {
-    category: 'standard',
-    costPerMessage: 0.0005,
+    category: 'free',
+    costPerMessage: 0,
   },
   'openrouter/qwen/qwen3-coder:free': {
-    category: 'standard',
-    costPerMessage: 0.0005,
+    category: 'free',
+    costPerMessage: 0,
   },
   'openrouter/moonshotai/kimi-k2:free': {
-    category: 'standard',
-    costPerMessage: 0.0005,
+    category: 'free',
+    costPerMessage: 0,
   },
-  // OpenAI models (premium)
+  // Standard models (available to Pro+)
+  'gpt-5-nano': { category: 'standard', costPerMessage: 0.002 },
+  'gpt-4.1-mini': { category: 'standard', costPerMessage: 0.006 },
+  'gemini-2.5-flash-lite': { category: 'standard', costPerMessage: 0.003 },
+  'gemini-2.0-flash': { category: 'standard', costPerMessage: 0.004 },
+  // Premium models (available to Pro+ only)
   'gpt-5': { category: 'premium', costPerMessage: 0.02 },
   'gpt-5-mini': { category: 'premium', costPerMessage: 0.01 },
   'o4-mini': { category: 'premium', costPerMessage: 0.008 },
-  'gpt-4.1-mini': { category: 'premium', costPerMessage: 0.006 },
-  // Google models
+  'openrouter/openai/gpt-oss-120b': { category: 'premium', costPerMessage: 0.015 },
   'gemini-2.5-pro': { category: 'premium', costPerMessage: 0.02 },
   'gemini-2.5-flash': { category: 'premium', costPerMessage: 0.01 },
-  'gemini-2.5-flash-lite': { category: 'standard', costPerMessage: 0.003 },
-  'gemini-2.0-flash': { category: 'standard', costPerMessage: 0.004 },
 };
 
 // Safely normalize a user's subscription so fields are always defined
@@ -290,22 +294,37 @@ export const getSubscriptionPayments = query({
   },
 });
 
-// Track message usage by wallet address (for HTTP actions)
+// Track message usage by wallet address (for HTTP actions) - updated with proper Convex patterns
 export const trackMessageUsageByWallet = mutation({
   args: {
     walletAddress: v.string(),
     isPremiumModel: v.boolean(),
+    model: v.optional(v.string()),
+    inputTokens: v.optional(v.number()),
+    outputTokens: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Query user by wallet address
+    // Query user by wallet address using proper Convex patterns
     const user = await ctx.db
       .query('users')
       .withIndex('by_wallet', (q) => q.eq('walletAddress', args.walletAddress))
-      .first();
+      .unique();
 
     if (!user) {
-      throw new Error('User not found');
+      logger.error('User not found for wallet tracking', { 
+        walletAddress: args.walletAddress 
+      });
+      throw new Error(`User not found for wallet address: ${args.walletAddress}`);
     }
+
+    logger.debug('Processing message usage tracking', { 
+      userId: user._id, 
+      isPremiumModel: args.isPremiumModel, 
+      model: args.model,
+      inputTokens: args.inputTokens,
+      outputTokens: args.outputTokens
+    });
+    
 
     // Update user's message counts using proper consumption hierarchy
     const sub = getSafeSubscription(user);
@@ -328,11 +347,10 @@ export const trackMessageUsageByWallet = mutation({
           },
         };
       } else if (sub.premiumMessageCredits > 0) {
-        // Fall back to premium credits
+        // Fall back to premium credits (do NOT increment monthly counters)
         updates = {
           subscription: {
             ...sub,
-            messagesUsed: sub.messagesUsed + 1,
             premiumMessageCredits: sub.premiumMessageCredits - 1,
           },
         };
@@ -372,6 +390,9 @@ export const trackMessageUsageByWallet = mutation({
 export const trackMessageUsage = mutation({
   args: {
     isPremiumModel: v.boolean(),
+    model: v.optional(v.string()),
+    inputTokens: v.optional(v.number()),
+    outputTokens: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
@@ -410,11 +431,10 @@ export const trackMessageUsage = mutation({
           },
         };
       } else if (sub.premiumMessageCredits > 0) {
-        // Fall back to premium credits
+        // Fall back to premium credits (do NOT increment monthly counters)
         updates = {
           subscription: {
             ...sub,
-            messagesUsed: sub.messagesUsed + 1,
             premiumMessageCredits: sub.premiumMessageCredits - 1,
           },
         };
@@ -453,28 +473,37 @@ export const trackMessageUsage = mutation({
     today.setHours(0, 0, 0, 0);
     const dateTimestamp = today.getTime();
 
+    // Track detailed usage following Convex patterns from Context7
     await ctx.db.insert('messageUsage', {
       userId: user._id,
-      model: args.isPremiumModel ? 'premium' : 'standard',
+      model: args.model || (args.isPremiumModel ? 'premium' : 'standard'),
       modelCategory: (args.isPremiumModel ? 'premium' : 'standard') as
         | 'premium'
         | 'standard',
       messageCount: 1,
-      inputTokens: 0, // Not tracked in this version
-      outputTokens: 0, // Not tracked in this version
+      inputTokens: args.inputTokens || 0,
+      outputTokens: args.outputTokens || 0,
       estimatedCost: args.isPremiumModel ? 0.015 : 0.001,
       date: dateTimestamp,
       createdAt: Date.now(),
     });
 
     // Calculate remaining messages with credits
-    const totalStandardRemaining = Math.max(0, updates.subscription.messagesLimit - updates.subscription.messagesUsed) + updates.subscription.messageCredits;
-    const totalPremiumRemaining = Math.max(0, updates.subscription.premiumMessagesLimit - updates.subscription.premiumMessagesUsed) + updates.subscription.premiumMessageCredits;
+    const updatedSub = updates.subscription;
+    const totalStandardRemaining = Math.max(0, updatedSub.messagesLimit - updatedSub.messagesUsed) + (updatedSub.messageCredits || 0);
+    const totalPremiumRemaining = Math.max(0, updatedSub.premiumMessagesLimit - updatedSub.premiumMessagesUsed) + (updatedSub.premiumMessageCredits || 0);
 
+    logger.debug('Message usage tracking completed', { 
+      messagesUsed: updatedSub.messagesUsed, 
+      messagesRemaining: totalStandardRemaining, 
+      premiumMessagesUsed: updatedSub.premiumMessagesUsed,
+      premiumMessagesRemaining: totalPremiumRemaining
+    });
+    
     return {
-      messagesUsed: updates.subscription.messagesUsed,
+      messagesUsed: updatedSub.messagesUsed,
       messagesRemaining: totalStandardRemaining,
-      premiumMessagesUsed: updates.subscription.premiumMessagesUsed,
+      premiumMessagesUsed: updatedSub.premiumMessagesUsed,
       premiumMessagesRemaining: args.isPremiumModel ? totalPremiumRemaining : undefined,
     };
   },
@@ -535,11 +564,10 @@ export const trackDetailedMessageUsage = mutation({
           },
         };
       } else if (sub.premiumMessageCredits > 0) {
-        // Fall back to premium credits
+        // Fall back to premium credits (do NOT increment monthly counters)
         updates = {
           subscription: {
             ...sub,
-            messagesUsed: sub.messagesUsed + 1,
             premiumMessageCredits: sub.premiumMessageCredits - 1,
           },
         };
@@ -998,11 +1026,12 @@ export const processVerifiedPayment = internalMutation({
           const commissionAmount = args.amountSol * commissionRate;
 
           // Determine if this is the user's first confirmed subscription payment
-          // If there are no prior confirmed subscriptionPayments, treat as first conversion
+          // Exclude the current payment being processed and only check for other confirmed payments
           const priorPayments = await ctx.db
             .query('subscriptionPayments')
             .withIndex('by_user', (q) => q.eq('userId', user._id))
             .filter((q) => q.eq(q.field('status'), 'confirmed'))
+            .filter((q) => q.neq(q.field('_id'), payment._id))
             .collect();
           isFirstConversionForUser = priorPayments.length === 0;
 
@@ -1070,10 +1099,12 @@ export const processVerifiedPayment = internalMutation({
             const commissionAmount = args.amountSol * commissionRate;
 
             // Determine if this is the user's first confirmed subscription payment
+            // Exclude the current payment being processed and only check for other confirmed payments
             const priorPayments = await ctx.db
               .query('subscriptionPayments')
               .withIndex('by_user', (q) => q.eq('userId', user._id))
               .filter((q) => q.eq(q.field('status'), 'confirmed'))
+              .filter((q) => q.neq(q.field('_id'), payment._id))
               .collect();
             isFirstConversionForUser = priorPayments.length === 0;
 
@@ -1242,6 +1273,7 @@ export const getSubscriptionStatusByWallet = query({
 
     return {
       tier: sub.tier,
+      billingCycle: sub.billingCycle,
       messagesUsed: sub.messagesUsed,
       messagesLimit: sub.messagesLimit,
       messageCredits: sub.messageCredits,
@@ -1323,6 +1355,7 @@ export const getSubscriptionStatus = query({
 
     return {
       tier: sub.tier,
+      billingCycle: sub.billingCycle,
       messagesUsed: sub.messagesUsed,
       messagesLimit: sub.messagesLimit,
       messageCredits: sub.messageCredits,

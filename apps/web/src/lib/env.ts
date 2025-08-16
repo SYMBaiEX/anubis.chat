@@ -109,7 +109,7 @@ const envSchema = z.object({
     .optional(),
   NEXT_PUBLIC_PAYMENT_WEBHOOK_URL: z.string().url().optional(),
 
-  // Subscription Pricing
+  // Subscription Pricing - Monthly
   NEXT_PUBLIC_SUBSCRIPTION_PRO_PRICE_SOL: z
     .string()
     .default('0.05')
@@ -125,6 +125,24 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_PRICE_USD: z
     .string()
     .default('25')
+    .transform((val) => Number.parseInt(val, 10)),
+
+  // Subscription Pricing - Yearly (5% discount)
+  NEXT_PUBLIC_SUBSCRIPTION_PRO_YEARLY_PRICE_SOL: z
+    .string()
+    .default('0.57')
+    .transform((val) => Number.parseFloat(val)),
+  NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_SOL: z
+    .string()
+    .default('1.14')
+    .transform((val) => Number.parseFloat(val)),
+  NEXT_PUBLIC_SUBSCRIPTION_PRO_YEARLY_PRICE_USD: z
+    .string()
+    .default('137')
+    .transform((val) => Number.parseInt(val, 10)),
+  NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_USD: z
+    .string()
+    .default('285')
     .transform((val) => Number.parseInt(val, 10)),
 
   // Payment Processing
@@ -199,6 +217,14 @@ function parseEnv() {
       process.env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PRICE_USD,
     NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_PRICE_USD:
       process.env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_PRICE_USD,
+    NEXT_PUBLIC_SUBSCRIPTION_PRO_YEARLY_PRICE_SOL:
+      process.env.NEXT_PUBLIC_SUBSCRIPTION_PRO_YEARLY_PRICE_SOL,
+    NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_SOL:
+      process.env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_SOL,
+    NEXT_PUBLIC_SUBSCRIPTION_PRO_YEARLY_PRICE_USD:
+      process.env.NEXT_PUBLIC_SUBSCRIPTION_PRO_YEARLY_PRICE_USD,
+    NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_USD:
+      process.env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_USD,
     NEXT_PUBLIC_PAYMENT_TIMEOUT_MS: process.env.NEXT_PUBLIC_PAYMENT_TIMEOUT_MS,
     NEXT_PUBLIC_SOLANA_COMMITMENT: process.env.NEXT_PUBLIC_SOLANA_COMMITMENT,
     DEBUG: process.env.DEBUG,
@@ -326,12 +352,24 @@ export const solanaConfig = {
 // Subscription pricing configuration
 export const subscriptionConfig = {
   pro: {
-    priceSOL: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PRICE_SOL,
-    priceUSD: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PRICE_USD,
+    monthly: {
+      priceSOL: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PRICE_SOL,
+      priceUSD: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PRICE_USD,
+    },
+    yearly: {
+      priceSOL: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_YEARLY_PRICE_SOL,
+      priceUSD: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_YEARLY_PRICE_USD,
+    },
   },
-  proPLus: {
-    priceSOL: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_PRICE_SOL,
-    priceUSD: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_PRICE_USD,
+  proPlus: {
+    monthly: {
+      priceSOL: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_PRICE_SOL,
+      priceUSD: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_PRICE_USD,
+    },
+    yearly: {
+      priceSOL: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_SOL,
+      priceUSD: env.NEXT_PUBLIC_SUBSCRIPTION_PRO_PLUS_YEARLY_PRICE_USD,
+    },
   },
 };
 

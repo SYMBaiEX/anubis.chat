@@ -1,0 +1,229 @@
+# ANUBIS Chat - Root Development Rules
+
+## Platform Vision & Mission
+
+**Mission Statement**: "Democratize advanced AI capabilities while empowering users through decentralized Web3 technologies and economic models."
+
+ANUBIS Chat is the next-generation AI-powered chat platform that bridges traditional AI interaction with decentralized Web3 capabilities. The platform combines cutting-edge multi-model AI excellence with Web3-native experiences for real-time collaboration.
+
+## Core Technology Stack
+
+### Backend & Real-Time Systems
+- **Convex**: Serverless backend with built-in reactivity (80+ table schema)
+- **Real-Time**: Automatic subscriptions and live data synchronization
+- **Streaming**: HTTP actions for AI model streaming responses
+- **Schema-Driven**: Type-safe development with strict TypeScript
+
+### AI & ML Pipeline
+- **Multi-Model Support**: Claude 3.5, GPT-4o, DeepSeek v3, Gemini 2.0, 14+ models
+- **Intelligent Routing**: Context-aware model selection with performance optimization
+- **RAG System**: Vector embeddings with semantic search and document ingestion
+- **Streaming Performance**: <2s time-to-first-token, <50ms inter-token latency
+
+### Web3 & Blockchain Integration
+- **Primary Chain**: Solana with Mobile Wallet Adapter Protocol
+- **Multi-Wallet Support**: Phantom, Backpack, Solflare, hardware wallets
+- **Token Economics**: $ANUBIS utility token with DeFi ecosystem
+- **Authentication**: Signature-based auth with challenge/nonce verification
+
+### Infrastructure & DevOps
+- **Monorepo**: Turborepo with Bun package manager
+- **Quality**: Biome, Ultracite, Husky pre-commit hooks
+- **PWA**: Progressive Web App with offline capabilities
+- **Monitoring**: Real-time error boundaries and performance tracking
+
+## Critical Development Standards
+
+### TypeScript Excellence (ENFORCED)
+```typescript
+// ✅ REQUIRED: Strict TypeScript with no any types
+interface ChatMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant' | 'system';
+  timestamp: number;
+}
+
+// ✅ REQUIRED: camelCase for all identifiers
+const chatMessages: ChatMessage[] = [];
+
+// ❌ FORBIDDEN: any types - Will cause build failures
+const badData: any = {}; // NEVER DO THIS
+
+// ✅ PREFERRED: Result<T, E> pattern for error handling
+type Result<T, E = Error> = { success: true; data: T } | { success: false; error: E };
+```
+
+### Code Quality Standards (NON-NEGOTIABLE)
+- **TypeScript Strict Mode**: No `any` types allowed anywhere
+- **camelCase Convention**: All identifiers must use camelCase
+- **Component Patterns**: Server Components by default, Client Components only for interactivity
+- **Error Handling**: Result<T, E> pattern for all operations
+- **Test Coverage**: 90%+ unit tests, 85%+ branch coverage
+
+### Performance Requirements (ENTERPRISE-GRADE)
+- **Frontend**: <3s load on 3G, <100ms interactions, <500KB bundles
+- **AI Responses**: <2s time-to-first-token, <50ms streaming latency
+- **Web3 Operations**: <500ms wallet connection, <2s transaction status
+- **Database**: <200ms query response, proper indexing strategies
+
+### Security Standards (ZERO-TRUST)
+- **Input Validation**: Zod schemas across all server boundaries
+- **Access Control**: Per-wallet data isolation enforced in Convex functions
+- **Web3 Security**: Signature verification, transaction validation
+- **Rate Limiting**: Request throttling and abuse prevention
+- **Audit Trails**: Comprehensive logging for compliance
+
+## Business Logic & Architecture
+
+### Platform Roadmap
+- **Phase 1**: Core AI chat with basic Web3 integration (Current)
+- **Phase 2**: $ANUBIS token launch and DeFi features
+- **Phase 3**: AI agent marketplace and ecosystem expansion
+- **Phase 4**: Research partnerships and innovation lab
+
+### Revenue Streams
+- **Subscription Tiers**: Free, Pro, Enterprise with usage limits
+- **Token Utility**: $ANUBIS for premium features and governance
+- **Creator Economy**: Revenue sharing for AI agents and content
+- **Enterprise Solutions**: Custom deployments and integrations
+
+### Database Schema Architecture
+The Convex schema includes comprehensive tables for:
+- **Core Chat**: users, chats, messages, documents with per-wallet isolation
+- **AI System**: models, agents, workflows, rag operations, embeddings
+- **Web3**: wallets, transactions, subscriptions, payments, referrals
+- **Analytics**: events, metrics, performance tracking, user behavior
+- **Enterprise**: organizations, teams, permissions, audit logs
+
+## Development Workflow
+
+### Command Standards
+```bash
+# Development
+bun dev                    # Start all services
+bun dev:web               # Frontend only
+bun dev:server            # Convex backend only
+
+# Quality Assurance
+bun check                 # Biome format and lint
+bun check-types           # TypeScript validation
+bun build                 # Production build
+
+# Never commit without these passing
+npx ultracite format      # Pre-commit formatting
+```
+
+### Git Conventions (ENFORCED BY TOOLING)
+```bash
+feat: New feature
+fix: Bug fix
+docs: Documentation
+refactor: Code restructuring
+test: Test updates
+chore: Maintenance
+```
+
+### File Organization Standards
+```
+packages/backend/convex/   # Backend functions and schema
+apps/web/src/components/   # Frontend components
+apps/web/src/app/         # Next.js App Router pages
+apps/web/src/lib/         # Utilities and types
+```
+
+## Critical Integration Points
+
+### Provider Orchestration
+```tsx
+<ConvexErrorBoundary>
+  <SidebarProvider>
+    <ConvexAuthProvider>
+      <ClientOnlyWrapper>
+        <WalletProvider>           // Web3 wallet integration
+          <AuthProvider>           // Authentication state
+            <ThemeSync />          // Theme synchronization
+            <NotificationProvider>
+              <SolanaAgentProvider> // AI agent integration
+                {children}
+              </SolanaAgentProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </WalletProvider>
+      </ClientOnlyWrapper>
+    </ConvexAuthProvider>
+  </SidebarProvider>
+</ConvexErrorBoundary>
+```
+
+### API Architecture
+**Next.js API Routes** (frontend bridge):
+- `POST /api/chat` - Stream chat via AI SDK
+- `POST /api/ai/chat` - Tool-enabled endpoints
+- `GET /api/models` - Available model list
+- `POST /api/subscriptions/payment` - Payment webhooks
+
+**Convex HTTP Routes** (backend):
+- `POST /stream-chat` - HTTP streaming fallback
+- `POST /generateUploadUrl` - File upload URLs
+- `POST /verify-payment` - Solana payment verification
+
+## Development Restrictions & Guidelines
+
+### CRITICAL CONSTRAINTS (WILL BREAK BUILD IF VIOLATED)
+- **No any types**: Always use proper TypeScript types or create them
+- **camelCase strictly**: All identifiers must use camelCase convention
+- **No unnecessary files**: Don't create .md files unless explicitly requested
+- **Edit over create**: Always prefer editing existing files
+- **Auth boundaries**: Don't modify auth, convex config, or core APIs
+
+### Quality Gates (AUTOMATED ENFORCEMENT)
+- **Pre-commit**: TypeScript validation, security scanning, format checking
+- **CI/CD**: Automated testing, performance budgets, rule compliance
+- **Code Review**: Rule-based validation and best practice enforcement
+- **Deployment**: Performance validation and security verification
+
+### Implementation Priorities
+1. **Security First**: All inputs validated, signatures verified, access controlled
+2. **Performance**: Meet enterprise-grade performance targets
+3. **Type Safety**: Strict TypeScript with comprehensive type coverage
+4. **User Experience**: Responsive, accessible, intuitive interfaces
+5. **Scalability**: Architecture supports 100K+ concurrent users
+
+## Innovation & Differentiation
+
+### AI Excellence Features
+- **Intelligent Model Routing**: Context-aware model selection
+- **Advanced RAG**: Hybrid search with personalization
+- **AI Agent Marketplace**: Custom agents and workflows
+- **Multi-Modal Integration**: Text, voice, image, and video
+
+### Web3 Innovation
+- **Native Token Integration**: $ANUBIS utility and governance
+- **DeFi Ecosystem**: Staking, yield farming, cross-chain bridges
+- **Creator Economy**: Revenue sharing and content monetization
+- **Mobile-First Web3**: Solana Mobile Stack integration
+
+### Enterprise Features
+- **Analytics Dashboard**: Comprehensive user and business intelligence
+- **Real-Time Collaboration**: Live chat, document editing, presence
+- **Compliance Ready**: Audit trails, access controls, data governance
+- **API Ecosystem**: Full platform integration capabilities
+
+## Emergency Information
+
+### Critical Files
+- `packages/backend/convex/schema.ts`: Core database schema
+- `apps/web/src/components/providers.tsx`: Provider orchestration
+- `apps/web/src/app/layout.tsx`: Root application layout
+- `CLAUDE.md`: Comprehensive development guidance
+
+### Support Resources
+- [Convex Documentation](https://docs.convex.dev)
+- [Next.js 15 Guide](https://nextjs.org/docs)
+- [Solana Web3.js](https://solana-labs.github.io/solana-web3.js/)
+- [Project README](./README.md): Setup and deployment instructions
+
+---
+
+**Remember**: This platform democratizes AI while empowering users through Web3. Every line of code should reflect this mission with enterprise-grade quality, security, and performance.

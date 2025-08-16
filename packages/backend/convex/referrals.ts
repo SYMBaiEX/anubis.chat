@@ -760,7 +760,7 @@ export const getEnhancedLeaderboard = query({
         leaderboard.push({
           rank: leaderboard.length + 1,
           displayName: user.displayName || 'Anonymous Referrer',
-          avatar: user.avatar || '/default-avatar.png',
+          avatar: user.avatar || '/assets/default-avatar.png',
           referralCode: ref.code,
           totalReferrals: ref.totalReferrals,
           currentCommissionRate: ref.currentCommissionRate,

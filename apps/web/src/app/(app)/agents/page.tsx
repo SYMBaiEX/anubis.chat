@@ -23,6 +23,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { CreateAgentModal, EditAgentModal, type AgentFormData } from '@/components/agents/agentModal';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import { useAuthContext } from '@/components/providers/auth-provider';
@@ -153,6 +154,9 @@ export default function AgentsPage() {
   const { user } = useAuthContext();
   const [deleteAgentId, setDeleteAgentId] = useState<string | null>(null);
   const [showPublicAgents, setShowPublicAgents] = useState(true);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
+  const [duplicateData, setDuplicateData] = useState<Partial<AgentFormData> | null>(null);
 
   // Initialize default agents mutation
   const initializeAgents = useMutation(api.agents.initializeDefaults);
@@ -192,24 +196,17 @@ export default function AgentsPage() {
     }
   };
 
-  type AgentSummary = {
-    name: string;
-    description?: string;
-    systemPrompt?: string;
-    temperature?: number;
-    maxTokens?: number;
-  };
-
-  const handleDuplicateAgent = (agent: AgentSummary) => {
-    // Navigate to create page with pre-filled data
-    const params = new URLSearchParams({
+  const handleDuplicateAgent = (agent: Doc<'agents'>) => {
+    // Set up duplication data with "(Copy)" suffix
+    const duplicateValues: Partial<AgentFormData> = {
       name: `${agent.name} (Copy)`,
       description: agent.description || '',
       systemPrompt: agent.systemPrompt || '',
-      temperature: agent.temperature?.toString() || '0.7',
-      maxTokens: agent.maxTokens?.toString() || '4096',
-    });
-    router.push(`/agents/new?${params.toString()}`);
+      temperature: agent.temperature || 0.7,
+    };
+    
+    setDuplicateData(duplicateValues);
+    setCreateModalOpen(true);
   };
 
   if (!user?.walletAddress) {
@@ -292,13 +289,14 @@ export default function AgentsPage() {
                     whileTap={{ scale: 0.95 }}
                   >
                     <Button
-                      asChild
                       className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                      onClick={() => {
+                        setDuplicateData(null); // Clear any duplicate data
+                        setCreateModalOpen(true);
+                      }}
                     >
-                      <Link href="/agents/new">
-                        <Plus className="mr-1 h-4 w-4" />
-                        Create Agent
-                      </Link>
+                      <Plus className="mr-1 h-4 w-4" />
+                      Create Agent
                     </Button>
                   </motion.div>
                 </div>
@@ -322,7 +320,10 @@ export default function AgentsPage() {
                   <EmptyState
                     action={{
                       label: 'Create Agent',
-                      onClick: () => router.push('/agents/new'),
+                      onClick: () => {
+                        setDuplicateData(null); // Clear any duplicate data
+                        setCreateModalOpen(true);
+                      },
                     }}
                     description="Create your first AI agent to get started"
                     icon={<Bot className="h-12 w-12 text-muted-foreground" />}
@@ -421,9 +422,7 @@ export default function AgentsPage() {
                                 {!agent.isPublic && (
                                   <>
                                     <DropdownMenuItem
-                                      onClick={() =>
-                                        router.push(`/agents/${agent._id}/edit`)
-                                      }
+                                      onClick={() => setEditingAgentId(agent._id)}
                                     >
                                       <Settings className="mr-2 h-4 w-4" />
                                       Edit
@@ -474,17 +473,6 @@ export default function AgentsPage() {
                                 {agent.temperature || 0.7}
                               </span>
                             </motion.div>
-                            {agent.maxTokens && (
-                              <motion.div
-                                className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-1"
-                                whileHover={{ scale: 1.05 }}
-                              >
-                                <span className="opacity-70">Tokens:</span>
-                                <span className="font-medium">
-                                  {agent.maxTokens}
-                                </span>
-                              </motion.div>
-                            )}
                             {agent.capabilities &&
                               agent.capabilities.length > 0 && (
                                 <motion.div
@@ -549,6 +537,36 @@ export default function AgentsPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Create Agent Modal */}
+        <CreateAgentModal
+          open={createModalOpen}
+          onOpenChange={(open) => {
+            setCreateModalOpen(open);
+            if (!open) {
+              setDuplicateData(null); // Clear duplicate data when modal closes
+            }
+          }}
+          onSuccess={() => {
+            // Refresh agents list is handled automatically by Convex
+            setDuplicateData(null); // Clear duplicate data on success
+          }}
+          defaultValues={duplicateData || undefined}
+        />
+
+        {/* Edit Agent Modal */}
+        {editingAgentId && (
+          <EditAgentModal
+            agentId={editingAgentId as Id<'agents'>}
+            open={!!editingAgentId}
+            onOpenChange={(open) => {
+              if (!open) setEditingAgentId(null);
+            }}
+            onSuccess={() => {
+              // Refresh agents list is handled automatically by Convex
+            }}
+          />
+        )}
       </motion.div>
     </AnimatePresence>
   );
