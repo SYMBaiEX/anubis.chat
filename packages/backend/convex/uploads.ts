@@ -1,6 +1,6 @@
 import { action } from './_generated/server';
 import { v } from 'convex/values';
-import { requireAuth } from './authHelpers';
+import { requireAuthAction } from './authHelpers';
 
 export const signUpload = action({
   args: {
@@ -8,7 +8,7 @@ export const signUpload = action({
   },
   handler: async (ctx, { contentType }) => {
     // Ensure caller is authenticated
-    await requireAuth(ctx);
+    await requireAuthAction(ctx);
 
     // Basic allowlist for images; extend as needed
     const allowed = /^(image\/(png|jpeg|jpg|gif|webp))$/i;

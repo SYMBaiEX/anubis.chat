@@ -12,7 +12,8 @@ import { ClientOnlyWrapper } from './providers/client-only-wrapper';
 import { SolanaAgentProvider } from './providers/solana-agent-provider';
 import { ThemeSync } from './providers/theme-sync';
 import { Toaster } from './ui/sonner';
-// Forum omits WalletProvider wrapper; wallet usage can be added later if needed
+import { WalletProvider } from './wallet/wallet-provider';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const log = createModuleLogger('providers');
 
@@ -28,12 +29,24 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ConvexAuthProvider client={convex}>
       <ClientOnlyWrapper>
-        <AuthProvider>
-          <ThemeSync />
-          <SolanaAgentProvider>{children}</SolanaAgentProvider>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          disableTransitionOnChange
+          enableSystem
+          storageKey="anubis-theme"
+          themes={['light', 'dark']}
+       >
+          <WalletProvider>
+            <AuthProvider>
+              <ThemeSync />
+              <SolanaAgentProvider>{children}</SolanaAgentProvider>
+            </AuthProvider>
+          </WalletProvider>
+        </ThemeProvider>
       </ClientOnlyWrapper>
       <Toaster richColors />
     </ConvexAuthProvider>
   );
 }
+

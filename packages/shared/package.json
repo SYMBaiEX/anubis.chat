@@ -1,0 +1,23 @@
+{
+  "name": "@anubis-chat/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./solana": {
+      "types": "./src/solana.ts",
+      "default": "./src/solana.ts"
+    },
+    "./utils/logger": {
+      "types": "./src/utils/logger.ts",
+      "default": "./src/utils/logger.ts"
+    }
+  }
+}

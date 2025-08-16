@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  // Ensure TS sources from workspace packages are transpiled by Next
+  transpilePackages: ['@anubis-chat/shared'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },

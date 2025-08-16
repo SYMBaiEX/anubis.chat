@@ -6,6 +6,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Ensure TS sources from workspace packages are transpiled by Next
+  transpilePackages: ['@anubis-chat/shared'],
   images: {
     unoptimized: true,
   },

@@ -6,7 +6,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["apps/web/src/*"],
-      "@convex/*": ["packages/backend/convex/*"]
+      "@convex/*": ["packages/backend/convex/*"],
+      "@anubis-chat/shared/*": ["packages/shared/src/*"],
+      "@anubis-chat/shared": ["packages/shared/src/index.ts"]
     }
   },
   "exclude": ["apps/fumadocs/**/*", "node_modules"]

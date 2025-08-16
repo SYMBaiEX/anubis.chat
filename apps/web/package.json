@@ -17,6 +17,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@anubis-chat/shared": "workspace:*",
     "@ai-sdk/anthropic": "^2.0.3",
     "@ai-sdk/google": "^2.0.6",
     "@ai-sdk/openai": "^2.0.12",

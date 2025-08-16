@@ -7,8 +7,116 @@ export const getUserById = query({
   args: {
     userId: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    return await ctx.db.get(args.userId);
+  handler: async (ctx, { userId }) => {
+    return await ctx.db.get(userId);
+  },
+});
+
+// Check if user has sufficient message credits (for forum AI features)
+export const checkMessageCredits = query({
+  args: {
+    userId: v.id('users'),
+  },
+  handler: async (ctx, { userId }) => {
+    const user = await ctx.db.get(userId);
+    if (!user) return false;
+
+    const subscription = user.subscription;
+    if (!subscription) return false;
+
+    // Check subscription tier limits
+    const now = Date.now();
+    const isInCurrentPeriod = subscription.currentPeriodEnd && now < subscription.currentPeriodEnd;
+
+    if (!isInCurrentPeriod) return false;
+
+    // Check if user has remaining messages in their plan
+    const messagesUsed = subscription.messagesUsed || 0;
+    const messagesLimit = subscription.messagesLimit || 0;
+    const premiumMessagesUsed = subscription.premiumMessagesUsed || 0;
+    const premiumMessagesLimit = subscription.premiumMessagesLimit || 0;
+
+    // Check purchased credits
+    const messageCredits = subscription.messageCredits || 0;
+    const premiumMessageCredits = subscription.premiumMessageCredits || 0;
+
+    // For forum AI features, we can use either standard or premium credits
+    const hasSubscriptionCredits = messagesUsed < messagesLimit || premiumMessagesUsed < premiumMessagesLimit;
+    const hasPurchasedCredits = messageCredits > 0 || premiumMessageCredits > 0;
+
+    return hasSubscriptionCredits || hasPurchasedCredits;
+  },
+});
+
+// Deduct message credits for forum AI usage
+export const deductMessageCredits = mutation({
+  args: {
+    userId: v.id('users'),
+    amount: v.number(),
+  },
+  handler: async (ctx, { userId, amount = 1 }) => {
+    const user = await ctx.db.get(userId);
+    if (!user || !user.subscription) {
+      throw new Error('User or subscription not found');
+    }
+
+    const subscription = user.subscription;
+    const now = Date.now();
+    const isInCurrentPeriod = subscription.currentPeriodEnd && now < subscription.currentPeriodEnd;
+
+    if (!isInCurrentPeriod) {
+      throw new Error('Subscription period expired');
+    }
+
+    // Try to use subscription messages first, then purchased credits
+    const messagesUsed = subscription.messagesUsed || 0;
+    const messagesLimit = subscription.messagesLimit || 0;
+    const premiumMessagesUsed = subscription.premiumMessagesUsed || 0;
+    const premiumMessagesLimit = subscription.premiumMessagesLimit || 0;
+    const messageCredits = subscription.messageCredits || 0;
+    const premiumMessageCredits = subscription.premiumMessageCredits || 0;
+
+    let updatedSubscription = { ...subscription };
+
+    // First try standard subscription messages
+    if (messagesUsed < messagesLimit) {
+      updatedSubscription.messagesUsed = messagesUsed + amount;
+    }
+    // Then try premium subscription messages
+    else if (premiumMessagesUsed < premiumMessagesLimit) {
+      updatedSubscription.premiumMessagesUsed = premiumMessagesUsed + amount;
+    }
+    // Then use purchased premium credits
+    else if (premiumMessageCredits >= amount) {
+      updatedSubscription.premiumMessageCredits = premiumMessageCredits - amount;
+    }
+    // Finally use purchased standard credits
+    else if (messageCredits >= amount) {
+      updatedSubscription.messageCredits = messageCredits - amount;
+    } else {
+      throw new Error('Insufficient message credits');
+    }
+
+    // Update user subscription
+    await ctx.db.patch(userId, {
+      subscription: updatedSubscription,
+      updatedAt: now,
+    });
+
+    // Log usage for analytics
+    await ctx.db.insert('messageUsage', {
+      userId: user.walletAddress || userId,
+      model: 'forum-ai', // Special model category for forum AI
+      modelCategory: 'standard',
+      messageCount: amount,
+      inputTokens: 0, // Will be updated by actual AI call
+      outputTokens: 0,
+      estimatedCost: 0.001 * amount, // Rough estimate
+      date: Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000), // Daily bucket
+      createdAt: now,
+    });
+
+    return true;
   },
 });
 

@@ -2,6 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { ConvexHttpClient } from "convex/browser"
 import { api } from "@convex/_generated/api"
 
+function getRequestIp(req: Request | NextRequest) {
+  const xff = req.headers.get("x-forwarded-for")
+  if (xff) return xff.split(",")[0].trim()
+  return req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || null
+}
+
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const id = Number.parseInt(params.id)
@@ -10,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const client = new ConvexHttpClient(url)
     const post: any = await client.query(api.posts.get as any, { id: id as any } as any)
     if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 })
-    const ident = request.headers.get("x-forwarded-for") || request.headers.get("cf-connecting-ip") || request.ip || "anon"
+    const ident = getRequestIp(request) ?? "anon"
     // Debounced view increment
     client.mutation(api.posts.incrementView as any, { id: id as any, ident } as any).catch(() => {})
     return NextResponse.json({
@@ -22,7 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         category: post.category,
         section: post.section,
         author: "Anonymous",
-        avatar: "/placeholder-user.jpg",
+        avatar: "/default-avatar.svg",
         created_at: new Date(post.createdAt).toISOString(),
         views: post.views ?? 0,
         likes: post.likes ?? 0,

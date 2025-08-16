@@ -87,7 +87,7 @@ export const promoteUserToAdmin = mutation({
   },
   handler: async (ctx, args) => {
     // Require admin management permissions
-    await requireAdmin(ctx, 'admin');
+    const { user: currentAdmin } = await requireAdmin(ctx, 'admin');
 
     // Find the user to promote
     const targetUser = await ctx.db
@@ -142,6 +142,21 @@ export const promoteUserToAdmin = mutation({
         (args.permissions as AdminPermission[] | undefined) ??
         ([...defaultPermissions[args.role]] as AdminPermission[]),
       updatedAt: Date.now(),
+    });
+
+    // Audit log
+    await ctx.db.insert('auditLogs', {
+      action: 'admin.promoteUserToAdmin',
+      actorUserId: currentAdmin._id,
+      actorWallet: currentAdmin.walletAddress,
+      actorRole: currentAdmin.role,
+      targets: [targetUser._id],
+      metadata: {
+        walletAddress: args.walletAddress,
+        role: args.role,
+        hasExplicitPermissions: args.permissions ? true : false,
+      },
+      createdAt: Date.now(),
     });
 
     return { success: true, userId: targetUser._id };
@@ -233,6 +248,21 @@ export const updateAdminUser = mutation({
 
     await ctx.db.patch(targetUser._id, updates);
 
+    // Audit log
+    await ctx.db.insert('auditLogs', {
+      action: 'admin.updateAdminUser',
+      actorUserId: currentAdmin._id,
+      actorWallet: currentAdmin.walletAddress,
+      actorRole: currentAdmin.role,
+      targets: [targetUser._id],
+      metadata: {
+        role: (args.role as any) ?? null,
+        permissionsUpdated: args.permissions !== undefined,
+        isActiveUpdated: args.isActive !== undefined,
+      },
+      createdAt: Date.now(),
+    });
+
     return { success: true };
   },
 });
@@ -274,6 +304,20 @@ export const demoteAdminToUser = mutation({
       role: 'user',
       permissions: undefined, // Remove all admin permissions
       updatedAt: Date.now(),
+    });
+
+    // Audit log
+    await ctx.db.insert('auditLogs', {
+      action: 'admin.demoteAdminToUser',
+      actorUserId: currentAdmin._id,
+      actorWallet: currentAdmin.walletAddress,
+      actorRole: currentAdmin.role,
+      targets: [targetUser._id],
+      metadata: {
+        walletAddress: args.walletAddress,
+        reason: args.reason ?? null,
+      },
+      createdAt: Date.now(),
     });
 
     return { success: true };
@@ -512,6 +556,46 @@ export const updateUserSubscription = mutation({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Ban (deactivate) multiple users by IDs (admin only)
+ */
+export const banUsers = mutation({
+  args: {
+    ids: v.array(v.id('users')),
+  },
+  handler: async (ctx, { ids }) => {
+    // Require user management permissions
+    await requirePermission(ctx, 'user_management');
+
+    let updated = 0;
+    for (const id of ids) {
+      const user = await ctx.db.get(id);
+      if (!user) continue;
+      await ctx.db.patch(id, {
+        isActive: false,
+        updatedAt: Date.now(),
+      });
+      updated++;
+    }
+
+    // Identify actor for audit purposes
+    const actor = await getCurrentUser(ctx);
+    if (actor) {
+      await ctx.db.insert('auditLogs', {
+        action: 'admin.banUsers',
+        actorUserId: actor._id,
+        actorWallet: actor.walletAddress,
+        actorRole: actor.role,
+        targets: ids,
+        metadata: { count: updated },
+        createdAt: Date.now(),
+      });
+    }
+
+    return { success: true, updated } as const;
   },
 });
 

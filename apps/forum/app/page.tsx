@@ -21,7 +21,7 @@ export default function ForumPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   const listArgs = useMemo(
-    () => ({ category: activeSection.category, section: activeSection.section, paginationOpts: { numItems: 20, cursor: cursor ?? undefined } }),
+    () => ({ category: activeSection.category, section: activeSection.section, paginationOpts: { numItems: 20, cursor: cursor ?? null } }),
     [activeSection, cursor]
   )
   const page = useQuery(api.posts.list, listArgs)

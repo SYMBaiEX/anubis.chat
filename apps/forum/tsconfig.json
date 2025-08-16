@@ -21,8 +21,9 @@
       }
     ],
     "paths": {
-      "@/*": [".\/*"],
-      "@convex/*": ["../../packages/backend/convex/*"]
+      "@/*": ["./*"],
+      "@convex/*": ["../../packages/backend/convex/*"],
+      "@anubis-chat/shared/*": ["../../packages/shared/src/*"]
     }
   },
   "include": [

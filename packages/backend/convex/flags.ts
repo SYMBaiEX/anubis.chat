@@ -35,9 +35,21 @@ export const listOpen = query({
 export const resolve = mutation({
   args: { id: v.id('forumFlags'), status: v.string() },
   handler: async (ctx, { id, status }) => {
-    await requireAdmin(ctx, 'admin');
+    const { user } = await requireAdmin(ctx, 'admin');
     if (!['resolved', 'dismissed'].includes(status)) throw new Error('Invalid status');
     await ctx.db.patch(id, { status, resolvedAt: Date.now() });
+
+    // Audit log
+    await ctx.db.insert('auditLogs', {
+      action: 'flags.resolve',
+      actorUserId: user._id,
+      actorWallet: user.walletAddress,
+      actorRole: user.role,
+      targets: [String(id)],
+      metadata: { status },
+      createdAt: Date.now(),
+    });
+
     return { ok: true };
   },
 });

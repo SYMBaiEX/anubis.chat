@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const page: any = await client.query(api.posts.list as any, {
       category: category || "",
       section: section || "",
-      paginationOpts: { numItems, cursor: cursor || undefined },
+      paginationOpts: { numItems, cursor: cursor ?? null },
     })
     const posts = page.page.map((p: any) => ({
       id: p._id,
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       category: p.category,
       section: p.section,
       author: "Anonymous",
-      avatar: "/placeholder-user.jpg",
+      avatar: "/default-avatar.svg",
       time: new Date(p.createdAt).toISOString(),
       created_at: new Date(p.createdAt).toISOString(),
       replies: 0,
@@ -65,7 +65,10 @@ export async function POST(request: NextRequest) {
     const url = process.env.NEXT_PUBLIC_CONVEX_URL
     if (!url) return NextResponse.json({ error: "Convex URL not configured" }, { status: 500 })
     const client = new ConvexHttpClient(url)
-    // With Convex Auth, Authorization: Bearer <token> must be forwarded to Convex HTTP action if used.
+    // Forward Authorization: Bearer <token> so backend auth can be enforced
+    const authHeader = request.headers.get("Authorization") || undefined
+    const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined
+    if (bearer) client.setAuth(bearer)
     // Prefer calling Convex from client with useMutation; this API route remains for compatibility.
     const created: any = await client.mutation(api.posts.create as any, {
       title,
@@ -82,7 +85,7 @@ export async function POST(request: NextRequest) {
       category: created.category,
       section: created.section,
       author: "Anonymous",
-      avatar: "/placeholder-user.jpg",
+      avatar: "/default-avatar.svg",
       time: new Date(created.createdAt).toISOString(),
       created_at: new Date(created.createdAt).toISOString(),
       replies: 0,

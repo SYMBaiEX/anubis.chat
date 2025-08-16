@@ -5,7 +5,7 @@
 
 import { getAuthUserId } from '@convex-dev/auth/server';
 import type { Doc } from './_generated/dataModel';
-import type { MutationCtx, QueryCtx } from './_generated/server';
+import type { MutationCtx, QueryCtx, ActionCtx } from './_generated/server';
 
 // =============================================================================
 // Core Authorization Helpers
@@ -39,6 +39,18 @@ export async function requireAuth(ctx: QueryCtx | MutationCtx) {
   }
 
   return { userId, user };
+}
+
+/**
+ * Require authentication for actions - throws if user is not authenticated
+ */
+export async function requireAuthAction(ctx: ActionCtx) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    throw new Error('Authentication required');
+  }
+
+  return { userId };
 }
 
 /**
