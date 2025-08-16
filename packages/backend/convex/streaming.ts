@@ -501,6 +501,36 @@ export const streamWithWebSocket = action({
       // Prepare AI model
       const modelName =
         args.model || chat.model || 'openrouter/openai/gpt-oss-20b:free';
+
+      // Fetch subscription status and admin status for gating
+      const walletAddress = user?.walletAddress || '';
+      const subscription = await ctx.runQuery(
+        api.subscriptions.getSubscriptionStatusByWallet,
+        { walletAddress }
+      );
+      const adminStatus = await ctx.runQuery(
+        api.adminAuth.checkAdminStatusByWallet,
+        { walletAddress }
+      );
+
+      // Gate standard quota (including purchased credits) if not admin
+      if (!adminStatus.isAdmin && subscription) {
+        const planRemaining = Math.max(
+          0,
+          (subscription.messagesLimit ?? 0) - (subscription.messagesUsed ?? 0)
+        );
+        const creditRemaining = Math.max(
+          0,
+          (subscription as any).messageCredits ?? 0
+        );
+        const totalStandardRemaining = planRemaining + creditRemaining;
+        if (totalStandardRemaining <= 0) {
+          throw new Error(
+            'Message quota exhausted. Please upgrade or buy credits.'
+          );
+        }
+      }
+
       const aiModel = await prepareAIModel(modelName);
 
       if (!aiModel) {
@@ -873,6 +903,25 @@ export const streamWithWebSocket = action({
             error: toolResult.error,
             executionTime: toolResult.executionTime,
           };
+        }
+      }
+
+      // After completion, consume message quota (respect reasoning cost) if not admin
+      if (!adminStatus.isAdmin && subscription) {
+        const isPremiumModel = [
+          'gpt-5',
+          'gpt-4.1-mini',
+          'openrouter/openai/gpt-oss-120b',
+        ].includes(modelName);
+        const messagesConsumed = args.useReasoning ? 2 : 1;
+        for (let i = 0; i < messagesConsumed; i++) {
+          await ctx.runMutation(api.subscriptions.trackMessageUsageByWallet, {
+            walletAddress,
+            isPremiumModel,
+            model: modelName,
+            inputTokens: usage?.inputTokens || 0,
+            outputTokens: usage?.outputTokens || 0,
+          });
         }
       }
 
