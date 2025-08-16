@@ -849,45 +849,44 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   <MessageListSuspense
                     fontSize={chatSettings.fontSize}
                     isTyping={isAnyoneTyping && !isStreaming}
-                    messages={(messages || []).map((m) => {
-                      if ((m as StreamingMessage).isStreaming) {
-                        return m as StreamingMessage;
-                      }
-                      const doc = m as {
-                        _id: unknown;
-                        content: string;
-                        role: 'user' | 'assistant' | 'system';
-                        createdAt?: number;
-                        _creationTime?: number;
-                        rating?: {
-                          userRating: 'like' | 'dislike';
-                          ratedAt: number;
-                          ratedBy: string;
+                    messages={useMemo(() => {
+                      return (messages || []).map((m) => {
+                        if ((m as StreamingMessage).isStreaming) {
+                          return m as StreamingMessage;
+                        }
+                        const doc = m as {
+                          _id: unknown;
+                          content: string;
+                          role: 'user' | 'assistant' | 'system';
+                          createdAt?: number;
+                          _creationTime?: number;
+                          rating?: {
+                            userRating: 'like' | 'dislike';
+                            ratedAt: number;
+                            ratedBy: string;
+                          };
+                          actions?: {
+                            copiedCount?: number;
+                            sharedCount?: number;
+                            regeneratedCount?: number;
+                            lastActionAt?: number;
+                          };
+                          metadata?: {
+                            tools?: ToolCall[];
+                          };
                         };
-                        actions?: {
-                          copiedCount?: number;
-                          sharedCount?: number;
-                          regeneratedCount?: number;
-                          lastActionAt?: number;
-                        };
-                        metadata?: {
-                          tools?: ToolCall[];
-                        };
-                      };
-                      const normalized: MinimalMessage & {
-                        toolCalls?: ToolCall[];
-                      } = {
-                        _id: String(doc._id),
-                        content: doc.content,
-                        role: doc.role,
-                        createdAt:
-                          doc.createdAt ?? doc._creationTime ?? Date.now(),
-                        rating: doc.rating,
-                        actions: doc.actions,
-                        toolCalls: doc.metadata?.tools || [],
-                      };
-                      return normalized;
-                    })}
+                        return {
+                          _id: String(doc._id),
+                          content: doc.content,
+                          role: doc.role,
+                          createdAt:
+                            doc.createdAt ?? doc._creationTime ?? Date.now(),
+                          rating: doc.rating,
+                          actions: doc.actions,
+                          toolCalls: doc.metadata?.tools || [],
+                        } as MinimalMessage & { toolCalls?: ToolCall[] };
+                      });
+                    }, [messages])}
                     onArtifactClick={(artifact) => {
                       setCurrentArtifact(artifact);
                       setShowArtifact(true);

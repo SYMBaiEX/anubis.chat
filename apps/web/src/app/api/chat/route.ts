@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       messages: modelMessages,
       temperature,
+      maxOutputTokens: maxTokens,
       // Enable multi-step reasoning if requested
       ...(useReasoning && {
         experimental_telemetry: {

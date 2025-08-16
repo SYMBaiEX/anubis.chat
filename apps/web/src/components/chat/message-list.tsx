@@ -194,7 +194,7 @@ export function MessageList({
     setShowScrollButton(!isNearBottom && messages && messages.length > 0);
   }, [messages]);
 
-  // Group messages by date for date separators
+  // Group messages by date for date separators (memoized for stability)
   const groupMessagesByDate = (
     list: Array<ChatMessage | StreamingMessage | MinimalMessage>
   ) => {
@@ -227,6 +227,8 @@ export function MessageList({
 
     return groups;
   };
+
+  const messageGroups = useMemo(() => groupMessagesByDate(messages), [messages]);
 
   const formatDateSeparator = (dateString: string) => {
     const date = new Date(dateString);
@@ -273,8 +275,6 @@ export function MessageList({
       </div>
     );
   }
-
-  const messageGroups = groupMessagesByDate(messages);
 
   return (
     <div
