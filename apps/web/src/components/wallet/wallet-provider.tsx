@@ -10,10 +10,10 @@ import {
   LedgerWalletAdapter,
   TorusWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
-// Solana Mobile Wallet Adapter will be imported dynamically
-import { getSolanaEndpoint } from '@/lib/solana';
 import type { FC, ReactNode } from 'react';
 import { useMemo } from 'react';
+// Solana Mobile Wallet Adapter will be imported dynamically
+import { getSolanaEndpoint } from '@/lib/solana';
 import { createModuleLogger } from '@/lib/utils/logger';
 
 // Import wallet adapter CSS
@@ -41,10 +41,7 @@ export const WalletProvider: FC<WalletProviderProps> = ({
         : WalletAdapterNetwork.Devnet);
 
   // ✅ Use centralized endpoint configuration (respects NEXT_PUBLIC_SOLANA_RPC_URL)
-  const endpoint = useMemo(
-    () => getSolanaEndpoint(),
-    []
-  );
+  const endpoint = useMemo(() => getSolanaEndpoint(), []);
 
   // Configure wallets according to official documentation:
   // - Wallets implementing Wallet Standard (Phantom, Solflare, Backpack) are auto-detected
@@ -63,16 +60,13 @@ export const WalletProvider: FC<WalletProviderProps> = ({
      * instantiate its legacy wallet adapter here. Common legacy adapters can be found
      * in the npm package `@solana/wallet-adapter-wallets`.
      */
-    
+
     // Only instantiate wallet adapters in browser environment to prevent SSR issues
     if (typeof window === 'undefined') {
       return [];
     }
-    
-    return [
-      new TorusWalletAdapter(),
-      new LedgerWalletAdapter(),
-    ];
+
+    return [new TorusWalletAdapter(), new LedgerWalletAdapter()];
   }, [selectedNetwork]);
 
   // Log available wallets for debugging

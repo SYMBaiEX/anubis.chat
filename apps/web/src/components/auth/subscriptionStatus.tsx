@@ -155,16 +155,18 @@ export function SubscriptionStatus({
                 {subscription.tier === 'admin'
                   ? 'Unlimited access to all features'
                   : subscription.billingCycle === 'yearly'
-                  ? 'Annual subscription'
-                  : 'Monthly subscription'}
+                    ? 'Annual subscription'
+                    : 'Monthly subscription'}
               </p>
             </div>
           </div>
-          {subscription.billingCycle === 'yearly' && subscription.tier !== 'free' && subscription.tier !== 'admin' && (
-            <Badge variant="success" size="sm">
-              Save 5%
-            </Badge>
-          )}
+          {subscription.billingCycle === 'yearly' &&
+            subscription.tier !== 'free' &&
+            subscription.tier !== 'admin' && (
+              <Badge size="sm" variant="success">
+                Save 5%
+              </Badge>
+            )}
         </div>
 
         {/* Message Usage */}

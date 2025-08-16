@@ -313,7 +313,7 @@ export const subscribeToStream = query({
 });
 
 /**
- * Update streaming content (called by the streaming action)
+ * Update streaming content (called by the streaming action) with retry logic
  */
 export const updateStreamingContent = mutation({
   args: {
@@ -340,13 +340,54 @@ export const updateStreamingContent = mutation({
       throw new Error('Session not found');
     }
 
-    await ctx.db.patch(args.sessionId, {
-      content: args.content,
-      status: args.status || session.status,
-      tokens: args.tokens || session.tokens,
-      error: args.error,
-      updatedAt: Date.now(),
-    });
+    // Implement retry logic with exponential backoff for write conflicts
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount <= maxRetries) {
+      try {
+        await ctx.db.patch(args.sessionId, {
+          content: args.content,
+          status: args.status || session.status,
+          tokens: args.tokens || session.tokens,
+          error: args.error,
+          updatedAt: Date.now(),
+        });
+
+        // Success - exit retry loop
+        return;
+      } catch (error) {
+        const isWriteConflict =
+          error instanceof Error &&
+          (error.message.includes('write conflict') ||
+            error.message.includes('Write conflict') ||
+            error.message.includes('conflict'));
+
+        if (isWriteConflict && retryCount < maxRetries) {
+          retryCount++;
+          const backoffMs = Math.min(1000, 100 * 2 ** (retryCount - 1)); // 100ms, 200ms, 400ms
+
+          logger.debug('Write conflict in streaming update, retrying', {
+            sessionId: args.sessionId,
+            retryCount,
+            backoffMs,
+            error: String(error),
+          });
+
+          // Wait before retry with exponential backoff
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        } else {
+          // Non-conflict error or max retries reached - re-throw
+          logger.error('Streaming content update failed', {
+            sessionId: args.sessionId,
+            retryCount,
+            error: String(error),
+            isWriteConflict,
+          });
+          throw error;
+        }
+      }
+    }
   },
 });
 
@@ -1254,34 +1295,37 @@ export const streamChat = httpAction(async (ctx, request) => {
       0,
       (subscription.messagesLimit ?? 0) - (subscription.messagesUsed ?? 0)
     );
-    const creditsRemaining = Math.max(0, (subscription.messageCredits as number) || 0);
+    const creditsRemaining = Math.max(
+      0,
+      (subscription.messageCredits as number) || 0
+    );
     const totalStandardRemaining = planRemaining + creditsRemaining;
     if (totalStandardRemaining <= 0) {
-    return new Response(
-      JSON.stringify({
-        error:
-          'Message quota exhausted. Please upgrade your subscription or buy credits.',
-        code: 'QUOTA_EXCEEDED',
-        details: {
-          messagesUsed: subscription.messagesUsed,
-          messagesLimit: subscription.messagesLimit,
+      return new Response(
+        JSON.stringify({
+          error:
+            'Message quota exhausted. Please upgrade your subscription or buy credits.',
+          code: 'QUOTA_EXCEEDED',
+          details: {
+            messagesUsed: subscription.messagesUsed,
+            messagesLimit: subscription.messagesLimit,
             messageCredits: (subscription as any).messageCredits ?? 0,
-          tier: subscription.tier,
-          nextReset: subscription.currentPeriodEnd,
-        },
-      }),
-      {
-        status: 429,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers':
-            'Content-Type, Authorization, X-Requested-With, Accept',
-          'Access-Control-Allow-Credentials': 'true',
-        },
-      }
-    );
+            tier: subscription.tier,
+            nextReset: subscription.currentPeriodEnd,
+          },
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers':
+              'Content-Type, Authorization, X-Requested-With, Accept',
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        }
+      );
     }
   }
 
@@ -1521,7 +1565,8 @@ export const streamChat = httpAction(async (ctx, request) => {
           details: {
             premiumMessagesUsed: subscription.premiumMessagesUsed,
             premiumMessagesLimit: subscription.premiumMessagesLimit,
-            premiumMessageCredits: (subscription as any).premiumMessageCredits ?? 0,
+            premiumMessageCredits:
+              (subscription as any).premiumMessageCredits ?? 0,
             tier: subscription.tier,
             nextReset: subscription.currentPeriodEnd,
           },

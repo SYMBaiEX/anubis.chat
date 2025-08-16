@@ -567,10 +567,33 @@ export const updateTitle = mutation({
       throw new Error('Chat not found or access denied');
     }
 
-    await ctx.db.patch(args.chatId, {
-      title: args.title,
-      updatedAt: Date.now(),
-    });
+    // Retry logic for write conflicts
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount <= maxRetries) {
+      try {
+        await ctx.db.patch(args.chatId, {
+          title: args.title,
+          updatedAt: Date.now(),
+        });
+        break;
+      } catch (error) {
+        const isWriteConflict =
+          error instanceof Error &&
+          (error.message.includes('write conflict') ||
+            error.message.includes('Write conflict') ||
+            error.message.includes('conflict'));
+
+        if (isWriteConflict && retryCount < maxRetries) {
+          retryCount++;
+          const backoffMs = Math.min(1000, 100 * 2 ** (retryCount - 1));
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        } else {
+          throw error;
+        }
+      }
+    }
 
     return await ctx.db.get(args.chatId);
   },
@@ -591,39 +614,64 @@ export const updateTokenUsage = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    const chat = await ctx.db.get(args.chatId);
-    if (!chat) {
-      throw new Error('Chat not found');
+    // Retry logic for write conflicts with exponential backoff
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount <= maxRetries) {
+      try {
+        const chat = await ctx.db.get(args.chatId);
+        if (!chat) {
+          throw new Error('Chat not found');
+        }
+
+        // Get existing token usage or initialize
+        const currentUsage = chat.tokenUsage || {
+          totalPromptTokens: 0,
+          totalCompletionTokens: 0,
+          totalTokens: 0,
+          totalCachedTokens: 0,
+          totalEstimatedCost: 0,
+          messageCount: 0,
+        };
+
+        // Update cumulative token usage
+        await ctx.db.patch(args.chatId, {
+          tokenUsage: {
+            totalPromptTokens:
+              currentUsage.totalPromptTokens + args.tokenUsage.promptTokens,
+            totalCompletionTokens:
+              currentUsage.totalCompletionTokens +
+              args.tokenUsage.completionTokens,
+            totalTokens: currentUsage.totalTokens + args.tokenUsage.totalTokens,
+            totalCachedTokens:
+              currentUsage.totalCachedTokens + args.tokenUsage.cachedTokens,
+            totalEstimatedCost:
+              currentUsage.totalEstimatedCost + args.tokenUsage.estimatedCost,
+            messageCount: currentUsage.messageCount + 1,
+          },
+          updatedAt: Date.now(),
+        });
+
+        return { success: true };
+      } catch (error) {
+        const isWriteConflict =
+          error instanceof Error &&
+          (error.message.includes('write conflict') ||
+            error.message.includes('Write conflict') ||
+            error.message.includes('conflict'));
+
+        if (isWriteConflict && retryCount < maxRetries) {
+          retryCount++;
+          const backoffMs = Math.min(1000, 100 * 2 ** (retryCount - 1));
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        } else {
+          throw error;
+        }
+      }
     }
 
-    // Get existing token usage or initialize
-    const currentUsage = chat.tokenUsage || {
-      totalPromptTokens: 0,
-      totalCompletionTokens: 0,
-      totalTokens: 0,
-      totalCachedTokens: 0,
-      totalEstimatedCost: 0,
-      messageCount: 0,
-    };
-
-    // Update cumulative token usage
-    await ctx.db.patch(args.chatId, {
-      tokenUsage: {
-        totalPromptTokens:
-          currentUsage.totalPromptTokens + args.tokenUsage.promptTokens,
-        totalCompletionTokens:
-          currentUsage.totalCompletionTokens + args.tokenUsage.completionTokens,
-        totalTokens: currentUsage.totalTokens + args.tokenUsage.totalTokens,
-        totalCachedTokens:
-          currentUsage.totalCachedTokens + args.tokenUsage.cachedTokens,
-        totalEstimatedCost:
-          currentUsage.totalEstimatedCost + args.tokenUsage.estimatedCost,
-        messageCount: currentUsage.messageCount + 1,
-      },
-      updatedAt: Date.now(),
-    });
-
-    return { success: true };
+    return { success: false };
   },
 });
 
@@ -656,11 +704,33 @@ export const clearHistory = mutation({
     // Delete all messages
     await Promise.all(messages.map((message) => ctx.db.delete(message._id)));
 
-    // Update chat's last message time
-    await ctx.db.patch(args.chatId, {
-      lastMessageAt: Date.now(),
-      updatedAt: Date.now(),
-    });
+    // Update chat's last message time with retry logic
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount <= maxRetries) {
+      try {
+        await ctx.db.patch(args.chatId, {
+          lastMessageAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+        break;
+      } catch (error) {
+        const isWriteConflict =
+          error instanceof Error &&
+          (error.message.includes('write conflict') ||
+            error.message.includes('Write conflict') ||
+            error.message.includes('conflict'));
+
+        if (isWriteConflict && retryCount < maxRetries) {
+          retryCount++;
+          const backoffMs = Math.min(1000, 100 * 2 ** (retryCount - 1));
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        } else {
+          throw error;
+        }
+      }
+    }
 
     return {
       success: true,

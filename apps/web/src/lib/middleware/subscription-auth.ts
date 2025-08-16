@@ -180,8 +180,7 @@ function calculateLimits(subscription: SubscriptionSession['subscription']) {
   const messagesRemaining =
     planMessagesRemaining + Math.max(0, subscription.messageCredits ?? 0);
   const premiumMessagesRemaining =
-    planPremiumRemaining +
-    Math.max(0, subscription.premiumMessageCredits ?? 0);
+    planPremiumRemaining + Math.max(0, subscription.premiumMessageCredits ?? 0);
 
   return {
     canSendMessage: messagesRemaining > 0,

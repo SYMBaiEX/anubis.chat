@@ -109,8 +109,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         hasToken: !!token,
         limits: limits
           ? {
-            messagesRemaining: limits.messagesRemaining,
-          }
+              messagesRemaining: limits.messagesRemaining,
+            }
           : 'loading',
       });
     }
@@ -248,19 +248,19 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   // Use the dedicated query for the current chat instead of filtering from the list
   const currentChat = currentChatQuery as
     | (Pick<
-      Chat,
-      | 'title'
-      | 'model'
-      | 'lastMessageAt'
-      | 'updatedAt'
-      | 'systemPrompt'
-      | 'temperature'
-      | 'tokenUsage'
-    > & {
-      _id: string;
-      agentPrompt?: string;
-      agentId?: string;
-    })
+        Chat,
+        | 'title'
+        | 'model'
+        | 'lastMessageAt'
+        | 'updatedAt'
+        | 'systemPrompt'
+        | 'temperature'
+        | 'tokenUsage'
+      > & {
+        _id: string;
+        agentPrompt?: string;
+        agentId?: string;
+      })
     | undefined;
 
   // Sync URL parameter with selected chat ID
@@ -703,7 +703,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         )}
       >
         {/* Top Bar - Fixed at top */}
-        <div className="absolute top-0 left-0 right-0 z-30 flex h-12 min-h-[3rem] items-center justify-between border-border/50 border-b bg-card/95 px-2 backdrop-blur-sm sm:px-3 md:px-4 lg:px-6">
+        <div className="absolute top-0 right-0 left-0 z-30 flex h-12 min-h-[3rem] items-center justify-between border-border/50 border-b bg-card/95 px-2 backdrop-blur-sm sm:px-3 md:px-4 lg:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2 md:gap-3">
             {/* Hamburger menu */}
             {!sidebarOpen && (
@@ -742,7 +742,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       setShowDesktopAgentSelector(true);
                     }
                   }}
-                  onClearHistory={() => { }}
+                  onClearHistory={() => {}}
                   onDelete={() => {
                     if (selectedChatId) {
                       handleDeleteChat(selectedChatId);
@@ -901,7 +901,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             {/* Quick Suggestions removed */}
 
             {/* Message Input - Fixed at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 z-20 bg-card/30 backdrop-blur">
+            <div className="absolute right-0 bottom-0 left-0 z-20 bg-card/30 backdrop-blur">
               {/* Upgrade Prompt */}
               {upgradePrompt.shouldShow && upgradePrompt.urgency === 'high' && (
                 <div className="border-sidebar-border/80 border-t bg-card/30 p-2 sm:p-3 md:p-4">

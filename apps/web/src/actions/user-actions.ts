@@ -9,7 +9,10 @@ const log = createModuleLogger('user-actions');
 
 // User profile update schema
 const updateProfileSchema = z.object({
-  displayName: z.string().min(1, 'Display name is required').max(50, 'Display name too long'),
+  displayName: z
+    .string()
+    .min(1, 'Display name is required')
+    .max(50, 'Display name too long'),
   avatar: z.string().url('Invalid avatar URL').optional().or(z.literal('')),
   email: z.string().email('Invalid email address').optional(),
   bio: z.string().max(500, 'Bio too long').optional(),
@@ -32,7 +35,7 @@ export async function updateUserProfile(formData: FormData) {
     };
 
     const validatedData = updateProfileSchema.parse(rawData);
-    
+
     log.info('Updating user profile', {
       operation: 'update_profile',
       displayName: validatedData.displayName,
@@ -41,14 +44,14 @@ export async function updateUserProfile(formData: FormData) {
 
     // TODO: Replace with actual Convex mutation call
     // await convex.mutation(api.users.updateProfile, validatedData);
-    
+
     // Simulate async operation for now
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     // Revalidate the profile page
     revalidatePath('/account');
     revalidatePath('/dashboard');
-    
+
     return {
       success: true,
       message: 'Profile updated successfully',
@@ -104,7 +107,7 @@ export async function updateUserSettings(formData: FormData) {
     };
 
     const validatedData = updateSettingsSchema.parse(rawData);
-    
+
     log.info('Updating user settings', {
       operation: 'update_settings',
       theme: validatedData.theme,
@@ -113,12 +116,12 @@ export async function updateUserSettings(formData: FormData) {
 
     // TODO: Replace with actual Convex mutation call
     // await convex.mutation(api.users.updateSettings, validatedData);
-    
+
     // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     revalidatePath('/settings');
-    
+
     return {
       success: true,
       message: 'Settings updated successfully',
@@ -150,24 +153,24 @@ export async function updateUserSettings(formData: FormData) {
 export async function deleteUserAccount(formData: FormData) {
   try {
     const confirmation = formData.get('confirmation') as string;
-    
+
     if (confirmation !== 'DELETE') {
       return {
         success: false,
         message: 'Please type "DELETE" to confirm account deletion',
       };
     }
-    
+
     log.warn('User account deletion requested', {
       operation: 'delete_account',
     });
 
     // TODO: Replace with actual Convex mutation call
     // await convex.mutation(api.users.deleteAccount, {});
-    
+
     // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     // Clear all user data and redirect
     revalidatePath('/', 'layout');
     redirect('/');

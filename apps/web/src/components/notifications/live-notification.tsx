@@ -1,15 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, AlertTriangle, Info, CheckCircle, Clock } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, Info, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 export interface NotificationAction {
   label: string;
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  variant?:
+    | 'default'
+    | 'destructive'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link';
   onClick: () => void;
 }
 
@@ -95,10 +101,10 @@ const getNotificationColors = (type: LiveNotification['type']) => {
   }
 };
 
-export function LiveNotificationCard({ 
-  notification, 
-  onDismiss, 
-  onAction 
+export function LiveNotificationCard({
+  notification,
+  onDismiss,
+  onAction,
 }: LiveNotificationProps) {
   const [isVisible, setIsVisible] = useState(true);
   const colors = getNotificationColors(notification.type);
@@ -129,16 +135,16 @@ export function LiveNotificationCard({
         'p-4 transition-all duration-300 ease-in-out',
         colors.border,
         colors.bg,
-        isVisible 
-          ? 'opacity-100 translate-y-0' 
-          : 'opacity-0 -translate-y-2 pointer-events-none'
+        isVisible
+          ? 'translate-y-0 opacity-100'
+          : '-translate-y-2 pointer-events-none opacity-0'
       )}
     >
       <div className="flex items-start space-x-3">
-        <div className={cn('flex-shrink-0 mt-0.5', colors.icon)}>
+        <div className={cn('mt-0.5 flex-shrink-0', colors.icon)}>
           {getNotificationIcon(notification.type)}
         </div>
-        
+
         <div className="flex-1 space-y-2">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
@@ -147,22 +153,22 @@ export function LiveNotificationCard({
                   {notification.title}
                 </h4>
                 {notification.badge && (
-                  <Badge variant="secondary" size="sm">
+                  <Badge size="sm" variant="secondary">
                     {notification.badge}
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 text-sm dark:text-gray-400">
                 {notification.message}
               </p>
             </div>
-            
+
             {notification.dismissible !== false && (
               <Button
-                variant="ghost"
-                size="sm"
+                className="h-6 w-6 flex-shrink-0 p-0 hover:bg-gray-200 dark:hover:bg-gray-700"
                 onClick={handleDismiss}
-                className="flex-shrink-0 h-6 w-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-700"
+                size="sm"
+                variant="ghost"
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -173,11 +179,11 @@ export function LiveNotificationCard({
             <div className="flex flex-wrap gap-2 pt-1">
               {notification.actions.map((action, index) => (
                 <Button
-                  key={index}
-                  variant={action.variant || 'default'}
-                  size="sm"
-                  onClick={() => handleAction(index)}
                   className="text-xs"
+                  key={index}
+                  onClick={() => handleAction(index)}
+                  size="sm"
+                  variant={action.variant || 'default'}
                 >
                   {action.label}
                 </Button>
@@ -195,7 +201,12 @@ interface LiveNotificationManagerProps {
   onDismiss: (id: string) => void;
   onAction?: (id: string, actionIndex: number) => void;
   maxVisible?: number;
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center';
+  position?:
+    | 'top-right'
+    | 'top-left'
+    | 'bottom-right'
+    | 'bottom-left'
+    | 'top-center';
 }
 
 export function LiveNotificationManager({
@@ -203,7 +214,7 @@ export function LiveNotificationManager({
   onDismiss,
   onAction,
   maxVisible = 5,
-  position = 'top-right'
+  position = 'top-right',
 }: LiveNotificationManagerProps) {
   // Sort by priority (urgent > high > medium > low) and then by creation time
   const sortedNotifications = [...notifications]
@@ -211,11 +222,11 @@ export function LiveNotificationManager({
       const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
       const aPriority = priorityOrder[a.priority || 'medium'];
       const bPriority = priorityOrder[b.priority || 'medium'];
-      
+
       if (aPriority !== bPriority) {
         return bPriority - aPriority;
       }
-      
+
       // If same priority, newer notifications first
       return 0; // Assuming notifications array is already in chronological order
     })
@@ -245,13 +256,13 @@ export function LiveNotificationManager({
 
   return (
     <div className={getPositionClasses()}>
-      <div className="space-y-2 w-80 max-w-sm pointer-events-auto">
+      <div className="pointer-events-auto w-80 max-w-sm space-y-2">
         {sortedNotifications.map((notification) => (
           <LiveNotificationCard
             key={notification.id}
             notification={notification}
-            onDismiss={onDismiss}
             onAction={onAction}
+            onDismiss={onDismiss}
           />
         ))}
       </div>

@@ -542,9 +542,9 @@ export default function LeaderboardPage() {
                           {/* Commission Rate */}
                           <div className="col-span-2 flex items-center justify-center">
                             <Badge className="text-xs" variant="outline">
-                              {((entry.currentCommissionRate || 0.03) * 100).toFixed(
-                                1
-                              )}
+                              {(
+                                (entry.currentCommissionRate || 0.03) * 100
+                              ).toFixed(1)}
                               %
                             </Badge>
                           </div>

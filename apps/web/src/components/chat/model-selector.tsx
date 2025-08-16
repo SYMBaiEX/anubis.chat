@@ -24,10 +24,10 @@ import {
 import {
   AI_MODELS,
   type AIModel,
-  isPremiumModel,
-  isFreeModel,
-  isStandardModel,
   getModelsForTier,
+  isFreeModel,
+  isPremiumModel,
+  isStandardModel,
 } from '@/lib/constants/ai-models';
 import { cn } from '@/lib/utils';
 
@@ -99,7 +99,10 @@ export function ModelSelector({
   const selectedModel = AI_MODELS.find((model) => model.id === value);
 
   // Get available models based on user's subscription tier
-  const userTier = subscription?.tier === 'admin' ? 'pro_plus' : (subscription?.tier as 'free' | 'pro' | 'pro_plus') || 'free';
+  const userTier =
+    subscription?.tier === 'admin'
+      ? 'pro_plus'
+      : (subscription?.tier as 'free' | 'pro' | 'pro_plus') || 'free';
   const availableModelsByTier = getModelsForTier(userTier);
 
   // Filter models based on provider and tier access
@@ -142,7 +145,9 @@ export function ModelSelector({
       return true;
     }
     // Check if model is available for user's tier
-    return availableModelsByTier.some(availableModel => availableModel.id === model.id);
+    return availableModelsByTier.some(
+      (availableModel) => availableModel.id === model.id
+    );
   };
 
   const handleModelSelect = (model: AIModel) => {

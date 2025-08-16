@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useQuery } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { useQuery } from 'convex/react';
+import { useEffect } from 'react';
 import { useAuthContext } from '@/components/providers/auth-provider';
-import { useNotifications, createRenewalNotification, createExpiryNotification } from './use-notifications';
+import {
+  createExpiryNotification,
+  createRenewalNotification,
+  useNotifications,
+} from './use-notifications';
 
 interface UseSubscriptionNotificationsOptions {
   enabled?: boolean;
@@ -26,7 +30,7 @@ export function useSubscriptionNotifications({
   );
 
   useEffect(() => {
-    if (!enabled || !subscriptionStatus || !user) {
+    if (!(enabled && subscriptionStatus && user)) {
       return;
     }
 
@@ -42,7 +46,10 @@ export function useSubscriptionNotifications({
     }
 
     // Handle renewal notifications for active subscriptions
-    if (subscriptionStatus.needsRenewalNotification && subscriptionStatus.daysRemaining > 0) {
+    if (
+      subscriptionStatus.needsRenewalNotification &&
+      subscriptionStatus.daysRemaining > 0
+    ) {
       const renewalNotification = createRenewalNotification(
         subscriptionStatus.daysRemaining,
         subscriptionStatus.tier,
@@ -70,10 +77,13 @@ export function useSubscriptionNotifications({
       return;
     }
 
-    const intervalId = setInterval(() => {
-      // The useQuery will automatically refetch when the component re-renders
-      // This interval just ensures we're checking regularly
-    }, checkInterval * 60 * 1000);
+    const intervalId = setInterval(
+      () => {
+        // The useQuery will automatically refetch when the component re-renders
+        // This interval just ensures we're checking regularly
+      },
+      checkInterval * 60 * 1000
+    );
 
     return () => clearInterval(intervalId);
   }, [enabled, checkInterval]);
@@ -100,8 +110,8 @@ export function useWelcomeNotification() {
 
     // Check if this is a new user (created within last 24 hours)
     const userCreationTime = user.createdAt || Date.now();
-    const isNewUser = (Date.now() - userCreationTime) < 24 * 60 * 60 * 1000;
-    
+    const isNewUser = Date.now() - userCreationTime < 24 * 60 * 60 * 1000;
+
     // Check if we've already shown the welcome message
     const hasSeenWelcome = localStorage.getItem(`welcome-shown-${user._id}`);
 
@@ -110,7 +120,8 @@ export function useWelcomeNotification() {
       const welcomeNotification = {
         type: 'welcome' as const,
         title: 'Welcome to ANUBIS Chat!',
-        message: 'Your AI companion is ready to assist you. Start a conversation to explore all available models and features.',
+        message:
+          'Your AI companion is ready to assist you. Start a conversation to explore all available models and features.',
         badge: 'New User',
         duration: 8000,
         priority: 'high' as const,
@@ -120,7 +131,9 @@ export function useWelcomeNotification() {
             variant: 'default' as const,
             onClick: () => {
               // Focus on chat input if available
-              const chatInput = document.querySelector('[data-chat-input]') as HTMLElement;
+              const chatInput = document.querySelector(
+                '[data-chat-input]'
+              ) as HTMLElement;
               chatInput?.focus();
             },
           },
@@ -135,7 +148,7 @@ export function useWelcomeNotification() {
       };
 
       addNotification(welcomeNotification);
-      
+
       // Mark as shown
       localStorage.setItem(`welcome-shown-${user._id}`, 'true');
     }

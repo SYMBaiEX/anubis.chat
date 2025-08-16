@@ -28,11 +28,11 @@ export const NETWORK = getNetwork();
 export const getSolanaEndpoint = (): string => {
   // Use custom RPC URL if provided (e.g., Helius)
   const customEndpoint = process.env.NEXT_PUBLIC_SOLANA_RPC_URL;
-  
+
   if (customEndpoint) {
     return customEndpoint;
   }
-  
+
   // Fallback to standard cluster URLs
   return clusterApiUrl(NETWORK);
 };

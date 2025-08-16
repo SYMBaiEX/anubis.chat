@@ -5,7 +5,8 @@ import FeaturesPageClient from './features-client';
 // SEO Metadata
 export const metadata: Metadata = {
   title: 'Features - ANUBIS AI Chat | Advanced AI Features & Web3 Integration',
-  description: 'Discover ANUBIS AI Chat features: multiple AI models (GPT-5, Gemini 2.5), Solana wallet integration, custom agents, RAG capabilities, and blockchain-powered conversations.',
+  description:
+    'Discover ANUBIS AI Chat features: multiple AI models (GPT-5, Gemini 2.5), Solana wallet integration, custom agents, RAG capabilities, and blockchain-powered conversations.',
   keywords: [
     'AI chat features',
     'GPT-5 access',
@@ -20,7 +21,8 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: 'ANUBIS AI Features - Advanced Web3 AI Chat Capabilities',
-    description: 'Multiple AI models, Solana integration, custom agents, RAG system, and more. Experience the most advanced Web3-native AI chat platform.',
+    description:
+      'Multiple AI models, Solana integration, custom agents, RAG system, and more. Experience the most advanced Web3-native AI chat platform.',
     type: 'website',
     url: 'https://anubis.chat/features',
     images: [
@@ -35,8 +37,11 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'ANUBIS AI Features - Web3 AI Chat',
-    description: 'Multiple AI models, Solana integration, custom agents, and more advanced features.',
-    images: ['/api/og?title=ANUBIS%20Features&description=Web3%20AI%20Chat&theme=features'],
+    description:
+      'Multiple AI models, Solana integration, custom agents, and more advanced features.',
+    images: [
+      '/api/og?title=ANUBIS%20Features&description=Web3%20AI%20Chat&theme=features',
+    ],
   },
   alternates: {
     canonical: '/features',
@@ -47,11 +52,11 @@ export default function FeaturesPage() {
   return (
     <>
       <WebApplicationJsonLd
-        name="ANUBIS AI Chat Features"
-        description="Advanced AI features with Web3 integration"
-        url="https://anubis.chat/features"
         applicationCategory="AI Assistant"
+        description="Advanced AI features with Web3 integration"
+        name="ANUBIS AI Chat Features"
         operatingSystem="Web"
+        url="https://anubis.chat/features"
       />
       <FeaturesPageClient />
     </>

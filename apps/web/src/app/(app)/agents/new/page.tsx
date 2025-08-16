@@ -439,7 +439,6 @@ export default function NewAgentPage() {
                 )}
               </form.Field>
 
-
               {/* MCP Server Configuration - Temporarily disabled */}
               {/* <div className="space-y-4">
             <div>

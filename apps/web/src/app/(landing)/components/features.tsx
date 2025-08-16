@@ -1,7 +1,15 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowRight, Brain, Database, Globe, Network, Shield, Zap } from 'lucide-react';
+import {
+  ArrowRight,
+  Brain,
+  Database,
+  Globe,
+  Network,
+  Shield,
+  Zap,
+} from 'lucide-react';
 import Link from 'next/link';
 import { Card3D } from '@/components/animations/3dCard';
 import AnimatedSection from '@/components/landing/animated-section';
@@ -160,7 +168,7 @@ function Features() {
             );
           })}
         </div>
-        
+
         {/* CTA to explore more features */}
         <motion.div
           className="mt-12 text-center"
@@ -171,11 +179,11 @@ function Features() {
         >
           <Link href="/features">
             <motion.div
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
-              <Button size="lg" className="group">
+              <Button className="group" size="lg">
                 Explore All Features in Detail
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>

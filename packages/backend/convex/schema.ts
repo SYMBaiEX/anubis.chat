@@ -2557,4 +2557,17 @@ export default defineSchema({
     .index('by_chat', ['chatId'])
     .index('by_status', ['status'])
     .index('by_created', ['createdAt']),
+
+  // =============================================================================
+  // Typing Indicators for Real-time Chat UX
+  // =============================================================================
+  typingIndicators: defineTable({
+    chatId: v.id('chats'),
+    walletAddress: v.string(),
+    timestamp: v.number(),
+    isActive: v.boolean(),
+  })
+    .index('by_chat', ['chatId'])
+    .index('by_chat_wallet', ['chatId', 'walletAddress'])
+    .index('by_timestamp', ['timestamp']),
 });

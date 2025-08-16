@@ -342,24 +342,39 @@ class PerformanceMonitor {
 }
 
 // Singleton instance - only initialize in browser
-export const performanceMonitor = typeof window !== 'undefined' ? new PerformanceMonitor() : null;
+export const performanceMonitor =
+  typeof window !== 'undefined' ? new PerformanceMonitor() : null;
 
 /**
  * Hook for monitoring component performance
  */
 export function usePerformanceMonitor() {
   return {
-    recordMetric: (name: string, value: number, context?: Record<string, unknown>) => 
-      performanceMonitor?.recordMetric(name, value, context),
+    recordMetric: (
+      name: string,
+      value: number,
+      context?: Record<string, unknown>
+    ) => performanceMonitor?.recordMetric(name, value, context),
     recordInteraction: (action: string, component: string, startTime: number) =>
       performanceMonitor?.recordInteraction(action, component, startTime),
-    recordApiCall: (endpoint: string, method: string, statusCode: number, startTime: number, error?: string) =>
-      performanceMonitor?.recordApiCall(endpoint, method, statusCode, startTime, error),
+    recordApiCall: (
+      endpoint: string,
+      method: string,
+      statusCode: number,
+      startTime: number,
+      error?: string
+    ) =>
+      performanceMonitor?.recordApiCall(
+        endpoint,
+        method,
+        statusCode,
+        startTime,
+        error
+      ),
     recordStreamingMetrics: (messageId: string, metrics: any) =>
       performanceMonitor?.recordStreamingMetrics(messageId, metrics),
     getPerformanceSummary: () =>
       performanceMonitor?.getPerformanceSummary() || null,
-    setUserId: (userId: string) => 
-      performanceMonitor?.setUserId(userId),
+    setUserId: (userId: string) => performanceMonitor?.setUserId(userId),
   };
 }

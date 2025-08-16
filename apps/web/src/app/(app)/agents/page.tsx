@@ -23,7 +23,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { CreateAgentModal, EditAgentModal, type AgentFormData } from '@/components/agents/agentModal';
+import {
+  type AgentFormData,
+  CreateAgentModal,
+  EditAgentModal,
+} from '@/components/agents/agentModal';
 import { EmptyState } from '@/components/data/empty-states';
 import { LoadingStates } from '@/components/data/loading-states';
 import { useAuthContext } from '@/components/providers/auth-provider';
@@ -156,7 +160,8 @@ export default function AgentsPage() {
   const [showPublicAgents, setShowPublicAgents] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
-  const [duplicateData, setDuplicateData] = useState<Partial<AgentFormData> | null>(null);
+  const [duplicateData, setDuplicateData] =
+    useState<Partial<AgentFormData> | null>(null);
 
   // Initialize default agents mutation
   const initializeAgents = useMutation(api.agents.initializeDefaults);
@@ -204,7 +209,7 @@ export default function AgentsPage() {
       systemPrompt: agent.systemPrompt || '',
       temperature: agent.temperature || 0.7,
     };
-    
+
     setDuplicateData(duplicateValues);
     setCreateModalOpen(true);
   };
@@ -422,7 +427,9 @@ export default function AgentsPage() {
                                 {!agent.isPublic && (
                                   <>
                                     <DropdownMenuItem
-                                      onClick={() => setEditingAgentId(agent._id)}
+                                      onClick={() =>
+                                        setEditingAgentId(agent._id)
+                                      }
                                     >
                                       <Settings className="mr-2 h-4 w-4" />
                                       Edit
@@ -540,7 +547,7 @@ export default function AgentsPage() {
 
         {/* Create Agent Modal */}
         <CreateAgentModal
-          open={createModalOpen}
+          defaultValues={duplicateData || undefined}
           onOpenChange={(open) => {
             setCreateModalOpen(open);
             if (!open) {
@@ -551,20 +558,20 @@ export default function AgentsPage() {
             // Refresh agents list is handled automatically by Convex
             setDuplicateData(null); // Clear duplicate data on success
           }}
-          defaultValues={duplicateData || undefined}
+          open={createModalOpen}
         />
 
         {/* Edit Agent Modal */}
         {editingAgentId && (
           <EditAgentModal
             agentId={editingAgentId as Id<'agents'>}
-            open={!!editingAgentId}
             onOpenChange={(open) => {
               if (!open) setEditingAgentId(null);
             }}
             onSuccess={() => {
               // Refresh agents list is handled automatically by Convex
             }}
+            open={!!editingAgentId}
           />
         )}
       </motion.div>

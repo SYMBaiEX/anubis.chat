@@ -1,16 +1,16 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
   Bot,
   Crown,
   Loader,
   MessageSquare,
-  User as UserIcon,
-  Wallet as WalletIcon,
   Settings,
   Sparkles,
+  User as UserIcon,
+  Wallet as WalletIcon,
   Zap,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -49,37 +49,45 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <motion.div 
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
           className="text-center"
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <motion.div
-            animate={{ 
+            animate={{
               rotate: 360,
-              scale: [1, 1.1, 1]
-            }}
-            transition={{ 
-              rotate: { duration: 2, repeat: Infinity, ease: "linear" },
-              scale: { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
+              scale: [1, 1.1, 1],
             }}
             className="mx-auto mb-4"
+            transition={{
+              rotate: {
+                duration: 2,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: 'linear',
+              },
+              scale: {
+                duration: 1.5,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: 'easeInOut',
+              },
+            }}
           >
             <Settings className="h-8 w-8 text-primary" />
           </motion.div>
-          <motion.h2 
+          <motion.h2
+            animate={{ opacity: 1 }}
             className="font-semibold text-xl"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
             Loading settings...
           </motion.h2>
-          <motion.p 
+          <motion.p
+            animate={{ opacity: 1 }}
             className="text-muted-foreground"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
             Please wait while we load your settings.
@@ -91,15 +99,15 @@ export default function SettingsPage() {
 
   if (error) {
     return (
-      <motion.div 
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
         className="space-y-4 p-4 sm:p-6"
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <motion.div
-          initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, x: -10 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
           <h1 className="font-semibold text-xl sm:text-2xl">Settings</h1>
@@ -108,23 +116,23 @@ export default function SettingsPage() {
           </p>
         </motion.div>
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.4, delay: 0.2 }}
           whileHover={{ scale: 1.02 }}
         >
-          <Alert variant="destructive" className="relative overflow-hidden">
+          <Alert className="relative overflow-hidden" variant="destructive">
             <motion.div
               animate={{ x: [-100, 100] }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent"
               transition={{
                 duration: 3,
-                repeat: Infinity,
-                repeatType: "loop",
-                ease: "linear"
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: 'loop',
+                ease: 'linear',
               }}
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent"
             />
-            <AlertTriangle className="h-4 w-4 relative z-10" />
+            <AlertTriangle className="relative z-10 h-4 w-4" />
             <AlertDescription className="relative z-10">
               Unable to load subscription data. Some features may not be
               available.
@@ -136,46 +144,54 @@ export default function SettingsPage() {
   }
 
   return (
-    <motion.div 
+    <motion.div
+      animate={{ opacity: 1 }}
       className="w-full bg-gradient-to-b from-primary/5 dark:from-primary/10"
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
     >
       {/* Full-width header */}
       <div className="w-full p-4 md:p-6">
         <div className="mx-auto w-full max-w-6xl">
           <motion.div
+            animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-3"
             initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <motion.div
-              animate={{ 
+              animate={{
                 rotate: [0, 360],
-                scale: [1, 1.1, 1]
+                scale: [1, 1.1, 1],
               }}
-              transition={{ 
-                rotate: { duration: 4, repeat: Infinity, ease: "linear" },
-                scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+              transition={{
+                rotate: {
+                  duration: 4,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                },
+                scale: {
+                  duration: 2,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'easeInOut',
+                },
               }}
             >
               <Settings className="h-6 w-6 text-primary sm:h-8 sm:w-8" />
             </motion.div>
             <div>
-              <motion.h1 
+              <motion.h1
+                animate={{ opacity: 1, x: 0 }}
                 className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text font-semibold text-2xl text-transparent sm:text-3xl"
                 initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
               >
                 Settings
               </motion.h1>
-              <motion.p 
+              <motion.p
+                animate={{ opacity: 1, x: 0 }}
                 className="text-muted-foreground"
                 initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
               >
                 Manage your preferences and integrations
@@ -186,40 +202,44 @@ export default function SettingsPage() {
       </div>
 
       {/* Constrained content */}
-      <motion.div 
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
         className="mx-auto w-full max-w-6xl space-y-4 p-3 sm:p-4 md:p-6"
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
       >
         {/* Show upgrade prompt if needed */}
         <AnimatePresence>
           {upgradePrompt?.shouldShow && (
             <motion.div
-              initial={{ opacity: 0, height: 0, y: -20 }}
-              animate={{ opacity: 1, height: "auto", y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
               className="overflow-hidden"
+              exit={{ opacity: 0, height: 0, y: -20 }}
+              initial={{ opacity: 0, height: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
             >
-              <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20 relative overflow-hidden">
+              <Alert className="relative overflow-hidden border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20">
                 <motion.div
                   animate={{ x: [-100, 100] }}
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-400/20 to-transparent"
                   transition={{
                     duration: 3,
-                    repeat: Infinity,
-                    repeatType: "loop",
-                    ease: "linear"
+                    repeat: Number.POSITIVE_INFINITY,
+                    repeatType: 'loop',
+                    ease: 'linear',
                   }}
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-400/20 to-transparent"
                 />
                 <motion.div
                   animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{
+                    duration: 2,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: 'easeInOut',
+                  }}
                 >
-                  <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400 relative z-10" />
+                  <AlertTriangle className="relative z-10 h-4 w-4 text-orange-600 dark:text-orange-400" />
                 </motion.div>
-                <AlertDescription className="text-orange-800 dark:text-orange-200 relative z-10">
+                <AlertDescription className="relative z-10 text-orange-800 dark:text-orange-200">
                   <strong>{upgradePrompt.title}</strong>
                   <p className="mt-1 text-sm">{upgradePrompt.message}</p>
                 </AlertDescription>
@@ -228,26 +248,30 @@ export default function SettingsPage() {
           )}
         </AnimatePresence>
 
-        <motion.div 
+        <motion.div
+          animate={{ opacity: 1 }}
           className="space-y-6"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
         >
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.4, delay: 0.6 }}
           >
-            <motion.h2 
-              className="mb-2 font-medium flex items-center gap-2"
-              initial={{ opacity: 0, x: -10 }}
+            <motion.h2
               animate={{ opacity: 1, x: 0 }}
+              className="mb-2 flex items-center gap-2 font-medium"
+              initial={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.4, delay: 0.7 }}
             >
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 2,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'easeInOut',
+                }}
               >
                 <Crown className="h-4 w-4 text-primary" />
               </motion.div>
@@ -288,8 +312,8 @@ export default function SettingsPage() {
               ];
               return (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.4, delay: 0.8 }}
                   whileHover={{ scale: 1.01 }}
                 >
@@ -306,19 +330,23 @@ export default function SettingsPage() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.4, delay: 0.9 }}
           >
-            <motion.h2 
-              className="mb-2 font-medium flex items-center gap-2"
-              initial={{ opacity: 0, x: -10 }}
+            <motion.h2
               animate={{ opacity: 1, x: 0 }}
+              className="mb-2 flex items-center gap-2 font-medium"
+              initial={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.4, delay: 1.0 }}
             >
               <motion.div
                 animate={{ rotate: [0, 360] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                transition={{
+                  duration: 3,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                }}
               >
                 <Zap className="h-4 w-4 text-primary" />
               </motion.div>
@@ -370,8 +398,8 @@ export default function SettingsPage() {
               ];
               return (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.4, delay: 1.1 }}
                   whileHover={{ scale: 1.01 }}
                 >

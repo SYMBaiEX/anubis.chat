@@ -10,8 +10,8 @@ import { ConvexHttpClient } from 'convex/browser';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { convexConfig, solanaConfig } from '@/lib/env';
-import { getSolanaEndpoint } from '@/lib/solana';
 import { authRateLimit } from '@/lib/middleware/rate-limit';
+import { getSolanaEndpoint } from '@/lib/solana';
 import {
   addSecurityHeaders,
   internalErrorResponse,

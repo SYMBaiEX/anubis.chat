@@ -3,6 +3,7 @@
 import { api } from '@convex/_generated/api';
 import type { Doc, Id } from '@convex/_generated/dataModel';
 import { useMutation, useQuery } from 'convex/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bot,
   Clock,
@@ -20,6 +21,12 @@ import { useAuthContext } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { DEFAULT_MODEL } from '@/lib/constants/ai-models';
 import { cn } from '@/lib/utils';
+import {
+  chatItemVariants,
+  chatListContainer,
+  deleteButtonVariants,
+  fadeInUp,
+} from '@/lib/animations/variants';
 
 interface ChatSidebarProps {
   selectedChatId?: string;
@@ -119,7 +126,7 @@ export function ChatSidebar({
   }, [chats, searchQuery]);
 
   return (
-    <div className="flex h-full flex-col bg-card/50 backdrop-blur-sm">
+    <div className="flex h-full flex-col bg-card/50 backdrop-blur-sm touch-manipulation w-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between border-border border-b px-3 py-2">
         <div className="flex items-center gap-2 transition-transform hover:scale-105">
@@ -141,32 +148,50 @@ export function ChatSidebar({
       </div>
 
       {/* Search Bar */}
-      {chats && chats.length > 3 && (
-        <div className="border-border/50 border-b p-2 transition-all">
-          <div className="relative">
-            <Search className="-translate-y-1/2 absolute top-1/2 left-2 h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              className="w-full rounded-md bg-background/50 px-7 py-1.5 text-xs transition-colors placeholder:text-muted-foreground focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary/50"
-              onBlur={() => setIsSearching(false)}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearching(true)}
-              placeholder="Search chats..."
-              value={searchQuery}
-            />
-            {searchQuery && (
-              <button
-                className="-translate-y-1/2 absolute top-1/2 right-2 text-muted-foreground transition-colors hover:text-foreground"
-                onClick={() => setSearchQuery('')}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {chats && chats.length > 3 && (
+          <motion.div
+            className="border-border/50 border-b p-2"
+            variants={fadeInUp}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <div className="relative">
+              <Search className="-translate-y-1/2 absolute top-1/2 left-2 h-3.5 w-3.5 text-muted-foreground" />
+              <motion.input
+                className="w-full rounded-md bg-background/50 px-7 py-1.5 text-xs transition-all placeholder:text-muted-foreground focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary/50 focus:scale-[1.02]"
+                onBlur={() => setIsSearching(false)}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearching(true)}
+                placeholder="Search chats..."
+                value={searchQuery}
+                whileFocus={{ scale: 1.02 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              />
+              <AnimatePresence>
+                {searchQuery && (
+                  <motion.button
+                    className="-translate-y-1/2 absolute top-1/2 right-2 text-muted-foreground transition-colors hover:text-foreground"
+                    onClick={() => setSearchQuery('')}
+                    variants={deleteButtonVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    whileHover="hover"
+                    whileTap="tap"
+                  >
+                    <X className="h-3 w-3" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-hidden p-2">
+      <div className="flex-1 overflow-hidden px-2 pb-2">
         {chats === undefined ? (
           <div className="animate-fade-in p-2">
             <LoadingStates variant="skeleton" />
@@ -184,71 +209,101 @@ export function ChatSidebar({
             )}
 
             {/* Chat list container */}
-            <div
+            <motion.div
               className={cn(
-                'relative space-y-1 overflow-y-auto',
-                'max-h-[calc(100vh-200px)]',
-                filteredChats && filteredChats.length > 3 && 'pr-2'
+                'relative space-y-1 overflow-y-auto overflow-x-hidden',
+                'max-h-[calc(100vh-200px)] w-full'
               )}
               style={{
                 scrollBehavior: 'smooth',
                 scrollbarWidth: 'thin',
+                overflowX: 'hidden',
               }}
+              variants={chatListContainer}
+              initial="initial"
+              animate="animate"
             >
-              {filteredChats && filteredChats.length === 0 && searchQuery ? (
-                <div className="animate-fade-in py-4 text-center text-muted-foreground text-xs">
-                  No chats found
-                </div>
-              ) : (
-                filteredChats?.map((chat: Doc<'chats'>, index: number) => (
-                  <div
-                    className={cn(
-                      'group flex animate-fade-in cursor-pointer items-center gap-2 rounded-md px-2 py-2 transition-all',
-                      'hover:translate-x-1',
-                      activeChatId === chat._id
-                        ? 'bg-primary/10 shadow-sm ring-1 ring-primary/20'
-                        : 'hover:bg-muted/50'
-                    )}
-                    key={chat._id}
-                    onClick={() => handleChatSelect(chat._id)}
-                    style={{
-                      animationDelay: `${index * 50}ms`,
-                    }}
+              <AnimatePresence mode="popLayout">
+                {filteredChats && filteredChats.length === 0 && searchQuery ? (
+                  <motion.div
+                    className="py-4 text-center text-muted-foreground text-xs"
+                    variants={fadeInUp}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
                   >
-                    <MessageSquare
+                    No chats found
+                  </motion.div>
+                ) : (
+                  filteredChats?.map((chat: Doc<'chats'>) => (
+                    <motion.div
+                      key={chat._id}
                       className={cn(
-                        'h-4 w-4 flex-shrink-0 transition-colors',
+                        'group flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-3 sm:py-2',
+                        'relative min-h-[44px] sm:min-h-auto w-full', // Larger touch targets on mobile
+                        'touch-manipulation select-none overflow-hidden', // Better mobile interaction
                         activeChatId === chat._id
-                          ? 'text-primary'
-                          : 'text-muted-foreground'
+                          ? 'bg-primary/10 shadow-sm ring-1 ring-primary/20'
+                          : 'hover:bg-muted/50 active:bg-muted/70'
                       )}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={cn(
-                          'truncate text-sm transition-colors',
-                          activeChatId === chat._id && 'font-medium'
-                        )}
-                      >
-                        {chat.title}
-                      </p>
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <Clock className="h-2.5 w-2.5" />
-                        <span>{formatChatDate(chat._creationTime)}</span>
-                      </div>
-                    </div>
-                    <Button
-                      className="h-6 w-6 flex-shrink-0 opacity-0 transition-all group-hover:opacity-100"
-                      onClick={(e) => handleDeleteChat(chat._id, e)}
-                      size="icon"
-                      variant="ghost"
+                      onClick={() => handleChatSelect(chat._id)}
+                      variants={chatItemVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      whileHover="hover"
+                      whileTap="tap"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
+                      <MessageSquare
+                        className={cn(
+                          'h-4 w-4 flex-shrink-0 transition-colors',
+                          activeChatId === chat._id
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
+                        )}
+                      />
+                      <div className="min-w-0 flex-1 pr-8 sm:pr-1">
+                        <p
+                          className={cn(
+                            'truncate text-sm transition-colors leading-tight',
+                            activeChatId === chat._id && 'font-medium'
+                          )}
+                        >
+                          {chat.title}
+                        </p>
+                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+                          <Clock className="h-2.5 w-2.5 flex-shrink-0" />
+                          <span className="truncate">{formatChatDate(chat._creationTime)}</span>
+                        </div>
+                      </div>
+                      {/* Mobile-first delete button - always visible on mobile */}
+                      <motion.div
+                        className={cn(
+                          'absolute top-1/2 right-0.5 -translate-y-1/2',
+                          'sm:relative sm:top-auto sm:right-auto sm:translate-y-0',
+                          'sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity',
+                          'opacity-60 sm:opacity-0 flex-shrink-0' // Always visible on mobile with reduced opacity
+                        )}
+                        variants={deleteButtonVariants}
+                        initial="initial"
+                        animate="animate"
+                        whileHover="hover"
+                        whileTap="tap"
+                      >
+                        <Button
+                          className="h-6 w-6 sm:h-5 sm:w-5 flex-shrink-0 bg-destructive/10 hover:bg-destructive/20"
+                          onClick={(e) => handleDeleteChat(chat._id, e)}
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 sm:h-3 sm:w-3 text-destructive" />
+                        </Button>
+                      </motion.div>
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+            </motion.div>
 
             {/* Chat count indicator */}
             {filteredChats && filteredChats.length > 5 && (

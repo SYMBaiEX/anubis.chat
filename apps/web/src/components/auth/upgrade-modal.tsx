@@ -10,7 +10,7 @@ import {
   Transaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery } from 'convex/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,
   Check,
@@ -19,11 +19,11 @@ import {
   ExternalLink,
   Loader,
   Shield,
+  Sparkles,
   Wallet,
   Zap,
-  Sparkles,
 } from 'lucide-react';
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,17 +46,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // useCurrentUser replacement - using useSubscription hook instead
 import { useSubscription } from '@/hooks/use-subscription';
 import { paymentConfig, solanaConfig } from '@/lib/env';
-import { getSolanaEndpoint } from '@/lib/solana';
 import {
   createPaymentTransaction,
+  getSolanaEndpoint,
   processPaymentTransaction,
 } from '@/lib/solana';
-import { cn } from '@/lib/utils';
-import { createModuleLogger } from '@/lib/utils/logger';
 import {
   createSPLTokenTransferTransaction,
   validateSPLTokenTransfer,
 } from '@/lib/solana-spl';
+import { cn } from '@/lib/utils';
+import { createModuleLogger } from '@/lib/utils/logger';
 
 // Initialize logger
 const log = createModuleLogger('upgrade-modal');
@@ -212,17 +212,18 @@ export function UpgradeModal({
   );
 
   // Credits SPL token state
-  const [selectedCreditsToken, setSelectedCreditsToken] = useState<string>('SOL');
+  const [selectedCreditsToken, setSelectedCreditsToken] =
+    useState<string>('SOL');
   const creditsTokenCalculation = useQuery(
     api.splTokens.calculateTokenPaymentAmount,
     selectedCreditsToken
       ? {
-          tokenAddress: selectedCreditsToken === 'SOL' ? 'native' : selectedCreditsToken,
+          tokenAddress:
+            selectedCreditsToken === 'SOL' ? 'native' : selectedCreditsToken,
           subscriptionTier: 'pro', // Use pro pricing as base for credits calculation
         }
       : 'skip'
   );
-
 
   // Message credits queries and mutations
   const _purchaseMessageCredits = useMutation(
@@ -275,15 +276,16 @@ export function UpgradeModal({
         decimals: 9,
       };
     }
-    
+
     if (!creditsTokenCalculation?.priceInfo) return null;
-    
+
     // Calculate token amount for credits: (0.025 SOL per pack) / (token price in SOL)
     const solPerPack = MESSAGE_CREDIT_PACK.priceSOL; // 0.025 SOL
     const totalSolCost = solPerPack * numberOfPacks;
-    const tokenAmount = totalSolCost / creditsTokenCalculation.priceInfo.solPrice;
+    const tokenAmount =
+      totalSolCost / creditsTokenCalculation.priceInfo.solPrice;
     const decimals = creditsTokenCalculation.decimals || 6;
-    
+
     return {
       symbol: creditsTokenCalculation.symbol,
       amount: tokenAmount,
@@ -291,7 +293,12 @@ export function UpgradeModal({
       decimals,
       priceInfo: creditsTokenCalculation.priceInfo,
     };
-  }, [selectedCreditsToken, creditsTokenCalculation, totalCreditsCost, numberOfPacks]);
+  }, [
+    selectedCreditsToken,
+    creditsTokenCalculation,
+    totalCreditsCost,
+    numberOfPacks,
+  ]);
 
   // Initialize Solana connection
   const connection = new Connection(
@@ -792,12 +799,14 @@ export function UpgradeModal({
       tier === 'pro_plus' &&
       currentTier === 'pro' &&
       billingPeriod === (subscription as any)?.billingCycle;
-    
+
     // Calculate display price based on selected token and billing period
-    const basePrice = isProrated ? proratedUpgrade.proratedPrice : config[billingPeriod].priceSOL;
+    const basePrice = isProrated
+      ? proratedUpgrade.proratedPrice
+      : config[billingPeriod].priceSOL;
     let displayPrice = basePrice;
     let displaySymbol = 'SOL';
-    
+
     if (tokenCalculation && selectedToken !== 'SOL' && tier === selectedTier) {
       displayPrice = tokenCalculation.amount;
       displaySymbol = tokenCalculation.symbol;
@@ -850,7 +859,8 @@ export function UpgradeModal({
             {isProrated ? (
               <div className="space-y-1">
                 <div className="font-bold text-green-600 text-xl">
-                  {displayPrice.toFixed(displaySymbol === 'SOL' ? 3 : 6)} {displaySymbol}
+                  {displayPrice.toFixed(displaySymbol === 'SOL' ? 3 : 6)}{' '}
+                  {displaySymbol}
                 </div>
                 <div className="text-muted-foreground text-xs line-through">
                   {config[billingPeriod].priceSOL} SOL
@@ -862,13 +872,16 @@ export function UpgradeModal({
             ) : (
               <div>
                 <div className="font-bold text-xl">
-                  {displayPrice.toFixed(displaySymbol === 'SOL' ? 3 : 6)} {displaySymbol}
+                  {displayPrice.toFixed(displaySymbol === 'SOL' ? 3 : 6)}{' '}
+                  {displaySymbol}
                 </div>
                 <div className="text-muted-foreground text-sm">
-                  ≈ ${config[billingPeriod].priceUSD}/{billingPeriod === 'yearly' ? 'year' : 'month'}
+                  ≈ ${config[billingPeriod].priceUSD}/
+                  {billingPeriod === 'yearly' ? 'year' : 'month'}
                   {billingPeriod === 'yearly' && (
-                    <span className="block text-xs text-green-600 font-medium">
-                      ${(config[billingPeriod].priceUSD / 12).toFixed(0)}/month (5% savings)
+                    <span className="block font-medium text-green-600 text-xs">
+                      ${(config[billingPeriod].priceUSD / 12).toFixed(0)}/month
+                      (5% savings)
                     </span>
                   )}
                   {tokenCalculation?.priceInfo && selectedToken !== 'SOL' && (
@@ -999,10 +1012,9 @@ export function UpgradeModal({
             <div className="mt-1 rounded-lg border bg-background p-3">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">
-                  {tokenCalculation && selectedToken !== 'SOL' 
+                  {tokenCalculation && selectedToken !== 'SOL'
                     ? `${tokenCalculation.amount.toFixed(6)} ${tokenCalculation.symbol}`
-                    : `${paymentDetails.amount || selectedConfig.priceSOL} SOL`
-                  }
+                    : `${paymentDetails.amount || selectedConfig.priceSOL} SOL`}
                 </span>
                 <span className="text-muted-foreground text-sm">
                   {proratedUpgrade?.isProrated &&
@@ -1365,7 +1377,9 @@ export function UpgradeModal({
 
         // Check wallet balance first
         if (!creditsTokenAmount) {
-          throw new Error('Unable to calculate payment amount. Please try again.');
+          throw new Error(
+            'Unable to calculate payment amount. Please try again.'
+          );
         }
 
         if (selectedCreditsToken === 'SOL') {
@@ -1384,7 +1398,7 @@ export function UpgradeModal({
             selectedCreditsToken,
             creditsTokenAmount.rawAmount
           );
-          
+
           if (!validation.isValid) {
             throw new Error(validation.error || 'Insufficient token balance');
           }
@@ -1403,7 +1417,9 @@ export function UpgradeModal({
           if (referrerInfo?.hasReferrer) {
             referralAmount =
               Math.round(
-                totalCreditsCost * (referrerInfo.commissionRate ?? 0) * 1_000_000
+                totalCreditsCost *
+                  (referrerInfo.commissionRate ?? 0) *
+                  1_000_000
               ) / 1_000_000;
             mainAmount = Math.max(0, totalCreditsCost - referralAmount);
             referralWallet = referrerInfo.referrerWalletAddress;
@@ -1506,12 +1522,13 @@ export function UpgradeModal({
               referrerWalletAddress: referrerInfo?.referrerWalletAddress,
               commissionRate: referrerInfo?.commissionRate,
               // Add SPL token data if using SPL tokens
-              ...(selectedCreditsToken !== 'SOL' && creditsTokenAmount && {
-                tokenAddress: selectedCreditsToken,
-                tokenAmount: creditsTokenAmount.rawAmount,
-                tokenSymbol: creditsTokenAmount.symbol,
-                amountSol: totalCreditsCost, // SOL equivalent for verification
-              }),
+              ...(selectedCreditsToken !== 'SOL' &&
+                creditsTokenAmount && {
+                  tokenAddress: selectedCreditsToken,
+                  tokenAmount: creditsTokenAmount.rawAmount,
+                  tokenSymbol: creditsTokenAmount.symbol,
+                  amountSol: totalCreditsCost, // SOL equivalent for verification
+                }),
             }),
           });
 
@@ -1743,10 +1760,9 @@ export function UpgradeModal({
               <div className="rounded-xl border p-2">
                 <div className="text-muted-foreground">Total Cost</div>
                 <div className="font-medium">
-                  {creditsTokenAmount 
+                  {creditsTokenAmount
                     ? `${creditsTokenAmount.amount.toFixed(creditsTokenAmount.decimals <= 6 ? creditsTokenAmount.decimals : 6)} ${creditsTokenAmount.symbol}`
-                    : `${totalCreditsCost} SOL`
-                  }
+                    : `${totalCreditsCost} SOL`}
                 </div>
               </div>
               <div className="rounded-xl border p-2">
@@ -1768,7 +1784,10 @@ export function UpgradeModal({
           <div className="mb-3">
             <label className="font-medium text-sm">Payment Token</label>
           </div>
-          <Select onValueChange={setSelectedCreditsToken} value={selectedCreditsToken}>
+          <Select
+            onValueChange={setSelectedCreditsToken}
+            value={selectedCreditsToken}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select payment token" />
             </SelectTrigger>
@@ -1783,7 +1802,9 @@ export function UpgradeModal({
                 <SelectItem key={token.address} value={token.address}>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{token.symbol}</span>
-                    <span className="text-muted-foreground text-sm">{token.name}</span>
+                    <span className="text-muted-foreground text-sm">
+                      {token.name}
+                    </span>
                   </div>
                 </SelectItem>
               ))}
@@ -1806,8 +1827,7 @@ export function UpgradeModal({
           )}
           {creditsTokenAmount
             ? `Purchase Credits • ${creditsTokenAmount.amount.toFixed(creditsTokenAmount.decimals <= 6 ? creditsTokenAmount.decimals : 6)} ${creditsTokenAmount.symbol}`
-            : 'Loading...'
-          }
+            : 'Loading...'}
         </Button>
       </div>
     </div>
@@ -1850,10 +1870,9 @@ export function UpgradeModal({
                 <div className="flex justify-between border-t pt-2">
                   <span className="font-medium">Total:</span>
                   <span className="font-bold">
-                    {creditsTokenAmount 
+                    {creditsTokenAmount
                       ? `${creditsTokenAmount.amount.toFixed(creditsTokenAmount.decimals <= 6 ? creditsTokenAmount.decimals : 6)} ${creditsTokenAmount.symbol}`
-                      : `${totalCreditsCost} SOL`
-                    }
+                      : `${totalCreditsCost} SOL`}
                   </span>
                 </div>
               </div>
@@ -1918,10 +1937,9 @@ export function UpgradeModal({
           <div className="space-y-2">
             <p>
               <strong>Important:</strong> Send exactly{' '}
-              {creditsTokenAmount 
+              {creditsTokenAmount
                 ? `${creditsTokenAmount.amount.toFixed(creditsTokenAmount.decimals <= 6 ? creditsTokenAmount.decimals : 6)} ${creditsTokenAmount.symbol}`
-                : `${totalCreditsCost} SOL`
-              }{' '}
+                : `${totalCreditsCost} SOL`}{' '}
               to avoid processing delays.
             </p>
             <p>
@@ -2089,14 +2107,14 @@ export function UpgradeModal({
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <motion.div
-              animate={{ 
+              animate={{
                 rotate: [0, 10, -10, 0],
-                scale: [1, 1.1, 1]
+                scale: [1, 1.1, 1],
               }}
-              transition={{ 
-                duration: 2, 
-                repeat: Infinity,
-                ease: "easeInOut"
+              transition={{
+                duration: 2,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: 'easeInOut',
               }}
             >
               <Sparkles className="h-5 w-5 text-primary" />
@@ -2108,10 +2126,10 @@ export function UpgradeModal({
           </DialogDescription>
         </DialogHeader>
 
-        <motion.div 
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
           className="mt-6"
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
           <Tabs
@@ -2122,33 +2140,38 @@ export function UpgradeModal({
             value={activeTab}
           >
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.4, delay: 0.2 }}
             >
-              <TabsList className="grid w-full grid-cols-2 relative overflow-hidden">
+              <TabsList className="relative grid w-full grid-cols-2 overflow-hidden">
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5"
                   animate={{
                     background: [
-                      "linear-gradient(90deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))",
-                      "linear-gradient(90deg, rgba(139, 92, 246, 0.05), rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05))",
-                      "linear-gradient(90deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))",
-                      "linear-gradient(90deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))"
-                    ]
+                      'linear-gradient(90deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))',
+                      'linear-gradient(90deg, rgba(139, 92, 246, 0.05), rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05))',
+                      'linear-gradient(90deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))',
+                      'linear-gradient(90deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))',
+                    ],
                   }}
-                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5"
+                  transition={{
+                    duration: 6,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: 'easeInOut',
+                  }}
                 />
                 <TabsTrigger
-                  className="flex items-center space-x-1 sm:space-x-2 relative z-10 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-50 data-[state=active]:to-purple-50 dark:data-[state=active]:from-blue-900/20 dark:data-[state=active]:to-purple-900/20"
+                  className="relative z-10 flex items-center space-x-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-50 data-[state=active]:to-purple-50 sm:space-x-2 dark:data-[state=active]:from-blue-900/20 dark:data-[state=active]:to-purple-900/20"
                   value="subscription"
                 >
                   <motion.div
-                    animate={{ 
-                      rotate: activeTab === 'subscription' ? [0, 10, -10, 0] : 0,
-                      scale: activeTab === 'subscription' ? [1, 1.1, 1] : 1
+                    animate={{
+                      rotate:
+                        activeTab === 'subscription' ? [0, 10, -10, 0] : 0,
+                      scale: activeTab === 'subscription' ? [1, 1.1, 1] : 1,
                     }}
-                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                    transition={{ duration: 0.5, ease: 'easeInOut' }}
                   >
                     <Crown className="h-4 w-4 flex-shrink-0" />
                   </motion.div>
@@ -2156,17 +2179,24 @@ export function UpgradeModal({
                   <span className="sm:hidden">Plans</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  className="flex items-center space-x-1 sm:space-x-2 relative z-10 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-50 data-[state=active]:to-emerald-50 dark:data-[state=active]:from-green-900/20 dark:data-[state=active]:to-emerald-900/20"
+                  className="relative z-10 flex items-center space-x-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-50 data-[state=active]:to-emerald-50 sm:space-x-2 dark:data-[state=active]:from-green-900/20 dark:data-[state=active]:to-emerald-900/20"
                   value="credits"
                 >
                   <motion.div
-                    animate={{ 
+                    animate={{
                       rotate: activeTab === 'credits' ? [0, 360] : 0,
-                      scale: activeTab === 'credits' ? [1, 1.1, 1] : 1
+                      scale: activeTab === 'credits' ? [1, 1.1, 1] : 1,
                     }}
-                    transition={{ 
-                      rotate: { duration: 2, repeat: activeTab === 'credits' ? Infinity : 0, ease: "linear" },
-                      scale: { duration: 0.5, ease: "easeInOut" }
+                    transition={{
+                      rotate: {
+                        duration: 2,
+                        repeat:
+                          activeTab === 'credits'
+                            ? Number.POSITIVE_INFINITY
+                            : 0,
+                        ease: 'linear',
+                      },
+                      scale: { duration: 0.5, ease: 'easeInOut' },
                     }}
                   >
                     <CreditCard className="h-4 w-4 flex-shrink-0" />
@@ -2177,151 +2207,190 @@ export function UpgradeModal({
               </TabsList>
             </motion.div>
 
-            <div className="mt-6 relative">
+            <div className="relative mt-6">
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  transition={{ 
-                    type: "spring", 
-                    stiffness: 300, 
+                  initial={{ opacity: 0, x: 20 }}
+                  key={activeTab}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 300,
                     damping: 25,
-                    duration: 0.3
+                    duration: 0.3,
                   }}
                 >
                   <TabsContent className="m-0" value="subscription">
                     <AnimatePresence mode="wait">
                       <motion.div
-                        key={paymentStep}
-                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        initial={{ opacity: 0, y: 10 }}
+                        key={paymentStep}
                         transition={{ duration: 0.3 }}
                       >
                         {paymentStep === 'select' && (
                           <div className="space-y-6">
                             {/* Billing Period Toggle */}
                             <motion.div
-                              initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.3, delay: 0.1 }}
                               className="flex items-center justify-center"
+                              initial={{ opacity: 0, y: 10 }}
+                              transition={{ duration: 0.3, delay: 0.1 }}
                             >
                               <div className="flex items-center space-x-1 rounded-lg bg-muted p-1">
                                 <button
-                                  onClick={() => setBillingPeriod('monthly')}
                                   className={cn(
-                                    'rounded-md px-3 py-1.5 text-sm font-medium transition-all',
+                                    'rounded-md px-3 py-1.5 font-medium text-sm transition-all',
                                     billingPeriod === 'monthly'
                                       ? 'bg-background text-foreground shadow-sm'
                                       : 'text-muted-foreground hover:text-foreground'
                                   )}
+                                  onClick={() => setBillingPeriod('monthly')}
                                 >
                                   Monthly
                                 </button>
                                 <button
-                                  onClick={() => setBillingPeriod('yearly')}
                                   className={cn(
-                                    'rounded-md px-3 py-1.5 text-sm font-medium transition-all relative',
+                                    'relative rounded-md px-3 py-1.5 font-medium text-sm transition-all',
                                     billingPeriod === 'yearly'
                                       ? 'bg-background text-foreground shadow-sm'
                                       : 'text-muted-foreground hover:text-foreground'
                                   )}
+                                  onClick={() => setBillingPeriod('yearly')}
                                 >
                                   Yearly
-                                  <span className="ml-1 rounded-full bg-green-500 px-1.5 py-0.5 text-xs text-white">
+                                  <span className="ml-1 rounded-full bg-green-500 px-1.5 py-0.5 text-white text-xs">
                                     5% OFF
                                   </span>
                                 </button>
                               </div>
                             </motion.div>
 
-                            <motion.div 
+                            <motion.div
+                              animate="visible"
                               className="grid grid-cols-1 gap-6 md:grid-cols-2"
                               initial="hidden"
-                              animate="visible"
                               variants={{
                                 visible: {
                                   transition: {
-                                    staggerChildren: 0.1
-                                  }
-                                }
+                                    staggerChildren: 0.1,
+                                  },
+                                },
                               }}
                             >
-                              <motion.div variants={{
-                                hidden: { opacity: 0, y: 20 },
-                                visible: { opacity: 1, y: 0 }
-                              }}>
+                              <motion.div
+                                variants={{
+                                  hidden: { opacity: 0, y: 20 },
+                                  visible: { opacity: 1, y: 0 },
+                                }}
+                              >
                                 {renderTierCard('pro')}
                               </motion.div>
-                              <motion.div variants={{
-                                hidden: { opacity: 0, y: 20 },
-                                visible: { opacity: 1, y: 0 }
-                              }}>
+                              <motion.div
+                                variants={{
+                                  hidden: { opacity: 0, y: 20 },
+                                  visible: { opacity: 1, y: 0 },
+                                }}
+                              >
                                 {renderTierCard('pro_plus')}
                               </motion.div>
                             </motion.div>
 
                             {/* Token Selection */}
-                            {availableTokens && availableTokens.splTokens.length > 0 && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                              >
-                                <Card className="p-4">
-                                  <div className="mb-3">
-                                    <label className="font-medium text-sm">Payment Token</label>
-                                    <p className="text-muted-foreground text-xs">Choose how you'd like to pay</p>
-                                  </div>
-                                  <Select onValueChange={setSelectedToken} value={selectedToken}>
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Select payment token" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="SOL">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-medium">SOL</span>
-                                          <span className="text-muted-foreground text-sm">Solana</span>
-                                        </div>
-                                      </SelectItem>
-                                      {availableTokens.splTokens.map((token: any) => (
-                                        <SelectItem key={token.address} value={token.address}>
+                            {availableTokens &&
+                              availableTokens.splTokens.length > 0 && (
+                                <motion.div
+                                  animate={{ opacity: 1, y: 0 }}
+                                  initial={{ opacity: 0, y: 10 }}
+                                  transition={{ delay: 0.2 }}
+                                >
+                                  <Card className="p-4">
+                                    <div className="mb-3">
+                                      <label className="font-medium text-sm">
+                                        Payment Token
+                                      </label>
+                                      <p className="text-muted-foreground text-xs">
+                                        Choose how you'd like to pay
+                                      </p>
+                                    </div>
+                                    <Select
+                                      onValueChange={setSelectedToken}
+                                      value={selectedToken}
+                                    >
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select payment token" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="SOL">
                                           <div className="flex items-center gap-2">
-                                            <span className="font-medium">{token.symbol}</span>
-                                            <span className="text-muted-foreground text-sm">{token.name}</span>
+                                            <span className="font-medium">
+                                              SOL
+                                            </span>
+                                            <span className="text-muted-foreground text-sm">
+                                              Solana
+                                            </span>
                                           </div>
                                         </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  {tokenCalculation?.priceInfo && selectedToken !== 'SOL' && (
-                                    <div className="mt-2 text-muted-foreground text-xs">
-                                      Current price: {tokenCalculation.priceInfo.solPrice.toFixed(6)} SOL per {tokenCalculation.symbol}
-                                      {tokenCalculation.priceInfo.lastUpdated && (
-                                        <span className="ml-2">
-                                          (Updated {new Date(tokenCalculation.priceInfo.lastUpdated).toLocaleTimeString()})
-                                        </span>
+                                        {availableTokens.splTokens.map(
+                                          (token: any) => (
+                                            <SelectItem
+                                              key={token.address}
+                                              value={token.address}
+                                            >
+                                              <div className="flex items-center gap-2">
+                                                <span className="font-medium">
+                                                  {token.symbol}
+                                                </span>
+                                                <span className="text-muted-foreground text-sm">
+                                                  {token.name}
+                                                </span>
+                                              </div>
+                                            </SelectItem>
+                                          )
+                                        )}
+                                      </SelectContent>
+                                    </Select>
+                                    {tokenCalculation?.priceInfo &&
+                                      selectedToken !== 'SOL' && (
+                                        <div className="mt-2 text-muted-foreground text-xs">
+                                          Current price:{' '}
+                                          {tokenCalculation.priceInfo.solPrice.toFixed(
+                                            6
+                                          )}{' '}
+                                          SOL per {tokenCalculation.symbol}
+                                          {tokenCalculation.priceInfo
+                                            .lastUpdated && (
+                                            <span className="ml-2">
+                                              (Updated{' '}
+                                              {new Date(
+                                                tokenCalculation.priceInfo
+                                                  .lastUpdated
+                                              ).toLocaleTimeString()}
+                                              )
+                                            </span>
+                                          )}
+                                        </div>
                                       )}
-                                    </div>
-                                  )}
-                                </Card>
-                              </motion.div>
-                            )}
+                                  </Card>
+                                </motion.div>
+                              )}
 
-                            <motion.div 
+                            <motion.div
+                              animate={{ opacity: 1, y: 0 }}
                               className="flex justify-end space-x-3"
                               initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.3 }}
                             >
                               <Button onClick={handleClose} variant="outline">
                                 Maybe Later
                               </Button>
                               <Button
-                                className={cn('bg-gradient-to-r relative overflow-hidden transition-all duration-300 hover:scale-105', selectedConfig.color)}
+                                className={cn(
+                                  'relative overflow-hidden bg-gradient-to-r transition-all duration-300 hover:scale-105',
+                                  selectedConfig.color
+                                )}
                                 disabled={isProcessing || !canUpgrade}
                                 onClick={handleUpgrade}
                               >
@@ -2332,7 +2401,9 @@ export function UpgradeModal({
                                   {isProcessing ? (
                                     <Loader className="h-4 w-4 animate-spin" />
                                   ) : (
-                                    canUpgrade && <Sparkles className="h-4 w-4" />
+                                    canUpgrade && (
+                                      <Sparkles className="h-4 w-4" />
+                                    )
                                   )}
                                   {canUpgrade
                                     ? `Upgrade to ${selectedConfig.name}`
@@ -2340,13 +2411,13 @@ export function UpgradeModal({
                                 </motion.span>
                                 {canUpgrade && (
                                   <motion.div
-                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
                                     animate={{ x: [-100, 100] }}
+                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
                                     transition={{
                                       duration: 3,
-                                      repeat: Infinity,
-                                      repeatType: "loop",
-                                      ease: "linear"
+                                      repeat: Number.POSITIVE_INFINITY,
+                                      repeatType: 'loop',
+                                      ease: 'linear',
                                     }}
                                   />
                                 )}
@@ -2355,8 +2426,10 @@ export function UpgradeModal({
                           </div>
                         )}
 
-                        {paymentStep === 'payment' && renderPaymentInstructions()}
-                        {paymentStep === 'processing' && renderProcessingState()}
+                        {paymentStep === 'payment' &&
+                          renderPaymentInstructions()}
+                        {paymentStep === 'processing' &&
+                          renderProcessingState()}
                         {paymentStep === 'success' && renderSuccessState()}
                         {paymentStep === 'error' && renderErrorState()}
                       </motion.div>
@@ -2366,17 +2439,22 @@ export function UpgradeModal({
                   <TabsContent className="m-0" value="credits">
                     <AnimatePresence mode="wait">
                       <motion.div
-                        key={creditsPaymentStep}
-                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        initial={{ opacity: 0, y: 10 }}
+                        key={creditsPaymentStep}
                         transition={{ duration: 0.3 }}
                       >
-                        {creditsPaymentStep === 'select' && renderCreditsPackSelector()}
-                        {creditsPaymentStep === 'payment' && renderCreditsPaymentInstructions()}
-                        {creditsPaymentStep === 'processing' && renderCreditsProcessingState()}
-                        {creditsPaymentStep === 'success' && renderCreditsSuccessState()}
-                        {creditsPaymentStep === 'error' && renderCreditsErrorState()}
+                        {creditsPaymentStep === 'select' &&
+                          renderCreditsPackSelector()}
+                        {creditsPaymentStep === 'payment' &&
+                          renderCreditsPaymentInstructions()}
+                        {creditsPaymentStep === 'processing' &&
+                          renderCreditsProcessingState()}
+                        {creditsPaymentStep === 'success' &&
+                          renderCreditsSuccessState()}
+                        {creditsPaymentStep === 'error' &&
+                          renderCreditsErrorState()}
                       </motion.div>
                     </AnimatePresence>
                   </TabsContent>

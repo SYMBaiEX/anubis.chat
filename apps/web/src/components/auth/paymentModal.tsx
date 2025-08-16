@@ -28,11 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { getSolanaEndpoint } from '@/lib/solana';
 import {
   createSPLTokenTransferTransaction,
   validateSPLTokenTransfer,
 } from '@/lib/solana-spl';
-import { getSolanaEndpoint } from '@/lib/solana';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -107,7 +107,9 @@ export function PaymentModal({
   const [step, setStep] = useState<
     'details' | 'processing' | 'success' | 'error'
   >('details');
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(defaultBillingCycle);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(
+    defaultBillingCycle
+  );
 
   // SPL Token state
   const [selectedToken, setSelectedToken] = useState<string>('SOL');
@@ -301,18 +303,18 @@ export function PaymentModal({
               </div>
               <div className="flex gap-2">
                 <Button
-                  variant={billingCycle === 'monthly' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setBillingCycle('monthly')}
                   className="flex-1"
+                  onClick={() => setBillingCycle('monthly')}
+                  size="sm"
+                  variant={billingCycle === 'monthly' ? 'default' : 'outline'}
                 >
                   Monthly
                 </Button>
                 <Button
-                  variant={billingCycle === 'yearly' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setBillingCycle('yearly')}
                   className="flex-1"
+                  onClick={() => setBillingCycle('yearly')}
+                  size="sm"
+                  variant={billingCycle === 'yearly' ? 'default' : 'outline'}
                 >
                   Annual
                   <Badge className="ml-2 text-xs" variant="secondary">
@@ -356,7 +358,11 @@ export function PaymentModal({
                     )}
                   </div>
                   <p className="text-muted-foreground text-sm">
-                    {isUpgrade ? 'Upgrade difference' : billingCycle === 'yearly' ? 'per year' : 'per month'}
+                    {isUpgrade
+                      ? 'Upgrade difference'
+                      : billingCycle === 'yearly'
+                        ? 'per year'
+                        : 'per month'}
                     {tokenCalculation?.priceInfo && selectedToken !== 'SOL' && (
                       <span className="ml-2">
                         (~${tokenCalculation.priceInfo.usdPrice.toFixed(4)} USD

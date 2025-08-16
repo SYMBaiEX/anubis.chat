@@ -221,7 +221,7 @@ export const createMyMessage = mutation({
       updatedAt: now,
     });
 
-    // Update chat's last message timestamp and counts
+    // Update chat's last message timestamp and counts with retry logic
     const updateData: Record<string, unknown> = {
       lastMessageAt: now,
       updatedAt: now,
@@ -232,7 +232,41 @@ export const createMyMessage = mutation({
       updateData.totalTokens = chat.totalTokens + args.tokenCount;
     }
 
-    await ctx.db.patch(args.chatId, updateData);
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount <= maxRetries) {
+      try {
+        await ctx.db.patch(args.chatId, updateData);
+        break;
+      } catch (error) {
+        const isWriteConflict =
+          error instanceof Error &&
+          (error.message.includes('write conflict') ||
+            error.message.includes('Write conflict') ||
+            error.message.includes('conflict'));
+
+        if (isWriteConflict && retryCount < maxRetries) {
+          retryCount++;
+          const backoffMs = Math.min(1000, 100 * 2 ** (retryCount - 1));
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+
+          // Refresh chat data for retry
+          const refreshedChat = await ctx.db.get(args.chatId);
+          if (!refreshedChat) {
+            throw new Error('Chat not found during retry');
+          }
+
+          updateData.messageCount = refreshedChat.messageCount + 1;
+          if (args.tokenCount) {
+            updateData.totalTokens =
+              refreshedChat.totalTokens + args.tokenCount;
+          }
+        } else {
+          throw error;
+        }
+      }
+    }
 
     // Return just the message ID for compatibility with streaming session
     return messageId;
@@ -260,11 +294,33 @@ export const deleteMyMessage = mutation({
 
     await ctx.db.delete(args.id);
 
-    // Update chat message count
-    await ctx.db.patch(message.chatId, {
-      messageCount: Math.max(0, chat.messageCount - 1),
-      updatedAt: Date.now(),
-    });
+    // Update chat message count with retry logic
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount <= maxRetries) {
+      try {
+        await ctx.db.patch(message.chatId, {
+          messageCount: Math.max(0, chat.messageCount - 1),
+          updatedAt: Date.now(),
+        });
+        break;
+      } catch (error) {
+        const isWriteConflict =
+          error instanceof Error &&
+          (error.message.includes('write conflict') ||
+            error.message.includes('Write conflict') ||
+            error.message.includes('conflict'));
+
+        if (isWriteConflict && retryCount < maxRetries) {
+          retryCount++;
+          const backoffMs = Math.min(1000, 100 * 2 ** (retryCount - 1));
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        } else {
+          throw error;
+        }
+      }
+    }
 
     return { success: true };
   },
@@ -292,13 +348,35 @@ export const clearMyChatMessages = mutation({
 
     await Promise.all(messages.map((m) => ctx.db.delete(m._id)));
 
-    // Reset chat counters
-    await ctx.db.patch(args.chatId, {
-      messageCount: 0,
-      totalTokens: 0,
-      lastMessageAt: undefined,
-      updatedAt: Date.now(),
-    });
+    // Reset chat counters with retry logic
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount <= maxRetries) {
+      try {
+        await ctx.db.patch(args.chatId, {
+          messageCount: 0,
+          totalTokens: 0,
+          lastMessageAt: undefined,
+          updatedAt: Date.now(),
+        });
+        break;
+      } catch (error) {
+        const isWriteConflict =
+          error instanceof Error &&
+          (error.message.includes('write conflict') ||
+            error.message.includes('Write conflict') ||
+            error.message.includes('conflict'));
+
+        if (isWriteConflict && retryCount < maxRetries) {
+          retryCount++;
+          const backoffMs = Math.min(1000, 100 * 2 ** (retryCount - 1));
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        } else {
+          throw error;
+        }
+      }
+    }
 
     return { success: true, deletedCount: messages.length };
   },

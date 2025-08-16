@@ -91,6 +91,115 @@ export const pageTransition: Variants = {
 };
 
 /**
+ * Enhanced page transition with scale and blur effects
+ */
+export const enhancedPageTransition: Variants = {
+  initial: { 
+    opacity: 0, 
+    scale: 0.95, 
+    y: 20,
+    filter: 'blur(4px)'
+  },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: { 
+      duration: 0.4, 
+      ease: [0.23, 1, 0.32, 1], // easeOutQuart
+      staggerChildren: 0.1,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 1.05,
+    y: -20,
+    filter: 'blur(4px)',
+    transition: { 
+      duration: 0.3, 
+      ease: [0.76, 0, 0.24, 1], // easeInQuart
+    },
+  },
+};
+
+/**
+ * Loading spinner animation
+ */
+export const loadingSpinner: Variants = {
+  animate: {
+    rotate: 360,
+    transition: {
+      duration: 1,
+      repeat: Number.POSITIVE_INFINITY,
+      ease: 'linear',
+    },
+  },
+};
+
+/**
+ * Loading bar animation
+ */
+export const loadingBar: Variants = {
+  initial: { scaleX: 0, originX: 0 },
+  loading: {
+    scaleX: [0, 0.3, 0.7, 1],
+    transition: {
+      duration: 2,
+      ease: [0.23, 1, 0.32, 1],
+      times: [0, 0.2, 0.8, 1],
+    },
+  },
+  complete: {
+    scaleX: 1,
+    transition: {
+      duration: 0.2,
+    },
+  },
+};
+
+/**
+ * Route loading overlay
+ */
+export const routeLoadingOverlay: Variants = {
+  initial: { opacity: 0 },
+  animate: {
+    opacity: 1,
+    transition: { duration: 0.2 },
+  },
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.3, delay: 0.2 },
+  },
+};
+
+/**
+ * Content fade with stagger
+ */
+export const contentFadeStagger: Variants = {
+  initial: {},
+  animate: {
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+export const contentFadeItem: Variants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+};
+
+/**
  * Modal/Overlay animations
  */
 export const overlayVariants: Variants = {
@@ -183,6 +292,169 @@ export const float: Variants = {
       duration: 3,
       repeat: Number.POSITIVE_INFINITY,
       ease: 'easeInOut',
+    },
+  },
+};
+
+/**
+ * Sidebar animations
+ */
+export const sidebarVariants: Variants = {
+  collapsed: {
+    width: 56,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 30,
+    },
+  },
+  expanded: {
+    width: 224,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 30,
+    },
+  },
+};
+
+export const sidebarMobileVariants: Variants = {
+  closed: {
+    x: '-100%',
+    opacity: 0.8,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 35,
+      mass: 0.8,
+      staggerChildren: 0.05,
+      staggerDirection: -1,
+    },
+  },
+  open: {
+    x: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 35,
+      mass: 0.8,
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+export const sidebarContentVariants: Variants = {
+  closed: {
+    opacity: 0,
+    y: 20,
+    transition: {
+      duration: 0.2,
+    },
+  },
+  open: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+};
+
+export const chatItemVariants: Variants = {
+  initial: {
+    opacity: 0,
+    x: -10,
+    scale: 0.98,
+  },
+  animate: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+  exit: {
+    opacity: 0,
+    x: -10,
+    scale: 0.98,
+    transition: {
+      duration: 0.2,
+    },
+  },
+  hover: {
+    x: 2,
+    scale: 1.01,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 20,
+    },
+  },
+  tap: {
+    scale: 0.99,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 20,
+    },
+  },
+};
+
+export const chatListContainer: Variants = {
+  initial: {},
+  animate: {
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+export const deleteButtonVariants: Variants = {
+  initial: {
+    opacity: 0,
+    scale: 0.8,
+    x: 10,
+  },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    x: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 20,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.8,
+    x: 10,
+    transition: {
+      duration: 0.15,
+    },
+  },
+  hover: {
+    scale: 1.1,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 15,
+    },
+  },
+  tap: {
+    scale: 0.9,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 15,
     },
   },
 };

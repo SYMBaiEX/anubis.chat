@@ -10,7 +10,7 @@ import {
   Transaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery } from 'convex/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,
   Check,
@@ -18,8 +18,8 @@ import {
   ExternalLink,
   Loader,
   Plus,
-  Wallet,
   Sparkles,
+  Wallet,
   Zap,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -36,9 +36,9 @@ import {
 } from '@/components/ui/dialog';
 import { useSubscription } from '@/hooks/use-subscription';
 import { solanaConfig } from '@/lib/env';
-import { getSolanaEndpoint } from '@/lib/solana';
 import {
   createPaymentTransaction,
+  getSolanaEndpoint,
   processPaymentTransaction,
 } from '@/lib/solana';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -108,10 +108,7 @@ export function MessageCreditsModal({
   const totalPremiumCredits = CREDIT_PACK.premiumCredits * numberOfPacks;
 
   // Initialize Solana connection
-  const connection = new Connection(
-    getSolanaEndpoint(),
-    'confirmed'
-  );
+  const connection = new Connection(getSolanaEndpoint(), 'confirmed');
 
   // Poll payment status when processing
   useEffect(() => {
@@ -911,14 +908,14 @@ export function MessageCreditsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <motion.div
-              animate={{ 
+              animate={{
                 rotate: [0, 360],
-                scale: [1, 1.2, 1]
+                scale: [1, 1.2, 1],
               }}
-              transition={{ 
-                duration: 2, 
-                repeat: Infinity,
-                ease: "easeInOut"
+              transition={{
+                duration: 2,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: 'easeInOut',
               }}
             >
               <CreditCard className="h-5 w-5 text-green-600" />
@@ -930,18 +927,18 @@ export function MessageCreditsModal({
           </DialogDescription>
         </DialogHeader>
 
-        <motion.div 
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
           className="mt-6"
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <AnimatePresence mode="wait">
             <motion.div
-              key={paymentStep}
-              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: 10 }}
+              key={paymentStep}
               transition={{ duration: 0.3 }}
             >
               {paymentStep === 'select' && renderPackSelector()}

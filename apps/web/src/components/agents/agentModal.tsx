@@ -99,12 +99,12 @@ export function AgentModal({
   const updateAgent = useMutation(api.agents.update);
 
   // Check permissions for edit mode
-  const canEdit = mode === 'create' || (
-    user?.walletAddress && 
-    agent && 
-    agent.createdBy === user.walletAddress && 
-    !agent.isPublic
-  );
+  const canEdit =
+    mode === 'create' ||
+    (user?.walletAddress &&
+      agent &&
+      agent.createdBy === user.walletAddress &&
+      !agent.isPublic);
 
   // Form setup
   const form = useForm({
@@ -182,7 +182,7 @@ export function AgentModal({
   // Handle permission check for edit mode
   if (mode === 'edit' && agent && !canEdit) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog onOpenChange={onOpenChange} open={open}>
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -190,7 +190,8 @@ export function AgentModal({
           </DialogHeader>
           <div className="py-4 text-center">
             <p className="text-muted-foreground">
-              You can only edit agents that you created. Public agents cannot be edited.
+              You can only edit agents that you created. Public agents cannot be
+              edited.
             </p>
           </div>
         </DialogContent>
@@ -201,7 +202,7 @@ export function AgentModal({
   // Handle loading state for edit mode
   if (mode === 'edit' && agent === undefined) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog onOpenChange={onOpenChange} open={open}>
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -218,7 +219,7 @@ export function AgentModal({
   // Handle not found state for edit mode
   if (mode === 'edit' && agent === null) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog onOpenChange={onOpenChange} open={open}>
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -235,9 +236,9 @@ export function AgentModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog onOpenChange={onOpenChange} open={open}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {mode === 'create' ? (
@@ -301,8 +302,11 @@ export function AgentModal({
                     name="name"
                     validators={{
                       onChange: ({ value }) => {
-                        const result = agentFormSchema.shape.name.safeParse(value);
-                        return result.success ? undefined : result.error.issues[0].message;
+                        const result =
+                          agentFormSchema.shape.name.safeParse(value);
+                        return result.success
+                          ? undefined
+                          : result.error.issues[0].message;
                       },
                     }}
                   >
@@ -332,8 +336,11 @@ export function AgentModal({
                     name="temperature"
                     validators={{
                       onChange: ({ value }) => {
-                        const result = agentFormSchema.shape.temperature.safeParse(value);
-                        return result.success ? undefined : result.error.issues[0].message;
+                        const result =
+                          agentFormSchema.shape.temperature.safeParse(value);
+                        return result.success
+                          ? undefined
+                          : result.error.issues[0].message;
                       },
                     }}
                   >
@@ -349,7 +356,9 @@ export function AgentModal({
                           name={field.name}
                           onBlur={field.handleBlur}
                           onChange={(e) =>
-                            field.handleChange(Number.parseFloat(e.target.value))
+                            field.handleChange(
+                              Number.parseFloat(e.target.value)
+                            )
                           }
                           step="0.1"
                           type="range"
@@ -367,8 +376,11 @@ export function AgentModal({
                   name="description"
                   validators={{
                     onChange: ({ value }) => {
-                      const result = agentFormSchema.shape.description.safeParse(value);
-                      return result.success ? undefined : result.error.issues[0].message;
+                      const result =
+                        agentFormSchema.shape.description.safeParse(value);
+                      return result.success
+                        ? undefined
+                        : result.error.issues[0].message;
                     },
                   }}
                 >
@@ -409,8 +421,11 @@ export function AgentModal({
                   name="systemPrompt"
                   validators={{
                     onChange: ({ value }) => {
-                      const result = agentFormSchema.shape.systemPrompt.safeParse(value);
-                      return result.success ? undefined : result.error.issues[0].message;
+                      const result =
+                        agentFormSchema.shape.systemPrompt.safeParse(value);
+                      return result.success
+                        ? undefined
+                        : result.error.issues[0].message;
                     },
                   }}
                 >
@@ -451,14 +466,14 @@ export function AgentModal({
                   selector={(state) => [state.canSubmit, state.isSubmitting]}
                 >
                   {([canSubmit, isSubmitting]) => (
-                    <Button
-                      disabled={!canSubmit || isSubmitting}
-                      type="submit"
-                    >
-                      {isSubmitting 
-                        ? (mode === 'create' ? 'Creating...' : 'Updating...')
-                        : (mode === 'create' ? 'Create Agent' : 'Update Agent')
-                      }
+                    <Button disabled={!canSubmit || isSubmitting} type="submit">
+                      {isSubmitting
+                        ? mode === 'create'
+                          ? 'Creating...'
+                          : 'Updating...'
+                        : mode === 'create'
+                          ? 'Create Agent'
+                          : 'Update Agent'}
                     </Button>
                   )}
                 </form.Subscribe>

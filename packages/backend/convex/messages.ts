@@ -405,12 +405,13 @@ async function ensureUserCanSendMessage(
     0,
     (subscription.messagesLimit ?? 0) - (subscription.messagesUsed ?? 0)
   );
-  const creditsRemaining = Math.max(0, (subscription as any).messageCredits ?? 0);
+  const creditsRemaining = Math.max(
+    0,
+    (subscription as any).messageCredits ?? 0
+  );
   const totalStandardRemaining = planRemaining + creditsRemaining;
   if (totalStandardRemaining <= 0) {
-    throw new Error(
-      'Message quota exhausted. Please upgrade or buy credits.'
-    );
+    throw new Error('Message quota exhausted. Please upgrade or buy credits.');
   }
 
   const premiumList = ['gpt-4o', 'claude-3.5-sonnet', 'claude-sonnet-4'];
@@ -433,9 +434,7 @@ async function ensureUserCanSendMessage(
     const totalPremiumRemaining =
       planPremiumRemaining + premiumCreditsRemaining;
     if (totalPremiumRemaining <= 0) {
-    throw new Error(
-      'Premium quota exhausted. Upgrade or buy credits.'
-    );
+      throw new Error('Premium quota exhausted. Upgrade or buy credits.');
     }
   }
 }

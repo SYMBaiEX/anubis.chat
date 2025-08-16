@@ -2,7 +2,7 @@
 
 import { api } from '@convex/_generated/api';
 import { useMutation, useQuery } from 'convex/react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronLeft,
   ChevronRight,
@@ -39,6 +39,11 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useUpgradeModal } from '@/hooks/use-upgrade-modal';
 import { formatTierLabel } from '@/lib/format-tier-label';
 import { cn } from '@/lib/utils';
+import {
+  overlayVariants,
+  sidebarMobileVariants,
+  sidebarVariants,
+} from '@/lib/animations/variants';
 
 const bottomItems: Array<{
   label: string;
@@ -46,36 +51,37 @@ const bottomItems: Array<{
   requiresAuth?: boolean;
   icon: ReactElement;
 }> = [
-  {
-    label: 'Account',
-    href: '/account',
-    requiresAuth: true,
-    icon: <User className="h-4 w-4 flex-shrink-0" />,
-  },
-  {
-    label: 'Subscription',
-    href: '/subscription',
-    requiresAuth: true,
-    icon: <Crown className="h-4 w-4 flex-shrink-0" />,
-  },
-  {
-    label: 'Settings',
-    href: '/settings',
-    requiresAuth: true,
-    icon: <Settings className="h-4 w-4 flex-shrink-0" />,
-  },
-  {
-    label: 'Wallet',
-    href: '/wallet',
-    requiresAuth: true,
-    icon: <Wallet className="h-4 w-4 flex-shrink-0" />,
-  },
-];
+    {
+      label: 'Account',
+      href: '/account',
+      requiresAuth: true,
+      icon: <User className="h-4 w-4 flex-shrink-0" />,
+    },
+    {
+      label: 'Subscription',
+      href: '/subscription',
+      requiresAuth: true,
+      icon: <Crown className="h-4 w-4 flex-shrink-0" />,
+    },
+    {
+      label: 'Settings',
+      href: '/settings',
+      requiresAuth: true,
+      icon: <Settings className="h-4 w-4 flex-shrink-0" />,
+    },
+    {
+      label: 'Wallet',
+      href: '/wallet',
+      requiresAuth: true,
+      icon: <Wallet className="h-4 w-4 flex-shrink-0" />,
+    },
+  ];
 
 export default function Sidebar() {
   const { isCollapsed, toggleCollapsed } = useSidebar();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [_mounted, setMounted] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { isAuthenticated, user } = useAuthContext();
@@ -96,9 +102,19 @@ export default function Sidebar() {
     user?.walletAddress ? { walletAddress: user.walletAddress } : 'skip'
   );
 
-  // Set mounted state
+  // Set mounted state and handle desktop detection
   useEffect(() => {
     setMounted(true);
+
+    // Check if we're on desktop
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024); // lg breakpoint
+    };
+
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+
+    return () => window.removeEventListener('resize', checkDesktop);
   }, []);
 
   // Close mobile sidebar on route change
@@ -130,34 +146,80 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile Menu Button (moved to right) */}
-      <button
+      <motion.button
         aria-label="Toggle menu"
-        className="button-press fixed top-3 right-3 z-50 rounded-md border border-border bg-card p-1.5 shadow-sm backdrop-blur lg:hidden"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         type="button"
-      >
-        {isMobileOpen ? (
-          <X className="h-4 w-4" />
-        ) : (
-          <Menu className="h-4 w-4" />
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+        className={cn(
+          'button-press fixed top-3 right-3 z-50 rounded-md border backdrop-blur lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation transition-colors duration-200 p-2',
+          isMobileOpen
+            ? 'bg-red-500/10 border-red-500/20 text-red-600 shadow-lg'
+            : 'bg-card border-border shadow-sm'
         )}
-      </button>
+      >
+        <AnimatePresence mode="wait">
+          {isMobileOpen ? (
+            <motion.div
+              key="close"
+              initial={{ rotate: -90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 90, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <X className="h-4 w-4" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="menu"
+              initial={{ rotate: 90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: -90, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Menu className="h-4 w-4" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
 
       {/* Mobile Overlay */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-background/50 backdrop-blur-sm lg:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <motion.div
+            className="fixed inset-0 z-40 bg-background/60 backdrop-blur-md lg:hidden"
+            onClick={() => setIsMobileOpen(false)}
+            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            animate={{
+              opacity: 1,
+              backdropFilter: 'blur(8px)',
+              transition: { duration: 0.3, ease: 'easeOut' }
+            }}
+            exit={{
+              opacity: 0,
+              backdropFilter: 'blur(0px)',
+              transition: { duration: 0.2, ease: 'easeIn' }
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
-      <aside
+      <motion.aside
         className={cn(
-          'fixed top-0 left-0 z-40 h-[calc(100vh-2.5rem)] overflow-hidden border-border border-r bg-card backdrop-blur transition-all duration-300 supports-[backdrop-filter]:bg-card/95',
-          isCollapsed ? 'w-14' : 'w-56',
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          'fixed top-0 left-0 z-40 h-[calc(100vh-2.5rem)] overflow-hidden border-border border-r bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 touch-manipulation',
+          // Mobile: CSS transition, Desktop: Framer Motion handles it
+          'transition-transform duration-300 ease-out lg:transition-none',
+          // Mobile visibility
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full',
+          // Desktop: always visible
+          'lg:translate-x-0'
         )}
+        variants={sidebarVariants}
+        animate={isCollapsed ? 'collapsed' : 'expanded'}
+        initial={false}
       >
         <div className="flex h-full flex-col">
           <div
@@ -278,44 +340,61 @@ export default function Sidebar() {
               </div>
             )}
             <ul className="space-y-1 px-2">
-              {filteredItems.map((item: NavItem) => {
+              {filteredItems.map((item: NavItem, index: number) => {
                 const isActive = pathname === item.href;
 
                 return (
-                  <li key={item.href}>
-                    <Link
-                      className={cn(
-                        'button-press flex items-center gap-3 rounded-md px-3 py-2.5 text-sm ring-1 ring-transparent transition-all',
-                        isActive
-                          ? 'glow-primary bg-sidebar-primary text-sidebar-primary-foreground ring-primary/30'
-                          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:ring-sidebar-ring/20',
-                        isCollapsed && 'justify-center'
-                      )}
-                      href={item.href}
-                      onClick={() => setIsMobileOpen(false)}
+                  <motion.li
+                    key={item.href}
+                    layout
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 300,
+                      damping: 25
+                    }}
+                  >
+                    <motion.div
+                      whileHover={{ scale: 1.02, x: 4 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                     >
-                      {item.icon && (
-                        <item.icon
-                          className={cn(
-                            'h-5 w-5 flex-shrink-0 transition-colors',
-                            isActive
-                              ? 'text-sidebar-primary-foreground'
-                              : 'text-sidebar-primary'
-                          )}
-                        />
-                      )}
-                      {!isCollapsed && (
-                        <>
-                          <span className="flex-1 text-sm">{item.label}</span>
-                          {item.devOnly && (
-                            <span className="rounded-full bg-anubis-accent px-1.5 py-0 text-[9px] text-primary-foreground">
-                              DEV
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </Link>
-                  </li>
+                      <Link
+                        className={cn(
+                          'button-press flex items-center gap-3 rounded-md px-3 py-3 sm:py-2.5 text-sm ring-1 ring-transparent transition-all',
+                          'min-h-[44px] sm:min-h-auto touch-manipulation', // Better mobile touch targets
+                          isActive
+                            ? 'glow-primary bg-sidebar-primary text-sidebar-primary-foreground ring-primary/30'
+                            : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:ring-sidebar-ring/20',
+                          isCollapsed && 'justify-center'
+                        )}
+                        href={item.href}
+                        onClick={() => setIsMobileOpen(false)}
+                      >
+                        {item.icon && (
+                          <item.icon
+                            className={cn(
+                              'h-5 w-5 flex-shrink-0 transition-colors',
+                              isActive
+                                ? 'text-sidebar-primary-foreground'
+                                : 'text-sidebar-primary'
+                            )}
+                          />
+                        )}
+                        {!isCollapsed && (
+                          <>
+                            <span className="flex-1 text-sm">{item.label}</span>
+                            {item.devOnly && (
+                              <span className="rounded-full bg-anubis-accent px-1.5 py-0 text-[9px] text-primary-foreground">
+                                DEV
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </Link>
+                    </motion.div>
+                  </motion.li>
                 );
               })}
             </ul>
@@ -350,31 +429,49 @@ export default function Sidebar() {
               )}
 
             {/* Bottom Navigation Items */}
-            {filteredBottomItems.map((item) => {
+            {filteredBottomItems.map((item, index) => {
               const isActive = pathname === item.href;
 
               return (
-                <Link
-                  className={cn(
-                    'button-press flex items-center gap-2 rounded-md px-2 py-1.5 text-xs ring-1 ring-transparent transition-all',
-                    isActive
-                      ? 'bg-sidebar-primary text-sidebar-primary-foreground ring-primary/30'
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:ring-sidebar-ring/20',
-                    isCollapsed && 'justify-center'
-                  )}
-                  href={item.href}
+                <motion.div
                   key={item.href}
-                  onClick={() => setIsMobileOpen(false)}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 300,
+                    damping: 25
+                  }}
+                  whileHover={{ scale: 1.02, x: 4 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  {item.icon}
-                  {!isCollapsed && <span>{item.label}</span>}
-                </Link>
+                  <Link
+                    className={cn(
+                      'button-press flex items-center gap-2 rounded-md px-2 py-2 sm:py-1.5 text-xs ring-1 ring-transparent transition-all',
+                      'min-h-[36px] sm:min-h-auto touch-manipulation', // Better mobile touch targets
+                      isActive
+                        ? 'bg-sidebar-primary text-sidebar-primary-foreground ring-primary/30'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:ring-sidebar-ring/20',
+                      isCollapsed && 'justify-center'
+                    )}
+                    href={item.href}
+                    onClick={() => setIsMobileOpen(false)}
+                  >
+                    {item.icon}
+                    {!isCollapsed && <span>{item.label}</span>}
+                  </Link>
+                </motion.div>
               );
             })}
 
             {/* User Section with Subscription Info */}
             {isAuthenticated && (
-              <div className="border-sidebar-border border-t pt-1">
+              <motion.div
+                className="border-sidebar-border border-t pt-1"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, type: 'spring', stiffness: 300, damping: 25 }}
+              >
                 {!isCollapsed && subscription && (
                   <div className="px-2 py-1">
                     {/* Subscription status */}
@@ -434,13 +531,12 @@ export default function Sidebar() {
                   <div className="flex justify-center px-1 py-1">
                     <div className="flex flex-col items-center gap-0.5">
                       <Crown
-                        className={`h-3 w-3 ${
-                          subscription.tier === 'free'
-                            ? 'text-muted-foreground'
-                            : subscription.tier === 'pro'
-                              ? 'text-blue-600 dark:text-blue-400'
-                              : 'text-purple-600 dark:text-purple-400'
-                        }`}
+                        className={`h-3 w-3 ${subscription.tier === 'free'
+                          ? 'text-muted-foreground'
+                          : subscription.tier === 'pro'
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-purple-600 dark:text-purple-400'
+                          }`}
                       />
                       {(() => {
                         const barClass =
@@ -458,18 +554,23 @@ export default function Sidebar() {
                     </div>
                   </div>
                 )}
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
-      </aside>
+      </motion.aside>
 
-      {/* Main Content Offset */}
-      <div
-        className={cn(
-          'lg:transition-all lg:duration-300',
-          isCollapsed ? 'lg:ml-14' : 'lg:ml-56'
-        )}
+      {/* Main Content Offset - Only for desktop */}
+      <motion.div
+        className="hidden lg:block"
+        animate={{
+          marginLeft: isCollapsed ? 56 : 224,
+        }}
+        transition={{
+          type: 'spring',
+          stiffness: 300,
+          damping: 30,
+        }}
       />
 
       {/* Upgrade Modal */}

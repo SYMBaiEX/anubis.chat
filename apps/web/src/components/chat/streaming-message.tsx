@@ -62,15 +62,17 @@ export function StreamingMessage({
   useEffect(() => {
     if (messageRef.current && displayContent) {
       // Find the scroll container (ScrollArea) by looking up the DOM tree
-      const scrollContainer = messageRef.current.closest('[data-radix-scroll-area-viewport]') || 
-                              messageRef.current.closest('[data-chat-messages]')?.parentElement;
-      
+      const scrollContainer =
+        messageRef.current.closest('[data-radix-scroll-area-viewport]') ||
+        messageRef.current.closest('[data-chat-messages]')?.parentElement;
+
       if (scrollContainer) {
         // Scroll to bottom of the container smoothly
-        const targetScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+        const targetScroll =
+          scrollContainer.scrollHeight - scrollContainer.clientHeight;
         scrollContainer.scrollTo({
           top: targetScroll,
-          behavior: 'smooth'
+          behavior: 'smooth',
         });
       } else {
         // Fallback to scrollIntoView if scroll container not found

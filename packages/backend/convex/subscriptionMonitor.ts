@@ -3,10 +3,10 @@
  * Handles Web3-specific subscription lifecycle: expiry detection, renewals, and free tier downgrades
  */
 
-import { query, internalMutation } from './_generated/server';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
+import { internalMutation, query } from './_generated/server';
 
 /**
  * Query to check users who need renewal notifications or automatic downgrade
@@ -19,20 +19,18 @@ export const getUsersNeedingNotification = query({
   handler: async (ctx, args) => {
     const daysAhead = args.daysAhead ?? 7;
     const now = Date.now();
-    const notificationThreshold = now + (daysAhead * 24 * 60 * 60 * 1000);
+    const notificationThreshold = now + daysAhead * 24 * 60 * 60 * 1000;
 
     // Get all users with active paid subscriptions that expire within the notification window
     const usersNeedingNotification: any[] = [];
-    
+
     // Process users in batches to avoid performance issues
     const BATCH_SIZE = 50;
     let hasMore = true;
     let lastId: Id<'users'> | null = null;
 
     while (hasMore) {
-      let query = ctx.db
-        .query('users')
-        .order('asc');
+      let query = ctx.db.query('users').order('asc');
 
       if (lastId) {
         query = query.filter((q) => q.gt(q.field('_id'), lastId!));
@@ -46,14 +44,17 @@ export const getUsersNeedingNotification = query({
       }
 
       for (const user of users) {
-        if (user.subscription?.tier && 
-            user.subscription.tier !== 'free' &&
-            user.subscription.currentPeriodEnd &&
-            user.subscription.currentPeriodEnd <= notificationThreshold &&
-            user.subscription.currentPeriodEnd > now) {
-          
-          const daysRemaining = Math.ceil((user.subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000));
-          
+        if (
+          user.subscription?.tier &&
+          user.subscription.tier !== 'free' &&
+          user.subscription.currentPeriodEnd &&
+          user.subscription.currentPeriodEnd <= notificationThreshold &&
+          user.subscription.currentPeriodEnd > now
+        ) {
+          const daysRemaining = Math.ceil(
+            (user.subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000)
+          );
+
           usersNeedingNotification.push({
             userId: user._id,
             tier: user.subscription.tier,
@@ -92,9 +93,7 @@ export const getExpiredSubscriptions = query({
     let lastId: Id<'users'> | null = null;
 
     while (hasMore) {
-      let query = ctx.db
-        .query('users')
-        .order('asc');
+      let query = ctx.db.query('users').order('asc');
 
       if (lastId) {
         query = query.filter((q) => q.gt(q.field('_id'), lastId!));
@@ -108,13 +107,16 @@ export const getExpiredSubscriptions = query({
       }
 
       for (const user of users) {
-        if (user.subscription?.tier && 
-            user.subscription.tier !== 'free' &&
-            user.subscription.currentPeriodEnd &&
-            user.subscription.currentPeriodEnd < now) {
-          
-          const daysExpired = Math.ceil((now - user.subscription.currentPeriodEnd) / (24 * 60 * 60 * 1000));
-          
+        if (
+          user.subscription?.tier &&
+          user.subscription.tier !== 'free' &&
+          user.subscription.currentPeriodEnd &&
+          user.subscription.currentPeriodEnd < now
+        ) {
+          const daysExpired = Math.ceil(
+            (now - user.subscription.currentPeriodEnd) / (24 * 60 * 60 * 1000)
+          );
+
           expiredSubscriptions.push({
             userId: user._id,
             tier: user.subscription.tier,
@@ -154,9 +156,7 @@ export const downgradeExpiredSubscriptions = internalMutation({
 
     while (hasMore) {
       // Get batch of users with expired subscriptions
-      let query = ctx.db
-        .query('users')
-        .order('asc');
+      let query = ctx.db.query('users').order('asc');
 
       if (lastId) {
         query = query.filter((q) => q.gt(q.field('_id'), lastId!));
@@ -171,18 +171,19 @@ export const downgradeExpiredSubscriptions = internalMutation({
 
       // Process each user with expired subscription
       for (const user of users) {
-        if (user.subscription?.tier && 
-            user.subscription.tier !== 'free' &&
-            user.subscription.currentPeriodEnd &&
-            user.subscription.currentPeriodEnd < now) {
-          
+        if (
+          user.subscription?.tier &&
+          user.subscription.tier !== 'free' &&
+          user.subscription.currentPeriodEnd &&
+          user.subscription.currentPeriodEnd < now
+        ) {
           // Downgrade to free tier
           const updatedSubscription = {
             ...user.subscription,
             tier: 'free' as const,
             billingCycle: 'monthly' as const, // Reset to monthly for consistency
             currentPeriodStart: now,
-            currentPeriodEnd: now + (30 * 24 * 60 * 60 * 1000), // 30 days from now
+            currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000, // 30 days from now
             messagesUsed: 0,
             premiumMessagesUsed: 0,
           };
@@ -228,20 +229,26 @@ export const getUserSubscriptionStatus = query({
 
     const subscription = user.subscription;
     const now = Date.now();
-    const daysRemaining = subscription.currentPeriodEnd ? 
-      Math.ceil((subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000)) : 0;
+    const daysRemaining = subscription.currentPeriodEnd
+      ? Math.ceil((subscription.currentPeriodEnd - now) / (24 * 60 * 60 * 1000))
+      : 0;
 
     return {
       tier: subscription.tier,
       billingPeriod: subscription.billingCycle || 'monthly',
       currentPeriodEnd: subscription.currentPeriodEnd || now,
       daysRemaining,
-      isActive: subscription.currentPeriodEnd ? subscription.currentPeriodEnd > now : false,
-      isExpired: subscription.currentPeriodEnd ? subscription.currentPeriodEnd <= now : true,
+      isActive: subscription.currentPeriodEnd
+        ? subscription.currentPeriodEnd > now
+        : false,
+      isExpired: subscription.currentPeriodEnd
+        ? subscription.currentPeriodEnd <= now
+        : true,
       needsRenewalNotification: daysRemaining <= 7 && daysRemaining > 0,
       needsUrgentRenewal: daysRemaining <= 3 && daysRemaining > 0,
-      needsExpiryNotification: subscription.currentPeriodEnd ? 
-        subscription.currentPeriodEnd <= now && subscription.tier !== 'free' : false,
+      needsExpiryNotification: subscription.currentPeriodEnd
+        ? subscription.currentPeriodEnd <= now && subscription.tier !== 'free'
+        : false,
     };
   },
 });
@@ -259,7 +266,7 @@ async function performMaintenanceLogic(ctx: any, batchSize: number) {
     // Query for users with expired subscriptions
     const users = await ctx.db
       .query('users')
-      .filter((q: any) => 
+      .filter((q: any) =>
         q.and(
           q.neq(q.field('subscription'), undefined),
           q.neq(q.field('subscription.tier'), 'free'),

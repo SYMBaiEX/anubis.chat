@@ -5,9 +5,9 @@
 
 // Legacy form components
 export * from './field-error';
+export * from './form-field';
 export * from './form-wrapper';
-export * from './validated-input';
 
 // Modern Server Actions components
 export * from './server-form';
-export * from './form-field';
+export * from './validated-input';

@@ -1117,20 +1117,20 @@ export const cleanupMemories = mutation({
         .query('memories')
         .withIndex('by_user', (q) => q.eq('userId', args.userId))
         .order('asc');
-      
+
       if (lastId) {
         // Continue from where we left off
         query = query.filter((q) => q.gt(q.field('_id'), lastId!));
       }
-      
+
       const batch = await query.take(BATCH_SIZE);
-      
+
       if (batch.length === 0) {
         hasMore = false;
       } else {
         allMemories.push(...batch);
         lastId = batch[batch.length - 1]._id;
-        
+
         if (batch.length < BATCH_SIZE) {
           hasMore = false;
         }

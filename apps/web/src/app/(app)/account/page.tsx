@@ -329,7 +329,7 @@ export default function AccountPage() {
                 <motion.div variants={itemVariants}>
                   <Card className="overflow-hidden">
                     <CardContent className="py-6">
-                      <div className="grid gap-6 md:grid-cols-2 items-center">
+                      <div className="grid items-center gap-6 md:grid-cols-2">
                         {/* Avatar and Basic Info */}
                         <div className="space-y-4">
                           <div className="flex items-center gap-4">

@@ -13,7 +13,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { type AIModel, isPremiumModel, isFreeModel, isStandardModel, getModelsForTier } from '@/lib/constants/ai-models';
+import {
+  type AIModel,
+  getModelsForTier,
+  isFreeModel,
+  isPremiumModel,
+  isStandardModel,
+} from '@/lib/constants/ai-models';
 import { cn } from '@/lib/utils';
 
 interface ModelCardProps {
@@ -96,11 +102,14 @@ export function ModelCard({
     if (subscription?.tier === 'admin') {
       return true;
     }
-    
-    const userTier = (subscription?.tier as 'free' | 'pro' | 'pro_plus') || 'free';
+
+    const userTier =
+      (subscription?.tier as 'free' | 'pro' | 'pro_plus') || 'free';
     const availableModels = getModelsForTier(userTier);
-    
-    return availableModels.some(availableModel => availableModel.id === model.id);
+
+    return availableModels.some(
+      (availableModel) => availableModel.id === model.id
+    );
   };
 
   // Get tier badge for model (Premium, Standard, Free)
@@ -134,7 +143,7 @@ export function ModelCard({
       if (accessible) {
         return `${tier} tier model`;
       }
-      
+
       const userTier = subscription?.tier || 'free';
       if (userTier === 'free') {
         if (isStandardModel(model)) {
@@ -146,7 +155,7 @@ export function ModelCard({
       } else if (userTier === 'pro' && isPremiumModel(model)) {
         return 'Requires Pro+ subscription';
       }
-      
+
       return 'Not available for your tier';
     };
 
@@ -173,7 +182,8 @@ export function ModelCard({
   };
 
   // Use provided accessibility check or fall back to internal check
-  const accessible = isAccessible !== undefined ? isAccessible : isModelAccessible(model);
+  const accessible =
+    isAccessible !== undefined ? isAccessible : isModelAccessible(model);
 
   return (
     <Card

@@ -33,19 +33,20 @@ export function useMilestoneNotifications() {
   const showMilestoneNotification = useCallback(
     ({ milestone, showUpgradeButton = true }: MilestoneToastOptions) => {
       const milestoneKey = `${milestone.messageType}-${milestone.percentage}`;
-      
+
       // Prevent duplicate notifications for the same milestone
       if (notifiedMilestonesRef.current.has(milestoneKey)) {
         return;
       }
-      
+
       notifiedMilestonesRef.current.add(milestoneKey);
 
-      const messageTypeLabel = milestone.messageType === 'premium' ? 'Premium' : 'Standard';
+      const messageTypeLabel =
+        milestone.messageType === 'premium' ? 'Premium' : 'Standard';
       const title = `${milestone.percentage}% ${messageTypeLabel} Messages Used`;
-      
+
       let description = `You have ${milestone.remaining} ${milestone.messageType} messages remaining.`;
-      
+
       // Customize message based on percentage
       if (milestone.percentage >= 90) {
         description = `You're running low on ${milestone.messageType} messages! Only ${milestone.remaining} remaining.`;
@@ -96,7 +97,7 @@ export function useMilestoneNotifications() {
 
   // Monitor subscription changes and detect milestone crossings
   useEffect(() => {
-    if (!subscription || !user || subscription.isAdmin) return;
+    if (!(subscription && user) || subscription.isAdmin) return;
 
     const standardUsed = subscription?.messagesUsed || 0;
     const premiumUsed = subscription?.premiumMessagesUsed || 0;
@@ -107,11 +108,17 @@ export function useMilestoneNotifications() {
 
     if (standardIncreased || premiumIncreased) {
       // Calculate usage percentages including credits
-      const standardLimit = (subscription?.messagesLimit || 0) + (subscription?.messageCredits || 0);
-      const premiumLimit = (subscription?.premiumMessagesLimit || 0) + (subscription?.premiumMessageCredits || 0);
+      const standardLimit =
+        (subscription?.messagesLimit || 0) +
+        (subscription?.messageCredits || 0);
+      const premiumLimit =
+        (subscription?.premiumMessagesLimit || 0) +
+        (subscription?.premiumMessageCredits || 0);
 
-      const standardPercentage = standardLimit > 0 ? (standardUsed / standardLimit) * 100 : 0;
-      const premiumPercentage = premiumLimit > 0 ? (premiumUsed / premiumLimit) * 100 : 0;
+      const standardPercentage =
+        standardLimit > 0 ? (standardUsed / standardLimit) * 100 : 0;
+      const premiumPercentage =
+        premiumLimit > 0 ? (premiumUsed / premiumLimit) * 100 : 0;
 
       // Check milestones for standard messages
       if (standardIncreased) {
@@ -133,27 +140,35 @@ export function useMilestoneNotifications() {
     }
   }, [subscription, user]);
 
-  const checkMilestone = useCallback((percentage: number, messageType: 'standard' | 'premium', remaining: number) => {
-    const milestones = [50, 75, 90];
-    
-    for (const milestone of milestones) {
-      if (percentage >= milestone && percentage < (milestone + 10)) { // 10% buffer for detection
-        const milestoneKey = `${messageType}-${milestone}`;
-        
-        // Only show if we haven't notified about this milestone yet
-        if (!notifiedMilestonesRef.current.has(milestoneKey)) {
-          showMilestoneNotification({
-            milestone: {
-              percentage: milestone,
-              messageType,
-              remaining,
-            },
-          });
-          break; // Only show the first milestone we hit
+  const checkMilestone = useCallback(
+    (
+      percentage: number,
+      messageType: 'standard' | 'premium',
+      remaining: number
+    ) => {
+      const milestones = [50, 75, 90];
+
+      for (const milestone of milestones) {
+        if (percentage >= milestone && percentage < milestone + 10) {
+          // 10% buffer for detection
+          const milestoneKey = `${messageType}-${milestone}`;
+
+          // Only show if we haven't notified about this milestone yet
+          if (!notifiedMilestonesRef.current.has(milestoneKey)) {
+            showMilestoneNotification({
+              milestone: {
+                percentage: milestone,
+                messageType,
+                remaining,
+              },
+            });
+            break; // Only show the first milestone we hit
+          }
         }
       }
-    }
-  }, [showMilestoneNotification]);
+    },
+    [showMilestoneNotification]
+  );
 
   const clearNotifiedMilestones = useCallback(() => {
     notifiedMilestonesRef.current.clear();

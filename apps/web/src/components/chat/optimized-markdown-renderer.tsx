@@ -27,7 +27,7 @@ export const OptimizedMarkdownRenderer = memo(
       if (!content) {
         return '';
       }
-      
+
       // For streaming, provide stable rendering by detecting complete markdown blocks
       // This prevents jarring visual changes when partial markdown is being parsed
       if (isStreaming) {
@@ -36,16 +36,21 @@ export const OptimizedMarkdownRenderer = memo(
         const hasCompleteHeaders = /^#{1,6}\s+.+$/gm.test(content);
         const hasCompleteLists = /^[\s]*[-*+]\s+.+$/gm.test(content);
         const hasCompleteLinks = /\[([^\]]+)\]\(([^)]+)\)/g.test(content);
-        
+
         // If we detect complete markdown structures, it's safe to parse
-        if (hasCompleteCodeBlocks || hasCompleteHeaders || hasCompleteLists || hasCompleteLinks) {
+        if (
+          hasCompleteCodeBlocks ||
+          hasCompleteHeaders ||
+          hasCompleteLists ||
+          hasCompleteLinks
+        ) {
           return content;
         }
-        
+
         // For plain text or incomplete markdown, return as-is for stable rendering
         return content;
       }
-      
+
       // For complete messages, do full processing
       return content;
     }, [content, isStreaming]);
@@ -65,8 +70,8 @@ export const OptimizedMarkdownRenderer = memo(
               <code
                 className={cn(
                   'rounded bg-muted px-1 py-0.5 font-mono text-sm',
-                  inline 
-                    ? '' 
+                  inline
+                    ? ''
                     : 'my-2 block overflow-x-auto p-3 transition-all duration-200'
                 )}
               >
@@ -79,7 +84,7 @@ export const OptimizedMarkdownRenderer = memo(
           return (
             <div className="relative my-3 transition-all duration-200">
               {language && (
-                <div className="absolute top-2 right-2 rounded bg-muted px-2 py-1 text-xs opacity-80 hover:opacity-100 transition-opacity">
+                <div className="absolute top-2 right-2 rounded bg-muted px-2 py-1 text-xs opacity-80 transition-opacity hover:opacity-100">
                   {language}
                 </div>
               )}
@@ -94,45 +99,63 @@ export const OptimizedMarkdownRenderer = memo(
 
         // Optimized paragraph with smooth transitions
         p: ({ children }) => (
-          <p className="mb-4 leading-relaxed last:mb-0 transition-all duration-200">{children}</p>
+          <p className="mb-4 leading-relaxed transition-all duration-200 last:mb-0">
+            {children}
+          </p>
         ),
 
         // Headings with streaming-aware styling
         h1: ({ children }) => (
-          <h1 className={cn(
-            "mb-3 font-bold text-xl transition-all duration-200",
-            isStreaming ? "opacity-90" : "opacity-100"
-          )}>{children}</h1>
+          <h1
+            className={cn(
+              'mb-3 font-bold text-xl transition-all duration-200',
+              isStreaming ? 'opacity-90' : 'opacity-100'
+            )}
+          >
+            {children}
+          </h1>
         ),
         h2: ({ children }) => (
-          <h2 className={cn(
-            "mb-2 font-semibold text-lg transition-all duration-200",
-            isStreaming ? "opacity-90" : "opacity-100"
-          )}>{children}</h2>
+          <h2
+            className={cn(
+              'mb-2 font-semibold text-lg transition-all duration-200',
+              isStreaming ? 'opacity-90' : 'opacity-100'
+            )}
+          >
+            {children}
+          </h2>
         ),
         h3: ({ children }) => (
-          <h3 className={cn(
-            "mb-2 font-semibold text-base transition-all duration-200",
-            isStreaming ? "opacity-90" : "opacity-100"
-          )}>{children}</h3>
+          <h3
+            className={cn(
+              'mb-2 font-semibold text-base transition-all duration-200',
+              isStreaming ? 'opacity-90' : 'opacity-100'
+            )}
+          >
+            {children}
+          </h3>
         ),
 
         // List styling with smooth transitions
         ul: ({ children }) => (
-          <ul className="mb-4 ml-6 list-disc space-y-1 last:mb-0 transition-all duration-200">
+          <ul className="mb-4 ml-6 list-disc space-y-1 transition-all duration-200 last:mb-0">
             {children}
           </ul>
         ),
         ol: ({ children }) => (
-          <ol className="mb-4 ml-6 list-decimal space-y-1 last:mb-0 transition-all duration-200">
+          <ol className="mb-4 ml-6 list-decimal space-y-1 transition-all duration-200 last:mb-0">
             {children}
           </ol>
         ),
         li: ({ children }) => (
-          <li className={cn(
-            "mb-1 leading-relaxed transition-all duration-200",
-            isStreaming ? "opacity-95" : "opacity-100"
-          )}>{children}</li>
+          <li
+            className={cn(
+              'mb-1 leading-relaxed transition-all duration-200',
+              isStreaming ? 'opacity-95' : 'opacity-100'
+            )}
+          >
+            {children}
+          </li>
         ),
 
         // Links

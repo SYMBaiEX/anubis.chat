@@ -1,15 +1,21 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { forwardRef } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radioGroup';
-import { FieldError } from './field-error';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import type { ReactNode } from 'react';
+import { FieldError } from './field-error';
 
 interface BaseFieldProps {
   name: string;
@@ -54,56 +60,59 @@ interface RadioGroupFieldProps extends BaseFieldProps {
  * FormField - Input field for Server Actions forms
  */
 export const FormField = forwardRef<HTMLInputElement, InputFieldProps>(
-  ({
-    name,
-    label,
-    type = 'text',
-    required = false,
-    disabled = false,
-    placeholder,
-    autoComplete,
-    defaultValue,
-    className,
-    description,
-    error,
-    children,
-  }, ref) => {
+  (
+    {
+      name,
+      label,
+      type = 'text',
+      required = false,
+      disabled = false,
+      placeholder,
+      autoComplete,
+      defaultValue,
+      className,
+      description,
+      error,
+      children,
+    },
+    ref
+  ) => {
     const hasError = Boolean(error);
 
     return (
       <div className={cn('space-y-2', className)}>
         {label && (
           <Label
-            htmlFor={name}
             className={
               required
                 ? 'after:ml-0.5 after:text-red-500 after:content-["*"]'
                 : ''
             }
+            htmlFor={name}
           >
             {label}
           </Label>
         )}
 
         <Input
-          ref={ref}
-          id={name}
-          name={name}
-          type={type}
-          required={required}
-          disabled={disabled}
-          placeholder={placeholder}
-          autoComplete={autoComplete}
-          defaultValue={defaultValue}
           aria-describedby={hasError ? `${name}-error` : undefined}
           aria-invalid={hasError}
+          autoComplete={autoComplete}
           className={cn(
             hasError && 'border-red-500 focus:border-red-500 focus:ring-red-500'
           )}
+          defaultValue={defaultValue}
+          disabled={disabled}
+          id={name}
+          name={name}
+          placeholder={placeholder}
+          ref={ref}
+          required={required}
+          type={type}
         />
 
         {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-muted-foreground text-sm">{description}</p>
         )}
 
         <FieldError message={error} show={hasError} />
@@ -118,55 +127,61 @@ FormField.displayName = 'FormField';
 /**
  * TextareaField - Textarea field for Server Actions forms
  */
-export const TextareaField = forwardRef<HTMLTextAreaElement, TextareaFieldProps>(
-  ({
-    name,
-    label,
-    required = false,
-    disabled = false,
-    placeholder,
-    rows = 4,
-    defaultValue,
-    className,
-    description,
-    error,
-    children,
-  }, ref) => {
+export const TextareaField = forwardRef<
+  HTMLTextAreaElement,
+  TextareaFieldProps
+>(
+  (
+    {
+      name,
+      label,
+      required = false,
+      disabled = false,
+      placeholder,
+      rows = 4,
+      defaultValue,
+      className,
+      description,
+      error,
+      children,
+    },
+    ref
+  ) => {
     const hasError = Boolean(error);
 
     return (
       <div className={cn('space-y-2', className)}>
         {label && (
           <Label
-            htmlFor={name}
             className={
               required
                 ? 'after:ml-0.5 after:text-red-500 after:content-["*"]'
                 : ''
             }
+            htmlFor={name}
           >
             {label}
           </Label>
         )}
 
         <Textarea
-          ref={ref}
-          id={name}
-          name={name}
-          required={required}
-          disabled={disabled}
-          placeholder={placeholder}
-          rows={rows}
-          defaultValue={defaultValue}
           aria-describedby={hasError ? `${name}-error` : undefined}
           aria-invalid={hasError}
           className={cn(
             hasError && 'border-red-500 focus:border-red-500 focus:ring-red-500'
           )}
+          defaultValue={defaultValue}
+          disabled={disabled}
+          id={name}
+          name={name}
+          placeholder={placeholder}
+          ref={ref}
+          required={required}
+          rows={rows}
         />
 
         {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-muted-foreground text-sm">{description}</p>
         )}
 
         <FieldError message={error} show={hasError} />
@@ -200,18 +215,23 @@ export function SelectField({
     <div className={cn('space-y-2', className)}>
       {label && (
         <Label
-          htmlFor={name}
           className={
             required
               ? 'after:ml-0.5 after:text-red-500 after:content-["*"]'
               : ''
           }
+          htmlFor={name}
         >
           {label}
         </Label>
       )}
 
-      <Select name={name} defaultValue={defaultValue} disabled={disabled} required={required}>
+      <Select
+        defaultValue={defaultValue}
+        disabled={disabled}
+        name={name}
+        required={required}
+      >
         <SelectTrigger
           className={cn(
             hasError && 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -222,9 +242,9 @@ export function SelectField({
         <SelectContent>
           {options.map((option) => (
             <SelectItem
+              disabled={option.disabled}
               key={option.value}
               value={option.value}
-              disabled={option.disabled}
             >
               {option.label}
             </SelectItem>
@@ -233,7 +253,7 @@ export function SelectField({
       </Select>
 
       {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-muted-foreground text-sm">{description}</p>
       )}
 
       <FieldError message={error} show={hasError} />
@@ -262,21 +282,21 @@ export function CheckboxField({
     <div className={cn('space-y-2', className)}>
       <div className="flex items-center space-x-2">
         <Checkbox
+          aria-describedby={hasError ? `${name}-error` : undefined}
+          aria-invalid={hasError}
+          defaultChecked={defaultChecked}
+          disabled={disabled}
           id={name}
           name={name}
           required={required}
-          disabled={disabled}
-          defaultChecked={defaultChecked}
-          aria-describedby={hasError ? `${name}-error` : undefined}
-          aria-invalid={hasError}
         />
         {label && (
           <Label
-            htmlFor={name}
             className={cn(
-              'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+              'font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
               required && 'after:ml-0.5 after:text-red-500 after:content-["*"]'
             )}
+            htmlFor={name}
           >
             {label}
           </Label>
@@ -284,7 +304,7 @@ export function CheckboxField({
       </div>
 
       {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-muted-foreground text-sm">{description}</p>
       )}
 
       <FieldError message={error} show={hasError} />
@@ -325,29 +345,27 @@ export function RadioGroupField({
       )}
 
       <RadioGroup
-        name={name}
-        defaultValue={defaultValue}
-        disabled={disabled}
-        required={required}
         aria-describedby={hasError ? `${name}-error` : undefined}
         aria-invalid={hasError}
+        defaultValue={defaultValue}
+        disabled={disabled}
+        name={name}
+        required={required}
       >
         {options.map((option) => (
-          <div key={option.value} className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2" key={option.value}>
             <RadioGroupItem
-              value={option.value}
-              id={`${name}-${option.value}`}
               disabled={option.disabled}
+              id={`${name}-${option.value}`}
+              value={option.value}
             />
-            <Label htmlFor={`${name}-${option.value}`}>
-              {option.label}
-            </Label>
+            <Label htmlFor={`${name}-${option.value}`}>{option.label}</Label>
           </div>
         ))}
       </RadioGroup>
 
       {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-muted-foreground text-sm">{description}</p>
       )}
 
       <FieldError message={error} show={hasError} />

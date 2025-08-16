@@ -110,7 +110,7 @@ export default function AuthPage() {
   const { setVisible } = useWalletModal();
 
   const { isAuthenticated, user } = useAuthContext();
-  
+
   // Check for stored referral code
   const storedReferralCode = getStoredReferralCode();
 
@@ -584,7 +584,10 @@ export default function AuthPage() {
                               Referral Code Active
                             </p>
                             <p className="mt-1 text-primary/80 text-sm">
-                              You'll earn referral benefits from code: <span className="font-mono font-semibold">{storedReferralCode}</span>
+                              You'll earn referral benefits from code:{' '}
+                              <span className="font-mono font-semibold">
+                                {storedReferralCode}
+                              </span>
                             </p>
                           </div>
                         </div>

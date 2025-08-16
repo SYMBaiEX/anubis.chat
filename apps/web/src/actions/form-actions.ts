@@ -11,7 +11,10 @@ const contactFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   email: z.string().email('Invalid email address'),
   subject: z.string().min(1, 'Subject is required').max(200),
-  message: z.string().min(10, 'Message must be at least 10 characters').max(2000),
+  message: z
+    .string()
+    .min(10, 'Message must be at least 10 characters')
+    .max(2000),
   type: z.enum(['support', 'feedback', 'business', 'bug']).default('support'),
 });
 
@@ -29,7 +32,7 @@ export async function submitContactForm(formData: FormData) {
     };
 
     const validatedData = contactFormSchema.parse(rawData);
-    
+
     log.info('Contact form submitted', {
       operation: 'contact_form',
       type: validatedData.type,
@@ -39,13 +42,13 @@ export async function submitContactForm(formData: FormData) {
     // TODO: Send email or save to database
     // await sendContactEmail(validatedData);
     // await convex.mutation(api.contact.create, validatedData);
-    
+
     // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     return {
       success: true,
-      message: 'Thank you for your message. We\'ll get back to you soon!',
+      message: "Thank you for your message. We'll get back to you soon!",
     };
   } catch (error) {
     log.error('Failed to submit contact form', {
@@ -88,7 +91,7 @@ export async function subscribeToNewsletter(formData: FormData) {
     };
 
     const validatedData = newsletterSchema.parse(rawData);
-    
+
     log.info('Newsletter subscription', {
       operation: 'newsletter_subscribe',
       email: validatedData.email,
@@ -97,10 +100,10 @@ export async function subscribeToNewsletter(formData: FormData) {
 
     // TODO: Add to mailing list
     // await addToMailingList(validatedData);
-    
+
     // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
     return {
       success: true,
       message: 'Successfully subscribed to newsletter!',
@@ -131,7 +134,10 @@ const feedbackSchema = z.object({
   rating: z.coerce.number().min(1).max(5),
   category: z.enum(['ui', 'performance', 'feature', 'bug', 'other']),
   title: z.string().min(1, 'Title is required').max(100),
-  description: z.string().min(10, 'Description must be at least 10 characters').max(1000),
+  description: z
+    .string()
+    .min(10, 'Description must be at least 10 characters')
+    .max(1000),
   email: z.string().email('Invalid email address').optional(),
   canContact: z.boolean().default(false),
 });
@@ -151,7 +157,7 @@ export async function submitFeedback(formData: FormData) {
     };
 
     const validatedData = feedbackSchema.parse(rawData);
-    
+
     log.info('Feedback submitted', {
       operation: 'feedback_submit',
       category: validatedData.category,
@@ -161,12 +167,12 @@ export async function submitFeedback(formData: FormData) {
 
     // TODO: Save feedback to database
     // await convex.mutation(api.feedback.create, validatedData);
-    
+
     // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
     revalidatePath('/feedback');
-    
+
     return {
       success: true,
       message: 'Thank you for your feedback!',
@@ -195,9 +201,17 @@ export async function submitFeedback(formData: FormData) {
 // Agent creation schema
 const createAgentSchema = z.object({
   name: z.string().min(1, 'Agent name is required').max(100),
-  description: z.string().min(10, 'Description must be at least 10 characters').max(500),
+  description: z
+    .string()
+    .min(10, 'Description must be at least 10 characters')
+    .max(500),
   instructions: z.string().min(1, 'Instructions are required').max(2000),
-  model: z.enum(['claude-3-5-sonnet', 'gpt-4o', 'gemini-2.0-flash', 'deepseek-v3']),
+  model: z.enum([
+    'claude-3-5-sonnet',
+    'gpt-4o',
+    'gemini-2.0-flash',
+    'deepseek-v3',
+  ]),
   temperature: z.coerce.number().min(0).max(2).default(0.7),
   maxTokens: z.coerce.number().min(100).max(4000).default(1000),
   tools: z.array(z.string()).default([]),
@@ -222,7 +236,7 @@ export async function createAgent(formData: FormData) {
     };
 
     const validatedData = createAgentSchema.parse(rawData);
-    
+
     log.info('Creating custom agent', {
       operation: 'create_agent',
       name: validatedData.name,
@@ -233,13 +247,13 @@ export async function createAgent(formData: FormData) {
 
     // TODO: Save agent to database
     // await convex.mutation(api.agents.create, validatedData);
-    
+
     // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
     revalidatePath('/agents');
     revalidatePath('/agents/new');
-    
+
     return {
       success: true,
       message: 'Agent created successfully!',

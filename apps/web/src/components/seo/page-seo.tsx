@@ -1,4 +1,8 @@
-import { OrganizationJsonLd, WebApplicationJsonLd, BreadcrumbJsonLd } from './jsonLd';
+import {
+  BreadcrumbJsonLd,
+  OrganizationJsonLd,
+  WebApplicationJsonLd,
+} from './jsonLd';
 import { StructuredData } from './structured-data';
 
 interface PageSEOProps {
@@ -44,8 +48,8 @@ export function PageSEO({
       {/* Application Schema */}
       {schema === 'WebApplication' && (
         <WebApplicationJsonLd
-          name={title}
           description={description}
+          name={title}
           url={fullUrl}
         />
       )}
@@ -56,9 +60,7 @@ export function PageSEO({
       )}
 
       {/* Custom Structured Data */}
-      {customStructuredData && (
-        <StructuredData data={customStructuredData} />
-      )}
+      {customStructuredData && <StructuredData data={customStructuredData} />}
     </>
   );
 }

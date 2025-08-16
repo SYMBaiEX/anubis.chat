@@ -165,8 +165,30 @@ export const verifyAndSignIn = internalMutation({
       throw new Error('Invalid or expired authentication challenge');
     }
 
-    // Mark challenge as used
-    await ctx.db.patch(storedChallenge._id, { used: true });
+    // Mark challenge as used with retry logic
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount <= maxRetries) {
+      try {
+        await ctx.db.patch(storedChallenge._id, { used: true });
+        break;
+      } catch (error) {
+        const isWriteConflict =
+          error instanceof Error &&
+          (error.message.includes('write conflict') ||
+            error.message.includes('Write conflict') ||
+            error.message.includes('conflict'));
+
+        if (isWriteConflict && retryCount < maxRetries) {
+          retryCount++;
+          const backoffMs = Math.min(500, 50 * 2 ** (retryCount - 1));
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        } else {
+          throw error;
+        }
+      }
+    }
 
     // Check if user already exists
     const existingUser = await ctx.db
@@ -209,7 +231,30 @@ export const verifyAndSignIn = internalMutation({
         ];
       }
 
-      await ctx.db.patch(existingUser._id, updates);
+      // Update user with retry logic for write conflicts
+      const maxUserRetries = 3;
+      let userRetryCount = 0;
+
+      while (userRetryCount <= maxUserRetries) {
+        try {
+          await ctx.db.patch(existingUser._id, updates);
+          break;
+        } catch (error) {
+          const isWriteConflict =
+            error instanceof Error &&
+            (error.message.includes('write conflict') ||
+              error.message.includes('Write conflict') ||
+              error.message.includes('conflict'));
+
+          if (isWriteConflict && userRetryCount < maxUserRetries) {
+            userRetryCount++;
+            const backoffMs = Math.min(500, 50 * 2 ** (userRetryCount - 1));
+            await new Promise((resolve) => setTimeout(resolve, backoffMs));
+          } else {
+            throw error;
+          }
+        }
+      }
 
       return {
         userId: existingUser._id,
@@ -276,6 +321,7 @@ export const verifyAndSignIn = internalMutation({
 /**
  * Create Solana wallet challenge for signature verification
  * This is still needed for the challenge-response authentication flow
+ * Optimized to prevent rapid-fire conflicts through deduplication
  */
 export const createWalletChallenge = mutation({
   args: {
@@ -284,46 +330,82 @@ export const createWalletChallenge = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const expiresAt = now + 5 * 60 * 1000; // 5 minutes
+
+    // First check if there's a recent valid challenge (within 30 seconds)
+    // This prevents rapid-fire challenge creation
+    const recentChallenge = await ctx.db
+      .query('solanaWalletChallenges')
+      .withIndex('by_key', (q) => q.eq('publicKey', args.publicKey))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field('used'), false),
+          q.gt(q.field('expiresAt'), now),
+          q.gt(q.field('createdAt'), now - 30_000) // Less than 30 seconds old
+        )
+      )
+      .first();
+
+    // If recent valid challenge exists, return it instead of creating new one
+    if (recentChallenge) {
+      return {
+        challenge: recentChallenge.challenge,
+        nonce: recentChallenge.nonce,
+        expiresAt: new Date(recentChallenge.expiresAt).toISOString(),
+      };
+    }
+
     const nonce =
       Math.random().toString(36).substring(2, 15) +
       Math.random().toString(36).substring(2, 15);
 
     const challenge = `Sign this message to authenticate with anubis.chat:\nNonce: ${nonce}\nTimestamp: ${now}`;
 
-    // Clean up any existing challenges for this public key using batch processing
-    // Use take() instead of collect() to avoid OCC failures
-    const BATCH_SIZE = 10;
-    let hasMore = true;
-    
-    while (hasMore) {
-      const existingChallenges = await ctx.db
-        .query('solanaWalletChallenges')
-        .withIndex('by_key', (q) => q.eq('publicKey', args.publicKey))
-        .take(BATCH_SIZE);
-      
-      if (existingChallenges.length === 0) {
-        hasMore = false;
-      } else {
-        // Delete existing challenges in this batch
-        await Promise.all(
-          existingChallenges.map((existing) => ctx.db.delete(existing._id))
-        );
-        
-        // If we got less than BATCH_SIZE, we're done
-        if (existingChallenges.length < BATCH_SIZE) {
-          hasMore = false;
+    // Clean up existing challenges with conflict-resilient approach
+    // Use try-catch for each deletion to handle conflicts gracefully
+    const existingChallenges = await ctx.db
+      .query('solanaWalletChallenges')
+      .withIndex('by_key', (q) => q.eq('publicKey', args.publicKey))
+      .take(20); // Limit to prevent long operations
+
+    // Delete existing challenges individually with error handling
+    for (const existing of existingChallenges) {
+      try {
+        await ctx.db.delete(existing._id);
+      } catch (error) {}
+    }
+
+    // Create new challenge with retry logic for write conflicts
+    const maxRetries = 3;
+    let retryCount = 0;
+    let challengeId;
+
+    while (retryCount <= maxRetries) {
+      try {
+        challengeId = await ctx.db.insert('solanaWalletChallenges', {
+          publicKey: args.publicKey,
+          nonce,
+          challenge,
+          expiresAt,
+          createdAt: now,
+          used: false,
+        });
+        break;
+      } catch (error) {
+        const isWriteConflict =
+          error instanceof Error &&
+          (error.message.includes('write conflict') ||
+            error.message.includes('Write conflict') ||
+            error.message.includes('conflict'));
+
+        if (isWriteConflict && retryCount < maxRetries) {
+          retryCount++;
+          const backoffMs = Math.min(500, 50 * 2 ** (retryCount - 1));
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        } else {
+          throw error;
         }
       }
     }
-
-    await ctx.db.insert('solanaWalletChallenges', {
-      publicKey: args.publicKey,
-      nonce,
-      challenge,
-      expiresAt,
-      createdAt: now,
-      used: false,
-    });
 
     return {
       challenge,
@@ -342,14 +424,14 @@ export const cleanupExpiredChallenges = internalMutation({
     const BATCH_SIZE = 10;
     let totalDeleted = 0;
     let hasMore = true;
-    
+
     // Process expired challenges in batches to avoid OCC failures
     while (hasMore) {
       const expiredChallenges = await ctx.db
         .query('solanaWalletChallenges')
         .withIndex('by_expires', (q) => q.lt('expiresAt', now))
         .take(BATCH_SIZE);
-      
+
       if (expiredChallenges.length === 0) {
         hasMore = false;
       } else {
@@ -357,9 +439,9 @@ export const cleanupExpiredChallenges = internalMutation({
         await Promise.all(
           expiredChallenges.map((challenge) => ctx.db.delete(challenge._id))
         );
-        
+
         totalDeleted += expiredChallenges.length;
-        
+
         // If we got less than BATCH_SIZE, we're done
         if (expiredChallenges.length < BATCH_SIZE) {
           hasMore = false;

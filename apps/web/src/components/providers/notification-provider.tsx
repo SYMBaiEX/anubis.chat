@@ -1,11 +1,16 @@
 'use client';
 
-import React, { createContext, useContext, type ReactNode } from 'react';
+import React, { createContext, type ReactNode, useContext } from 'react';
 import { LiveNotificationManager } from '@/components/notifications/live-notification';
 import { useNotifications } from '@/hooks/use-notifications';
-import { useSubscriptionNotifications, useWelcomeNotification } from '@/hooks/use-subscription-notifications';
+import {
+  useSubscriptionNotifications,
+  useWelcomeNotification,
+} from '@/hooks/use-subscription-notifications';
 
-const NotificationContext = createContext<ReturnType<typeof useNotifications> | null>(null);
+const NotificationContext = createContext<ReturnType<
+  typeof useNotifications
+> | null>(null);
 
 interface NotificationProviderProps {
   children: ReactNode;
@@ -13,7 +18,7 @@ interface NotificationProviderProps {
 
 export function NotificationProvider({ children }: NotificationProviderProps) {
   const notificationManager = useNotifications();
-  
+
   // Initialize subscription and welcome notifications
   useSubscriptionNotifications();
   useWelcomeNotification();
@@ -22,10 +27,10 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     <NotificationContext.Provider value={notificationManager}>
       {children}
       <LiveNotificationManager
-        notifications={notificationManager.notifications}
-        onDismiss={notificationManager.dismissNotification}
-        onAction={notificationManager.handleNotificationAction}
         maxVisible={5}
+        notifications={notificationManager.notifications}
+        onAction={notificationManager.handleNotificationAction}
+        onDismiss={notificationManager.dismissNotification}
         position="top-right"
       />
     </NotificationContext.Provider>
@@ -35,7 +40,9 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 export function useNotificationContext() {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotificationContext must be used within a NotificationProvider');
+    throw new Error(
+      'useNotificationContext must be used within a NotificationProvider'
+    );
   }
   return context;
 }

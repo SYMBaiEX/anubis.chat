@@ -1,12 +1,12 @@
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
 import {
   internalMutation,
   internalQuery,
   mutation,
   query,
 } from './_generated/server';
-import type { Id } from './_generated/dataModel';
 import { getCurrentUser, requireAuth } from './authHelpers';
 import { createModuleLogger } from './utils/logger';
 
@@ -118,7 +118,10 @@ const MODEL_COSTS = {
   'gpt-5': { category: 'premium', costPerMessage: 0.02 },
   'gpt-5-mini': { category: 'premium', costPerMessage: 0.01 },
   'o4-mini': { category: 'premium', costPerMessage: 0.008 },
-  'openrouter/openai/gpt-oss-120b': { category: 'premium', costPerMessage: 0.015 },
+  'openrouter/openai/gpt-oss-120b': {
+    category: 'premium',
+    costPerMessage: 0.015,
+  },
   'gemini-2.5-pro': { category: 'premium', costPerMessage: 0.02 },
   'gemini-2.5-flash': { category: 'premium', costPerMessage: 0.01 },
 };
@@ -151,18 +154,34 @@ function getSafeSubscription(user: {
   const billingCycle = (candidate?.billingCycle ?? 'monthly') as BillingCycle;
   const tierDefaults = SUBSCRIPTION_TIERS[validTier];
   const now = Date.now();
-  const periodDuration = billingCycle === 'yearly' 
-    ? 365 * 24 * 60 * 60 * 1000  // 365 days
-    : 30 * 24 * 60 * 60 * 1000;   // 30 days
-  
+  const periodDuration =
+    billingCycle === 'yearly'
+      ? 365 * 24 * 60 * 60 * 1000 // 365 days
+      : 30 * 24 * 60 * 60 * 1000; // 30 days
+
   // Ensure numeric fields are properly typed and default to 0 if not numbers
-  const safeMessagesUsed = typeof candidate?.messagesUsed === 'number' ? candidate.messagesUsed : 0;
-  const safePremiumMessagesUsed = typeof candidate?.premiumMessagesUsed === 'number' ? candidate.premiumMessagesUsed : 0;
-  const safeMessageCredits = typeof candidate?.messageCredits === 'number' ? candidate.messageCredits : 0;
-  const safePremiumMessageCredits = typeof candidate?.premiumMessageCredits === 'number' ? candidate.premiumMessageCredits : 0;
-  
+  const safeMessagesUsed =
+    typeof candidate?.messagesUsed === 'number' ? candidate.messagesUsed : 0;
+  const safePremiumMessagesUsed =
+    typeof candidate?.premiumMessagesUsed === 'number'
+      ? candidate.premiumMessagesUsed
+      : 0;
+  const safeMessageCredits =
+    typeof candidate?.messageCredits === 'number'
+      ? candidate.messageCredits
+      : 0;
+  const safePremiumMessageCredits =
+    typeof candidate?.premiumMessageCredits === 'number'
+      ? candidate.premiumMessageCredits
+      : 0;
+
   // Log subscription data for debugging when usage fields are missing or zero
-  if (!candidate || (safeMessagesUsed === 0 && safePremiumMessagesUsed === 0 && validTier !== 'free')) {
+  if (
+    !candidate ||
+    (safeMessagesUsed === 0 &&
+      safePremiumMessagesUsed === 0 &&
+      validTier !== 'free')
+  ) {
     logger.debug('Subscription usage tracking debug', {
       hasCandidateSubscription: !!candidate,
       tier: validTier,
@@ -171,10 +190,10 @@ function getSafeSubscription(user: {
       safeMessagesUsed,
       safePremiumMessagesUsed,
       expectedMessagesLimit: tierDefaults.messagesLimit,
-      expectedPremiumLimit: tierDefaults.premiumMessagesLimit
+      expectedPremiumLimit: tierDefaults.premiumMessagesLimit,
     });
   }
-  
+
   return {
     tier: validTier,
     billingCycle,
@@ -186,12 +205,13 @@ function getSafeSubscription(user: {
     messageCredits: safeMessageCredits,
     premiumMessageCredits: safePremiumMessageCredits,
     currentPeriodStart: candidate?.currentPeriodStart ?? now,
-    currentPeriodEnd:
-      candidate?.currentPeriodEnd ?? now + periodDuration,
-    planPriceSol: candidate?.planPriceSol ?? 
-      (typeof tierDefaults.priceSol === 'object' 
-        ? tierDefaults.priceSol[billingCycle] 
-        : tierDefaults.priceSol) ?? 0,
+    currentPeriodEnd: candidate?.currentPeriodEnd ?? now + periodDuration,
+    planPriceSol:
+      candidate?.planPriceSol ??
+      (typeof tierDefaults.priceSol === 'object'
+        ? tierDefaults.priceSol[billingCycle]
+        : tierDefaults.priceSol) ??
+      0,
     features: candidate?.features ?? tierDefaults.features,
     subscriptionTxSignature:
       typeof candidate?.subscriptionTxSignature === 'string'
@@ -331,33 +351,40 @@ export const trackMessageUsageByWallet = mutation({
       .unique();
 
     if (!user) {
-      logger.error('User not found for wallet tracking', { 
-        walletAddress: args.walletAddress 
+      logger.error('User not found for wallet tracking', {
+        walletAddress: args.walletAddress,
       });
-      throw new Error(`User not found for wallet address: ${args.walletAddress}`);
+      throw new Error(
+        `User not found for wallet address: ${args.walletAddress}`
+      );
     }
 
-    logger.info('Processing message usage tracking', { 
-      userId: user._id, 
+    logger.info('Processing message usage tracking', {
+      userId: user._id,
       walletAddress: args.walletAddress,
-      isPremiumModel: args.isPremiumModel, 
+      isPremiumModel: args.isPremiumModel,
       model: args.model,
       inputTokens: args.inputTokens,
       outputTokens: args.outputTokens,
       hasSubscription: !!user.subscription,
-      subscriptionTier: user.subscription?.tier || 'unknown'
+      subscriptionTier: user.subscription?.tier || 'unknown',
     });
-    
 
     // Update user's message counts using proper consumption hierarchy
     const sub = getSafeSubscription(user);
-    
+
     // Calculate available messages
-    const planMessagesAvailable = Math.max(0, sub.messagesLimit - sub.messagesUsed);
-    const planPremiumAvailable = Math.max(0, sub.premiumMessagesLimit - sub.premiumMessagesUsed);
-    
+    const planMessagesAvailable = Math.max(
+      0,
+      sub.messagesLimit - sub.messagesUsed
+    );
+    const planPremiumAvailable = Math.max(
+      0,
+      sub.premiumMessagesLimit - sub.premiumMessagesUsed
+    );
+
     let updates: { subscription: SubscriptionShape };
-    
+
     if (args.isPremiumModel) {
       // For premium models, consume from plan premium messages first, then premium credits
       if (planPremiumAvailable > 0) {
@@ -435,13 +462,19 @@ export const trackMessageUsage = mutation({
 
     // Update user's message counts using proper consumption hierarchy
     const sub = getSafeSubscription(user);
-    
+
     // Calculate available messages
-    const planMessagesAvailable = Math.max(0, sub.messagesLimit - sub.messagesUsed);
-    const planPremiumAvailable = Math.max(0, sub.premiumMessagesLimit - sub.premiumMessagesUsed);
-    
+    const planMessagesAvailable = Math.max(
+      0,
+      sub.messagesLimit - sub.messagesUsed
+    );
+    const planPremiumAvailable = Math.max(
+      0,
+      sub.premiumMessagesLimit - sub.premiumMessagesUsed
+    );
+
     let updates: { subscription: SubscriptionShape };
-    
+
     if (args.isPremiumModel) {
       // For premium models, consume from plan premium messages first, then premium credits
       if (planPremiumAvailable > 0) {
@@ -513,21 +546,29 @@ export const trackMessageUsage = mutation({
 
     // Calculate remaining messages with credits
     const updatedSub = updates.subscription;
-    const totalStandardRemaining = Math.max(0, updatedSub.messagesLimit - updatedSub.messagesUsed) + (updatedSub.messageCredits || 0);
-    const totalPremiumRemaining = Math.max(0, updatedSub.premiumMessagesLimit - updatedSub.premiumMessagesUsed) + (updatedSub.premiumMessageCredits || 0);
+    const totalStandardRemaining =
+      Math.max(0, updatedSub.messagesLimit - updatedSub.messagesUsed) +
+      (updatedSub.messageCredits || 0);
+    const totalPremiumRemaining =
+      Math.max(
+        0,
+        updatedSub.premiumMessagesLimit - updatedSub.premiumMessagesUsed
+      ) + (updatedSub.premiumMessageCredits || 0);
 
-    logger.debug('Message usage tracking completed', { 
-      messagesUsed: updatedSub.messagesUsed, 
-      messagesRemaining: totalStandardRemaining, 
+    logger.debug('Message usage tracking completed', {
+      messagesUsed: updatedSub.messagesUsed,
+      messagesRemaining: totalStandardRemaining,
       premiumMessagesUsed: updatedSub.premiumMessagesUsed,
-      premiumMessagesRemaining: totalPremiumRemaining
+      premiumMessagesRemaining: totalPremiumRemaining,
     });
-    
+
     return {
       messagesUsed: updatedSub.messagesUsed,
       messagesRemaining: totalStandardRemaining,
       premiumMessagesUsed: updatedSub.premiumMessagesUsed,
-      premiumMessagesRemaining: args.isPremiumModel ? totalPremiumRemaining : undefined,
+      premiumMessagesRemaining: args.isPremiumModel
+        ? totalPremiumRemaining
+        : undefined,
     };
   },
 });
@@ -627,7 +668,7 @@ export const trackDetailedMessageUsage = mutation({
       isPremiumModel: isPremium,
       model: args.model,
       inputTokens: args.inputTokens,
-      outputTokens: args.outputTokens
+      outputTokens: args.outputTokens,
     });
 
     await ctx.db.patch(user._id, {
@@ -638,7 +679,7 @@ export const trackDetailedMessageUsage = mutation({
     logger.info('Successfully updated user subscription usage', {
       userId: user._id,
       messagesUsed: updates.subscription.messagesUsed,
-      premiumMessagesUsed: updates.subscription.premiumMessagesUsed
+      premiumMessagesUsed: updates.subscription.premiumMessagesUsed,
     });
 
     // Track detailed usage
@@ -728,17 +769,17 @@ export const calculateProratedUpgrade = query({
 
     // Get the billing cycle to use for price calculations
     const billingCycle = sub.billingCycle || 'monthly';
-    
+
     // Get prices based on billing cycle
     const getPrice = (tier: 'pro' | 'pro_plus') => {
       const tierPrices = SUBSCRIPTION_TIERS[tier].priceSol;
-      return typeof tierPrices === 'object' 
+      return typeof tierPrices === 'object'
         ? tierPrices[billingCycle]
         : tierPrices;
     };
-    
+
     const targetPrice = getPrice(targetTier);
-    
+
     // Only support Pro to Pro+ proration for now
     if (currentTier !== 'pro' || targetTier !== 'pro_plus') {
       return {
@@ -784,7 +825,9 @@ export const calculateProratedUpgrade = query({
 export const processPayment = mutation({
   args: {
     tier: v.union(v.literal('pro'), v.literal('pro_plus')),
-    billingCycle: v.optional(v.union(v.literal('monthly'), v.literal('yearly'))),
+    billingCycle: v.optional(
+      v.union(v.literal('monthly'), v.literal('yearly'))
+    ),
     txSignature: v.string(),
     amountSol: v.number(),
     isProrated: v.optional(v.boolean()),
@@ -798,19 +841,22 @@ export const processPayment = mutation({
 
     const tierConfig = SUBSCRIPTION_TIERS[args.tier];
     const billingCycle = args.billingCycle || 'monthly';
-    let expectedAmount = typeof tierConfig.priceSol === 'object' 
-      ? tierConfig.priceSol[billingCycle]
-      : tierConfig.priceSol;
+    let expectedAmount =
+      typeof tierConfig.priceSol === 'object'
+        ? tierConfig.priceSol[billingCycle]
+        : tierConfig.priceSol;
 
     // Handle prorated upgrade from Pro to Pro+
     const sub = getSafeSubscription(user);
     if (args.isProrated && sub.tier === 'pro' && args.tier === 'pro_plus') {
-      const proPriceValue = typeof SUBSCRIPTION_TIERS.pro.priceSol === 'object'
-        ? SUBSCRIPTION_TIERS.pro.priceSol[billingCycle]
-        : SUBSCRIPTION_TIERS.pro.priceSol;
-      const proPlusPriceValue = typeof SUBSCRIPTION_TIERS.pro_plus.priceSol === 'object'
-        ? SUBSCRIPTION_TIERS.pro_plus.priceSol[billingCycle]
-        : SUBSCRIPTION_TIERS.pro_plus.priceSol;
+      const proPriceValue =
+        typeof SUBSCRIPTION_TIERS.pro.priceSol === 'object'
+          ? SUBSCRIPTION_TIERS.pro.priceSol[billingCycle]
+          : SUBSCRIPTION_TIERS.pro.priceSol;
+      const proPlusPriceValue =
+        typeof SUBSCRIPTION_TIERS.pro_plus.priceSol === 'object'
+          ? SUBSCRIPTION_TIERS.pro_plus.priceSol[billingCycle]
+          : SUBSCRIPTION_TIERS.pro_plus.priceSol;
       expectedAmount = proPlusPriceValue - proPriceValue;
     }
 
@@ -837,9 +883,10 @@ export const processPayment = mutation({
     }
 
     const now = Date.now();
-    const periodDuration = billingCycle === 'yearly' 
-      ? 365 * 24 * 60 * 60 * 1000  // 365 days
-      : 30 * 24 * 60 * 60 * 1000;   // 30 days
+    const periodDuration =
+      billingCycle === 'yearly'
+        ? 365 * 24 * 60 * 60 * 1000 // 365 days
+        : 30 * 24 * 60 * 60 * 1000; // 30 days
     const periodEnd = now + periodDuration;
 
     // Create pending payment record
@@ -884,7 +931,9 @@ export const getPaymentBySignature = internalQuery({
 export const processVerifiedPayment = internalMutation({
   args: {
     tier: v.union(v.literal('pro'), v.literal('pro_plus')),
-    billingCycle: v.optional(v.union(v.literal('monthly'), v.literal('yearly'))),
+    billingCycle: v.optional(
+      v.union(v.literal('monthly'), v.literal('yearly'))
+    ),
     txSignature: v.string(),
     amountSol: v.number(),
     walletAddress: v.string(),
@@ -922,10 +971,11 @@ export const processVerifiedPayment = internalMutation({
     if (!payment) {
       const now = Date.now();
       const billingCycle = args.billingCycle || 'monthly';
-      const periodDuration = billingCycle === 'yearly' 
-        ? 365 * 24 * 60 * 60 * 1000  // 365 days
-        : 30 * 24 * 60 * 60 * 1000;   // 30 days
-      
+      const periodDuration =
+        billingCycle === 'yearly'
+          ? 365 * 24 * 60 * 60 * 1000 // 365 days
+          : 30 * 24 * 60 * 60 * 1000; // 30 days
+
       const paymentId = await ctx.db.insert('subscriptionPayments', {
         userId: user._id,
         tier: args.tier,
@@ -962,9 +1012,10 @@ export const processVerifiedPayment = internalMutation({
             subscriptionTxSignature: args.txSignature,
             messagesLimit: tierConfig.messagesLimit,
             premiumMessagesLimit: tierConfig.premiumMessagesLimit,
-            planPriceSol: typeof tierConfig.priceSol === 'object' 
-              ? tierConfig.priceSol[billingCycle]
-              : tierConfig.priceSol,
+            planPriceSol:
+              typeof tierConfig.priceSol === 'object'
+                ? tierConfig.priceSol[billingCycle]
+                : tierConfig.priceSol,
             features: tierConfig.features,
           },
           updatedAt: Date.now(),
@@ -990,10 +1041,11 @@ export const processVerifiedPayment = internalMutation({
     const now = Date.now();
 
     // Calculate period duration based on billing cycle
-    const periodDuration = billingCycle === 'yearly' 
-      ? 365 * 24 * 60 * 60 * 1000  // 365 days
-      : 30 * 24 * 60 * 60 * 1000;   // 30 days
-    
+    const periodDuration =
+      billingCycle === 'yearly'
+        ? 365 * 24 * 60 * 60 * 1000 // 365 days
+        : 30 * 24 * 60 * 60 * 1000; // 30 days
+
     const sub = getSafeSubscription(user);
     let periodEnd = now + periodDuration;
     let periodStart = now;
@@ -1038,9 +1090,10 @@ export const processVerifiedPayment = internalMutation({
         currentPeriodStart: periodStart,
         currentPeriodEnd: periodEnd,
         subscriptionTxSignature: args.txSignature,
-        planPriceSol: typeof tierConfig.priceSol === 'object' 
-          ? tierConfig.priceSol[billingCycle]
-          : tierConfig.priceSol,
+        planPriceSol:
+          typeof tierConfig.priceSol === 'object'
+            ? tierConfig.priceSol[billingCycle]
+            : tierConfig.priceSol,
         features: tierConfig.features,
       },
       updatedAt: now,
@@ -1253,45 +1306,65 @@ export const initializeUserSubscription = mutation({
       // User already has subscription initialized, but ensure all fields are properly set
       const currentSub = user.subscription as Partial<SubscriptionShape>;
       const tierConfig = SUBSCRIPTION_TIERS[currentSub.tier || 'free'];
-      
+
       // Check if any required numeric fields are missing and fix them
-      const needsUpdate = 
+      const needsUpdate =
         typeof currentSub.messagesUsed !== 'number' ||
         typeof currentSub.premiumMessagesUsed !== 'number' ||
         typeof currentSub.messageCredits !== 'number' ||
         typeof currentSub.premiumMessageCredits !== 'number';
-        
+
       if (needsUpdate) {
         logger.info('Fixing missing subscription fields for existing user', {
           userId: user._id,
           currentMessagesUsed: currentSub.messagesUsed,
-          currentPremiumMessagesUsed: currentSub.premiumMessagesUsed
+          currentPremiumMessagesUsed: currentSub.premiumMessagesUsed,
         });
-        
+
         const fixedSubscription: SubscriptionShape = {
           tier: (currentSub.tier || 'free') as Tier,
           billingCycle: (currentSub.billingCycle || 'monthly') as BillingCycle,
-          messagesUsed: typeof currentSub.messagesUsed === 'number' ? currentSub.messagesUsed : 0,
+          messagesUsed:
+            typeof currentSub.messagesUsed === 'number'
+              ? currentSub.messagesUsed
+              : 0,
           messagesLimit: currentSub.messagesLimit ?? tierConfig.messagesLimit,
-          premiumMessagesUsed: typeof currentSub.premiumMessagesUsed === 'number' ? currentSub.premiumMessagesUsed : 0,
-          premiumMessagesLimit: currentSub.premiumMessagesLimit ?? tierConfig.premiumMessagesLimit,
-          messageCredits: typeof currentSub.messageCredits === 'number' ? currentSub.messageCredits : 0,
-          premiumMessageCredits: typeof currentSub.premiumMessageCredits === 'number' ? currentSub.premiumMessageCredits : 0,
+          premiumMessagesUsed:
+            typeof currentSub.premiumMessagesUsed === 'number'
+              ? currentSub.premiumMessagesUsed
+              : 0,
+          premiumMessagesLimit:
+            currentSub.premiumMessagesLimit ?? tierConfig.premiumMessagesLimit,
+          messageCredits:
+            typeof currentSub.messageCredits === 'number'
+              ? currentSub.messageCredits
+              : 0,
+          premiumMessageCredits:
+            typeof currentSub.premiumMessageCredits === 'number'
+              ? currentSub.premiumMessageCredits
+              : 0,
           currentPeriodStart: currentSub.currentPeriodStart || Date.now(),
-          currentPeriodEnd: currentSub.currentPeriodEnd || (Date.now() + 30 * 24 * 60 * 60 * 1000),
+          currentPeriodEnd:
+            currentSub.currentPeriodEnd ||
+            Date.now() + 30 * 24 * 60 * 60 * 1000,
           subscriptionTxSignature: currentSub.subscriptionTxSignature || '',
-          planPriceSol: currentSub.planPriceSol ?? (typeof tierConfig.priceSol === 'object' ? tierConfig.priceSol[currentSub.billingCycle || 'monthly'] : tierConfig.priceSol) ?? 0,
+          planPriceSol:
+            currentSub.planPriceSol ??
+            (typeof tierConfig.priceSol === 'object'
+              ? tierConfig.priceSol[currentSub.billingCycle || 'monthly']
+              : tierConfig.priceSol) ??
+            0,
           features: currentSub.features || tierConfig.features,
         };
-        
+
         await ctx.db.patch(user._id, {
           subscription: fixedSubscription,
           updatedAt: Date.now(),
         });
-        
+
         return fixedSubscription;
       }
-      
+
       return user.subscription;
     }
 
@@ -1312,16 +1385,17 @@ export const initializeUserSubscription = mutation({
       currentPeriodStart: now,
       currentPeriodEnd: periodEnd,
       subscriptionTxSignature: '',
-      planPriceSol: typeof tierConfig.priceSol === 'object'
-        ? tierConfig.priceSol.monthly
-        : tierConfig.priceSol,
+      planPriceSol:
+        typeof tierConfig.priceSol === 'object'
+          ? tierConfig.priceSol.monthly
+          : tierConfig.priceSol,
       features: tierConfig.features,
     };
 
     logger.info('Initializing new user subscription', {
       userId: user._id,
       tier: subscription.tier,
-      messagesLimit: subscription.messagesLimit
+      messagesLimit: subscription.messagesLimit,
     });
 
     await ctx.db.patch(user._id, {
@@ -1494,9 +1568,9 @@ export const resetMonthlyUsage = mutation({
         // Continue from where we left off
         query = query.filter((q) => q.gt(q.field('_id'), lastId!));
       }
-      
+
       const batch = await query.take(BATCH_SIZE);
-      
+
       if (batch.length === 0) {
         hasMore = false;
         break;
@@ -1509,11 +1583,12 @@ export const resetMonthlyUsage = mutation({
           user.subscription?.currentPeriodEnd &&
           user.subscription.currentPeriodEnd <= now
         ) {
-          const periodDuration = user.subscription.billingCycle === 'yearly' 
-            ? 365 * 24 * 60 * 60 * 1000  // 365 days for annual
-            : 30 * 24 * 60 * 60 * 1000;   // 30 days for monthly
+          const periodDuration =
+            user.subscription.billingCycle === 'yearly'
+              ? 365 * 24 * 60 * 60 * 1000 // 365 days for annual
+              : 30 * 24 * 60 * 60 * 1000; // 30 days for monthly
           const periodEnd = now + periodDuration;
-          
+
           try {
             await ctx.db.patch(user._id, {
               subscription: {
@@ -1532,7 +1607,7 @@ export const resetMonthlyUsage = mutation({
         }
         lastId = user._id;
       }
-      
+
       // If we got fewer than BATCH_SIZE, we're done
       if (batch.length < BATCH_SIZE) {
         hasMore = false;
@@ -1742,7 +1817,9 @@ export const fixAllUserSubscriptions = mutation({
     let hasMore = true;
     let lastId: Id<'users'> | null = null;
 
-    logger.info('Starting subscription field repair for all users', { batchSize });
+    logger.info('Starting subscription field repair for all users', {
+      batchSize,
+    });
 
     while (hasMore) {
       // Get a batch of users
@@ -1750,9 +1827,9 @@ export const fixAllUserSubscriptions = mutation({
       if (lastId) {
         query = query.filter((q) => q.gt(q.field('_id'), lastId!));
       }
-      
+
       const batch = await query.take(batchSize);
-      
+
       if (batch.length === 0) {
         hasMore = false;
         break;
@@ -1762,12 +1839,87 @@ export const fixAllUserSubscriptions = mutation({
       for (const user of batch) {
         processedCount++;
         lastId = user._id;
-        
-        if (!user.subscription) {
+
+        if (user.subscription) {
+          // User has subscription, check if numeric fields need fixing
+          const currentSub = user.subscription as Partial<SubscriptionShape>;
+          const tierConfig = SUBSCRIPTION_TIERS[currentSub.tier || 'free'];
+
+          const needsUpdate =
+            typeof currentSub.messagesUsed !== 'number' ||
+            typeof currentSub.premiumMessagesUsed !== 'number' ||
+            typeof currentSub.messageCredits !== 'number' ||
+            typeof currentSub.premiumMessageCredits !== 'number' ||
+            typeof currentSub.messagesLimit !== 'number' ||
+            typeof currentSub.premiumMessagesLimit !== 'number';
+
+          if (needsUpdate) {
+            const fixedSubscription: SubscriptionShape = {
+              tier: (currentSub.tier || 'free') as Tier,
+              billingCycle: (currentSub.billingCycle ||
+                'monthly') as BillingCycle,
+              messagesUsed:
+                typeof currentSub.messagesUsed === 'number'
+                  ? currentSub.messagesUsed
+                  : 0,
+              messagesLimit:
+                typeof currentSub.messagesLimit === 'number'
+                  ? currentSub.messagesLimit
+                  : tierConfig.messagesLimit,
+              premiumMessagesUsed:
+                typeof currentSub.premiumMessagesUsed === 'number'
+                  ? currentSub.premiumMessagesUsed
+                  : 0,
+              premiumMessagesLimit:
+                typeof currentSub.premiumMessagesLimit === 'number'
+                  ? currentSub.premiumMessagesLimit
+                  : tierConfig.premiumMessagesLimit,
+              messageCredits:
+                typeof currentSub.messageCredits === 'number'
+                  ? currentSub.messageCredits
+                  : 0,
+              premiumMessageCredits:
+                typeof currentSub.premiumMessageCredits === 'number'
+                  ? currentSub.premiumMessageCredits
+                  : 0,
+              currentPeriodStart: currentSub.currentPeriodStart || Date.now(),
+              currentPeriodEnd:
+                currentSub.currentPeriodEnd ||
+                Date.now() + 30 * 24 * 60 * 60 * 1000,
+              subscriptionTxSignature: currentSub.subscriptionTxSignature || '',
+              planPriceSol:
+                currentSub.planPriceSol ??
+                (typeof tierConfig.priceSol === 'object'
+                  ? tierConfig.priceSol[currentSub.billingCycle || 'monthly']
+                  : tierConfig.priceSol) ??
+                0,
+              features: currentSub.features || tierConfig.features,
+            };
+
+            try {
+              await ctx.db.patch(user._id, {
+                subscription: fixedSubscription,
+                updatedAt: Date.now(),
+              });
+              fixedCount++;
+              logger.debug('Fixed subscription fields for user', {
+                userId: user._id,
+                tier: fixedSubscription.tier,
+                beforeMessagesUsed: currentSub.messagesUsed,
+                afterMessagesUsed: fixedSubscription.messagesUsed,
+              });
+            } catch (error) {
+              logger.error('Failed to fix subscription', {
+                userId: user._id,
+                error,
+              });
+            }
+          }
+        } else {
           // User has no subscription at all, initialize with free tier
           const now = Date.now();
           const tierConfig = SUBSCRIPTION_TIERS.free;
-          
+
           const newSubscription = {
             tier: 'free' as const,
             billingCycle: 'monthly' as BillingCycle,
@@ -1780,93 +1932,56 @@ export const fixAllUserSubscriptions = mutation({
             currentPeriodStart: now,
             currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
             subscriptionTxSignature: '',
-            planPriceSol: typeof tierConfig.priceSol === 'object' 
-              ? tierConfig.priceSol.monthly 
-              : tierConfig.priceSol,
+            planPriceSol:
+              typeof tierConfig.priceSol === 'object'
+                ? tierConfig.priceSol.monthly
+                : tierConfig.priceSol,
             features: tierConfig.features,
           };
-          
+
           try {
             await ctx.db.patch(user._id, {
               subscription: newSubscription,
               updatedAt: Date.now(),
             });
             fixedCount++;
-            logger.debug('Initialized subscription for user', { userId: user._id });
+            logger.debug('Initialized subscription for user', {
+              userId: user._id,
+            });
           } catch (error) {
-            logger.error('Failed to initialize subscription', { userId: user._id, error });
-          }
-        } else {
-          // User has subscription, check if numeric fields need fixing
-          const currentSub = user.subscription as Partial<SubscriptionShape>;
-          const tierConfig = SUBSCRIPTION_TIERS[currentSub.tier || 'free'];
-          
-          const needsUpdate = 
-            typeof currentSub.messagesUsed !== 'number' ||
-            typeof currentSub.premiumMessagesUsed !== 'number' ||
-            typeof currentSub.messageCredits !== 'number' ||
-            typeof currentSub.premiumMessageCredits !== 'number' ||
-            typeof currentSub.messagesLimit !== 'number' ||
-            typeof currentSub.premiumMessagesLimit !== 'number';
-            
-          if (needsUpdate) {
-            const fixedSubscription: SubscriptionShape = {
-              tier: (currentSub.tier || 'free') as Tier,
-              billingCycle: (currentSub.billingCycle || 'monthly') as BillingCycle,
-              messagesUsed: typeof currentSub.messagesUsed === 'number' ? currentSub.messagesUsed : 0,
-              messagesLimit: typeof currentSub.messagesLimit === 'number' ? currentSub.messagesLimit : tierConfig.messagesLimit,
-              premiumMessagesUsed: typeof currentSub.premiumMessagesUsed === 'number' ? currentSub.premiumMessagesUsed : 0,
-              premiumMessagesLimit: typeof currentSub.premiumMessagesLimit === 'number' ? currentSub.premiumMessagesLimit : tierConfig.premiumMessagesLimit,
-              messageCredits: typeof currentSub.messageCredits === 'number' ? currentSub.messageCredits : 0,
-              premiumMessageCredits: typeof currentSub.premiumMessageCredits === 'number' ? currentSub.premiumMessageCredits : 0,
-              currentPeriodStart: currentSub.currentPeriodStart || Date.now(),
-              currentPeriodEnd: currentSub.currentPeriodEnd || (Date.now() + 30 * 24 * 60 * 60 * 1000),
-              subscriptionTxSignature: currentSub.subscriptionTxSignature || '',
-              planPriceSol: currentSub.planPriceSol ?? (typeof tierConfig.priceSol === 'object' ? tierConfig.priceSol[currentSub.billingCycle || 'monthly'] : tierConfig.priceSol) ?? 0,
-              features: currentSub.features || tierConfig.features,
-            };
-            
-            try {
-              await ctx.db.patch(user._id, {
-                subscription: fixedSubscription,
-                updatedAt: Date.now(),
-              });
-              fixedCount++;
-              logger.debug('Fixed subscription fields for user', { 
-                userId: user._id, 
-                tier: fixedSubscription.tier,
-                beforeMessagesUsed: currentSub.messagesUsed,
-                afterMessagesUsed: fixedSubscription.messagesUsed
-              });
-            } catch (error) {
-              logger.error('Failed to fix subscription', { userId: user._id, error });
-            }
+            logger.error('Failed to initialize subscription', {
+              userId: user._id,
+              error,
+            });
           }
         }
       }
-      
+
       // If we got fewer than batchSize, we're done
       if (batch.length < batchSize) {
         hasMore = false;
       }
-      
+
       // Add a small delay to avoid overwhelming the database
       if (hasMore) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
 
-    logger.info('Completed subscription field repair', { 
-      processedCount, 
-      fixedCount, 
-      percentageFixed: processedCount > 0 ? ((fixedCount / processedCount) * 100).toFixed(1) : 0 
+    logger.info('Completed subscription field repair', {
+      processedCount,
+      fixedCount,
+      percentageFixed:
+        processedCount > 0
+          ? ((fixedCount / processedCount) * 100).toFixed(1)
+          : 0,
     });
 
-    return { 
-      success: true, 
-      processedUsers: processedCount, 
+    return {
+      success: true,
+      processedUsers: processedCount,
       fixedUsers: fixedCount,
-      message: `Fixed subscription fields for ${fixedCount} out of ${processedCount} users`
+      message: `Fixed subscription fields for ${fixedCount} out of ${processedCount} users`,
     };
   },
 });
@@ -1878,29 +1993,51 @@ export const adminFixAllSubscriptions = mutation({
     // Simple repair without circular dependency
     const users = await ctx.db.query('users').collect();
     let fixedCount = 0;
-    
+
     for (const user of users) {
-      if (!user.subscription || 
-          typeof user.subscription.messagesUsed !== 'number' ||
-          typeof user.subscription.premiumMessagesUsed !== 'number') {
-        
-        const tierConfig = SUBSCRIPTION_TIERS[user.subscription?.tier || 'free'];
+      if (
+        !user.subscription ||
+        typeof user.subscription.messagesUsed !== 'number' ||
+        typeof user.subscription.premiumMessagesUsed !== 'number'
+      ) {
+        const tierConfig =
+          SUBSCRIPTION_TIERS[user.subscription?.tier || 'free'];
         const fixedSubscription: SubscriptionShape = {
           tier: (user.subscription?.tier || 'free') as Tier,
-          billingCycle: (user.subscription?.billingCycle || 'monthly') as BillingCycle,
-          messagesUsed: typeof user.subscription?.messagesUsed === 'number' ? user.subscription.messagesUsed : 0,
-          messagesLimit: user.subscription?.messagesLimit || tierConfig.messagesLimit,
-          premiumMessagesUsed: typeof user.subscription?.premiumMessagesUsed === 'number' ? user.subscription.premiumMessagesUsed : 0,
-          premiumMessagesLimit: user.subscription?.premiumMessagesLimit || tierConfig.premiumMessagesLimit,
-          messageCredits: typeof user.subscription?.messageCredits === 'number' ? user.subscription.messageCredits : 0,
-          premiumMessageCredits: typeof user.subscription?.premiumMessageCredits === 'number' ? user.subscription.premiumMessageCredits : 0,
-          currentPeriodStart: user.subscription?.currentPeriodStart || Date.now(),
-          currentPeriodEnd: user.subscription?.currentPeriodEnd || (Date.now() + 30 * 24 * 60 * 60 * 1000),
-          subscriptionTxSignature: user.subscription?.subscriptionTxSignature || '',
+          billingCycle: (user.subscription?.billingCycle ||
+            'monthly') as BillingCycle,
+          messagesUsed:
+            typeof user.subscription?.messagesUsed === 'number'
+              ? user.subscription.messagesUsed
+              : 0,
+          messagesLimit:
+            user.subscription?.messagesLimit || tierConfig.messagesLimit,
+          premiumMessagesUsed:
+            typeof user.subscription?.premiumMessagesUsed === 'number'
+              ? user.subscription.premiumMessagesUsed
+              : 0,
+          premiumMessagesLimit:
+            user.subscription?.premiumMessagesLimit ||
+            tierConfig.premiumMessagesLimit,
+          messageCredits:
+            typeof user.subscription?.messageCredits === 'number'
+              ? user.subscription.messageCredits
+              : 0,
+          premiumMessageCredits:
+            typeof user.subscription?.premiumMessageCredits === 'number'
+              ? user.subscription.premiumMessageCredits
+              : 0,
+          currentPeriodStart:
+            user.subscription?.currentPeriodStart || Date.now(),
+          currentPeriodEnd:
+            user.subscription?.currentPeriodEnd ||
+            Date.now() + 30 * 24 * 60 * 60 * 1000,
+          subscriptionTxSignature:
+            user.subscription?.subscriptionTxSignature || '',
           planPriceSol: user.subscription?.planPriceSol ?? 0,
           features: user.subscription?.features || tierConfig.features,
         };
-        
+
         await ctx.db.patch(user._id, {
           subscription: fixedSubscription,
           updatedAt: Date.now(),
@@ -1908,8 +2045,12 @@ export const adminFixAllSubscriptions = mutation({
         fixedCount++;
       }
     }
-    
-    const result = { success: true, fixedUsers: fixedCount, totalUsers: users.length };
+
+    const result = {
+      success: true,
+      fixedUsers: fixedCount,
+      totalUsers: users.length,
+    };
     logger.info('Admin repair completed', result);
     return result;
   },
@@ -2281,13 +2422,13 @@ export const getUsageForecasting = query({
 
     const sub = getSafeSubscription(user);
     const now = Date.now();
-    
+
     // Get usage data from the last 30 days
-    const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
-    
+    const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+
     const recentUsage = await ctx.db
       .query('messageUsage')
-      .withIndex('by_user_date', (q) => 
+      .withIndex('by_user_date', (q) =>
         q.eq('userId', user._id).gte('date', thirtyDaysAgo)
       )
       .collect();
@@ -2297,7 +2438,7 @@ export const getUsageForecasting = query({
       const daysInPeriod = Math.ceil(
         (sub.currentPeriodEnd - now) / (24 * 60 * 60 * 1000)
       );
-      
+
       return {
         isAdmin: false,
         daysUntilStandardExhausted: daysInPeriod,
@@ -2310,42 +2451,56 @@ export const getUsageForecasting = query({
     }
 
     // Calculate daily usage averages
-    const daysWithUsage = new Set(recentUsage.map(u => u.date)).size;
+    const daysWithUsage = new Set(recentUsage.map((u) => u.date)).size;
     const standardUsage = recentUsage
-      .filter(u => u.modelCategory === 'standard')
+      .filter((u) => u.modelCategory === 'standard')
       .reduce((sum, u) => sum + u.messageCount, 0);
     const premiumUsage = recentUsage
-      .filter(u => u.modelCategory === 'premium')
+      .filter((u) => u.modelCategory === 'premium')
       .reduce((sum, u) => sum + u.messageCount, 0);
-    
-    const avgDailyStandard = daysWithUsage > 0 ? standardUsage / daysWithUsage : 0;
-    const avgDailyPremium = daysWithUsage > 0 ? premiumUsage / daysWithUsage : 0;
+
+    const avgDailyStandard =
+      daysWithUsage > 0 ? standardUsage / daysWithUsage : 0;
+    const avgDailyPremium =
+      daysWithUsage > 0 ? premiumUsage / daysWithUsage : 0;
 
     // Calculate total available messages (plan + credits)
-    const totalStandardAvailable = Math.max(0, sub.messagesLimit - sub.messagesUsed) + sub.messageCredits;
-    const totalPremiumAvailable = Math.max(0, sub.premiumMessagesLimit - sub.premiumMessagesUsed) + sub.premiumMessageCredits;
+    const totalStandardAvailable =
+      Math.max(0, sub.messagesLimit - sub.messagesUsed) + sub.messageCredits;
+    const totalPremiumAvailable =
+      Math.max(0, sub.premiumMessagesLimit - sub.premiumMessagesUsed) +
+      sub.premiumMessageCredits;
 
     // Forecast when credits will be exhausted
     let daysUntilStandardExhausted = Number.POSITIVE_INFINITY;
     let daysUntilPremiumExhausted = Number.POSITIVE_INFINITY;
 
     if (avgDailyStandard > 0) {
-      daysUntilStandardExhausted = Math.floor(totalStandardAvailable / avgDailyStandard);
+      daysUntilStandardExhausted = Math.floor(
+        totalStandardAvailable / avgDailyStandard
+      );
     }
 
     if (avgDailyPremium > 0) {
-      daysUntilPremiumExhausted = Math.floor(totalPremiumAvailable / avgDailyPremium);
+      daysUntilPremiumExhausted = Math.floor(
+        totalPremiumAvailable / avgDailyPremium
+      );
     }
 
     // Determine recommended action
     let recommendedAction = 'none';
-    const daysUntilPeriodEnd = Math.ceil((sub.currentPeriodEnd - now) / (24 * 60 * 60 * 1000));
-    
+    const daysUntilPeriodEnd = Math.ceil(
+      (sub.currentPeriodEnd - now) / (24 * 60 * 60 * 1000)
+    );
+
     if (daysUntilStandardExhausted < 7) {
       recommendedAction = 'buy_credits';
     } else if (daysUntilStandardExhausted < daysUntilPeriodEnd * 0.5) {
       recommendedAction = 'consider_upgrade';
-    } else if (sub.tier === 'free' && avgDailyStandard > sub.messagesLimit / 30) {
+    } else if (
+      sub.tier === 'free' &&
+      avgDailyStandard > sub.messagesLimit / 30
+    ) {
       recommendedAction = 'upgrade';
     }
 

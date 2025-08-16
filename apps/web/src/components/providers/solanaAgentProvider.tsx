@@ -12,8 +12,8 @@ import {
   useState,
 } from 'react';
 import type { SolanaAgentKit } from 'solana-agent-kit';
-import { getSolanaEndpoint } from '@/lib/solana';
 import { useWallet } from '@/hooks/useWallet';
+import { getSolanaEndpoint } from '@/lib/solana';
 import { useAuthContext } from './auth-provider';
 
 // Agent Types
@@ -196,7 +196,7 @@ export function SolanaAgentProvider({ children }: SolanaAgentProviderProps) {
         // In production, the private key should NOT be stored on the frontend
         // Instead, the agent operations should be executed on the backend
         // For now, we'll create the kit without the private key and use it for read-only operations
-        
+
         // ✅ Use centralized endpoint configuration
         const _rpcUrl = getSolanaEndpoint();
 

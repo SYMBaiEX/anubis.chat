@@ -16,7 +16,7 @@ self.addEventListener('install', (event) => {
         '/favicon/icon-192x192.png',
         '/favicon/icon-512x512.png',
       ];
-      
+
       const cachePromises = urlsToCache.map(async (url) => {
         try {
           const response = await fetch(url);
@@ -27,7 +27,7 @@ self.addEventListener('install', (event) => {
           console.log(`Failed to cache ${url}:`, error);
         }
       });
-      
+
       await Promise.allSettled(cachePromises);
     })
   );

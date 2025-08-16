@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { LiveNotification } from '@/components/notifications/live-notification';
 
 interface UseNotificationsReturn {
@@ -16,18 +16,21 @@ let notificationId = 0;
 export function useNotifications(): UseNotificationsReturn {
   const [notifications, setNotifications] = useState<LiveNotification[]>([]);
 
-  const addNotification = useCallback((notification: Omit<LiveNotification, 'id'>) => {
-    const id = `notification-${++notificationId}`;
-    const newNotification: LiveNotification = {
-      ...notification,
-      id,
-      dismissible: notification.dismissible ?? true,
-      priority: notification.priority ?? 'medium',
-    };
+  const addNotification = useCallback(
+    (notification: Omit<LiveNotification, 'id'>) => {
+      const id = `notification-${++notificationId}`;
+      const newNotification: LiveNotification = {
+        ...notification,
+        id,
+        dismissible: notification.dismissible ?? true,
+        priority: notification.priority ?? 'medium',
+      };
 
-    setNotifications((prev) => [newNotification, ...prev]);
-    return id;
-  }, []);
+      setNotifications((prev) => [newNotification, ...prev]);
+      return id;
+    },
+    []
+  );
 
   const dismissNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -37,16 +40,19 @@ export function useNotifications(): UseNotificationsReturn {
     setNotifications([]);
   }, []);
 
-  const handleNotificationAction = useCallback((id: string, actionIndex: number) => {
-    const notification = notifications.find((n) => n.id === id);
-    if (notification?.actions?.[actionIndex]) {
-      notification.actions[actionIndex].onClick();
-      // Auto-dismiss after action unless it's a persistent notification
-      if (notification.dismissible !== false) {
-        dismissNotification(id);
+  const handleNotificationAction = useCallback(
+    (id: string, actionIndex: number) => {
+      const notification = notifications.find((n) => n.id === id);
+      if (notification?.actions?.[actionIndex]) {
+        notification.actions[actionIndex].onClick();
+        // Auto-dismiss after action unless it's a persistent notification
+        if (notification.dismissible !== false) {
+          dismissNotification(id);
+        }
       }
-    }
-  }, [notifications, dismissNotification]);
+    },
+    [notifications, dismissNotification]
+  );
 
   return {
     notifications,
@@ -58,11 +64,14 @@ export function useNotifications(): UseNotificationsReturn {
 }
 
 // Preset notification creators for common use cases
-export function createWelcomeNotification(userName?: string): Omit<LiveNotification, 'id'> {
+export function createWelcomeNotification(
+  userName?: string
+): Omit<LiveNotification, 'id'> {
   return {
     type: 'welcome',
     title: `Welcome to ANUBIS Chat${userName ? `, ${userName}` : ''}!`,
-    message: 'Your AI companion is ready to assist you. Start a conversation to explore all available models and features.',
+    message:
+      'Your AI companion is ready to assist you. Start a conversation to explore all available models and features.',
     badge: 'New User',
     duration: 8000,
     priority: 'high',
@@ -72,7 +81,9 @@ export function createWelcomeNotification(userName?: string): Omit<LiveNotificat
         variant: 'default',
         onClick: () => {
           // Navigate to chat or focus on chat input
-          const chatInput = document.querySelector('[data-chat-input]') as HTMLElement;
+          const chatInput = document.querySelector(
+            '[data-chat-input]'
+          ) as HTMLElement;
           chatInput?.focus();
         },
       },
@@ -94,13 +105,14 @@ export function createRenewalNotification(
 ): Omit<LiveNotification, 'id'> {
   const isUrgent = daysRemaining <= 3;
   const isWarning = daysRemaining <= 7;
-  
+
   return {
     type: 'renewal',
     title: `Subscription ${isUrgent ? 'Expires Soon' : 'Renewal Reminder'}`,
-    message: `Your ${tier} subscription ${daysRemaining <= 1 
-      ? 'expires today' 
-      : `expires in ${daysRemaining} day${daysRemaining > 1 ? 's' : ''}`
+    message: `Your ${tier} subscription ${
+      daysRemaining <= 1
+        ? 'expires today'
+        : `expires in ${daysRemaining} day${daysRemaining > 1 ? 's' : ''}`
     }. Renew now to continue enjoying premium features.`,
     badge: isUrgent ? 'Urgent' : 'Reminder',
     duration: 0, // Persistent
@@ -129,7 +141,8 @@ export function createExpiryNotification(
   return {
     type: 'warning',
     title: 'Subscription Expired',
-    message: 'Your subscription has expired and you\'ve been moved to the free tier. Upgrade to restore your premium features.',
+    message:
+      "Your subscription has expired and you've been moved to the free tier. Upgrade to restore your premium features.",
     badge: 'Expired',
     duration: 0, // Persistent
     priority: 'urgent',
@@ -159,7 +172,7 @@ export function createUsageNotification(
 ): Omit<LiveNotification, 'id'> {
   const isNearLimit = percentage >= 90;
   const type = messageType === 'premium' ? 'Premium' : 'Standard';
-  
+
   return {
     type: isNearLimit ? 'warning' : 'info',
     title: `${type} Message Usage Alert`,
@@ -167,20 +180,22 @@ export function createUsageNotification(
     badge: `${percentage}%`,
     duration: isNearLimit ? 0 : 6000,
     priority: isNearLimit ? 'high' : 'medium',
-    actions: isNearLimit ? [
-      {
-        label: 'Upgrade Plan',
-        variant: 'default',
-        onClick: onUpgradeClick,
-      },
-      {
-        label: 'Buy Credits',
-        variant: 'outline',
-        onClick: () => {
-          window.location.href = '/pricing';
-        },
-      },
-    ] : undefined,
+    actions: isNearLimit
+      ? [
+          {
+            label: 'Upgrade Plan',
+            variant: 'default',
+            onClick: onUpgradeClick,
+          },
+          {
+            label: 'Buy Credits',
+            variant: 'outline',
+            onClick: () => {
+              window.location.href = '/pricing';
+            },
+          },
+        ]
+      : undefined,
   };
 }
 

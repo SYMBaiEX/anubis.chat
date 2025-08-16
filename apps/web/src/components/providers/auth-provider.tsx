@@ -3,13 +3,20 @@
 import { api } from '@convex/_generated/api';
 import { useAuthActions, useAuthToken } from '@convex-dev/auth/react';
 import { useQuery } from 'convex/react';
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
+import { useReferralAttribution } from '@/hooks/use-referral-tracking';
 import type {
   SubscriptionLimits,
   SubscriptionStatus,
   UpgradePrompt,
 } from '@/hooks/use-subscription';
-import { useReferralAttribution } from '@/hooks/use-referral-tracking';
 import { useWallet } from '@/hooks/useWallet';
 import type { AuthSession, User } from '@/lib/types/api';
 import { createModuleLogger } from '@/lib/utils/logger';
@@ -76,7 +83,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       0,
       Math.ceil(
         ((subscription.currentPeriodEnd ?? Date.now()) - Date.now()) /
-        (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24)
       )
     );
 
@@ -127,7 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const planPremiumRemaining = Math.max(
       0,
       normalizedSubscription.premiumMessagesLimit -
-      normalizedSubscription.premiumMessagesUsed
+        normalizedSubscription.premiumMessagesUsed
     );
     const messagesRemaining =
       planMessagesRemaining + (normalizedSubscription.messageCredits || 0);
@@ -173,8 +180,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const premiumUsagePercentage =
       normalizedSubscription.premiumMessagesLimit > 0
         ? (normalizedSubscription.premiumMessagesUsed /
-          normalizedSubscription.premiumMessagesLimit) *
-        100
+            normalizedSubscription.premiumMessagesLimit) *
+          100
         : 0;
 
     // Critical usage (>95%)
@@ -244,11 +251,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Handle referral attribution when user becomes authenticated
   useEffect(() => {
     const attemptReferralAttribution = async () => {
-      if (
-        user &&
-        wallet.publicKey &&
-        !referralAttributionAttempted.current
-      ) {
+      if (user && wallet.publicKey && !referralAttributionAttempted.current) {
         referralAttributionAttempted.current = true;
 
         try {
@@ -260,7 +263,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         } catch (error) {
           _log.error('Referral attribution failed', {
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
         }
       }
@@ -299,7 +302,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       },
       logout: signOut,
       refreshToken: async () => token,
-      clearError: () => { },
+      clearError: () => {},
 
       // Wallet integration
       isWalletConnected: wallet.isConnected,

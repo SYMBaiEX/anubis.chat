@@ -349,7 +349,7 @@ export const isPremiumModel = (model: AIModel): boolean => {
 
 // Determine if a model is standard (not free, not premium)
 export const isStandardModel = (model: AIModel): boolean => {
-  return !isFreeModel(model) && !isPremiumModel(model);
+  return !(isFreeModel(model) || isPremiumModel(model));
 };
 
 // Get models available for a specific subscription tier
@@ -362,7 +362,9 @@ export const getModelsForTier = (
   }
   if (tier === 'pro') {
     // Pro tier gets free models + standard models (excludes premium models)
-    return AI_MODELS.filter((model) => isFreeModel(model) || isStandardModel(model));
+    return AI_MODELS.filter(
+      (model) => isFreeModel(model) || isStandardModel(model)
+    );
   }
   // Pro+ gets unlimited access to all models (free + standard + premium)
   return AI_MODELS;

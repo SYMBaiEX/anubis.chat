@@ -592,7 +592,7 @@ export default function EnhancedDashboardPage() {
                       />
                       <QuickAction
                         gradient="from-accent to-purple-500"
-                        href="/agents/new"
+                        href="/agents/"
                         icon={Bot}
                         label="Create Agent"
                       />

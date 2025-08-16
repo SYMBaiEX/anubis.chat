@@ -19,11 +19,18 @@ import React, { useState } from 'react';
 import AnimatedSection from '@/components/landing/animated-section';
 import LandingFooter from '@/components/landing/landingFooter';
 import LandingHeader from '@/components/landing/landingHeader';
-import SiteLinksSection from '../(landing)/components/siteLinksSection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import SiteLinksSection from '../(landing)/components/siteLinksSection';
 
 // Animation Variants
 const containerVariants = {
@@ -209,7 +216,12 @@ const featureComparison = [
     category: 'AI Models',
     features: [
       { name: 'Free AI Models', free: '✓', pro: '✓', proPlus: '✓' },
-      { name: 'Premium Models Access', free: '✗', pro: '100/month', proPlus: '300/month' },
+      {
+        name: 'Premium Models Access',
+        free: '✗',
+        pro: '100/month',
+        proPlus: '300/month',
+      },
       { name: 'GPT-5 & GPT-5 Mini', free: '✗', pro: 'Limited', proPlus: '✓' },
       { name: 'Gemini 2.5 Pro', free: '✗', pro: 'Limited', proPlus: '✓' },
       { name: 'Model Switching', free: '✗', pro: '✓', proPlus: '✓' },
@@ -219,16 +231,35 @@ const featureComparison = [
     category: 'Features',
     features: [
       { name: 'Messages per Month', free: '50', pro: '500', proPlus: '1,000' },
-      { name: 'Conversation History', free: '7 days', pro: 'Unlimited', proPlus: 'Unlimited' },
       {
-        name: 'API Access', free: '✗', pro: '✗', proPlus: 'Coming Soon' },
-      { name: 'Workflow Automation', free: '✗', pro: '✗', proPlus: 'Coming Soon' },
+        name: 'Conversation History',
+        free: '7 days',
+        pro: 'Unlimited',
+        proPlus: 'Unlimited',
+      },
+      {
+        name: 'API Access',
+        free: '✗',
+        pro: '✗',
+        proPlus: 'Coming Soon',
+      },
+      {
+        name: 'Workflow Automation',
+        free: '✗',
+        pro: '✗',
+        proPlus: 'Coming Soon',
+      },
     ],
   },
   {
     category: 'Support & Extras',
     features: [
-      { name: 'Support Level', free: 'Basic', pro: 'Email', proPlus: '24/7 Priority' },
+      {
+        name: 'Support Level',
+        free: 'Basic',
+        pro: 'Email',
+        proPlus: '24/7 Priority',
+      },
       { name: 'Response Time', free: '48-72h', pro: '24h', proPlus: '<2h' },
       { name: 'Referral Program', free: '✗', pro: '✗', proPlus: '✓' },
       { name: 'Early Feature Access', free: '✗', pro: '✗', proPlus: '✓' },
@@ -241,56 +272,69 @@ const featureComparison = [
 const faqData = [
   {
     question: 'How does SOL payment work?',
-    answer: 'Payments are processed directly through your Solana wallet. Simply connect your wallet and approve the transaction. No credit cards or traditional payment methods required.',
+    answer:
+      'Payments are processed directly through your Solana wallet. Simply connect your wallet and approve the transaction. No credit cards or traditional payment methods required.',
   },
   {
     question: 'Can I switch plans anytime?',
-    answer: 'Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and you retain your current plan\'s features.',
+    answer:
+      "Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and you retain your current plan's features.",
   },
   {
     question: 'What happens if I exceed my message limit?',
-    answer: 'You\'ll be notified when you\'re approaching your limit. Once exceeded, you can either upgrade your plan or wait for the next billing cycle.',
+    answer:
+      "You'll be notified when you're approaching your limit. Once exceeded, you can either upgrade your plan or wait for the next billing cycle.",
   },
   {
     question: 'Is there a refund policy?',
-    answer: 'Due to the nature of blockchain transactions, we don\'t offer refunds. However, you can cancel your subscription at any time to prevent future charges.',
+    answer:
+      "Due to the nature of blockchain transactions, we don't offer refunds. However, you can cancel your subscription at any time to prevent future charges.",
   },
   {
     question: 'Do unused messages roll over?',
-    answer: 'Messages reset each billing cycle and don\'t roll over. We recommend choosing a plan that matches your typical usage.',
+    answer:
+      "Messages reset each billing cycle and don't roll over. We recommend choosing a plan that matches your typical usage.",
   },
 ];
 
 // Pricing Card Component
-function PricingCard({ plan, billingPeriod }: { plan: any; billingPeriod: string }) {
+function PricingCard({
+  plan,
+  billingPeriod,
+}: {
+  plan: any;
+  billingPeriod: string;
+}) {
   const [isHovered, setIsHovered] = useState(false);
   const Icon = plan.icon;
 
   return (
     <motion.div
-      variants={scaleVariants}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.3 }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
-      whileHover={{ y: -8 }}
       className={cn('relative h-full', plan.featured && 'lg:scale-105')}
+      initial="hidden"
+      onHoverEnd={() => setIsHovered(false)}
+      onHoverStart={() => setIsHovered(true)}
+      variants={scaleVariants}
+      viewport={{ once: true, amount: 0.3 }}
+      whileHover={{ y: -8 }}
+      whileInView="visible"
     >
       {plan.featured && (
         <motion.div
-          className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-primary to-emerald-500 opacity-75 blur"
           animate={{
             opacity: isHovered ? 1 : 0.75,
           }}
+          className="-inset-0.5 absolute rounded-2xl bg-gradient-to-r from-primary to-emerald-500 opacity-75 blur"
           transition={{ duration: 0.3 }}
         />
       )}
-      
-      <Card className={cn(
-        'relative h-full overflow-hidden border-primary/10 bg-gradient-to-br from-background to-background/50',
-        plan.featured && 'border-primary/30'
-      )}>
+
+      <Card
+        className={cn(
+          'relative h-full overflow-hidden border-primary/10 bg-gradient-to-br from-background to-background/50',
+          plan.featured && 'border-primary/30'
+        )}
+      >
         {plan.badge && (
           <div className="absolute top-4 right-4">
             <Badge className="bg-primary text-primary-foreground">
@@ -298,69 +342,82 @@ function PricingCard({ plan, billingPeriod }: { plan: any; billingPeriod: string
             </Badge>
           </div>
         )}
-        
+
         <CardHeader className="pb-4">
           <motion.div
             className={cn(
               'mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg',
               plan.color
             )}
-            whileHover={{ scale: 1.1, rotate: 5 }}
             transition={{ type: 'spring' as const, stiffness: 400 }}
+            whileHover={{ scale: 1.1, rotate: 5 }}
           >
             <Icon className="h-7 w-7 text-white" />
           </motion.div>
-          
+
           <CardTitle className="text-2xl">{plan.name}</CardTitle>
           <CardDescription className="mt-2">{plan.description}</CardDescription>
-          
+
           <div className="mt-4">
             <div className="flex items-baseline">
-              <span className="text-4xl font-bold">{plan.price}</span>
-              <span className="ml-2 text-xl text-muted-foreground">{plan.currency}</span>
+              <span className="font-bold text-4xl">{plan.price}</span>
+              <span className="ml-2 text-muted-foreground text-xl">
+                {plan.currency}
+              </span>
               <span className="ml-1 text-muted-foreground">{plan.period}</span>
             </div>
             {plan.originalPrice && (
-              <div className="mt-1 text-sm text-muted-foreground">
+              <div className="mt-1 text-muted-foreground text-sm">
                 <span className="line-through">{plan.originalPrice} SOL</span>
-                <span className="ml-2 text-primary">Save {Math.round((1 - parseFloat(plan.price) / parseFloat(plan.originalPrice)) * 100)}%</span>
+                <span className="ml-2 text-primary">
+                  Save{' '}
+                  {Math.round(
+                    (1 -
+                      Number.parseFloat(plan.price) /
+                        Number.parseFloat(plan.originalPrice)) *
+                      100
+                  )}
+                  %
+                </span>
               </div>
             )}
           </div>
         </CardHeader>
-        
+
         <CardContent className="pb-6">
           <ul className="space-y-3">
             {plan.features.map((feature: any, idx: number) => (
               <motion.li
-                key={idx}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.05 }}
                 className="flex items-start gap-3"
+                initial={{ opacity: 0, x: -20 }}
+                key={idx}
+                transition={{ delay: idx * 0.05 }}
+                whileInView={{ opacity: 1, x: 0 }}
               >
                 {feature.included ? (
                   <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
                 ) : (
                   <X className="mt-0.5 h-5 w-5 flex-shrink-0 text-muted-foreground/50" />
                 )}
-                <span className={cn(
-                  'text-sm',
-                  !feature.included && 'text-muted-foreground/50'
-                )}>
+                <span
+                  className={cn(
+                    'text-sm',
+                    !feature.included && 'text-muted-foreground/50'
+                  )}
+                >
                   {feature.text}
                 </span>
               </motion.li>
             ))}
           </ul>
         </CardContent>
-        
+
         <CardFooter>
-          <Link href={plan.href} className="w-full">
+          <Link className="w-full" href={plan.href}>
             <Button
+              className="group w-full"
               size="lg"
               variant={plan.featured ? 'default' : 'outline'}
-              className="group w-full"
             >
               <Wallet className="mr-2 h-5 w-5" />
               {plan.cta}
@@ -374,16 +431,24 @@ function PricingCard({ plan, billingPeriod }: { plan: any; billingPeriod: string
 }
 
 // FAQ Item Component
-function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
+function FAQItem({
+  question,
+  answer,
+  index,
+}: {
+  question: string;
+  answer: string;
+  index: number;
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <motion.div
-      variants={itemVariants}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true }}
       custom={index}
+      initial="hidden"
+      variants={itemVariants}
+      viewport={{ once: true }}
+      whileInView="visible"
     >
       <Card className="border-primary/10 bg-gradient-to-br from-background to-background/50">
         <CardHeader
@@ -391,7 +456,7 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
           onClick={() => setIsOpen(!isOpen)}
         >
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-medium">{question}</CardTitle>
+            <CardTitle className="font-medium text-lg">{question}</CardTitle>
             <motion.div
               animate={{ rotate: isOpen ? 180 : 0 }}
               transition={{ type: 'spring' as const, stiffness: 200 }}
@@ -403,9 +468,9 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
+              initial={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
               <CardContent className="pt-0">
@@ -425,11 +490,11 @@ export default function PricingPageClient() {
   return (
     <div className="min-h-screen w-full">
       <LandingHeader />
-      
+
       <main className="relative w-full flex-1">
         {/* Hero Section */}
         <AnimatedSection
-          className="isolate overflow-visible pt-28 pb-24 text-center px-4 sm:px-6 md:pt-36 md:pb-32 lg:px-8"
+          className="isolate overflow-visible px-4 pt-28 pb-24 text-center sm:px-6 md:pt-36 md:pb-32 lg:px-8"
           dustIntensity="low"
           parallaxY={24}
           revealStrategy="none"
@@ -451,7 +516,7 @@ export default function PricingPageClient() {
                 Simple, Transparent Pricing
               </span>
             </motion.div>
-            
+
             <motion.h1
               className="mt-2 mb-10 font-bold text-4xl sm:text-5xl md:mt-4 md:mb-12 md:text-6xl lg:text-7xl"
               variants={itemVariants}
@@ -462,49 +527,64 @@ export default function PricingPageClient() {
               <br />
               <span className="text-foreground">Pay with SOL</span>
             </motion.h1>
-            
+
             <motion.p
               className="mx-auto mt-6 mb-16 max-w-3xl text-lg text-muted-foreground sm:text-xl md:mt-10 md:mb-20 md:text-2xl"
               variants={itemVariants}
             >
-              Unlock the full potential of Web3-native AI with flexible pricing that scales with your needs.
+              Unlock the full potential of Web3-native AI with flexible pricing
+              that scales with your needs.
             </motion.p>
-            
+
             {/* Billing Toggle */}
             <motion.div
-              variants={itemVariants}
               className="flex items-center justify-center gap-4"
+              variants={itemVariants}
             >
-              <span className={cn(
-                'text-sm font-medium',
-                billingPeriod === 'monthly' ? 'text-foreground' : 'text-muted-foreground'
-              )}>
+              <span
+                className={cn(
+                  'font-medium text-sm',
+                  billingPeriod === 'monthly'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground'
+                )}
+              >
                 Monthly
               </span>
               <button
-                onClick={() => setBillingPeriod(billingPeriod === 'monthly' ? 'annual' : 'monthly')}
                 className="relative inline-flex h-6 w-11 items-center rounded-full bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                onClick={() =>
+                  setBillingPeriod(
+                    billingPeriod === 'monthly' ? 'annual' : 'monthly'
+                  )
+                }
               >
                 <motion.span
-                  className="inline-block h-4 w-4 rounded-full bg-primary"
                   animate={{ x: billingPeriod === 'monthly' ? 2 : 24 }}
+                  className="inline-block h-4 w-4 rounded-full bg-primary"
                   transition={{ type: 'spring' as const, stiffness: 300 }}
                 />
               </button>
-              <span className={cn(
-                'text-sm font-medium',
-                billingPeriod === 'annual' ? 'text-foreground' : 'text-muted-foreground'
-              )}>
+              <span
+                className={cn(
+                  'font-medium text-sm',
+                  billingPeriod === 'annual'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground'
+                )}
+              >
                 Annual
-                <Badge className="ml-2" variant="secondary">Save 5%</Badge>
+                <Badge className="ml-2" variant="secondary">
+                  Save 5%
+                </Badge>
               </span>
             </motion.div>
           </motion.div>
         </AnimatedSection>
-        
+
         {/* Pricing Cards */}
         <AnimatedSection
-          className="py-20 px-4 sm:px-6 md:py-28 lg:py-32 lg:px-8"
+          className="px-4 py-20 sm:px-6 md:py-28 lg:px-8 lg:py-32"
           dustIntensity="low"
           edgeMask={false}
           includeTomb={false}
@@ -515,20 +595,22 @@ export default function PricingPageClient() {
         >
           <div className="container mx-auto">
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {pricingPlans[billingPeriod as keyof typeof pricingPlans].map((plan, index) => (
-                <PricingCard
-                  key={`${plan.name}-${billingPeriod}`}
-                  plan={plan}
-                  billingPeriod={billingPeriod}
-                />
-              ))}
+              {pricingPlans[billingPeriod as keyof typeof pricingPlans].map(
+                (plan, index) => (
+                  <PricingCard
+                    billingPeriod={billingPeriod}
+                    key={`${plan.name}-${billingPeriod}`}
+                    plan={plan}
+                  />
+                )
+              )}
             </div>
           </div>
         </AnimatedSection>
-        
+
         {/* Feature Comparison */}
         <AnimatedSection
-          className="py-20 px-4 sm:px-6 md:py-28 lg:py-32 lg:px-8"
+          className="px-4 py-20 sm:px-6 md:py-28 lg:px-8 lg:py-32"
           dustIntensity="low"
           edgeMask={false}
           includeTomb={false}
@@ -539,19 +621,19 @@ export default function PricingPageClient() {
         >
           <div className="container mx-auto">
             <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={containerVariants}
               className="mx-auto mb-16 text-center"
+              initial="hidden"
+              variants={containerVariants}
+              viewport={{ once: true }}
+              whileInView="visible"
             >
               <motion.h2
                 className="mb-4 font-bold text-3xl md:text-4xl"
-                variants={itemVariants}
                 initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
+                variants={itemVariants}
                 viewport={{ once: true, margin: '-100px' }}
+                whileInView={{ opacity: 1, y: 0 }}
               >
                 Detailed Feature Comparison
               </motion.h2>
@@ -562,72 +644,93 @@ export default function PricingPageClient() {
                 See exactly what you get with each plan
               </motion.p>
             </motion.div>
-            
+
             <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={containerVariants}
               className="overflow-x-auto"
+              initial="hidden"
+              variants={containerVariants}
+              viewport={{ once: true }}
+              whileInView="visible"
             >
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-border">
-                    <th className="p-4 text-left font-medium"></th>
+                  <tr className="border-border border-b">
+                    <th className="p-4 text-left font-medium" />
                     <th className="p-4 text-center">
                       <div className="font-bold text-lg">Free</div>
-                      <div className="text-sm text-muted-foreground">0 SOL</div>
+                      <div className="text-muted-foreground text-sm">0 SOL</div>
                     </th>
                     <th className="p-4 text-center">
                       <div className="font-bold text-lg text-primary">Pro</div>
-                      <div className="text-sm text-muted-foreground">0.05 SOL/mo</div>
+                      <div className="text-muted-foreground text-sm">
+                        0.05 SOL/mo
+                      </div>
                     </th>
                     <th className="p-4 text-center">
-                      <div className="font-bold text-lg text-purple-500">Pro+</div>
-                      <div className="text-sm text-muted-foreground">0.1 SOL/mo</div>
+                      <div className="font-bold text-lg text-purple-500">
+                        Pro+
+                      </div>
+                      <div className="text-muted-foreground text-sm">
+                        0.1 SOL/mo
+                      </div>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {featureComparison.map((category, categoryIndex) => (
                     <React.Fragment key={category.category}>
-                      <tr className="border-b border-border bg-muted/30">
-                        <td colSpan={4} className="p-4 font-semibold">
+                      <tr className="border-border border-b bg-muted/30">
+                        <td className="p-4 font-semibold" colSpan={4}>
                           {category.category}
                         </td>
                       </tr>
                       {category.features.map((feature, idx) => (
                         <motion.tr
+                          className="border-border/50 border-b"
+                          custom={idx}
                           key={`${category.category}-${feature.name}`}
                           variants={itemVariants}
-                          custom={idx}
-                          className="border-b border-border/50"
                         >
                           <td className="p-4 text-sm">{feature.name}</td>
                           <td className="p-4 text-center">
-                            <span className={cn(
-                              'inline-block text-sm',
-                              feature.free === '✓' ? 'text-green-500' : 
-                              feature.free === '✗' ? 'text-muted-foreground/50' : ''
-                            )}>
+                            <span
+                              className={cn(
+                                'inline-block text-sm',
+                                feature.free === '✓'
+                                  ? 'text-green-500'
+                                  : feature.free === '✗'
+                                    ? 'text-muted-foreground/50'
+                                    : ''
+                              )}
+                            >
                               {feature.free}
                             </span>
                           </td>
                           <td className="p-4 text-center">
-                            <span className={cn(
-                              'inline-block text-sm',
-                              feature.pro === '✓' ? 'text-green-500' : 
-                              feature.pro === '✗' ? 'text-muted-foreground/50' : ''
-                            )}>
+                            <span
+                              className={cn(
+                                'inline-block text-sm',
+                                feature.pro === '✓'
+                                  ? 'text-green-500'
+                                  : feature.pro === '✗'
+                                    ? 'text-muted-foreground/50'
+                                    : ''
+                              )}
+                            >
                               {feature.pro}
                             </span>
                           </td>
                           <td className="p-4 text-center">
-                            <span className={cn(
-                              'inline-block text-sm',
-                              feature.proPlus === '✓' ? 'text-green-500' : 
-                              feature.proPlus === '✗' ? 'text-muted-foreground/50' : ''
-                            )}>
+                            <span
+                              className={cn(
+                                'inline-block text-sm',
+                                feature.proPlus === '✓'
+                                  ? 'text-green-500'
+                                  : feature.proPlus === '✗'
+                                    ? 'text-muted-foreground/50'
+                                    : ''
+                              )}
+                            >
                               {feature.proPlus}
                             </span>
                           </td>
@@ -640,10 +743,10 @@ export default function PricingPageClient() {
             </motion.div>
           </div>
         </AnimatedSection>
-        
+
         {/* FAQ Section */}
         <AnimatedSection
-          className="py-20 px-4 sm:px-6 md:py-28 lg:py-32 lg:px-8"
+          className="px-4 py-20 sm:px-6 md:py-28 lg:px-8 lg:py-32"
           dustIntensity="low"
           edgeMask={false}
           includeTomb={false}
@@ -654,19 +757,19 @@ export default function PricingPageClient() {
         >
           <div className="mx-auto max-w-3xl">
             <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={containerVariants}
               className="mx-auto mb-16 text-center"
+              initial="hidden"
+              variants={containerVariants}
+              viewport={{ once: true }}
+              whileInView="visible"
             >
               <motion.h2
                 className="mb-4 font-bold text-3xl md:text-4xl"
-                variants={itemVariants}
                 initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
+                variants={itemVariants}
                 viewport={{ once: true, margin: '-100px' }}
+                whileInView={{ opacity: 1, y: 0 }}
               >
                 Frequently Asked Questions
               </motion.h2>
@@ -677,23 +780,23 @@ export default function PricingPageClient() {
                 Got questions? We've got answers
               </motion.p>
             </motion.div>
-            
+
             <div className="space-y-4">
               {faqData.map((faq, index) => (
                 <FAQItem
-                  key={index}
-                  question={faq.question}
                   answer={faq.answer}
                   index={index}
+                  key={index}
+                  question={faq.question}
                 />
               ))}
             </div>
           </div>
         </AnimatedSection>
-        
+
         {/* CTA Section */}
         <AnimatedSection
-          className="py-20 px-4 text-center sm:px-6 md:py-28 lg:py-32 lg:px-8"
+          className="px-4 py-20 text-center sm:px-6 md:py-28 lg:px-8 lg:py-32"
           dustIntensity="low"
           edgeMask={false}
           includeTomb={false}
@@ -703,11 +806,11 @@ export default function PricingPageClient() {
           useSurface={false}
         >
           <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={containerVariants}
             className="mx-auto max-w-4xl"
+            initial="hidden"
+            variants={containerVariants}
+            viewport={{ once: true }}
+            whileInView="visible"
           >
             <motion.h2
               className="mb-6 font-bold text-3xl md:text-4xl"
@@ -719,14 +822,15 @@ export default function PricingPageClient() {
               className="mb-10 text-lg text-muted-foreground md:text-xl"
               variants={itemVariants}
             >
-              Join thousands of users already experiencing the future of Web3-native AI.
+              Join thousands of users already experiencing the future of
+              Web3-native AI.
             </motion.p>
             <motion.div
               className="flex flex-col items-center justify-center gap-4 sm:flex-row"
               variants={itemVariants}
             >
               <Link href="/auth">
-                <Button size="lg" className="group">
+                <Button className="group" size="lg">
                   <Wallet className="mr-2 h-5 w-5" />
                   Start Free Trial
                   <Sparkles className="ml-2 h-4 w-4" />
@@ -741,7 +845,7 @@ export default function PricingPageClient() {
           </motion.div>
         </AnimatedSection>
       </main>
-      
+
       <SiteLinksSection />
       <LandingFooter />
     </div>

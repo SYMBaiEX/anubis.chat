@@ -30,7 +30,6 @@ const convex = new ConvexReactClient(convexConfig.publicUrl, {
 });
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-
   return (
     <ConvexErrorBoundary
       onError={(error, errorInfo) => {
@@ -54,9 +53,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                   <NotificationProvider>
                     <MilestoneNotificationsProvider>
                       <UpgradeProvider>
-                        <SolanaAgentProvider>
-                          {children}
-                        </SolanaAgentProvider>
+                        <SolanaAgentProvider>{children}</SolanaAgentProvider>
                       </UpgradeProvider>
                     </MilestoneNotificationsProvider>
                   </NotificationProvider>

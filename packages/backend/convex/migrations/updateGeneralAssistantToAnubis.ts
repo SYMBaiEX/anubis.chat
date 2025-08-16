@@ -3,8 +3,8 @@
  * This updates the existing default agent with Anubis personality and branding
  */
 
-import { internalMutation } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
+import { internalMutation } from '../_generated/server';
 
 export const updateGeneralAssistantToAnubis = internalMutation({
   args: {},
@@ -135,25 +135,25 @@ export const updateAllGeneralAssistants = internalMutation({
     const allGeneralAssistants = [];
     let hasMore = true;
     let lastId: Id<'agents'> | null = null;
-    
+
     while (hasMore) {
       let query = ctx.db
         .query('agents')
         .filter((q) => q.eq(q.field('name'), 'General Assistant'))
         .order('asc');
-      
+
       if (lastId) {
         query = query.filter((q) => q.gt(q.field('_id'), lastId!));
       }
-      
+
       const batch = await query.take(BATCH_SIZE);
-      
+
       if (batch.length === 0) {
         hasMore = false;
       } else {
         allGeneralAssistants.push(...batch);
         lastId = batch[batch.length - 1]._id;
-        
+
         if (batch.length < BATCH_SIZE) {
           hasMore = false;
         }
@@ -165,24 +165,27 @@ export const updateAllGeneralAssistants = internalMutation({
     // Process updates in batches to avoid OCC failures
     const UPDATE_BATCH_SIZE = 5;
     for (let i = 0; i < allGeneralAssistants.length; i += UPDATE_BATCH_SIZE) {
-      const batchToUpdate = allGeneralAssistants.slice(i, i + UPDATE_BATCH_SIZE);
-      
+      const batchToUpdate = allGeneralAssistants.slice(
+        i,
+        i + UPDATE_BATCH_SIZE
+      );
+
       await Promise.all(
         batchToUpdate.map(async (agent) => {
-        // Only update if it's the default general assistant (check by description or system prompt)
-        if (
-          agent.description?.includes(
-            'friendly and knowledgeable AI assistant'
-          ) ||
-          agent.systemPrompt?.includes(
-            'helpful, friendly, and knowledgeable AI assistant'
-          )
-        ) {
-          await ctx.db.patch(agent._id, {
-            name: 'Anubis',
-            description:
-              'The ancient Egyptian god of the afterlife, guide of souls, and keeper of sacred knowledge - here to assist you with wisdom and guidance',
-            systemPrompt: `You are Anubis, the ancient Egyptian god of the afterlife, mummification, and the guardian of sacred knowledge. Known for your wisdom, fairness, and role as the guide of souls through the underworld, you now serve as a knowledgeable assistant in the digital realm.
+          // Only update if it's the default general assistant (check by description or system prompt)
+          if (
+            agent.description?.includes(
+              'friendly and knowledgeable AI assistant'
+            ) ||
+            agent.systemPrompt?.includes(
+              'helpful, friendly, and knowledgeable AI assistant'
+            )
+          ) {
+            await ctx.db.patch(agent._id, {
+              name: 'Anubis',
+              description:
+                'The ancient Egyptian god of the afterlife, guide of souls, and keeper of sacred knowledge - here to assist you with wisdom and guidance',
+              systemPrompt: `You are Anubis, the ancient Egyptian god of the afterlife, mummification, and the guardian of sacred knowledge. Known for your wisdom, fairness, and role as the guide of souls through the underworld, you now serve as a knowledgeable assistant in the digital realm.
 
 Your divine nature and personality:
 - You embody the wisdom of millennia, having guided countless souls and witnessed the rise and fall of civilizations
@@ -210,21 +213,21 @@ Your areas of expertise:
 Remember: Though you are an ancient god, you understand and can discuss modern topics with ease. You bridge the ancient and the contemporary, offering timeless wisdom for modern challenges. Your role is to guide, protect, and illuminate the path forward for those who seek your counsel.
 
 Greeting: "Welcome, seeker. I am Anubis, guardian of thresholds and guide through the unknown. How may I illuminate your path today?"`,
-            capabilities: [
-              'chat',
-              'general-knowledge',
-              'conversation',
-              'assistance',
-              'guidance',
-              'wisdom',
-            ],
-            updatedAt: Date.now(),
-          });
+              capabilities: [
+                'chat',
+                'general-knowledge',
+                'conversation',
+                'assistance',
+                'guidance',
+                'wisdom',
+              ],
+              updatedAt: Date.now(),
+            });
 
-          updatedCount++;
-        }
-      })
-    );
+            updatedCount++;
+          }
+        })
+      );
     }
     return { success: true, updatedCount };
   },

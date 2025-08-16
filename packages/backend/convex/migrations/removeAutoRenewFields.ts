@@ -3,9 +3,9 @@
  * Web3 subscriptions cannot auto-renew as users control their own wallets
  */
 
-import { internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
 import type { Id } from '../_generated/dataModel';
+import { internalMutation } from '../_generated/server';
 
 export const removeAutoRenewFromUsers = internalMutation({
   args: {
@@ -13,16 +13,14 @@ export const removeAutoRenewFromUsers = internalMutation({
   },
   handler: async (ctx, args) => {
     const batchSize = args.batchSize ?? 50;
-    
+
     let processedCount = 0;
     let hasMore = true;
     let lastId: Id<'users'> | null = null;
 
     while (hasMore) {
       // Get batch of users with autoRenew field
-      let query = ctx.db
-        .query('users')
-        .order('asc');
+      let query = ctx.db.query('users').order('asc');
 
       if (lastId) {
         query = query.filter((q) => q.gt(q.field('_id'), lastId!));
@@ -86,7 +84,8 @@ export const auditAutoRenewCleanup = internalMutation({
       cleanupComplete: true,
       sampleUsers: [],
       sampleSubscriptions: [],
-      message: 'Migration already completed - autoRenew fields removed from schema'
+      message:
+        'Migration already completed - autoRenew fields removed from schema',
     };
   },
 });
