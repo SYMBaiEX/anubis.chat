@@ -391,6 +391,9 @@ export const trackMessageUsageByWallet = mutation({
 export const trackMessageUsage = mutation({
   args: {
     isPremiumModel: v.boolean(),
+    model: v.optional(v.string()),
+    inputTokens: v.optional(v.number()),
+    outputTokens: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { user } = await requireAuth(ctx);
