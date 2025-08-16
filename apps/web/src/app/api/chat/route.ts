@@ -1,8 +1,6 @@
-import { anthropic } from '@ai-sdk/anthropic';
-import { google } from '@ai-sdk/google';
-import { openai } from '@ai-sdk/openai';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { getModel } from '@/lib/ai/providers';
 import { convertToModelMessages, streamText, type UIMessage } from 'ai';
 import { ConvexHttpClient } from 'convex/browser';
 import type { NextRequest } from 'next/server';
@@ -19,29 +17,16 @@ function getConvexClient(): ConvexHttpClient {
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
-// Model provider mapping
-const getModel = (modelId: string) => {
-  // OpenAI models
-  if (modelId.startsWith('gpt-')) {
-    // GPT-5-nano is now available (as of 8/14/2025)
-    if (modelId === 'gpt-5-nano') {
-      return openai('gpt-5-nano');
-    }
-    return openai(modelId);
+// Model provider mapping using new provider registry
+const getModelInstance = (modelId: string) => {
+  try {
+    // Use new provider registry with automatic fallback
+    return getModel(modelId, { fallbackEnabled: true });
+  } catch (error) {
+    console.error(`Failed to get model ${modelId}:`, error);
+    // Ultimate fallback to a known working model
+    return getModel('gateway/deepseek/deepseek-v3', { fallbackEnabled: false });
   }
-
-  // Anthropic models
-  if (modelId.startsWith('claude-')) {
-    return anthropic(modelId);
-  }
-
-  // Google models
-  if (modelId.startsWith('gemini-')) {
-    return google(modelId);
-  }
-
-  // Default fallback
-  return openai('gpt-4-turbo-preview');
 };
 
 export async function POST(req: NextRequest) {
@@ -93,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     // Stream the response
     const result = streamText({
-      model: getModel(model),
+      model: getModelInstance(model),
       system: systemPrompt,
       messages: modelMessages,
       temperature,

@@ -14,29 +14,31 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import {
-  type AIModel,
-  getModelsForTier,
+  type UIModel,
+  getUIModelsForTier,
   isFreeModel,
   isPremiumModel,
   isStandardModel,
-} from '@/lib/constants/ai-models';
+} from '@/lib/ai/providers';
 import { cn } from '@/lib/utils';
 
 interface ModelCardProps {
-  model: AIModel;
+  model: UIModel;
   isSelected?: boolean;
-  onClick: (model: AIModel) => void;
+  onClick: (model: UIModel) => void;
   className?: string;
   compact?: boolean;
   isAccessible?: boolean; // Optional override for accessibility check
 }
 
-const getProviderIcon = (provider: AIModel['provider']) => {
+const getProviderIcon = (provider: UIModel['provider']) => {
   switch (provider) {
     case 'openai':
       return <Sparkles className="h-3 w-3" />;
-    // case 'anthropic':  // DISABLED FOR NOW
-    //   return <Brain className="h-3 w-3" />;
+    case 'gateway':
+      return <Zap className="h-3 w-3 text-blue-500" />;
+    case 'anthropic':
+      return <Brain className="h-3 w-3" />;
     case 'google':
       return <Cpu className="h-3 w-3" />;
     case 'openrouter':
@@ -46,8 +48,8 @@ const getProviderIcon = (provider: AIModel['provider']) => {
   }
 };
 
-const getIntelligenceBadge = (intelligence: AIModel['intelligence']) => {
-  const variants: Record<AIModel['intelligence'], string> = {
+const getIntelligenceBadge = (intelligence: UIModel['intelligence']) => {
+  const variants: Record<UIModel['intelligence'], string> = {
     basic: 'bg-secondary text-secondary-foreground',
     advanced:
       'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
@@ -58,7 +60,7 @@ const getIntelligenceBadge = (intelligence: AIModel['intelligence']) => {
   };
 
   // Shortened labels
-  const shortLabels: Record<AIModel['intelligence'], string> = {
+  const shortLabels: Record<UIModel['intelligence'], string> = {
     basic: 'Basic',
     advanced: 'Adv',
     expert: 'Expert',
@@ -75,7 +77,7 @@ const getIntelligenceBadge = (intelligence: AIModel['intelligence']) => {
   );
 };
 
-const getSpeedIcon = (speed: AIModel['speed']) => {
+const getSpeedIcon = (speed: UIModel['speed']) => {
   switch (speed) {
     case 'fast':
       return <Zap className="h-2.5 w-2.5 text-green-500" />;
@@ -98,14 +100,14 @@ export function ModelCard({
   const canUsePremium = useCanUsePremiumModel();
 
   // Check if a model is accessible to current user using new tier logic
-  const isModelAccessible = (model: AIModel) => {
+  const isModelAccessible = (model: UIModel) => {
     if (subscription?.tier === 'admin') {
       return true;
     }
 
     const userTier =
       (subscription?.tier as 'free' | 'pro' | 'pro_plus') || 'free';
-    const availableModels = getModelsForTier(userTier);
+    const availableModels = getUIModelsForTier(userTier);
 
     return availableModels.some(
       (availableModel) => availableModel.id === model.id
@@ -113,7 +115,7 @@ export function ModelCard({
   };
 
   // Get tier badge for model (Premium, Standard, Free)
-  const getTierBadge = (model: AIModel) => {
+  const getTierBadge = (model: UIModel) => {
     // Determine tier based on new model categorization
     let tier: 'Free' | 'Standard' | 'Premium';
     let badgeClass: string;
@@ -217,6 +219,14 @@ export function ModelCard({
                   .replace(' – ', ' ')
                   .replace(' (Free)', '')}
               </h3>
+              <p className="truncate text-[10px] text-muted-foreground capitalize">
+                {model.provider === 'gateway' ? 'Gateway (Cost-Optimized)' :
+                  model.provider === 'openrouter' ? 'OpenRouter' :
+                    model.provider === 'openai' ? 'OpenAI' :
+                      model.provider === 'anthropic' ? 'Anthropic' :
+                        model.provider === 'google' ? 'Google' :
+                          model.provider}
+              </p>
             </div>
           </div>
           {isSelected && (

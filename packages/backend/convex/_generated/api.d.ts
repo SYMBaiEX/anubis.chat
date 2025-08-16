@@ -34,6 +34,7 @@ import type * as http from "../http.js";
 import type * as httpAuth from "../httpAuth.js";
 import type * as lib_agents_agentManager from "../lib/agents/agentManager.js";
 import type * as lib_agents_anubisAgent from "../lib/agents/anubisAgent.js";
+import type * as lib_aiProviders from "../lib/aiProviders.js";
 import type * as lib_mcp_mcpClient from "../lib/mcp/mcpClient.js";
 import type * as lib_mcp_realMcpIntegration from "../lib/mcp/realMcpIntegration.js";
 import type * as lib_reasoning_enhancedReasoning from "../lib/reasoning/enhancedReasoning.js";
@@ -122,6 +123,7 @@ declare const fullApi: ApiFromModules<{
   httpAuth: typeof httpAuth;
   "lib/agents/agentManager": typeof lib_agents_agentManager;
   "lib/agents/anubisAgent": typeof lib_agents_anubisAgent;
+  "lib/aiProviders": typeof lib_aiProviders;
   "lib/mcp/mcpClient": typeof lib_mcp_mcpClient;
   "lib/mcp/realMcpIntegration": typeof lib_mcp_realMcpIntegration;
   "lib/reasoning/enhancedReasoning": typeof lib_reasoning_enhancedReasoning;

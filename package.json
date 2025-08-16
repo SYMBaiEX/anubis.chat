@@ -51,6 +51,7 @@
     ]
   },
   "dependencies": {
+    "@ai-sdk/gateway": "^1.0.7",
     "@solana-mobile/mobile-wallet-adapter-protocol": "^2.2.2",
     "@solana-mobile/mobile-wallet-adapter-protocol-web3js": "^2.2.2",
     "@tanstack/react-query": "^5.85.3",

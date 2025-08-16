@@ -1,12 +1,15 @@
 /**
  * AI Model Configurations
  * Updated: August 2025
+ * @deprecated Use aiProviderRegistry from '@/lib/ai/providers' for new implementations
  */
+
+import { aiProviderRegistry, type ModelConfig } from '@/lib/ai/providers';
 
 export interface AIModel {
   id: string;
   name: string;
-  provider: 'openrouter' | 'openai' | 'anthropic' | 'google';
+  provider: 'openrouter' | 'openai' | 'anthropic' | 'google' | 'gateway';
   description: string;
   contextWindow: number;
   maxOutput?: number;
@@ -47,7 +50,8 @@ function createOpenRouterModel(params: {
   };
 }
 
-export const AI_MODELS: AIModel[] = [
+// Store original models for reference
+const originalAIModels: AIModel[] = [
   // GPT-5 Nano - Standard model (no longer default)
   {
     id: 'gpt-5-nano',
@@ -300,22 +304,63 @@ export const AI_MODELS: AIModel[] = [
   },
 ];
 
-export const DEFAULT_MODEL = AI_MODELS.find((m) => m.default) || AI_MODELS[0];
+// Bridge functions to maintain compatibility with new provider system
+function convertModelConfigToAIModel(config: ModelConfig): AIModel {
+  return {
+    id: config.id,
+    name: config.name,
+    provider: config.provider as AIModel['provider'],
+    description: config.description,
+    contextWindow: config.contextWindow,
+    maxOutput: config.maxOutput,
+    pricing: config.pricing,
+    capabilities: config.capabilities,
+    speed: config.speed,
+    intelligence: config.intelligence,
+    released: config.released,
+    default: config.default,
+  };
+}
+
+// Get models from new provider registry and convert to legacy format
+function getModelsFromRegistry(): AIModel[] {
+  return aiProviderRegistry.getModels().map(convertModelConfigToAIModel);
+}
+
+export const AI_MODELS: AIModel[] = [
+  // Legacy models are now loaded from the provider registry
+  ...getModelsFromRegistry(),
+  // Keep original legacy models for fallback (filtered to avoid duplicates)
+  ...originalAIModels.filter(legacy => 
+    !aiProviderRegistry.getModels().some(modern => modern.id === legacy.id)
+  ),
+];
+
+export const DEFAULT_MODEL = (() => {
+  const defaultFromRegistry = aiProviderRegistry.getDefaultModel();
+  return convertModelConfigToAIModel(defaultFromRegistry);
+})();
 
 export const getModelById = (id: string): AIModel | undefined => {
+  // Try new provider registry first
+  const fromRegistry = aiProviderRegistry.getModels().find(m => m.id === id);
+  if (fromRegistry) {
+    return convertModelConfigToAIModel(fromRegistry);
+  }
+  // Fallback to legacy models
   return AI_MODELS.find((model) => model.id === id);
 };
 
 export const getModelsByProvider = (
-  provider: 'openai' | 'anthropic' | 'google' | 'openrouter'
+  provider: 'openai' | 'anthropic' | 'google' | 'openrouter' | 'gateway'
 ): AIModel[] => {
-  return AI_MODELS.filter((model) => model.provider === provider);
+  return aiProviderRegistry.getModels({ provider }).map(convertModelConfigToAIModel);
 };
 
 export const getModelsByIntelligence = (
   level: AIModel['intelligence']
 ): AIModel[] => {
-  return AI_MODELS.filter((model) => model.intelligence === level);
+  return aiProviderRegistry.getModels({ intelligence: level }).map(convertModelConfigToAIModel);
 };
 
 export const formatTokenPrice = (
@@ -356,16 +401,9 @@ export const isStandardModel = (model: AIModel): boolean => {
 export const getModelsForTier = (
   tier: 'free' | 'pro' | 'pro_plus'
 ): AIModel[] => {
-  if (tier === 'free') {
-    // Free tier ONLY gets free models (those with :free suffix or $0 pricing)
-    return AI_MODELS.filter(isFreeModel);
-  }
-  if (tier === 'pro') {
-    // Pro tier gets free models + standard models (excludes premium models)
-    return AI_MODELS.filter(
-      (model) => isFreeModel(model) || isStandardModel(model)
-    );
-  }
-  // Pro+ gets unlimited access to all models (free + standard + premium)
-  return AI_MODELS;
+  // Use new provider registry
+  const modelsFromRegistry = aiProviderRegistry.getModelsForTier(tier);
+  return modelsFromRegistry.map(convertModelConfigToAIModel);
 };
+
+// Dynamic AI_MODELS array that combines new registry models with legacy fallbacks

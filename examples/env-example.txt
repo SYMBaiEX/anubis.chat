@@ -1,0 +1,107 @@
+# ANUBIS Chat Environment Variables Example
+# Copy this file to .env.local and fill in your actual values
+
+# =============================================================================
+# Convex Backend Configuration
+# =============================================================================
+CONVEX_URL=
+CONVEX_DEPLOY_KEY=
+
+# =============================================================================
+# AI Provider API Keys
+# =============================================================================
+
+# Vercel AI Gateway (NEW - Cost-Optimized Routes)
+# Get from: https://vercel.com/dashboard -> AI Gateway
+VERCEL_AI_GATEWAY_URL=
+VERCEL_AI_GATEWAY_API_KEY=
+
+# OpenAI (Direct Provider)
+# Get from: https://platform.openai.com/api-keys
+OPENAI_API_KEY=
+
+# Anthropic (Direct Provider)
+# Get from: https://console.anthropic.com/
+ANTHROPIC_API_KEY=
+
+# Google AI (Direct Provider)
+# Get from: https://aistudio.google.com/app/apikey
+GOOGLE_GENERATIVE_AI_API_KEY=
+
+# OpenRouter (Multi-Model Provider)
+# Get from: https://openrouter.ai/keys
+OPENROUTER_API_KEY=
+
+# =============================================================================
+# Authentication & Database
+# =============================================================================
+
+# Convex Auth
+CONVEX_AUTH_PRIVATE_KEY=
+
+# =============================================================================
+# Web3 & Blockchain
+# =============================================================================
+
+# Solana Configuration
+NEXT_PUBLIC_SOLANA_NETWORK=devnet
+NEXT_PUBLIC_SOLANA_RPC_URL=
+
+# Solana Wallet Configuration
+NEXT_PUBLIC_SOLANA_WALLET_ADAPTER_NETWORK=devnet
+
+# =============================================================================
+# Analytics & Monitoring
+# =============================================================================
+
+# PostHog Analytics (Optional)
+NEXT_PUBLIC_POSTHOG_KEY=
+NEXT_PUBLIC_POSTHOG_HOST=
+
+# Sentry Error Tracking (Optional)
+SENTRY_DSN=
+
+# =============================================================================
+# Payment & Subscriptions
+# =============================================================================
+
+# Stripe (Optional)
+STRIPE_PUBLIC_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# =============================================================================
+# Development Configuration
+# =============================================================================
+
+# Next.js Configuration
+NODE_ENV=development
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Enable Debug Logging (Optional)
+DEBUG=false
+
+# =============================================================================
+# AI Gateway Configuration Notes
+# =============================================================================
+
+# VERCEL_AI_GATEWAY_URL: Your Gateway endpoint URL
+# Example: https://gateway.ai.cloud.vercel.app/v1
+
+# VERCEL_AI_GATEWAY_API_KEY: Your Gateway API key
+# This enables cost-optimized routing for supported models
+
+# Model Routing Priority:
+# 1. Gateway models (cost-optimized) - e.g., gateway/deepseek/deepseek-v3
+# 2. Direct provider models (fallback) - e.g., gpt-4o, claude-3-5-sonnet
+# 3. Free models (development) - e.g., openrouter/openai/gpt-oss-20b:free
+
+# =============================================================================
+# Security Notes
+# =============================================================================
+
+# 1. Never commit actual API keys to version control
+# 2. Use different keys for development/staging/production
+# 3. Rotate keys regularly for security
+# 4. Monitor API usage and costs
+# 5. Set up billing alerts for AI providers

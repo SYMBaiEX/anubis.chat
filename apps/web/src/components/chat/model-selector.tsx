@@ -22,13 +22,14 @@ import {
   type ProviderFilter as ProviderFilterType,
 } from '@/components/ui/provider-filter';
 import {
-  AI_MODELS,
-  type AIModel,
-  getModelsForTier,
+  getAllUIModels,
+  getUIModelsForTier,
+  getUIModelById,
   isFreeModel,
   isPremiumModel,
   isStandardModel,
-} from '@/lib/constants/ai-models';
+  type UIModel,
+} from '@/lib/ai/providers';
 import { cn } from '@/lib/utils';
 
 interface ModelSelectorProps {
@@ -38,7 +39,7 @@ interface ModelSelectorProps {
   disabled?: boolean;
 }
 
-const getProviderIcon = (provider: AIModel['provider']) => {
+const getProviderIcon = (provider: UIModel['provider']) => {
   switch (provider) {
     case 'openai':
       return <Sparkles className="h-3 w-3" />;
@@ -48,11 +49,13 @@ const getProviderIcon = (provider: AIModel['provider']) => {
       return <Cpu className="h-3 w-3" />;
     case 'openrouter':
       return <Sparkles className="h-3 w-3" />;
+    case 'gateway':
+      return <Zap className="h-3 w-3 text-blue-500" />; // Gateway icon
   }
 };
 
-const getIntelligenceBadge = (intelligence: AIModel['intelligence']) => {
-  const variants: Record<AIModel['intelligence'], string> = {
+const getIntelligenceBadge = (intelligence: UIModel['intelligence']) => {
+  const variants: Record<UIModel['intelligence'], string> = {
     basic: 'bg-muted text-muted-foreground',
     advanced: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
     expert:
@@ -71,7 +74,7 @@ const getIntelligenceBadge = (intelligence: AIModel['intelligence']) => {
   );
 };
 
-const getSpeedIcon = (speed: AIModel['speed']) => {
+const getSpeedIcon = (speed: UIModel['speed']) => {
   switch (speed) {
     case 'fast':
       return <Zap className="h-3 w-3 text-green-500" />;
@@ -96,17 +99,20 @@ export function ModelSelector({
   const _limits = useSubscriptionLimits();
   const _canUsePremium = useCanUsePremiumModel();
 
-  const selectedModel = AI_MODELS.find((model) => model.id === value);
+  const selectedModel = value ? getUIModelById(value) : undefined;
 
   // Get available models based on user's subscription tier
   const userTier =
     subscription?.tier === 'admin'
       ? 'pro_plus'
       : (subscription?.tier as 'free' | 'pro' | 'pro_plus') || 'free';
-  const availableModelsByTier = getModelsForTier(userTier);
+  const availableModelsByTier = getUIModelsForTier(userTier);
+
+  // Get all models from provider registry
+  const allModels = getAllUIModels();
 
   // Filter models based on provider and tier access
-  const filteredModels = AI_MODELS.filter((model) => {
+  const filteredModels = allModels.filter((model) => {
     // Provider filter
     if (providerFilter !== 'all' && model.provider !== providerFilter) {
       return false;
@@ -118,7 +124,7 @@ export function ModelSelector({
   // Sort models by tier: Free -> Standard -> Premium
   const availableModels = filteredModels.sort((a, b) => {
     // Determine tier for each model
-    const getTierPriority = (model: AIModel) => {
+    const getTierPriority = (model: UIModel) => {
       if (isFreeModel(model)) {
         return 0; // Free first
       }
@@ -139,7 +145,7 @@ export function ModelSelector({
   });
 
   // Check if user can use a model based on new tier logic
-  const canUseModel = (model: AIModel) => {
+  const canUseModel = (model: UIModel) => {
     const isAdmin = subscription?.tier === 'admin';
     if (isAdmin) {
       return true;
@@ -150,7 +156,7 @@ export function ModelSelector({
     );
   };
 
-  const handleModelSelect = (model: AIModel) => {
+  const handleModelSelect = (model: UIModel) => {
     // Only select if user can use the model
     if (canUseModel(model)) {
       onValueChange(model.id);

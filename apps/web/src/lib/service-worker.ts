@@ -34,9 +34,11 @@ export async function registerServiceWorker(config: ServiceWorkerConfig = {}) {
 
     for (const registration of existingRegistrations) {
       // Only unregister if it's not our current service worker
+      const expectedSWFile =
+        process.env.NODE_ENV === 'development' ? '/devSw.js' : '/sw.js';
       if (
         registration.scope !== `${window.location.origin}/` ||
-        !registration.active?.scriptURL.includes('/sw.js')
+        !registration.active?.scriptURL.includes(expectedSWFile)
       ) {
         log.info('Unregistering conflicting service worker', {
           scope: registration.scope,
@@ -47,9 +49,9 @@ export async function registerServiceWorker(config: ServiceWorkerConfig = {}) {
     }
 
     // Register our service worker
-    // In development, use dev-sw.js to prevent 404 errors
+    // In development, use devSw.js to prevent 404 errors
     const swFile =
-      process.env.NODE_ENV === 'development' ? '/dev-sw.js' : '/sw.js';
+      process.env.NODE_ENV === 'development' ? '/devSw.js' : '/sw.js';
     const registration = await navigator.serviceWorker.register(swFile, {
       scope: '/',
       updateViaCache: 'imports',

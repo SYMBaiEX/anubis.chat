@@ -3,12 +3,13 @@
 import { Brain, Cpu, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AI_MODELS, type AIModel } from '@/lib/constants/ai-models';
+import { getAllUIModels, type UIModel } from '@/lib/ai/providers';
 
 export type ProviderFilter =
   | 'all'
+  | 'gateway'
   | 'openai'
-  // | 'anthropic'  // DISABLED FOR NOW
+  | 'anthropic'
   | 'google'
   | 'openrouter';
 
@@ -19,8 +20,10 @@ interface ProviderFilterProps {
   className?: string;
 }
 
-const getProviderIcon = (provider: AIModel['provider']) => {
+const getProviderIcon = (provider: UIModel['provider']) => {
   switch (provider) {
+    case 'gateway':
+      return <Sparkles className="h-3 w-3 text-blue-500" />;
     case 'openai':
       return <Sparkles className="h-3 w-3" />;
     case 'anthropic':
@@ -38,34 +41,38 @@ export function ProviderFilter({
   availableCount,
   className,
 }: ProviderFilterProps) {
+  const allModels = getAllUIModels();
+
   const providers = [
     {
       value: 'all' as const,
       label: 'All Providers',
-      count: availableCount || AI_MODELS.length,
+      count: availableCount || allModels.length,
     },
     {
-      value: 'openrouter' as const,
-      label: 'OpenRouter',
-      count: AI_MODELS.filter((m) => m.provider === 'openrouter').length,
+      value: 'gateway' as const,
+      label: 'Gateway (Cost-Optimized)',
+      count: allModels.filter((m) => m.provider === 'gateway').length,
     },
     {
       value: 'openai' as const,
       label: 'OpenAI',
-      count: AI_MODELS.filter((m) => m.provider === 'openai').length,
+      count: allModels.filter((m) => m.provider === 'openai').length,
     },
-    // Anthropic disabled for now
-    /*
     {
       value: 'anthropic' as const,
       label: 'Anthropic',
-      count: AI_MODELS.filter((m) => m.provider === 'anthropic').length,
+      count: allModels.filter((m) => m.provider === 'anthropic').length,
     },
-    */
     {
       value: 'google' as const,
       label: 'Google',
-      count: AI_MODELS.filter((m) => m.provider === 'google').length,
+      count: allModels.filter((m) => m.provider === 'google').length,
+    },
+    {
+      value: 'openrouter' as const,
+      label: 'OpenRouter',
+      count: allModels.filter((m) => m.provider === 'openrouter').length,
     },
   ];
 
@@ -82,7 +89,7 @@ export function ProviderFilter({
           variant={selected === provider.value ? 'default' : 'ghost'}
         >
           {provider.value !== 'all' &&
-            getProviderIcon(provider.value as AIModel['provider'])}
+            getProviderIcon(provider.value as UIModel['provider'])}
           <span>{provider.label}</span>
           <Badge className="px-1.5 text-xs" variant="secondary">
             {provider.count}

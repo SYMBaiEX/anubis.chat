@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import '../index.css';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { ErrorBoundary } from '@/components/error-boundary';
 import { GlobalErrorHandler } from '@/components/error-boundary/global-error-handler';
 import { globalCommandPalette as GlobalCommandPalette } from '@/components/globalCommandPalette';
@@ -165,6 +166,7 @@ export default function RootLayout({
           </ErrorBoundary>
         </ThemeProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

@@ -1,13 +1,11 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createOpenAI } from '@ai-sdk/openai';
 import { getAuthUserId } from '@convex-dev/auth/server';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText } from 'ai';
 import { v } from 'convex/values';
 import { api } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { action, httpAction, mutation, query } from './_generated/server';
 import { getCachedPrompt, TOKEN_OPTIMIZATION } from './lib/agents/agentManager';
+import { getModel, getDefaultModel, isGatewayModel } from './lib/aiProviders';
 import { createModuleLogger } from './utils/logger';
 
 // Create logger instance for this module
@@ -1018,45 +1016,28 @@ export const streamWithWebSocket = action({
   },
 });
 
-// Helper function to prepare AI model
+// Helper function to prepare AI model using new provider system
 async function prepareAIModel(modelName: string) {
   try {
-    if (modelName.startsWith('openrouter/')) {
-      const openrouter = createOpenRouter({
-        apiKey: process.env.OPENROUTER_API_KEY!,
-        baseURL: 'https://openrouter.ai/api/v1',
-      });
-
-      const orModel = modelName.replace(/^openrouter\//, '');
-      if (!ALLOWED_OPENROUTER_MODELS.has(orModel)) {
-        return null;
-      }
-
-      return openrouter(orModel);
+    logger.info('Loading model using provider registry:', { modelName });
+    
+    // Use new provider system with fallback enabled
+    return getModel(modelName, { fallbackEnabled: true });
+  } catch (error: unknown) {
+    logger.error('Failed to prepare AI model', {
+      modelName,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    
+    // Ultimate fallback to default model
+    try {
+      const defaultModel = getDefaultModel();
+      logger.warn('Using default model as fallback:', { defaultModel });
+      return getModel(defaultModel, { fallbackEnabled: false });
+    } catch (fallbackError) {
+      logger.error('Failed to load fallback model', { fallbackError });
+      return null;
     }
-    if (
-      modelName.startsWith('gpt') ||
-      modelName.startsWith('o3') ||
-      modelName.startsWith('o4')
-    ) {
-      const openai = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-      });
-
-      return openai(modelName);
-    }
-    if (modelName.startsWith('gemini')) {
-      const google = createGoogleGenerativeAI({
-        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-      });
-
-      return google(modelName);
-    }
-
-    return null;
-  } catch (error) {
-    logger.error('Failed to prepare AI model', error);
-    return null;
   }
 }
 
@@ -1505,8 +1486,7 @@ export const streamChat = httpAction(async (ctx, request) => {
     });
   }
 
-  // Prepare AI model
-  let aiModel;
+  // AI model will be initialized below using provider registry
 
   // Check premium model access (gpt-5-nano is not premium, it's an efficient nano model)
   const isPremiumModel =
@@ -1584,111 +1564,67 @@ export const streamChat = httpAction(async (ctx, request) => {
     }
   }
 
-  // Determine provider and create appropriate model
-  if (
-    modelName.startsWith('openrouter/') ||
-    modelName.startsWith('gpt') ||
-    modelName.startsWith('o3') ||
-    modelName.startsWith('o4') ||
-    modelName === 'gpt-5' ||
-    modelName === 'gpt-5-pro' ||
-    modelName === 'gpt-4.1' ||
-    modelName === 'gpt-4o'
-  ) {
-    if (modelName.startsWith('openrouter/')) {
-      const openrouter = createOpenRouter({
-        apiKey: process.env.OPENROUTER_API_KEY!,
-        baseURL: 'https://openrouter.ai/api/v1',
-        fetch: async (input, init) => {
-          try {
-            const url = typeof input === 'string' ? input : input.toString();
-            if (
-              (url.includes('/chat/completions') ||
-                url.includes('/responses')) &&
-              init &&
-              typeof init.body === 'string'
-            ) {
-              const payload = JSON.parse(init.body as string);
-              if (
-                payload &&
-                typeof payload === 'object' &&
-                payload.model === 'openai/gpt-oss-120b'
-              ) {
-                payload.provider = { only: ['Cerebras'] };
-                init.body = JSON.stringify(payload);
-                if (init.headers && typeof init.headers === 'object') {
-                  (init.headers as Record<string, string>)['Content-Type'] =
-                    'application/json';
-                }
-              }
-            }
-          } catch {
-            // fall through to default fetch if anything goes wrong
-          }
-          return fetch(input as RequestInfo | URL, init as RequestInit);
-        },
+  // Initialize AI model variable
+  let aiModel;
+
+  // Create AI model using provider registry (supports Gateway, OpenAI, Anthropic, Google, OpenRouter)
+  try {
+    aiModel = getModel(modelName, { fallbackEnabled: true });
+    logger.info('Successfully loaded model via provider registry:', { 
+      modelName,
+      isGateway: isGatewayModel(modelName),
+      provider: modelName.split('/')[0] || 'direct'
+    });
+  } catch (error) {
+    logger.error('Failed to load model via provider registry:', { modelName, error });
+    
+    // Use default model as ultimate fallback
+    try {
+      const defaultModel = getDefaultModel();
+      aiModel = getModel(defaultModel, { fallbackEnabled: false });
+      logger.info('Loaded default model as fallback:', { 
+        originalModel: modelName, 
+        fallbackModel: defaultModel,
+        isGateway: isGatewayModel(defaultModel)
       });
-      const orModel = modelName.replace(/^openrouter\//, '');
-
-      if (!ALLOWED_OPENROUTER_MODELS.has(orModel)) {
-        return new Response(
-          JSON.stringify({
-            error: 'Model not allowed',
-            code: 'MODEL_NOT_ALLOWED',
-            details: { provider: 'openrouter', model: orModel },
-          }),
-          {
-            status: 400,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Methods': 'POST, OPTIONS',
-              'Access-Control-Allow-Headers': 'Content-Type',
-            },
-          }
-        );
-      }
-
-      // For Cerebras routing, pass provider preference via per-call options if supported
-      // Otherwise rely on header above
-      aiModel = openrouter(orModel);
-    } else {
-      // OpenAI models
-      const openai = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-      });
-
-      // Map our custom model IDs to actual API model names if needed
-      let apiModelName = modelName;
-      if (modelName === 'gpt-5' || modelName === 'gpt-5-pro') {
-        apiModelName = 'gpt-4o';
-      } else if (modelName === 'gpt-4.1') {
-        apiModelName = 'gpt-4-turbo-preview';
-      } else if (modelName === 'o3' || modelName === 'o4-mini') {
-        apiModelName = 'gpt-4o';
-      }
-      // gpt-5-nano is now available and will be used directly
-
-      aiModel = openai(apiModelName);
+    } catch (fallbackError) {
+      logger.error('Failed to load even default model:', { error: fallbackError });
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to initialize any AI model',
+          code: 'MODEL_INITIALIZATION_FAILED',
+          details: { 
+            requestedModel: modelName, 
+            defaultModel: getDefaultModel(),
+            supportedProviders: ['gateway', 'openai', 'anthropic', 'google', 'openrouter']
+          },
+        }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers':
+              'Content-Type, Authorization, X-Requested-With, Accept',
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        }
+      );
     }
-  } else if (
-    modelName.startsWith('claude') ||
-    modelName === 'claude-opus-4.1' ||
-    modelName === 'claude-sonnet-4'
-  ) {
-    // Anthropic models are not supported - use OpenRouter or Google AI instead
+  }
+
+  // Final validation that model was created successfully
+  if (!aiModel) {
+    logger.error('AI model is null after initialization');
     return new Response(
       JSON.stringify({
-        error:
-          'Anthropic models are not supported. Please use OpenRouter or Google AI providers.',
-        code: 'MODEL_NOT_SUPPORTED',
-        details: {
-          model: modelName,
-          supportedProviders: ['openrouter', 'google', 'openai'],
-        },
+        error: 'AI model initialization returned null',
+        code: 'MODEL_NULL_ERROR',
+        details: { modelName },
       }),
       {
-        status: 400,
+        status: 500,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -1699,38 +1635,8 @@ export const streamChat = httpAction(async (ctx, request) => {
         },
       }
     );
-  } else if (
-    modelName.startsWith('gemini') ||
-    modelName === 'gemini-2.5-pro' ||
-    modelName === 'gemini-2.5-flash' ||
-    modelName === 'gemini-2.5-flash-lite'
-  ) {
-    // Google models
-    const google = createGoogleGenerativeAI({
-      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    });
-
-    // Map our custom model IDs to actual API model names
-    let apiModelName = modelName;
-    if (
-      modelName === 'gemini-2.5-pro' ||
-      modelName === 'gemini-2.5-flash' ||
-      modelName === 'gemini-2.5-flash-lite'
-    ) {
-      // Gemini 2.5 models might not be available yet
-      apiModelName = 'gemini-2.0-flash-exp';
-    } else if (modelName === 'gemini-2.0-flash') {
-      apiModelName = 'gemini-2.0-flash-exp';
-    }
-
-    aiModel = google(apiModelName);
-  } else {
-    // Default fallback to OpenAI
-    const openai = createOpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-    aiModel = openai('gpt-4o');
   }
+
 
   // Combine prompts: agent guidance + system directions + context
   const prompts = [];

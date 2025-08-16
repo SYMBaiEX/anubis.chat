@@ -279,6 +279,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [user]);
 
+  // Auto-authenticate when wallet connects (for persistent auth across page refreshes)
+  const autoAuthenticationAttempted = useRef(false);
+  useEffect(() => {
+    const attemptAutoAuthentication = async () => {
+      // Only auto-authenticate if:
+      // 1. Wallet is connected
+      // 2. User is not already authenticated
+      // 3. Haven't already attempted auto-auth for this session
+      if (
+        wallet.isConnected &&
+        wallet.publicKey &&
+        !user &&
+        !autoAuthenticationAttempted.current
+      ) {
+        autoAuthenticationAttempted.current = true;
+        
+        try {
+          _log.info('Attempting auto-authentication with connected wallet', {
+            publicKey: wallet.publicKey.toString(),
+          });
+          
+          await wallet.authenticateWithConvex();
+          
+          _log.info('Auto-authentication successful');
+        } catch (error) {
+          // Don't log this as an error since it's expected for new users
+          _log.debug('Auto-authentication failed - likely new user', {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+    };
+
+    // Reset flag when wallet disconnects so re-connection can auto-trigger again
+    if (!wallet.isConnected || !wallet.publicKey) {
+      autoAuthenticationAttempted.current = false;
+    } else {
+      attemptAutoAuthentication();
+    }
+  }, [wallet.isConnected, wallet.publicKey, user, wallet]);
+
   const contextValue: AuthContextValue = useMemo(
     () => ({
       // Auth state - using Convex Auth hooks directly
