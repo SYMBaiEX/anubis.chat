@@ -704,11 +704,13 @@ export const streamWithWebSocket = action({
       }
 
       // Ensure final buffer is flushed before computing usage
-      await ctx.runMutation(api.streaming.updateStreamingContent, {
-        sessionId: args.sessionId,
-        content: accumulatedContent,
-        status: 'streaming',
-      });
+      if (bufferedSinceLastFlush > 0) {
+        await ctx.runMutation(api.streaming.updateStreamingContent, {
+          sessionId: args.sessionId,
+          content: accumulatedContent,
+          status: 'streaming',
+        });
+      }
 
       // Handle tool calls if any - await the promises for text and usage
       const text = await result.text;
